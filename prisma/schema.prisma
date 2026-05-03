@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model game_keys {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id  String    @db.Uuid
+  key_value   String
+  status      String    @default("available") @db.VarChar
+  order_id    String?   @unique @db.Uuid
+  assigned_at DateTime? @db.Timestamptz(6)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  orders      orders?   @relation(fields: [order_id], references: [id], onUpdate: NoAction)
+  products    products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([product_id], map: "idx_keys_product")
+  @@index([status], map: "idx_keys_status")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model key_access_logs {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String?   @db.Uuid
+  key_id      String?   @db.Uuid
+  accessed_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model orders {
+  id                    String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String     @db.Uuid
+  product_id            String     @db.Uuid
+  stripe_session_id     String?    @unique @db.VarChar
+  stripe_payment_intent String?    @unique @db.VarChar
+  amount                Decimal    @db.Decimal(10, 2)
+  status                String     @default("pending") @db.VarChar
+  paid_at               DateTime?  @db.Timestamptz(6)
+  fulfilled_at          DateTime?  @db.Timestamptz(6)
+  created_at            DateTime?  @default(now()) @db.Timestamptz(6)
+  game_keys             game_keys?
+  products              products   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                 users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_orders_user")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model product_images {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id String    @db.Uuid
+  url        String
+  sort_order Int?      @default(0)
+  alt_text   String?   @db.VarChar
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  products   products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([product_id], map: "idx_product_images_product")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model products {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String           @unique @db.VarChar
+  name_th        String           @db.VarChar
+  name_en        String           @db.VarChar
+  description_th String?
+  description_en String?
+  price          Decimal          @db.Decimal(10, 2)
+  is_active      Boolean?         @default(true)
+  is_featured    Boolean?         @default(false)
+  created_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  isLower        Boolean?         @default(false)
+  game_keys      game_keys[]
+  orders         orders[]
+  product_images product_images[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username   String     @db.VarChar
+  email      String?    @unique @db.VarChar
+  role       String     @default("user") @db.VarChar
+  created_at DateTime?  @default(now()) @db.Timestamptz(6)
+  avatar     String?    @db.VarChar
+  accounts   accounts[]
+  orders     orders[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model accounts {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String    @db.Uuid
+  provider            String    @db.VarChar
+  provider_account_id String    @db.VarChar
+  access_token        String?
+  refresh_token       String?
+  expires_at          Int?
+  token_type          String?   @db.VarChar
+  scope               String?   @db.VarChar
+  id_token            String?
+  created_at          DateTime? @default(now()) @db.Timestamptz(6)
+  users               users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([provider, provider_account_id])
+  @@index([user_id], map: "idx_accounts_user")
+}
