@@ -4,6 +4,7 @@ import Link from "next/link"
 import { signOut, useSession } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 
 const navItems = [
   { href: "/",        label: "Home",         auth: false },
@@ -38,7 +39,10 @@ export default function Navbar() {
   return (
     <>
       {/* ── NAV BAR ── */}
-      <nav
+      <motion.nav
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
         className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-10 py-4 border-b bg-bg-base/90 backdrop-blur-md"
         style={{ borderColor: "var(--color-border-soft)" }}
       >
@@ -115,179 +119,191 @@ export default function Navbar() {
             />
           </button>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* ── MOBILE MENU ── */}
-      {/* Overlay */}
-      <div
-        onClick={() => setMenuOpen(false)}
-        className="md:hidden fixed inset-0 z-40 transition-all duration-300"
-        style={{
-          background:    "rgba(4,10,18,0.7)",
-          backdropFilter:"blur(4px)",
-          opacity:       menuOpen ? 1 : 0,
-          pointerEvents: menuOpen ? "auto" : "none",
-        }}
-      />
-
-      {/* Slide-in panel */}
-      <div
-        className="md:hidden fixed top-0 right-0 z-50 h-full w-[280px] flex flex-col transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)]"
-        style={{
-          background:  "var(--color-bg-card)",
-          borderLeft:  "1px solid var(--color-border-soft)",
-          transform:   menuOpen ? "translateX(0)" : "translateX(100%)",
-        }}
-      >
-        {/* Panel header */}
-        <div
-          className="flex items-center justify-between px-6 py-4 border-b"
-          style={{ borderColor: "var(--color-border-soft)" }}
-        >
-          <span className="font-display text-[17px] font-bold" style={{ color: "var(--color-text-base)" }}>
-            Class A <span style={{ color: "var(--color-accent-light)" }}>Store</span>
-          </span>
-          <button
-            onClick={() => setMenuOpen(false)}
-            className="p-1.5 rounded-lg transition-colors"
-            style={{ color: "var(--color-text-muted)" }}
-            aria-label="Close menu"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Nav links */}
-        <nav className="flex-1 px-4 py-5 flex flex-col gap-1 overflow-y-auto">
-          {visibleItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
+      <AnimatePresence>
+        {menuOpen && (
+          <>
+            {/* Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl no-underline text-[14px] font-medium transition-all"
+              className="md:hidden fixed inset-0 z-40"
               style={{
-                background:  isActive(item.href) ? "rgba(66,122,181,.15)" : "transparent",
-                color:       isActive(item.href) ? "var(--color-accent-light)" : "var(--color-text-muted)",
-                borderLeft:  isActive(item.href) ? "2px solid var(--color-accent-light)" : "2px solid transparent",
+                background:    "rgba(4,10,18,0.7)",
+                backdropFilter:"blur(4px)",
+              }}
+            />
+
+            {/* Slide-in panel */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="md:hidden fixed top-0 right-0 z-50 h-full w-[280px] flex flex-col"
+              style={{
+                background:  "var(--color-bg-card)",
+                borderLeft:  "1px solid var(--color-border-soft)",
               }}
             >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Auth section */}
-        <div className="px-4 py-5 border-t" style={{ borderColor: "var(--color-border-soft)" }}>
-          {!session ? (
-            <Link
-              href="/login"
-              onClick={() => setMenuOpen(false)}
-              className="w-full flex items-center justify-center gap-2 text-white text-[13px] font-medium px-5 py-3 rounded-xl no-underline transition-all hover:opacity-90 active:scale-95"
-              style={{ background: "var(--color-accent)" }}
-            >
-              <LoginIcon />
-              Login
-            </Link>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {/* User info */}
+              {/* Panel header */}
               <div
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-                style={{ background: providerBg(provider) }}
+                className="flex items-center justify-between px-6 py-4 border-b"
+                style={{ borderColor: "var(--color-border-soft)" }}
               >
+                <span className="font-display text-[17px] font-bold" style={{ color: "var(--color-text-base)" }}>
+                  Class A <span style={{ color: "var(--color-accent-light)" }}>Store</span>
+                </span>
+                <button
+                  onClick={() => setMenuOpen(false)}
+                  className="p-1.5 rounded-lg transition-colors"
+                  style={{ color: "var(--color-text-muted)" }}
+                  aria-label="Close menu"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Nav links */}
+              <nav className="flex-1 px-4 py-5 flex flex-col gap-1 overflow-y-auto">
+                {visibleItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl no-underline text-[14px] font-medium transition-all"
+                    style={{
+                      background:  isActive(item.href) ? "rgba(66,122,181,.15)" : "transparent",
+                      color:       isActive(item.href) ? "var(--color-accent-light)" : "var(--color-text-muted)",
+                      borderLeft:  isActive(item.href) ? "2px solid var(--color-accent-light)" : "2px solid transparent",
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+
+              {/* Auth section */}
+              <div className="px-4 py-5 border-t" style={{ borderColor: "var(--color-border-soft)" }}>
+                {!session ? (
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="w-full flex items-center justify-center gap-2 text-white text-[13px] font-medium px-5 py-3 rounded-xl no-underline transition-all hover:opacity-90 active:scale-95"
+                    style={{ background: "var(--color-accent)" }}
+                  >
+                    <LoginIcon />
+                    Login
+                  </Link>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {/* User info */}
+                    <div
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+                      style={{ background: providerBg(provider) }}
+                    >
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                        style={{ background: providerColor(provider) }}
+                      >
+                        <ProviderIcon provider={provider} size={15} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-medium truncate" style={{ color: "var(--color-text-base)" }}>
+                          {session.user?.name || "User"}
+                        </p>
+                        <p className="text-[11px] truncate" style={{ color: "var(--color-text-muted)" }}>
+                          {providerLabel(provider)}
+                        </p>
+                      </div>
+                    </div>
+                    {/* Logout */}
+                    <button
+                      onClick={() => { setMenuOpen(false); setLogoutOpen(true) }}
+                      className="w-full flex items-center justify-center gap-2 text-[13px] font-medium px-5 py-2.5 rounded-xl transition-colors"
+                      style={{
+                        background: "rgba(239,68,68,.10)",
+                        border:     "1px solid rgba(239,68,68,.25)",
+                        color:      "#f87171",
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                      </svg>
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── LOGOUT MODAL ── */}
+      <AnimatePresence>
+        {logoutOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 10 }}
+              className="rounded-xl p-5 w-[320px] shadow-xl"
+              style={{
+                background: "var(--color-bg-card)",
+                border:     "1px solid var(--color-border-soft)",
+              }}
+            >
+              <div className="flex items-center gap-2.5 mb-3">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
                   style={{ background: providerColor(provider) }}
                 >
                   <ProviderIcon provider={provider} size={15} />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[13px] font-medium truncate" style={{ color: "var(--color-text-base)" }}>
-                    {session.user?.name || "User"}
-                  </p>
-                  <p className="text-[11px] truncate" style={{ color: "var(--color-text-muted)" }}>
-                    {providerLabel(provider)}
+                <div>
+                  <p className="text-white font-semibold text-[15px] leading-tight">Sign out?</p>
+                  <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                    Logged in via {providerLabel(provider)}
                   </p>
                 </div>
               </div>
-              {/* Logout */}
-              <button
-                onClick={() => { setMenuOpen(false); setLogoutOpen(true) }}
-                className="w-full flex items-center justify-center gap-2 text-[13px] font-medium px-5 py-2.5 rounded-xl transition-colors"
-                style={{
-                  background: "rgba(239,68,68,.10)",
-                  border:     "1px solid rgba(239,68,68,.25)",
-                  color:      "#f87171",
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-                Sign out
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── LOGOUT MODAL ── */}
-      {logoutOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div
-            className="rounded-xl p-5 w-[320px] shadow-xl"
-            style={{
-              background: "var(--color-bg-card)",
-              border:     "1px solid var(--color-border-soft)",
-              animation:  "popIn .25s cubic-bezier(.22,1,.36,1) both",
-            }}
-          >
-            <div className="flex items-center gap-2.5 mb-3">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: providerColor(provider) }}
-              >
-                <ProviderIcon provider={provider} size={15} />
+              <p className="text-[13px] mb-5" style={{ color: "var(--color-text-muted)" }}>
+                Are you sure you want to sign out?
+              </p>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setLogoutOpen(false)}
+                  className="px-4 py-2 text-[13px] rounded-lg transition-colors"
+                  style={{ color: "var(--color-text-muted)" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { signOut(); setLogoutOpen(false) }}
+                  className="px-4 py-2 text-[13px] rounded-lg bg-red-500 hover:bg-red-600 text-white transition"
+                >
+                  Logout
+                </button>
               </div>
-              <div>
-                <p className="text-white font-semibold text-[15px] leading-tight">Sign out?</p>
-                <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-                  Logged in via {providerLabel(provider)}
-                </p>
-              </div>
-            </div>
-            <p className="text-[13px] mb-5" style={{ color: "var(--color-text-muted)" }}>
-              Are you sure you want to sign out?
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setLogoutOpen(false)}
-                className="px-4 py-2 text-[13px] rounded-lg transition-colors"
-                style={{ color: "var(--color-text-muted)" }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => { signOut(); setLogoutOpen(false) }}
-                className="px-4 py-2 text-[13px] rounded-lg bg-red-500 hover:bg-red-600 text-white transition"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes popIn {
-          from { opacity: 0; transform: scale(.94) translateY(8px); }
-          to   { opacity: 1; transform: scale(1)   translateY(0); }
-        }
-      `}</style>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }

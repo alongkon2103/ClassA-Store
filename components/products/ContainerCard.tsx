@@ -1,12 +1,34 @@
+"use client"
+
+import { motion } from "framer-motion"
 import ProductCard from "./ProductCard"
 
 export default function ContainerCard({ products, onSelect }: any) {
-    return (
-        <div className="px-10 py-8 pb-20">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+    const container = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.05
+            }
+        }
+    }
 
+    const itemAnim = {
+        hidden: { opacity: 0, y: 15 },
+        show: { opacity: 1, y: 0 }
+    }
+
+    return (
+        <div className="px-6 sm:px-10 py-8 pb-20">
+            <motion.div 
+                variants={container}
+                initial="hidden"
+                animate="show"
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
+            >
                 {products.map((item: any) => (
-                    <div key={item.id}>
+                    <motion.div key={item.id} variants={itemAnim}>
                         <ProductCard
                             name={item.name_en}
                             price={item.price}
@@ -15,11 +37,11 @@ export default function ContainerCard({ products, onSelect }: any) {
                             is_low={item.isLower}
                             onClick={() => onSelect(item)}
                             is_featured={item.is_featured}
+                            product_variants={item.product_variants}
                         />
-                    </div>
+                    </motion.div>
                 ))}
-
-            </div>
+            </motion.div>
         </div>
     )
 }

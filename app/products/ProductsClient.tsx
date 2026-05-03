@@ -5,6 +5,8 @@ import ContainerCard from "@/components/products/ContainerCard"
 import ProductModal from "@/components/products/ProductModal"
 import ShopHeads from "@/components/products/ShopHead"
 import Navbar from "@/components/Navbar"
+import { AnimatePresence } from "framer-motion"
+
 export default function ProductsClient({ initialProducts }: any) {
   const [search, setSearch] = useState("")
   const [selected, setSelected] = useState<any>(null)
@@ -15,7 +17,7 @@ export default function ProductsClient({ initialProducts }: any) {
 
   return (
     <>
-        <Navbar/>
+      <Navbar />
       <ShopHeads search={search} setSearch={setSearch} />
 
       <ContainerCard
@@ -24,12 +26,14 @@ export default function ProductsClient({ initialProducts }: any) {
       />
 
       {/* POPUP */}
-      {selected && (
-        <ProductModal
-          product={selected}
-          onClose={() => setSelected(null)}
-        />
-      )}
+      <AnimatePresence>
+        {selected && (
+          <ProductModal
+            product={selected}
+            onClose={() => setSelected(null)}
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 }

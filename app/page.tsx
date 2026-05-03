@@ -6,10 +6,12 @@ import JoinDc from "@/components/home/JoinDc"
 import Driver from "@/components/home/Driver"
 import BestSeller from "@/components/home/BestSeller"
 import { prisma } from "@/lib/prisma"
+import { transformProduct } from "@/lib/transformProduct"
 
-const products = await prisma.products.findMany({
+const rawProducts = await prisma.products.findMany({
   where: { is_active: true, is_featured: true },
   include: {
+    product_variants: true,
     product_images: true,
     _count: {
       select: {
@@ -23,6 +25,18 @@ const products = await prisma.products.findMany({
   },
   orderBy: { created_at: "desc" },
 })
+
+const products = rawProducts.map((p) => ({
+  ...p,
+  price: Number(p.price), 
+
+  product_variants: p.product_variants.map((v) => ({
+    ...v,
+    price: Number(v.price), 
+  })),
+}))
+
+console.log(products)
 export default function Home() {
   return (
     <div>
