@@ -24,15 +24,12 @@ export default function BestSeller({ products, onSelect }: Props) {
     show: { opacity: 1, y: 0 }
   }
 
-  products.map((product) => (
-    console.log(product.product_variants)
-  ))
 
 
   return (
     <section className="bg-bg-surface px-6 sm:px-10 py-20">
       <div className="max-w-5xl mx-auto">
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0, x: -10 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -51,7 +48,7 @@ export default function BestSeller({ products, onSelect }: Props) {
           Best Selling Keys
         </motion.h2>
 
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
@@ -61,7 +58,7 @@ export default function BestSeller({ products, onSelect }: Props) {
           Updated daily · Instant delivery guaranteed
         </motion.p>
 
-        <motion.div 
+        <motion.div
           variants={container}
           initial="hidden"
           whileInView="show"
@@ -75,7 +72,6 @@ export default function BestSeller({ products, onSelect }: Props) {
                   name={product.name_en}
                   price={Number(product.price)}
                   image={product.product_images?.[0]?.url || "/placeholder.png"}
-                  stock={product._count.game_keys}
                   is_low={product.isLower ?? false}
                   badge={product.is_featured ? "Hot" : undefined}
                   product_variants={product.product_variants}
@@ -90,7 +86,7 @@ export default function BestSeller({ products, onSelect }: Props) {
           )}
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}

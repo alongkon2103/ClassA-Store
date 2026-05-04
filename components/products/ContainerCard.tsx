@@ -29,16 +29,16 @@ export default function ContainerCard({ products, onSelect }: any) {
             >
                 {products.map((item: any) => (
                     <motion.div key={item.id} variants={itemAnim}>
-                        <ProductCard
-                            name={item.name_en}
-                            price={item.price}
-                            image={item.product_images?.[0]?.url}
-                            stock={item._count.game_keys}
-                            is_low={item.isLower}
-                            onClick={() => onSelect(item)}
-                            is_featured={item.is_featured}
-                            product_variants={item.product_variants}
-                        />
+                      <ProductCard
+    name={item.name_en}
+    price={item.price}
+    image={item.product_images?.[0]?.url}
+    is_low={item.isLower}
+    onClick={() => onSelect(item)}
+    is_featured={item.is_featured}
+    product_variants={item.product_variants}
+    // ลบ stock={item._count.game_keys} ออก
+/>
                     </motion.div>
                 ))}
             </motion.div>
