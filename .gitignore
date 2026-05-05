@@ -46,3 +46,7 @@ node_modules
 .env.local
 .next
 
+public/gifts/
+public/presets/
+public/uploads/
+

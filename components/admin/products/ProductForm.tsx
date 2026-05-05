@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import VariantManager from "./VariantManager"
 import ImageManager from "./ImageManager"
 import KeysPanel from "./KeysPanel"
+import GiftManager from "./GiftManager"
+import PresetManager from "./PresetManager"
 
 type Props = {
     product?: any
@@ -14,7 +16,7 @@ type Props = {
 export default function ProductForm({ product, mode }: Props) {
     const router = useRouter()
     const [saving, setSaving] = useState(false)
-    const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "keys">("info")
+    const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys">("info")
 
     const [form, setForm] = useState({
         name_en: product?.name_en ?? "",
@@ -62,6 +64,8 @@ export default function ProductForm({ product, mode }: Props) {
         { key: "info", label: "Info", hidden: false },
         { key: "variants", label: "Variants", hidden: mode === "create" },
         { key: "images", label: "Images", hidden: mode === "create" },
+        { key: "gifts", label: "Gifts", hidden: mode === "create" },
+        { key: "presets", label: "Presets", hidden: mode === "create" },
         { key: "keys", label: "Game Keys", hidden: mode === "create" },
     ] as const
 
@@ -89,8 +93,8 @@ export default function ProductForm({ product, mode }: Props) {
                 {tabs.filter((t) => !t.hidden).map((t) => (
                     <button key={t.key} onClick={() => setActiveTab(t.key as any)}
                         className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${activeTab === t.key
-                                ? "bg-accent/20 text-accent-light"
-                                : "text-text-muted hover:text-text-base"
+                            ? "bg-accent/20 text-accent-light"
+                            : "text-text-muted hover:text-text-base"
                             }`}>
                         {t.label}
                     </button>
@@ -139,8 +143,8 @@ export default function ProductForm({ product, mode }: Props) {
                         ] as const).map(({ key, label, desc }) => (
                             <button key={key} onClick={() => set(key, !form[key])}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition ${form[key]
-                                        ? "border-accent/30 bg-accent/10 text-accent-light"
-                                        : "border-white/10 text-text-muted hover:border-white/20"
+                                    ? "border-accent/30 bg-accent/10 text-accent-light"
+                                    : "border-white/10 text-text-muted hover:border-white/20"
                                     }`}>
                                 <div className={`w-8 h-4 rounded-full transition-colors ${form[key] ? "bg-accent" : "bg-white/10"} relative`}>
                                     <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${form[key] ? "left-4" : "left-0.5"}`} />
@@ -160,6 +164,12 @@ export default function ProductForm({ product, mode }: Props) {
 
             {/* Tab: Images */}
             {activeTab === "images" && <ImageManager productId={product.id} images={product.product_images} />}
+
+            {/* Tab: Gifts */}
+            {activeTab === "gifts" && <GiftManager productId={product.id} gifts={product.product_gifts ?? []} />}
+            
+            {/* Tab: Presets */}
+            {activeTab === "presets" && <PresetManager productId={product.id} presets={product.product_presets ?? []} />}
 
             {/* Tab: Keys */}
             {activeTab === "keys" && <KeysPanel productId={product.id} variants={product.product_variants} />}

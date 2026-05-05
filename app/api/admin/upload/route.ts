@@ -5,26 +5,40 @@ import path from "path"
 export async function POST(req: NextRequest) {
   const formData = await req.formData()
   const file = formData.get("file") as File
+  const type = formData.get("type") as string // "image" | "preset" | "gift"
 
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 })
 
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+  const imageTypes   = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+  const presetTypes  = [
+    "application/zip", "application/x-zip-compressed",
+    "application/json", "application/octet-stream",
+    "text/plain",
+  ]
+  const allowedTypes = type === "image" || type === "gift" ? imageTypes : [...imageTypes, ...presetTypes]
+
   if (!allowedTypes.includes(file.type)) {
     return NextResponse.json({ error: "Invalid file type" }, { status: 400 })
   }
 
-  if (file.size > 5 * 1024 * 1024) {
-    return NextResponse.json({ error: "File too large (max 5MB)" }, { status: 400 })
+  const maxSize = type === "preset" ? 100 * 1024 * 1024 : 5 * 1024 * 1024 // preset 100MB, image 5MB
+  if (file.size > maxSize) {
+    return NextResponse.json({ error: `File too large (max ${type === "preset" ? "100MB" : "5MB"})` }, { status: 400 })
   }
 
   const bytes    = await file.arrayBuffer()
   const buffer   = Buffer.from(bytes)
   const ext      = file.name.split(".").pop()
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-  const uploadDir = path.join(process.cwd(), "public", "uploads")
+  const folder   = type === "preset" ? "presets" : type === "gift" ? "gifts" : "uploads"
+  const uploadDir = path.join(process.cwd(), "public", folder)
 
   await mkdir(uploadDir, { recursive: true })
   await writeFile(path.join(uploadDir, filename), buffer)
 
-  return NextResponse.json({ url: `/uploads/${filename}` })
+  return NextResponse.json({
+    url:      `/${folder}/${filename}`,
+    filename: file.name,
+    filesize: file.size,
+  })
 }

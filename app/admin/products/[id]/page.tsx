@@ -10,7 +10,9 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     where: { id },
     include: {
       product_variants: { orderBy: { sort_order: "asc" } },
-      product_images:   { orderBy: { sort_order: "asc" } },
+      product_images: { orderBy: { sort_order: "asc" } },
+      product_gifts: { orderBy: { sort_order: "asc" } },  
+      product_presets: { orderBy: { sort_order: "asc" } },  
     },
   })
   if (!product) notFound()

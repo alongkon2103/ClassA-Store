@@ -11,23 +11,27 @@ import { prisma } from "@/lib/prisma"
 import { transformProduct } from "@/lib/transformProduct"
 
 const rawProducts = await prisma.products.findMany({
-  where: { is_active: true, is_featured: true },
-  include: {
-    product_images: true,
-    product_variants: {
-      where: { is_active: true },
-      orderBy: { sort_order: "asc" },
-      include: {
-        _count: {
-          select: {
-            game_keys: { where: { status: "available" } },
-          },
+        where: { is_active: true,is_featured:true },
+        include: {
+            product_images: true,
+            product_variants: {
+                where: { is_active: true },
+                orderBy: { sort_order: "asc" },
+                include: {
+                    _count: {
+                        select: {
+                            game_keys: { where: { status: "available" } },
+                        },
+                    },
+                },
+            },
         },
-      },
-    },
-  },
-  orderBy: { created_at: "desc" },
-})
+        orderBy: [
+            { is_featured: "desc" },
+            { created_at: "desc" }, 
+        ],
+    })
+
 
 const products = rawProducts.map((p) => ({
   ...p,
