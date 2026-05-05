@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import { prisma } from "@/lib/prisma"
 
 export async function GET() {
   const products = await prisma.products.findMany({
@@ -15,5 +13,10 @@ export async function GET() {
     },
   })
 
-  return Response.json(products)
+  const safeProducts = products.map(p => ({
+    ...p,
+    price: Number(p.price)
+  }))
+
+  return Response.json(safeProducts)
 }

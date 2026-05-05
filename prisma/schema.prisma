@@ -37,19 +37,21 @@ model key_access_logs {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model orders {
-  id                    String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id               String     @db.Uuid
-  product_id            String     @db.Uuid
-  stripe_session_id     String?    @unique @db.VarChar
-  stripe_payment_intent String?    @unique @db.VarChar
-  amount                Decimal    @db.Decimal(10, 2)
-  status                String     @default("pending") @db.VarChar
-  paid_at               DateTime?  @db.Timestamptz(6)
-  fulfilled_at          DateTime?  @db.Timestamptz(6)
-  created_at            DateTime?  @default(now()) @db.Timestamptz(6)
+  id                    String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String            @db.Uuid
+  product_id            String            @db.Uuid
+  stripe_session_id     String?           @unique @db.VarChar
+  stripe_payment_intent String?           @unique @db.VarChar
+  amount                Decimal           @db.Decimal(10, 2)
+  status                String            @default("pending") @db.VarChar
+  paid_at               DateTime?         @db.Timestamptz(6)
+  fulfilled_at          DateTime?         @db.Timestamptz(6)
+  created_at            DateTime?         @default(now()) @db.Timestamptz(6)
+  variant_id            String?           @db.Uuid
   game_keys             game_keys?
-  products              products   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users                 users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products              products          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                 users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_variants      product_variants? @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([user_id], map: "idx_orders_user")
 }
@@ -136,6 +138,7 @@ model product_variants {
   created_at    DateTime?   @default(now()) @db.Timestamptz(6)
   updated_at    DateTime?   @default(now()) @db.Timestamptz(6)
   game_keys     game_keys[]
+  orders        orders[]
   products      products    @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([product_id], map: "idx_product_variants_product")

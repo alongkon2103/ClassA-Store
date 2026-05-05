@@ -1,167 +1,127 @@
-"use client"
-import Link from "next/link"
-
-import { useState, useEffect } from "react"
+import { prisma } from "@/lib/prisma"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { redirect } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
-import KeyModal from "@/components/home/KeyModal"
+import Link from "next/link"
+import OrderListClient from "@/components/orders/OrderListClient"
 
-interface Key {
-  label: string
-  value: string
-}
+export default async function MyOrdersPage() {
+  const session = await getServerSession(authOptions)
 
-interface Order {
-  orderId: string
-  date: string
-  product: {
-    name: string
-    image: string
-    platform: string
-    tags: string[]
-    price: string
+  if (!session?.user?.id) {
+    redirect("/login")
   }
-  keys: Key[]
-}
 
-export default function MyOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([])
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const res = await fetch('/Histories.json')
-        if (res.ok) {
-          const data = await res.json()
-          setOrders(data)
-        } else {
-          // Fallback mock data if json doesn't exist
-          setOrders([
-            {
-              orderId: "ORD-92831-772",
-              date: new Date().toISOString(),
-              product: {
-                name: "Cyberpunk 2077: Ultimate Edition",
-                image: "https://images.gog-statics.com/393710776b9148d488e0ec5370d04085420e6f7902d84713c2f0f49f430f8983.jpg",
-                platform: "GOG.com",
-                tags: ["Open World", "RPG", "Sci-fi"],
-                price: "$44.99",
-              },
-              keys: [
-                { label: "GOG Game Key", value: "ABCD-1234-EFGH-5678" },
-                { label: "Bonus Content Key", value: "BONUS-9988-7766" },
-              ],
-            }
-          ])
+  const rawOrders = await prisma.orders.findMany({
+    where: { user_id: session.user.id },
+    orderBy: { created_at: "desc" },
+    include: {
+      game_keys: true,
+      products: {
+        include: {
+          product_images: { orderBy: { sort_order: "asc" }, take: 1 },
+          product_gifts: { orderBy: { sort_order: "asc" } },
+          product_presets: { orderBy: { sort_order: "asc" } },
         }
-      } catch (error) {
-        console.error("Failed to fetch orders:", error)
-      } finally {
-        setIsLoading(false)
-      }
+      },
+      product_variants: true
     }
-    fetchOrders()
-  }, [])
+  })
 
-  const fmtDate = (iso: string) => {
-    return new Date(iso).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
+  const orders = rawOrders.map(order => ({
+    ...order,
+    amount: Number(order.amount),
+    created_at: order.created_at?.toISOString() || null,
+    paid_at: order.paid_at?.toISOString() || null,
+    fulfilled_at: order.fulfilled_at?.toISOString() || null,
+    game_keys: order.game_keys ? {
+      ...order.game_keys,
+      assigned_at: order.game_keys.assigned_at?.toISOString() || null,
+      created_at: order.game_keys.created_at?.toISOString() || null,
+    } : null,
+    products: {
+      ...order.products,
+      price: Number(order.products.price),
+      created_at: order.products.created_at?.toISOString() || null,
+      updated_at: order.products.updated_at?.toISOString() || null,
+      product_images: order.products.product_images.map(img => ({
+        ...img,
+        created_at: img.created_at?.toISOString() || null,
+      })),
+      product_gifts: order.products.product_gifts.map(gift => ({
+        ...gift,
+        created_at: gift.created_at?.toISOString() || null,
+      })),
+      product_presets: order.products.product_presets.map(preset => ({
+        ...preset,
+        created_at: preset.created_at?.toISOString() || null,
+      })),
+    },
+    product_variants: order.product_variants ? {
+      ...order.product_variants,
+      price: Number(order.product_variants.price),
+      created_at: order.product_variants.created_at?.toISOString() || null,
+      updated_at: order.product_variants.updated_at?.toISOString() || null,
+    } : null,
+  }))
 
   return (
-    <div className="flex flex-col min-h-screen font-body bg-bg-base text-text-base">
+    <div className="min-h-screen bg-bg-base flex flex-col selection:bg-accent/30 selection:text-accent-light">
       <Navbar />
 
-      <main className="relative flex-1">
-        <div className="grid-bg absolute inset-0 pointer-events-none"></div>
+      <main className="flex-1 relative">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
+        </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto px-6 py-12">
-          <div className="mb-8 anim-up">
-            <p className="text-[11px] tracking-widest uppercase font-medium mb-1" style={{ color: 'var(--color-accent-light)' }}>
-              Account
-            </p>
-            <h1 className="font-display font-bold" style={{ fontSize: 'clamp(28px, 5vw, 42px)' }}>
-              My Orders
-            </h1>
-            <p className="text-[13px] mt-1" style={{ color: 'var(--color-text-muted)' }}>
-              Your purchase history — click <em>View Keys</em> to reveal your game keys
-            </p>
-          </div>
-
-          {!isLoading && orders.length > 0 ? (
-            <div className="flex flex-col gap-4">
-              {orders.map((order, i) => (
-                <div
-                  key={order.orderId}
-                  className="order-card rounded-2xl overflow-hidden anim-up"
-                  style={{ animationDelay: `${(i * 0.08).toFixed(2)}s` }}
-                >
-                  <div className="flex flex-col sm:flex-row">
-                    <div className="sm:w-[140px] h-[90px] sm:h-auto shrink-0 relative overflow-hidden"
-                      style={{ background: 'linear-gradient(135deg,#0d1e35,#1a3a6a)' }}>
-                      <img src={order.product.image} alt={order.product.name}
-                        className="w-full h-full object-cover opacity-70" />
-                    </div>
-                    <div className="flex-1 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <p className="font-display font-bold text-[18px] leading-tight truncate">{order.product.name}</p>
-                          <span className="badge-completed text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">✓ Completed</span>
-                        </div>
-                        <span className="platform-chip inline-block text-[11px] px-2.5 py-0.5 rounded-full mb-2">{order.product.platform}</span>
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {order.product.tags.map((t, idx) => (
-                            <span key={idx} className="tag-pill px-2 py-0.5 rounded-full">{t}</span>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-3 text-[12px]" style={{ color: 'var(--color-text-muted)' }}>
-                          <span>{order.orderId}</span>
-                          <span>·</span>
-                          <span>{fmtDate(order.date)}</span>
-                        </div>
-                      </div>
-                      <div className="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-2 shrink-0">
-                        <span className="font-display font-bold text-[22px]" style={{ color: 'var(--color-accent-light)' }}>{order.product.price}</span>
-                        <button onClick={() => { setSelectedOrder(order); setIsModalOpen(true); }}
-                          className="btn-key flex items-center gap-2 text-[13px] font-medium px-4 py-2 rounded-xl">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-                          </svg>
-                          View Keys
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-16">
+          <header className="mb-8 md:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 text-accent-light text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] mb-2">
+                <span className="w-6 md:w-8 h-[2px] bg-accent/40"></span>
+                Secure Inventory
+              </div>
+              <h1 className="text-3xl md:text-4xl font-display font-bold text-white mb-1">My Assets</h1>
+              <p className="text-text-muted text-[13px] md:text-[14px]">
+                Click on any item to view details.
+              </p>
             </div>
-          ) : !isLoading && (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <svg className="empty-icon mb-4" width="56" height="56" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="1.2">
-                <rect x="2" y="3" width="20" height="14" rx="2" />
-                <path d="M8 21h8M12 17v4" />
-              </svg>
-              <p className="font-display font-bold text-[20px] mb-1">No orders yet</p>
-              <p className="text-[13px]" style={{ color: 'var(--color-text-muted)' }}>Head to the shop and grab your first key!</p>
-              <Link href="/products" className="mt-5 inline-block text-[13px] px-5 py-2.5 rounded-lg no-underline bg-accent text-white">
-                Browse Shop
+            
+            <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 flex items-center gap-4 shrink-0 self-start md:self-auto">
+              <div className="text-right border-r border-white/10 pr-4">
+                <p className="text-[9px] text-text-muted uppercase font-bold tracking-wider">Total</p>
+                <p className="text-lg font-display font-bold text-white">{orders.length}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] text-text-muted uppercase font-bold tracking-wider">Paid</p>
+                <p className="text-lg font-display font-bold text-accent-light">
+                  {orders.filter(o => o.status === 'paid').length}
+                </p>
+              </div>
+            </div>
+          </header>
+
+          {orders.length === 0 ? (
+            <div className="bg-bg-card border border-white/5 rounded-3xl p-10 md:p-16 text-center shadow-xl">
+              <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-6 opacity-30">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-bold text-white mb-2">Inventory is empty</h2>
+              <Link href="/products" className="inline-flex items-center justify-center px-6 py-2.5 bg-accent hover:opacity-90 text-white text-[14px] font-bold rounded-xl transition">
+                Browse Products
               </Link>
             </div>
+          ) : (
+            <OrderListClient orders={orders} />
           )}
         </div>
       </main>
 
       <Footer />
-      <KeyModal order={selectedOrder} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   )
 }

@@ -36,6 +36,8 @@ function LoginModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+
+
 export default function ProductModal({ product, onClose }: any) {
   const { data: session } = useSession()
   const [index, setIndex] = useState(0)
@@ -48,6 +50,8 @@ export default function ProductModal({ product, onClose }: any) {
     ? product.product_images
     : [{ url: "/placeholder.png" }]
   const total = images.length
+
+
 
   const prev = useCallback(() => setIndex((p) => Math.max(p - 1, 0)), [])
   const next = useCallback(() => setIndex((p) => Math.min(p + 1, total - 1)), [total])
@@ -82,12 +86,45 @@ export default function ProductModal({ product, onClose }: any) {
   const isOutOfStock = selectedStock === 0
   const isLowStock = selectedStock > 0 && selectedStock <= 5
 
-  const handleBuyClick = () => {
-    if (!session) { setShowLoginModal(true); return }
-    if (!selectedVariant && product.product_variants?.length > 0) {
-      alert("Please select an option"); return
+  const handleBuyClick = async () => {
+    if (!session) {
+      setShowLoginModal(true)
+      return
     }
-    console.log("BUY:", { productId: product.id, variantId: selectedVariant?.id })
+
+    if (!selectedVariant && product.product_variants?.length > 0) {
+      alert("Please select an option")
+      return
+    }
+
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          variantId: selectedVariant?.id,
+        }),
+      })
+
+      if (!res.ok) {
+        const text = await res.text()
+        console.error(text)
+        alert("Checkout error")
+        return
+      }
+
+      const data = await res.json()
+
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Checkout failed")
+    }
   }
 
   return (
@@ -146,11 +183,10 @@ export default function ProductModal({ product, onClose }: any) {
                 <button
                   key={i}
                   onClick={() => setIndex(i)}
-                  className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${
-                    i === index
-                      ? "ring-2 ring-accent opacity-100"
-                      : "opacity-40 hover:opacity-70"
-                  }`}
+                  className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${i === index
+                    ? "ring-2 ring-accent opacity-100"
+                    : "opacity-40 hover:opacity-70"
+                    }`}
                 >
                   <img src={img.url} alt="" className="w-full h-full object-cover" />
                 </button>
@@ -163,11 +199,10 @@ export default function ProductModal({ product, onClose }: any) {
             {/* Title + total stock */}
             <div className="flex items-start justify-between gap-3">
               <h2 className="text-[20px] font-bold leading-tight">{product.name_en}</h2>
-              <span className={`text-[11px] px-2 py-1 rounded-full font-medium whitespace-nowrap ${
-                totalStock === 0 ? "bg-red-500/15 text-red-400"
+              <span className={`text-[11px] px-2 py-1 rounded-full font-medium whitespace-nowrap ${totalStock === 0 ? "bg-red-500/15 text-red-400"
                 : totalStock <= 5 ? "bg-orange-500/15 text-orange-400"
-                : "bg-green-500/15 text-green-400"
-              }`}>
+                  : "bg-green-500/15 text-green-400"
+                }`}>
                 {totalStock === 0 ? "Out of stock" : `${totalStock} left`}
               </span>
             </div>
@@ -187,20 +222,18 @@ export default function ProductModal({ product, onClose }: any) {
                     return (
                       <button key={v.id} onClick={() => !outOfStock && setSelectedVariant(v)}
                         disabled={outOfStock}
-                        className={`p-3 rounded-xl border text-left transition relative ${
-                          outOfStock ? "opacity-40 cursor-not-allowed border-white/5"
+                        className={`p-3 rounded-xl border text-left transition relative ${outOfStock ? "opacity-40 cursor-not-allowed border-white/5"
                           : active ? "border-accent bg-accent/10"
-                          : "border-white/10 hover:border-accent/40"
-                        }`}
+                            : "border-white/10 hover:border-accent/40"
+                          }`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="text-[13px] font-medium">{v.label_en}</p>
-                            <p className={`text-[10px] mt-0.5 ${
-                              outOfStock ? "text-red-400"
+                            <p className={`text-[10px] mt-0.5 ${outOfStock ? "text-red-400"
                               : (v.stock ?? 0) <= 5 ? "text-orange-400"
-                              : "text-green-400"
-                            }`}>
+                                : "text-green-400"
+                              }`}>
                               {outOfStock ? "Sold out" : `${v.stock} available`}
                             </p>
                           </div>
@@ -230,11 +263,10 @@ export default function ProductModal({ product, onClose }: any) {
               <button
                 disabled={isOutOfStock}
                 onClick={handleBuyClick}
-                className={`flex-1 py-3.5 rounded-xl font-semibold text-[15px] transition ${
-                  isOutOfStock
-                    ? "bg-white/5 text-text-muted cursor-not-allowed"
-                    : "bg-accent text-white hover:opacity-90 active:scale-95"
-                }`}
+                className={`flex-1 py-3.5 rounded-xl font-semibold text-[15px] transition ${isOutOfStock
+                  ? "bg-white/5 text-text-muted cursor-not-allowed"
+                  : "bg-accent text-white hover:opacity-90 active:scale-95"
+                  }`}
               >
                 {isOutOfStock ? "Out of Stock" : "Buy Now"}
               </button>
@@ -244,4 +276,6 @@ export default function ProductModal({ product, onClose }: any) {
       </motion.div>
     </div>
   )
+
+
 }
