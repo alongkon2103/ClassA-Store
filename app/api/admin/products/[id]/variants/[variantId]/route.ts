@@ -22,7 +22,7 @@ export async function DELETE(
 ) {
   const { variantId } = await params
 
-  // เช็คว่ามี key ที่ assigned อยู่ไหม
+  // Check if there are any assigned keys
   const hasAssigned = await prisma.game_keys.count({
     where: { variant_id: variantId, status: "assigned" },
   })

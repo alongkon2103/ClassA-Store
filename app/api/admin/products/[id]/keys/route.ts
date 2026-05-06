@@ -33,7 +33,7 @@ export async function POST(
     return NextResponse.json({ error: "variant_id required" }, { status: 400 })
   }
 
-  // กรอง duplicate key_value ที่มีอยู่แล้วใน product นี้
+  // Filter out duplicate key_values that already exist in this product
   const existing = await prisma.game_keys.findMany({
     where: { product_id: id, key_value: { in: keys } },
     select: { key_value: true },
@@ -54,7 +54,7 @@ export async function POST(
     })),
   })
 
-  // return keys ที่เพิ่งสร้าง
+  // return newly created keys
   const result = await prisma.game_keys.findMany({
     where: { product_id: id, key_value: { in: newKeys } },
     orderBy: { created_at: "desc" },

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import ProductForm from "@/components/admin/products/ProductForm"
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params  // ✅ await ก่อน
+  const { id } = await params  // ✅ await first
 
   const product = await prisma.products.findUnique({
     where: { id },

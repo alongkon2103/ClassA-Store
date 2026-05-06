@@ -31,7 +31,7 @@ export default async function AdminKeysPage() {
             : null,
     }))
 
-    // ✅ เพิ่ม convert products ด้วย
+    // ✅ Also convert products
     const safeProducts = products.map((p) => ({
         ...p,
         price: Number(p.price),

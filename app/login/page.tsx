@@ -15,7 +15,7 @@ interface LoginPageProps {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  // ถ้า login แล้ว redirect ออกไปเลย
+  // If already logged in, redirect immediately
 //   const session = await getServerSession(authOptions)
 //   if (session) redirect(searchParams.callbackUrl ?? "/")
 
@@ -23,7 +23,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <>
-      {/* ── Global styles สำหรับหน้านี้ ── */}
+      {/* ── Global styles for this page ── */}
       <style>{`
         .login-card {
           background: var(--color-bg-card);

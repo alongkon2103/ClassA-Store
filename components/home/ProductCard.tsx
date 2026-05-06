@@ -3,7 +3,7 @@ type Variant = {
   label_th: string
   label_en: string
   price: number
-  stock: number // เพิ่ม
+  stock: number // Added
 }
 
 type Props = {
@@ -25,7 +25,7 @@ export default function ProductCard({
   product_variants,
   onClick
 }: Props) {
-  // คำนวณ total stock จากทุก variant
+  // Calculate total stock from all variants
   const totalStock = product_variants?.reduce((sum, v) => sum + v.stock, 0) ?? 0
 
   return (
@@ -51,7 +51,7 @@ export default function ProductCard({
       <div className="p-3 space-y-2">
         <p className="text-[13px] font-medium line-clamp-1">{name}</p>
 
-        {/* Variants พร้อม stock แต่ละตัว */}
+        {/* Variants with stock for each item */}
         {product_variants && product_variants.length > 0 ? (
           <div className="space-y-1">
             {product_variants.slice(0, 3).map((v) => (

@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
-  // เช็ค slug ซ้ำ
+  // Check for duplicate slug
   const existing = await prisma.products.findUnique({ where: { slug } })
   if (existing) return NextResponse.json({ error: "Slug already exists" }, { status: 400 })
 

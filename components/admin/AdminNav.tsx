@@ -10,6 +10,7 @@ const links = [
   { href: "/admin/keys",     label: "Game Keys",  icon: "" },
   { href: "/admin/orders",   label: "Orders",     icon: "" },
   { href: "/admin/users",    label: "Users",      icon: "" },
+  { href: "/admin/settings",  label: "Settings",   icon: "" },
 ]
 
 export default function AdminNav() {

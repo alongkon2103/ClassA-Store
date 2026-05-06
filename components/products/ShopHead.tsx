@@ -8,7 +8,7 @@ export default function ShopHeads({ search, setSearch }: any) {
  
       <div className="flex gap-2.5 flex-wrap items-center">
 
-        {/* SEARCH (ของคุณเดิม + เพิ่ม state) */}
+        {/* SEARCH (Original + added state) */}
         <div className="relative flex-1 max-w-xs">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none"></span>
 

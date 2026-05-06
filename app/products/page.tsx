@@ -19,8 +19,8 @@ export default async function Page() {
             },
         },
         orderBy: [
-            { is_featured: "desc" }, // อันนี้มาก่อน
-            { created_at: "desc" },  // แล้วค่อยเรียงใหม่ตามเวลา
+            { is_featured: "desc" }, // This comes first
+            { created_at: "desc" },  // Then sort by time
         ],
     })
 
@@ -30,7 +30,7 @@ export default async function Page() {
         product_variants: p.product_variants.map((v) => ({
             ...v,
             price: Number(v.price),
-            stock: v._count.game_keys, // ✅ stock ต่อ variant
+            stock: v._count.game_keys, // stock per variant
         })),
     }))
 

@@ -33,7 +33,7 @@ export const authOptions: AuthOptions = {
             try {
                 const email = user.email ?? null
 
-                // หา user จาก email ก่อน (merge Discord + Google ที่ email ตรงกัน)
+                // Find user by email first (merge Discord + Google if emails match)
                 let dbUser = email
                     ? await prisma.users.findFirst({ where: { email } })
                     : null
@@ -54,7 +54,7 @@ export const authOptions: AuthOptions = {
                     })
                 }
 
-                // upsert account record ของ provider นี้
+                // upsert account record for this provider
                 await prisma.accounts.upsert({
                     where: {
                         provider_provider_account_id: {
@@ -80,7 +80,7 @@ export const authOptions: AuthOptions = {
                     },
                 })
 
-                // แปะ DB id กลับไปให้ jwt callback ใช้
+                // Attach DB id back to user for jwt callback
                 user.id = dbUser.id
                 return true
 
@@ -90,7 +90,7 @@ export const authOptions: AuthOptions = {
             }
         },
 
-        // ── 2. jwt: เก็บ id + role ลง token (ทำครั้งเดียวตอน login) ──
+        // ── 2. jwt: store id + role into token (happens once at login) ──
         async jwt({ token, user, account }: any) {
             if (user) {
                 token.id = user.id
@@ -101,7 +101,7 @@ export const authOptions: AuthOptions = {
                 })
                 token.role = dbUser?.role ?? "user"
             }
-            // เก็บ provider ทุกครั้งที่ login ใหม่
+            // Store provider every time login happens
             if (account) {
                 token.provider = account.provider  // "discord" | "google"
             }
@@ -111,7 +111,7 @@ export const authOptions: AuthOptions = {
         async session({ session, token }: any) {
             session.user.id = token.id
             session.user.role = token.role
-            session.user.provider = token.provider  // ส่งออกมาที่ session
+            session.user.provider = token.provider  // Export to session
             return session
         },
     },

@@ -39,7 +39,7 @@ const products = rawProducts.map((p) => ({
   product_variants: p.product_variants.map((v) => ({
     ...v,
     price: Number(v.price),
-    stock: v._count.game_keys,  // ✅ stock ต่อ variant
+    stock: v._count.game_keys,  // ✅ stock per variant
   })),
 }))
 

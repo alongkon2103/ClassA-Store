@@ -3,7 +3,7 @@ type Variant = {
   label_th: string
   label_en: string
   price: number
-  stock: number // เพิ่ม
+  stock: number // Added
 }
 
 type Props = {
@@ -14,7 +14,7 @@ type Props = {
   is_featured: boolean
   onClick?: () => void
   product_variants?: Variant[]
-  // ลบ stock: number ออก
+  // Remove stock: number
 }
 
 export default function ProductCard({

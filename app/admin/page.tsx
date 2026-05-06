@@ -18,35 +18,35 @@ export default async function AdminDashboard() {
     recentOrders,
     dailyRevenue,
   ] = await Promise.all([
-    // ยอดขายวันนี้
+    // Today's Sales
     prisma.orders.aggregate({
       where: { status: "paid", paid_at: { gte: todayStart } },
       _sum: { amount: true },
     }),
 
-    // ยอดขายเดือนนี้
+    // This Month's Sales
     prisma.orders.aggregate({
       where: { status: "paid", paid_at: { gte: monthStart } },
       _sum: { amount: true },
     }),
 
-    // orders รอดำเนินการ
+    // Pending orders
     prisma.orders.count({ where: { status: "paid", fulfilled_at: null } }),
 
-    // orders ทั้งหมด
+    // Total orders
     prisma.orders.count(),
 
-    // products ทั้งหมด
+    // Total products
     prisma.products.count({ where: { is_active: true } }),
 
-    // products stock ต่ำ
+    // Low stock products
     prisma.products.findMany({
       where: { is_active: true, isLower: true },
       select: { id: true, name_en: true, slug: true },
       take: 5,
     }),
 
-    // orders ล่าสุด
+    // Recent orders
     prisma.orders.findMany({
       take: 8,
       orderBy: { created_at: "desc" },
@@ -56,7 +56,7 @@ export default async function AdminDashboard() {
       },
     }),
 
-    // รายได้ 7 วันย้อนหลัง (raw groupBy)
+    // Revenue - last 7 days (raw groupBy)
     prisma.$queryRaw<{ day: Date; total: number }[]>`
       SELECT
         DATE_TRUNC('day', paid_at) AS day,

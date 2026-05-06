@@ -37,7 +37,7 @@ export default function ContainerCard({ products, onSelect }: any) {
     onClick={() => onSelect(item)}
     is_featured={item.is_featured}
     product_variants={item.product_variants}
-    // ลบ stock={item._count.game_keys} ออก
+    // Remove stock={item._count.game_keys}
 />
                     </motion.div>
                 ))}

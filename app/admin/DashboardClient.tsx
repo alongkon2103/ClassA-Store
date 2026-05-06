@@ -65,7 +65,7 @@ function StatusBadge({ status }: { status: string }) {
 
 // ── Main ──────────────────────────────────────────────
 export default function DashboardClient({ data }: { data: any }) {
-    // เติมวันที่ไม่มียอดให้ครบ 7 วัน
+    // Fill in dates with no sales for the full 7 days
     const chartData = useMemo(() => {
         const days = eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() })
         return days.map((d) => {

@@ -107,7 +107,7 @@ export default function VariantManager({ productId, variants }: { productId: str
             <div>
               <label className={lbl}>Label (TH)</label>
               <input value={form.label_th} onChange={(e) => set("label_th", e.target.value)}
-                placeholder="ถาวร" className={inp} />
+                placeholder="Permanent" className={inp} />
             </div>
             <div>
               <label className={lbl}>Duration Type</label>

@@ -111,7 +111,7 @@ export default function ProductForm({ product, mode }: Props) {
 
                     <Field label="Name (TH)" required>
                         <input value={form.name_th} onChange={(e) => set("name_th", e.target.value)}
-                            placeholder="โรบล็อค ไลฟ์แมพ 1" className={input} />
+                            placeholder="Roblox Live Map 1" className={input} />
                     </Field>
 
                     <Field label="Slug" required>
@@ -131,7 +131,7 @@ export default function ProductForm({ product, mode }: Props) {
 
                     <Field label="Description (TH)" className="lg:col-span-2">
                         <textarea value={form.description_th} onChange={(e) => set("description_th", e.target.value)}
-                            rows={3} placeholder="คำอธิบายภาษาไทย..." className={`${input} resize-none`} />
+                            rows={3} placeholder="Thai description..." className={`${input} resize-none`} />
                     </Field>
 
                     {/* Toggles */}

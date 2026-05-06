@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     return new Response("Webhook Error", { status: 400 })
   }
 
-  // ✅ จ่ายเงินสำเร็จ
+  // ✅ Payment successful
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session
 
@@ -28,11 +28,10 @@ export async function POST(req: Request) {
 
     if (!orderId || !productId) {
       console.error("Missing metadata in session:", session.id)
-      return new Response("Missing metadata", { status: 200 }) // Return 200 to stop Stripe retries
+      return new Response("Missing metadata", { status: 200 })
     }
 
     try {
-      // 🔥 หา key ที่ยังว่าง
       const key = await prisma.game_keys.findFirst({
         where: {
           product_id: productId,
@@ -43,7 +42,6 @@ export async function POST(req: Request) {
 
       if (!key) {
         console.error(`No available keys for product ${productId} variant ${variantId}`)
-        // ยังคงต้อง update order เป็น paid แต่อาจจะไม่มี key
         await prisma.orders.update({
           where: { id: orderId },
           data: {
@@ -54,7 +52,6 @@ export async function POST(req: Request) {
         return new Response("ok (no keys available)")
       }
 
-      // 🔥 assign key + update order
       await prisma.$transaction([
         prisma.game_keys.update({
           where: { id: key.id },
@@ -76,8 +73,20 @@ export async function POST(req: Request) {
       ])
     } catch (dbErr) {
       console.error("Database update error in webhook:", dbErr)
-      // We might want Stripe to retry if it's a transient DB error
       return new Response("DB Error", { status: 500 })
+    }
+  }
+
+  // ❌ Payment expired or cancelled
+  if (event.type === "checkout.session.expired") {
+    const session = event.data.object as Stripe.Checkout.Session
+    const orderId = session.metadata?.orderId
+
+    if (orderId) {
+      await prisma.orders.update({
+        where: { id: orderId },
+        data: { status: "expired" },
+      })
     }
   }
 

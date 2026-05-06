@@ -36,17 +36,30 @@ export async function POST(req: Request) {
             ? `${product.name_en} (${variant.label_en})`
             : product.name_en
 
-        const order = await prisma.orders.create({
-            data: {
+        // 🔍 Check if there is an existing pending order
+        let order = await prisma.orders.findFirst({
+            where: {
                 user_id: session.user.id,
                 product_id: product.id,
-                variant_id: variant?.id,
-                amount: finalPrice,
+                variant_id: variant?.id || null,
                 status: "pending",
             }
         })
 
-        // 🔥 ป้องกัน baseUrl ว่าง และต้องเป็น absolute URL
+        // If not, create a new one
+        if (!order) {
+            order = await prisma.orders.create({
+                data: {
+                    user_id: session.user.id,
+                    product_id: product.id,
+                    variant_id: variant?.id,
+                    amount: finalPrice,
+                    status: "pending",
+                }
+            })
+        }
+
+        // 🔥 Prevent baseUrl from being empty and ensure it is an absolute URL
         const protocol = req.headers.get("x-forwarded-proto") || "http"
         const host = req.headers.get("host")
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`
@@ -54,6 +67,7 @@ export async function POST(req: Request) {
         const stripeSession = await stripe.checkout.sessions.create({
             mode: "payment",
             payment_method_types: ["card"],
+            expires_at: Math.floor(Date.now() / 1000) + (30 * 60), // 30 mins from now
 
             line_items: [
                 {
