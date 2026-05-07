@@ -32,11 +32,15 @@ export async function POST(req: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session
+    const paymentIntent = await stripe.paymentIntents.retrieve(
+      session.payment_intent as string
+    )
+    const actualMethod = paymentIntent.payment_method_types?.[0] ?? "card"
 
     console.log("Session metadata:", session.metadata)
     console.log("Payment status:", session.payment_status)
 
-    const orderId   = session.metadata?.orderId
+    const orderId = session.metadata?.orderId
     const productId = session.metadata?.productId
     const variantId = session.metadata?.variantId || null
 
@@ -71,7 +75,7 @@ export async function POST(req: NextRequest) {
         where: {
           product_id: productId,
           variant_id: variantId || null,
-          status:     "available",
+          status: "available",
         },
       })
 
@@ -81,7 +85,7 @@ export async function POST(req: NextRequest) {
         await prisma.orders.update({
           where: { id: orderId },
           data: {
-            status:  "paid",
+            status: "paid",
             paid_at: new Date(),
           },
         })
@@ -92,17 +96,33 @@ export async function POST(req: NextRequest) {
         prisma.game_keys.update({
           where: { id: key.id },
           data: {
-            status:      "assigned",
-            order_id:    orderId,
+            status: "assigned",
+            order_id: orderId,
             assigned_at: new Date(),
           },
         }),
         prisma.orders.update({
           where: { id: orderId },
           data: {
-            status:       "paid",
-            paid_at:      new Date(),
+            status: "paid",
+            paid_at: new Date(),
             fulfilled_at: new Date(),
+          },
+        }),
+      ])
+
+      await prisma.$transaction([
+        prisma.game_keys.update({
+          where: { id: key.id },
+          data: { status: "assigned", order_id: orderId, assigned_at: new Date() },
+        }),
+        prisma.orders.update({
+          where: { id: orderId },
+          data: {
+            status: "paid",
+            paid_at: new Date(),
+            fulfilled_at: new Date(),
+            payment_method: actualMethod,
           },
         }),
       ])

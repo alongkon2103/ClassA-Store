@@ -4,11 +4,10 @@ import { useMemo, useState } from "react"
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, PieChart, Pie, Cell, Legend,
+  CartesianGrid, PieChart, Pie, Cell,
 } from "recharts"
 import { format, parseISO, eachDayOfInterval, subDays } from "date-fns"
 
-// ── helpers ──────────────────────────────────────────
 function fmt(n: number) {
   return `฿${Number(n ?? 0).toLocaleString()}`
 }
@@ -17,7 +16,7 @@ function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-bg-card border border-accent/20 rounded-xl px-4 py-2.5 text-[13px] space-y-1">
-      <p className="text-text-muted">{label}</p>
+      <p className="text-text-muted text-[11px]">{label}</p>
       {payload.map((p: any) => (
         <p key={p.name} style={{ color: p.color }} className="font-semibold">
           {p.name === "total" || p.name === "revenue" ? fmt(p.value) : p.value}
@@ -27,35 +26,58 @@ function ChartTooltip({ active, payload, label }: any) {
   )
 }
 
-function StatCard({ label, value, sub, color = "text-text-base" }: any) {
+function StatCard({ label, value, sub, color = "text-text-base", trend }: any) {
   return (
     <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
       <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{label}</p>
-      <p className={`text-[26px] font-bold leading-none ${color}`}>{value}</p>
-      {sub && <p className="text-[12px] text-text-muted mt-1.5">{sub}</p>}
+      <p className={`text-[24px] font-bold leading-none ${color}`}>{value}</p>
+      {sub && <p className="text-[11px] text-text-muted mt-1.5">{sub}</p>}
+    </div>
+  )
+}
+
+function SectionTitle({ title, sub }: { title: string; sub?: string }) {
+  return (
+    <div className="px-5 py-4 border-b border-white/5">
+      <p className="text-[13px] font-semibold">{title}</p>
+      {sub && <p className="text-[11px] text-text-muted mt-0.5">{sub}</p>}
     </div>
   )
 }
 
 const COLORS = ["#427ab5", "#5b93cc", "#3ecf8e", "#f0c060", "#e0904a", "#a78bfa"]
 
-// ── main ─────────────────────────────────────────────
+const statusColors: Record<string, string> = {
+  paid:      "#3ecf8e",
+  pending:   "#f0c060",
+  expired:   "#e0904a",
+  cancelled: "#f87171",
+}
+
+const methodColors: Record<string, string> = {
+  stripe:    "#6772e5",
+  promptpay: "#1ba7e1",
+  card:      "#6772e5",
+}
+
 export default function AnalyticsClient({ data }: { data: any }) {
   const [revenueView, setRevenueView] = useState<"30d" | "6m">("30d")
 
-  // เติมวันที่ขาดให้ครบ 30 วัน
   const daily30 = useMemo(() => {
     const days = eachDayOfInterval({ start: subDays(new Date(), 29), end: new Date() })
     return days.map((d) => {
-      const key = format(d, "yyyy-MM-dd")
+      const key   = format(d, "yyyy-MM-dd")
       const found = data.dailyRevenue30.find((r: any) =>
         format(parseISO(r.day), "yyyy-MM-dd") === key
       )
-      return { day: format(d, "dd MMM"), total: found?.total ?? 0, count: found?.count ?? 0 }
+      return {
+        day:   format(d, "dd MMM"),
+        total: found?.total ?? 0,
+        count: found?.count ?? 0,
+      }
     })
   }, [data.dailyRevenue30])
 
-  // เติมเดือนที่ขาดให้ครบ 6 เดือน
   const monthly6 = useMemo(() => {
     return data.monthlyRevenue.map((m: any) => ({
       month: format(parseISO(m.month), "MMM yyyy"),
@@ -65,34 +87,37 @@ export default function AnalyticsClient({ data }: { data: any }) {
   }, [data.monthlyRevenue])
 
   const chartData = revenueView === "30d" ? daily30 : monthly6
-  const xKey = revenueView === "30d" ? "day" : "month"
+  const xKey      = revenueView === "30d" ? "day" : "month"
 
-  const statusColors: Record<string, string> = {
-    paid: "#3ecf8e",
-    pending: "#f0c060",
-    expired: "#e0904a",
-    cancelled: "#f87171",
-  }
+  const totalPaid    = data.ordersByStatus?.find((s: any) => s.status === "paid")?.count ?? 0
+  const totalPending = data.ordersByStatus?.find((s: any) => s.status === "pending")?.count ?? 0
+  const totalExpired = data.ordersByStatus?.find((s: any) => s.status === "expired")?.count ?? 0
+  const conversionRate = data.totalStats?.total_orders
+    ? ((totalPaid / data.totalStats.total_orders) * 100).toFixed(1)
+    : "0"
+
+  const stripeRevenue    = data.ordersByPayment?.find((p: any) => p.payment_method === "stripe")?.total ?? 0
+  const promptpayRevenue = data.ordersByPayment?.find((p: any) => p.payment_method === "promptpay")?.total ?? 0
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-[24px] font-bold">Analytics</h1>
-        <p className="text-text-muted text-[13px] mt-0.5">Sales performance & insights</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-[24px] font-bold">Analytics</h1>
+          <p className="text-text-muted text-[13px] mt-0.5">
+            {format(new Date(), "EEEE, d MMMM yyyy")}
+          </p>
+        </div>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── Row 1: Core Stats ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           label="Total Revenue"
           value={fmt(data.totalStats?.total_revenue)}
+          sub={`${data.totalStats?.total_orders ?? 0} orders total`}
           color="text-accent-light"
-        />
-        <StatCard
-          label="Total Orders"
-          value={Number(data.totalStats?.total_orders ?? 0).toLocaleString()}
-          color="text-text-base"
         />
         <StatCard
           label="Avg. Order Value"
@@ -104,10 +129,17 @@ export default function AnalyticsClient({ data }: { data: any }) {
           value={Number(data.totalStats?.unique_customers ?? 0).toLocaleString()}
           color="text-green-400"
         />
+        <StatCard
+          label="Conversion Rate"
+          value={`${conversionRate}%`}
+          sub={`${totalPaid} paid / ${data.totalStats?.total_orders ?? 0} total`}
+          color="text-yellow-400"
+        />
       </div>
 
+      {/* ── Row 2: Net Revenue (Consignment) ── */}
       {data.netRevenue && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           <StatCard
             label="Gross Revenue"
             value={fmt(data.netRevenue.total_gross)}
@@ -123,15 +155,31 @@ export default function AnalyticsClient({ data }: { data: any }) {
           <StatCard
             label="Owner Payout Due"
             value={fmt(data.netRevenue.total_payout)}
-            sub="To pay consignment owners"
+            sub="Consignment owners"
             color="text-orange-400"
           />
         </div>
       )}
 
-      {/* Revenue Chart */}
-      <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-5">
+      {/* ── Row 3: Order Status Summary ── */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-bg-card border border-green-500/20 rounded-2xl p-4 text-center">
+          <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">Paid</p>
+          <p className="text-[28px] font-bold text-green-400">{totalPaid}</p>
+        </div>
+        <div className="bg-bg-card border border-orange-500/20 rounded-2xl p-4 text-center">
+          <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">Pending</p>
+          <p className="text-[28px] font-bold text-orange-400">{totalPending}</p>
+        </div>
+        <div className="bg-bg-card border border-red-500/20 rounded-2xl p-4 text-center">
+          <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">Expired</p>
+          <p className="text-[28px] font-bold text-red-400">{totalExpired}</p>
+        </div>
+      </div>
+
+      {/* ── Row 4: Revenue Chart ── */}
+      <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
           <div>
             <p className="text-[13px] font-semibold">Revenue Over Time</p>
             <p className="text-[11px] text-text-muted mt-0.5">Paid orders only</p>
@@ -139,155 +187,200 @@ export default function AnalyticsClient({ data }: { data: any }) {
           <div className="flex gap-1 bg-bg-base border border-accent/10 rounded-xl p-1">
             {(["30d", "6m"] as const).map((v) => (
               <button key={v} onClick={() => setRevenueView(v)}
-                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition ${revenueView === v ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
-                  }`}>
+                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition ${
+                  revenueView === v ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
+                }`}>
                 {v === "30d" ? "30 Days" : "6 Months"}
               </button>
             ))}
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={220}>
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#427ab5" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#427ab5" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.05)" />
-            <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: "#7a9bb8" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: "#7a9bb8" }} axisLine={false} tickLine={false}
-              tickFormatter={(v) => `฿${(v / 1000).toFixed(0)}k`} />
-            <Tooltip content={<ChartTooltip />} />
-            <Area type="monotone" dataKey="total" name="total" stroke="#427ab5" strokeWidth={2} fill="url(#grad)" />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div className="p-5">
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#427ab5" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#427ab5" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.05)" />
+              <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: "#7a9bb8" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "#7a9bb8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v) => `฿${(v / 1000).toFixed(0)}k`} />
+              <Tooltip content={<ChartTooltip />} />
+              <Area type="monotone" dataKey="total" name="total" stroke="#427ab5" strokeWidth={2} fill="url(#grad)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
-      {/* Top Products + Order Status */}
+      {/* ── Row 5: Payment Methods ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Payment Method Cards */}
+        <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+          <SectionTitle title="Payment Methods" sub="Revenue by channel" />
+          <div className="p-5 space-y-4">
+            {/* Stripe */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[13px]">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#6772e5]" />
+                  <span className="font-medium">Card (Stripe)</span>
+                </div>
+                <span className="font-semibold text-accent-light">{fmt(stripeRevenue)}</span>
+              </div>
+              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-[#6772e5]"
+                  style={{ width: `${stripeRevenue + promptpayRevenue ? (stripeRevenue / (stripeRevenue + promptpayRevenue)) * 100 : 0}%` }} />
+              </div>
+              <p className="text-[11px] text-text-muted">
+                {data.ordersByPayment?.find((p: any) => p.payment_method === "stripe")?.count ?? 0} orders
+              </p>
+            </div>
+
+            {/* PromptPay */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[13px]">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#1ba7e1]" />
+                  <span className="font-medium">PromptPay</span>
+                </div>
+                <span className="font-semibold text-accent-light">{fmt(promptpayRevenue)}</span>
+              </div>
+              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-[#1ba7e1]"
+                  style={{ width: `${stripeRevenue + promptpayRevenue ? (promptpayRevenue / (stripeRevenue + promptpayRevenue)) * 100 : 0}%` }} />
+              </div>
+              <p className="text-[11px] text-text-muted">
+                {data.ordersByPayment?.find((p: any) => p.payment_method === "promptpay")?.count ?? 0} orders
+              </p>
+            </div>
+
+            <div className="h-px bg-white/5" />
+
+            {/* Pie */}
+            <ResponsiveContainer width="100%" height={140}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: "Card", value: stripeRevenue },
+                    { name: "PromptPay", value: promptpayRevenue },
+                  ]}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%" cy="50%"
+                  innerRadius={35} outerRadius={55}
+                  paddingAngle={4}
+                >
+                  <Cell fill="#6772e5" />
+                  <Cell fill="#1ba7e1" />
+                </Pie>
+                <Tooltip formatter={(v: any) => fmt(v)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
         {/* Top Products */}
-        <div className="lg:col-span-2 bg-bg-card border border-accent/10 rounded-2xl p-5">
-          <p className="text-[13px] font-semibold mb-1">Top Products by Revenue</p>
-          <p className="text-[11px] text-text-muted mb-5">All time</p>
-          <div className="space-y-3">
+        <div className="lg:col-span-2 bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+          <SectionTitle title="Top Products by Revenue" sub="All time" />
+          <div className="p-5 space-y-3">
             {data.topProducts.map((p: any, i: number) => {
               const maxTotal = data.topProducts[0]?.total ?? 1
               const pct = (p.total / maxTotal) * 100
               return (
                 <div key={p.product_id}>
                   <div className="flex items-center justify-between text-[13px] mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-text-muted w-4">{i + 1}</span>
-                      <span className="font-medium line-clamp-1">{p.name_en}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[11px] text-text-muted w-4 flex-shrink-0">{i + 1}</span>
+                      <span className="font-medium truncate">{p.name_en}</span>
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className="text-[12px] text-text-muted">{p.count} orders</span>
+                    <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                      <span className="text-[11px] text-text-muted">{p.count} orders</span>
                       <span className="font-semibold text-accent-light">{fmt(p.total)}</span>
                     </div>
                   </div>
                   <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
+                    <div className="h-full rounded-full transition-all"
                       style={{
                         width: `${pct}%`,
                         background: `hsl(${210 + i * 15}, 60%, ${55 - i * 3}%)`,
-                      }}
-                    />
+                      }} />
                   </div>
                 </div>
               )
             })}
           </div>
         </div>
-
-        {/* Order Status Pie */}
-        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
-          <p className="text-[13px] font-semibold mb-1">Order Status</p>
-          <p className="text-[11px] text-text-muted mb-4">All orders</p>
-          <ResponsiveContainer width="100%" height={180}>
-            <PieChart>
-              <Pie
-                data={data.ordersByStatus}
-                dataKey="count"
-                nameKey="status"
-                cx="50%"
-                cy="50%"
-                innerRadius={45}
-                outerRadius={70}
-                paddingAngle={3}
-              >
-                {data.ordersByStatus.map((entry: any) => (
-                  <Cell key={entry.status} fill={statusColors[entry.status] ?? "#7a9bb8"} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(v: any, name: any) => [v, name]} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-1.5 mt-2">
-            {data.ordersByStatus.map((s: any) => (
-              <div key={s.status} className="flex items-center justify-between text-[12px]">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full" style={{ background: statusColors[s.status] ?? "#7a9bb8" }} />
-                  <span className="text-text-muted capitalize">{s.status}</span>
-                </div>
-                <span className="font-medium">{s.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* Top Variants + Payment Methods */}
+      {/* ── Row 6: Variants + Order Status ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-        {/* Top Variants Bar */}
-        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
-          <p className="text-[13px] font-semibold mb-1">Top Variants</p>
-          <p className="text-[11px] text-text-muted mb-5">By number of orders</p>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={data.topVariants} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.05)" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 11, fill: "#7a9bb8" }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="label_en" tick={{ fontSize: 11, fill: "#7a9bb8" }} axisLine={false} tickLine={false} width={70} />
-              <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="count" fill="#427ab5" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        {/* Top Variants */}
+        <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+          <SectionTitle title="Top Variants" sub="By number of orders" />
+          <div className="p-5">
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={data.topVariants} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.05)" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 11, fill: "#7a9bb8" }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="label_en" tick={{ fontSize: 11, fill: "#7a9bb8" }}
+                  axisLine={false} tickLine={false} width={70} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="count" fill="#427ab5" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        {/* Payment Methods */}
-        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
-          <p className="text-[13px] font-semibold mb-1">Payment Methods</p>
-          <p className="text-[11px] text-text-muted mb-5">Revenue by method</p>
-          <div className="space-y-3">
-            {data.ordersByPayment.map((p: any, i: number) => {
-              const maxTotal = Math.max(...data.ordersByPayment.map((x: any) => x.total))
-              const pct = maxTotal ? (p.total / maxTotal) * 100 : 0
-              return (
-                <div key={p.payment_method}>
-                  <div className="flex justify-between text-[13px] mb-1.5">
-                    <div className="flex items-center gap-2">
-                      {/* <span className="text-lg">{p.payment_method === "promptpay" ? "📱" : "💳"}</span> */}
-                      <span className="font-medium capitalize">{p.payment_method}</span>
-                      <span className="text-[11px] text-text-muted">{p.count} orders</span>
-                    </div>
-                    <span className="font-semibold text-accent-light">{fmt(p.total)}</span>
+        {/* Order Status Donut */}
+        <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+          <SectionTitle title="Order Status Distribution" sub="All time" />
+          <div className="p-5 flex gap-6 items-center">
+            <ResponsiveContainer width={160} height={160}>
+              <PieChart>
+                <Pie
+                  data={data.ordersByStatus}
+                  dataKey="count"
+                  nameKey="status"
+                  cx="50%" cy="50%"
+                  innerRadius={45} outerRadius={70}
+                  paddingAngle={3}
+                >
+                  {data.ordersByStatus.map((entry: any) => (
+                    <Cell key={entry.status} fill={statusColors[entry.status] ?? "#7a9bb8"} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v: any, name: any) => [v, name]} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex-1 space-y-2">
+              {data.ordersByStatus.map((s: any) => (
+                <div key={s.status} className="flex items-center justify-between text-[13px]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ background: statusColors[s.status] ?? "#7a9bb8" }} />
+                    <span className="text-text-muted capitalize">{s.status}</span>
                   </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: COLORS[i] }} />
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{s.count}</span>
+                    <span className="text-[11px] text-text-muted">
+                      ({data.totalStats?.total_orders
+                        ? ((s.count / data.totalStats.total_orders) * 100).toFixed(0)
+                        : 0}%)
+                    </span>
                   </div>
                 </div>
-              )
-            })}
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Recent Orders Table */}
+      {/* ── Row 7: Recent Orders Table ── */}
       <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
           <div>
             <p className="text-[13px] font-semibold">Recent Orders</p>
             <p className="text-[11px] text-text-muted">Latest {data.recentOrders.length} transactions</p>
@@ -324,20 +417,31 @@ export default function AnalyticsClient({ data }: { data: any }) {
                       <span>{o.users?.username ?? "—"}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-text-muted max-w-[140px] truncate">{o.products?.name_en ?? "—"}</td>
-                  <td className="px-4 py-3 text-text-muted">{o.product_variants?.label_en ?? "—"}</td>
-                  <td className="px-4 py-3 font-semibold text-accent-light">{fmt(o.amount)}</td>
+                  <td className="px-4 py-3 text-text-muted max-w-[130px] truncate">
+                    {o.products?.name_en ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 text-text-muted">
+                    {o.product_variants?.label_en ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-accent-light">
+                    {fmt(o.amount)}
+                  </td>
                   <td className="px-4 py-3">
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/10 text-accent-light capitalize">
-                      {o.payment_method ?? "stripe"}
+                    <span className="text-[11px] px-2 py-0.5 rounded-full font-medium capitalize"
+                      style={{
+                        background: `${methodColors[o.payment_method ?? "stripe"]}20`,
+                        color: methodColors[o.payment_method ?? "stripe"],
+                      }}>
+                      {o.payment_method === "promptpay" ? "PromptPay" : "Card"}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${o.status === "paid" ? "bg-green-500/15 text-green-400" :
-                        o.status === "pending" ? "bg-orange-500/15 text-orange-400" :
-                          o.status === "expired" ? "bg-red-500/15 text-red-400" :
-                            "bg-white/5 text-text-muted"
-                      }`}>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                      o.status === "paid"    ? "bg-green-500/15 text-green-400"   :
+                      o.status === "pending" ? "bg-orange-500/15 text-orange-400" :
+                      o.status === "expired" ? "bg-red-500/15 text-red-400"       :
+                      "bg-white/5 text-text-muted"
+                    }`}>
                       {o.status}
                     </span>
                   </td>

@@ -1,10 +1,11 @@
 import "../globals.css"
 import Providers from "@/components/home/Providers"
 import { Rajdhani, DM_Sans } from "next/font/google"
-import { NextIntlClientProvider } from 'next-intl'
-import { getMessages, setRequestLocale } from 'next-intl/server'
-import { routing } from '@/i18n/routing'
-import { notFound } from 'next/navigation'
+import { NextIntlClientProvider } from "next-intl"
+import { getMessages, setRequestLocale } from "next-intl/server"
+import { routing } from "@/i18n/routing"
+import { notFound } from "next/navigation"
+// ✅ ลบ import Script ออก
 
 const rajdhani = Rajdhani({
   subsets: ["latin"],
@@ -39,29 +40,14 @@ export default async function RootLayout({
   const messages = await getMessages()
 
   return (
-    <html lang={locale} className={`${rajdhani.variable} ${dmSans.variable}`} suppressHydrationWarning>
-      <head>
-        {/* ✅ ใช้ script ธรรมดา + dangerouslySetInnerHTML แทน next/script */}
-        <script
-          id="theme-initializer"
-          dangerouslySetInnerHTML={{
-            __html: `(function() {
-              try {
-                var theme = localStorage.getItem('theme');
-                var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
-                if (!theme && supportDarkMode) theme = 'dark';
-                if (!theme) theme = 'dark';
-                document.documentElement.setAttribute('data-theme', theme);
-              } catch (e) {}
-            })();`,
-          }}
-        />
-      </head>
-      <body>
+    <html
+      lang={locale}
+      className={`${rajdhani.variable} ${dmSans.variable}`}
+      suppressHydrationWarning
+    >
+      <body suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
-          <Providers>
-            {children}
-          </Providers>
+          <Providers>{children}</Providers>
         </NextIntlClientProvider>
       </body>
     </html>

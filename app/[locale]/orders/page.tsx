@@ -49,6 +49,7 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
     products: {
       ...order.products,
       price: Number(order.products.price),
+      commission_pct: Number(order.products.commission_pct ?? 0), 
       created_at: order.products.created_at?.toISOString() || null,
       updated_at: order.products.updated_at?.toISOString() || null,
       product_images: order.products.product_images.map(img => ({

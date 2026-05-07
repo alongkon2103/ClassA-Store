@@ -58,7 +58,7 @@ export default function Navbar() {
           href="/"
           className="font-display text-[20px] font-bold tracking-wide text-text-base no-underline"
         >
-          Class A <span className="text-accent-light">Store</span>
+          A Class <span className="text-accent-light">Store</span>
         </Link>
 
         {/* NAV LINKS — desktop */}

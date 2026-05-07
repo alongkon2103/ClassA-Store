@@ -16,7 +16,7 @@ type Props = {
 export default function ProductForm({ product, mode }: Props) {
     const router = useRouter()
     const [saving, setSaving] = useState(false)
-    const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys">("info")
+    const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys" | "consignment">("info")
 
     const [form, setForm] = useState({
         name_en: product?.name_en ?? "",
@@ -36,7 +36,6 @@ export default function ProductForm({ product, mode }: Props) {
 
     const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
 
-    // auto-generate slug from name_en
     const handleNameEn = (v: string) => {
         set("name_en", v)
         if (mode === "create") {
@@ -71,7 +70,7 @@ export default function ProductForm({ product, mode }: Props) {
         { key: "gifts", label: "Gifts", hidden: mode === "create" },
         { key: "presets", label: "Presets", hidden: mode === "create" },
         { key: "keys", label: "Game Keys", hidden: mode === "create" },
-
+        { key: "consignment", label: "Consignment", hidden: mode === "create" },
     ] as const
 
     return (
@@ -94,12 +93,12 @@ export default function ProductForm({ product, mode }: Props) {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 bg-bg-card border border-accent/10 rounded-xl p-1 w-fit">
+            <div className="flex gap-1 bg-bg-card border border-accent/10 rounded-xl p-1 w-fit flex-wrap">
                 {tabs.filter((t) => !t.hidden).map((t) => (
                     <button key={t.key} onClick={() => setActiveTab(t.key as any)}
                         className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${activeTab === t.key
-                            ? "bg-accent/20 text-accent-light"
-                            : "text-text-muted hover:text-text-base"
+                                ? "bg-accent/20 text-accent-light"
+                                : "text-text-muted hover:text-text-base"
                             }`}>
                         {t.label}
                     </button>
@@ -145,14 +144,13 @@ export default function ProductForm({ product, mode }: Props) {
                             { key: "is_active", label: "Active", desc: "Show in store" },
                             { key: "is_featured", label: "Featured", desc: "Show in homepage" },
                             { key: "isLower", label: "Low Stock Flag", desc: "Mark as low stock" },
-                            { key: "is_consignment", label: "Consignment", desc: "commission" },
                         ] as const).map(({ key, label, desc }) => (
                             <button key={key} onClick={() => set(key, !form[key])}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition ${form[key]
-                                    ? "border-accent/30 bg-accent/10 text-accent-light"
-                                    : "border-white/10 text-text-muted hover:border-white/20"
+                                        ? "border-accent/30 bg-accent/10 text-accent-light"
+                                        : "border-white/10 text-text-muted hover:border-white/20"
                                     }`}>
-                                <div className={`w-8 h-4 rounded-full transition-colors ${form[key] ? "bg-accent" : "bg-white/10"} relative`}>
+                                <div className={`w-8 h-4 rounded-full transition-colors relative ${form[key] ? "bg-accent" : "bg-white/10"}`}>
                                     <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${form[key] ? "left-4" : "left-0.5"}`} />
                                 </div>
                                 <div className="text-left">
@@ -162,50 +160,6 @@ export default function ProductForm({ product, mode }: Props) {
                             </button>
                         ))}
                     </div>
-                </div>
-            )}
-            {form.is_consignment && (
-                <div className="lg:col-span-2 grid grid-cols-2 gap-3 p-4 rounded-xl border border-accent/20 bg-accent/5">
-                    <p className="col-span-2 text-[13px] font-semibold text-accent-light">Consignment Info</p>
-
-                    <Field label="Owner Name">
-                        <input value={form.owner_name} onChange={(e) => set("owner_name", e.target.value)}
-                            placeholder="Store / Owner name" className={input} />
-                    </Field>
-
-                    <Field label="Owner Contact">
-                        <input value={form.owner_contact} onChange={(e) => set("owner_contact", e.target.value)}
-                            placeholder="Line / Discord / Email" className={input} />
-                    </Field>
-
-                    <Field label="Our Commission %" required>
-                        <div className="relative">
-                            <input type="number" min="0" max="100" step="0.5"
-                                value={form.commission_pct}
-                                onChange={(e) => set("commission_pct", Number(e.target.value))}
-                                className={input} placeholder="20" />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-[13px]">%</span>
-                        </div>
-                    </Field>
-
-                    {/* Revenue Preview */}
-                    {form.price && (
-                        <div className="flex flex-col justify-center bg-bg-base rounded-xl px-4 py-3 text-[12px] space-y-1.5">
-                            <div className="flex justify-between">
-                                <span className="text-text-muted">Sale Price</span>
-                                <span>฿{Number(form.price).toLocaleString()}</span>
-                            </div>
-                            <div className="h-px bg-white/5" />
-                            <div className="flex justify-between text-green-400">
-                                <span>We earn ({form.commission_pct}%)</span>
-                                <span>฿{(Number(form.price) * Number(form.commission_pct) / 100).toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between text-text-muted">
-                                <span>Owner payout</span>
-                                <span>฿{(Number(form.price) * (100 - Number(form.commission_pct)) / 100).toLocaleString()}</span>
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
 
@@ -223,6 +177,83 @@ export default function ProductForm({ product, mode }: Props) {
 
             {/* Tab: Keys */}
             {activeTab === "keys" && <KeysPanel productId={product.id} variants={product.product_variants} />}
+
+            {/* Tab: Consignment */}
+            {/* Tab: Consignment */}
+            {activeTab === "consignment" && (
+                <div className="space-y-5">
+                    {/* Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-bg-card border border-accent/10 rounded-2xl">
+                        <div>
+                            <p className="text-[14px] font-semibold">Consignment Product</p>
+                            <p className="text-[12px] text-text-muted mt-0.5">
+                                Enable if this product is sold on behalf of another owner
+                            </p>
+                        </div>
+                        <button onClick={() => set("is_consignment", !form.is_consignment)}
+                            className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${form.is_consignment ? "bg-accent" : "bg-white/10"
+                                }`}>
+                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${form.is_consignment ? "left-7" : "left-1"
+                                }`} />
+                        </button>
+                    </div>
+
+                    {form.is_consignment && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <Field label="Owner Name">
+                                <input value={form.owner_name}
+                                    onChange={(e) => set("owner_name", e.target.value)}
+                                    placeholder="Store / Owner name" className={input} />
+                            </Field>
+
+                            <Field label="Owner Contact">
+                                <input value={form.owner_contact}
+                                    onChange={(e) => set("owner_contact", e.target.value)}
+                                    placeholder="Line / Discord / Email" className={input} />
+                            </Field>
+
+                            <Field label="Our Commission %" required>
+                                <div className="relative">
+                                    <input type="number" min="0" max="100" step="0.5"
+                                        value={form.commission_pct}
+                                        onChange={(e) => set("commission_pct", Number(e.target.value))}
+                                        className={input} placeholder="20" />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-[13px]">%</span>
+                                </div>
+                            </Field>
+
+                            {form.price && (
+                                <div className="flex flex-col justify-center bg-bg-base border border-accent/10 rounded-xl px-4 py-4 text-[13px] space-y-2">
+                                    <p className="text-[11px] tracking-widest text-text-muted uppercase font-medium">Revenue Preview</p>
+                                    <div className="flex justify-between">
+                                        <span className="text-text-muted">Sale Price</span>
+                                        <span className="font-medium">฿{Number(form.price).toLocaleString()}</span>
+                                    </div>
+                                    <div className="h-px bg-white/5" />
+                                    <div className="flex justify-between text-green-400">
+                                        <span>We earn ({form.commission_pct}%)</span>
+                                        <span className="font-semibold">
+                                            ฿{(Number(form.price) * Number(form.commission_pct) / 100).toLocaleString()}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between text-text-muted">
+                                        <span>Owner payout</span>
+                                        <span>
+                                            ฿{(Number(form.price) * (100 - Number(form.commission_pct)) / 100).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {!form.is_consignment && (
+                        <div className="text-center py-12 text-text-muted text-[13px] bg-bg-card border border-accent/10 rounded-2xl">
+                            Enable consignment mode to configure owner and commission settings.
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     )
 }

@@ -47,7 +47,7 @@ export default function ProductModal({ product, onClose }: any) {
   const [index, setIndex] = useState(0)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<"promptpay" | "stripe">("promptpay")
+  // const [paymentMethod, setPaymentMethod] = useState<"promptpay" | "stripe">("promptpay")
   const [selectedVariant, setSelectedVariant] = useState<any>(
     product.product_variants?.[0] || null
   )
@@ -98,32 +98,20 @@ export default function ProductModal({ product, onClose }: any) {
 
     setLoading(true)
     try {
-      if (paymentMethod === "promptpay") {
-        const res = await fetch("/api/orders/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            product_id: product.id,
-            variant_id: selectedVariant?.id,
-          }),
-        })
-        const data = await res.json()
-        if (!res.ok) { alert(data.error); setLoading(false); return }
-        router.push(`/checkout/${data.orderId}`)
-      } else {
-        const res = await fetch("/api/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            productId: product.id,
-            variantId: selectedVariant?.id,
-            locale: locale,
-          }),
-        })
-        const data = await res.json()
-        if (!res.ok) { alert(data.error); setLoading(false); return }
-        if (data.url) window.location.href = data.url
-      }
+      // ✅ ทั้ง promptpay และ card ไปที่ /api/checkout เหมือนกัน
+      // Stripe จะแสดง QR หรือ card form ให้เลือกเองในหน้า Stripe
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: product.id,
+          variantId: selectedVariant?.id,
+          locale,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error); setLoading(false); return }
+      if (data.url) window.location.href = data.url
     } catch (err) {
       console.error(err)
       alert("An error occurred")
@@ -186,9 +174,8 @@ export default function ProductModal({ product, onClose }: any) {
             <div className="flex gap-2 px-4 py-3 bg-bg-base border-b border-white/5 overflow-x-auto scrollbar-none">
               {images.map((img: any, i: number) => (
                 <button key={i} onClick={() => setIndex(i)}
-                  className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${
-                    i === index ? "ring-2 ring-accent opacity-100" : "opacity-40 hover:opacity-70"
-                  }`}>
+                  className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${i === index ? "ring-2 ring-accent opacity-100" : "opacity-40 hover:opacity-70"
+                    }`}>
                   <img src={img.url} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
@@ -200,11 +187,10 @@ export default function ProductModal({ product, onClose }: any) {
             {/* Title + total stock */}
             <div className="flex items-start justify-between gap-3">
               <h2 className="text-[20px] font-bold leading-tight">{productName}</h2>
-              <span className={`text-[11px] px-2 py-1 rounded-full font-medium whitespace-nowrap ${
-                totalStock === 0 ? "bg-red-500/15 text-red-400"
-                : totalStock <= 5 ? "bg-orange-500/15 text-orange-400"
-                : "bg-green-500/15 text-green-400"
-              }`}>
+              <span className={`text-[11px] px-2 py-1 rounded-full font-medium whitespace-nowrap ${totalStock === 0 ? "bg-red-500/15 text-red-400"
+                  : totalStock <= 5 ? "bg-orange-500/15 text-orange-400"
+                    : "bg-green-500/15 text-green-400"
+                }`}>
                 {totalStock === 0 ? t("out_of_stock") : `${totalStock} ${t("left")}`}
               </span>
             </div>
@@ -225,20 +211,18 @@ export default function ProductModal({ product, onClose }: any) {
                     return (
                       <button key={v.id} onClick={() => !outOfStock && setSelectedVariant(v)}
                         disabled={outOfStock}
-                        className={`p-3 rounded-xl border text-left transition relative ${
-                          outOfStock ? "opacity-40 cursor-not-allowed border-white/5"
-                          : active ? "border-accent bg-accent/10"
-                          : "border-white/10 hover:border-accent/40"
-                        }`}
+                        className={`p-3 rounded-xl border text-left transition relative ${outOfStock ? "opacity-40 cursor-not-allowed border-white/5"
+                            : active ? "border-accent bg-accent/10"
+                              : "border-white/10 hover:border-accent/40"
+                          }`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="text-[13px] font-medium">{variantLabel}</p>
-                            <p className={`text-[10px] mt-0.5 ${
-                              outOfStock ? "text-red-400"
-                              : (v.stock ?? 0) <= 5 ? "text-orange-400"
-                              : "text-green-400"
-                            }`}>
+                            <p className={`text-[10px] mt-0.5 ${outOfStock ? "text-red-400"
+                                : (v.stock ?? 0) <= 5 ? "text-orange-400"
+                                  : "text-green-400"
+                              }`}>
                               {outOfStock ? t("sold_out") : `${v.stock} ${t("available")}`}
                             </p>
                           </div>
@@ -254,46 +238,7 @@ export default function ProductModal({ product, onClose }: any) {
             )}
 
             {/* PAYMENT METHOD */}
-            <div className="space-y-2">
-              <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("payment_method")}</p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setPaymentMethod("promptpay")}
-                  className={`flex items-center gap-3 p-3 rounded-xl border text-left transition ${
-                    paymentMethod === "promptpay"
-                      ? "border-accent bg-accent/10"
-                      : "border-white/10 hover:border-accent/30"
-                  }`}
-                >
-                  {/* <span className="text-xl">📱</span> */}
-                  <div>
-                    <p className="text-[13px] font-medium">{t("promptpay_label")}</p>
-                    <p className="text-[10px] text-text-muted">{t("promptpay_desc")}</p>
-                  </div>
-                  {paymentMethod === "promptpay" && (
-                    <span className="ml-auto w-2 h-2 rounded-full bg-accent-light" />
-                  )}
-                </button>
-
-                <button
-                  onClick={() => setPaymentMethod("stripe")}
-                  className={`flex items-center gap-3 p-3 rounded-xl border text-left transition ${
-                    paymentMethod === "stripe"
-                      ? "border-accent bg-accent/10"
-                      : "border-white/10 hover:border-accent/30"
-                  }`}
-                >
-                  {/* <span className="text-xl">💳</span> */}
-                  <div>
-                    <p className="text-[13px] font-medium">{t("stripe_label")}</p>
-                    <p className="text-[10px] text-text-muted">{t("stripe_desc")}</p>
-                  </div>
-                  {paymentMethod === "stripe" && (
-                    <span className="ml-auto w-2 h-2 rounded-full bg-accent-light" />
-                  )}
-                </button>
-              </div>
-            </div>
+           
 
             {/* PRICE + BUY */}
             <div className="flex items-center gap-3 pt-4 border-t border-white/10">
@@ -310,11 +255,10 @@ export default function ProductModal({ product, onClose }: any) {
               <button
                 disabled={isOutOfStock || loading}
                 onClick={handleBuyClick}
-                className={`flex-1 py-3.5 rounded-xl font-semibold text-[15px] transition flex items-center justify-center gap-2 ${
-                  isOutOfStock || loading
+                className={`flex-1 py-3.5 rounded-xl font-semibold text-[15px] transition flex items-center justify-center gap-2 ${isOutOfStock || loading
                     ? "bg-white/5 text-text-muted cursor-not-allowed"
                     : "bg-accent text-white hover:opacity-90 active:scale-95"
-                }`}
+                  }`}
               >
                 {loading ? (
                   <>
