@@ -104,6 +104,7 @@ export const authOptions: AuthOptions = {
             // Store provider every time login happens
             if (account) {
                 token.provider = account.provider  // "discord" | "google"
+                token.providerAccountId = account.providerAccountId
             }
             return token
         },
@@ -112,6 +113,7 @@ export const authOptions: AuthOptions = {
             session.user.id = token.id
             session.user.role = token.role
             session.user.provider = token.provider  // Export to session
+            session.user.providerAccountId = token.providerAccountId
             return session
         },
     },

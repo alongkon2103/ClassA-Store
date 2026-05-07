@@ -25,13 +25,19 @@ export default function ProductForm({ product, mode }: Props) {
         description_en: product?.description_en ?? "",
         description_th: product?.description_th ?? "",
         price: product?.price ?? "",
+
         is_active: product?.is_active ?? true,
         is_featured: product?.is_featured ?? false,
         isLower: product?.isLower ?? false,
+
         is_consignment: product?.is_consignment ?? false,
         commission_pct: product?.commission_pct ?? 0,
         owner_name: product?.owner_name ?? "",
         owner_contact: product?.owner_contact ?? "",
+
+        info_page_url: product?.info_page_url ?? "",
+        discord_role_id: product?.discord_role_id ?? "",
+        discord_guild_id: product?.discord_guild_id ?? "",
     })
 
     const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
@@ -97,8 +103,8 @@ export default function ProductForm({ product, mode }: Props) {
                 {tabs.filter((t) => !t.hidden).map((t) => (
                     <button key={t.key} onClick={() => setActiveTab(t.key as any)}
                         className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${activeTab === t.key
-                                ? "bg-accent/20 text-accent-light"
-                                : "text-text-muted hover:text-text-base"
+                            ? "bg-accent/20 text-accent-light"
+                            : "text-text-muted hover:text-text-base"
                             }`}>
                         {t.label}
                     </button>
@@ -128,6 +134,33 @@ export default function ProductForm({ product, mode }: Props) {
                             placeholder="550" className={input} />
                     </Field>
 
+                    <Field label="Info Page URL">
+                        <input
+                            value={form.info_page_url}
+                            onChange={(e) => set("info_page_url", e.target.value)}
+                            placeholder="https://roblox.com"
+                            className={input}
+                        />
+                    </Field>
+
+                    <Field label="Discord Role ID">
+                        <input
+                            value={form.discord_role_id}
+                            onChange={(e) => set("discord_role_id", e.target.value)}
+                            placeholder="1394838383838383"
+                            className={input}
+                        />
+                    </Field>
+
+                    <Field label="Discord Guild ID">
+                        <input
+                            value={form.discord_guild_id}
+                            onChange={(e) => set("discord_guild_id", e.target.value)}
+                            placeholder="1283838383838383"
+                            className={input}
+                        />
+                    </Field>
+
                     <Field label="Description (EN)" className="lg:col-span-2">
                         <textarea value={form.description_en} onChange={(e) => set("description_en", e.target.value)}
                             rows={3} placeholder="English description..." className={`${input} resize-none`} />
@@ -147,8 +180,8 @@ export default function ProductForm({ product, mode }: Props) {
                         ] as const).map(({ key, label, desc }) => (
                             <button key={key} onClick={() => set(key, !form[key])}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition ${form[key]
-                                        ? "border-accent/30 bg-accent/10 text-accent-light"
-                                        : "border-white/10 text-text-muted hover:border-white/20"
+                                    ? "border-accent/30 bg-accent/10 text-accent-light"
+                                    : "border-white/10 text-text-muted hover:border-white/20"
                                     }`}>
                                 <div className={`w-8 h-4 rounded-full transition-colors relative ${form[key] ? "bg-accent" : "bg-white/10"}`}>
                                     <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${form[key] ? "left-4" : "left-0.5"}`} />

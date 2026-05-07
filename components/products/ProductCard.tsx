@@ -60,9 +60,9 @@ export default function ProductCard({
               <div key={v.id} className="flex justify-between text-[12px]">
                 <span className="text-text-muted">
                   {locale === "th" ? v.label_th : v.label_en}
-                  <span className={`ml-1 text-[10px] ${v.stock > 0 ? "text-green-400" : "text-red-400"}`}>
+                  {/* <span className={`ml-1 text-[10px] ${v.stock > 0 ? "text-green-400" : "text-red-400"}`}>
                     ({v.stock ?? 0})
-                  </span>
+                  </span> */}
                 </span>
                 <span className="font-semibold text-accent-light">฿{v.price}</span>
               </div>
@@ -73,7 +73,7 @@ export default function ProductCard({
         )}
 
         <div className="h-px bg-accent/10 my-1" />
-
+{/* 
         <div className="flex justify-between items-center text-[11px]">
           <span className="text-text-muted">{t("stock")}</span>
           <span className={`font-medium ${
@@ -81,7 +81,7 @@ export default function ProductCard({
           }`}>
             {totalStock === 0 ? t("out_of_stock") : is_low ? t("low") : t("available")} ({totalStock})
           </span>
-        </div>
+        </div> */}
       </div>
     </div>
   )

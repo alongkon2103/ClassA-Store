@@ -13,7 +13,7 @@
     "signed_in_discord": "Signed in with Discord"
   },
   "Home": {
-    "hero_title": "Class A Store",
+    "hero_title": "A Class Store",
     "hero_subtitle": "Your trusted Interactive games store — instant delivery, every time.",
     "browse_shop": "Browse Shop",
     "Join_disocrd_Hero": "Join Discord",
@@ -30,7 +30,7 @@
     "feature_support": "24/7 support"
   },
   "Footer": {
-    "rights": "© 2026 Class A Store · Payments secured by Stripe & Omise"
+    "rights": "© 2026 A Class Store · Payments secured by Stripe & Omise"
   },
   "Shop": {
     "title": "All Interactive Games",
@@ -104,7 +104,7 @@
   "Login": {
     "title": "Login",
     "back_to_store": "Back to store",
-    "footer_rights": "© 2026 Class A-Store · Payments secured by Stripe",
+    "footer_rights": "© 2026 A Class Store · Payments secured by Stripe",
     "welcome": "Welcome to",
     "desc": "Sign in to access your orders, get support, and receive exclusive deals.",
     "continue_discord": "Continue with Discord",

@@ -80,7 +80,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                     <div className="lg:col-span-8 space-y-6 md:space-y-8">
 
                         {/* 🔑 THE KEY SECTION */}
-                        <div className="relative group">
+                        {/* <div className="relative group">
                             <div className="absolute -inset-0.5 bg-gradient-to-r from-accent to-accent-light opacity-10 rounded-2xl md:rounded-3xl blur transition duration-1000"></div>
                             <div className="relative bg-bg-card border border-accent/10 rounded-2xl md:rounded-3xl p-5 md:p-8 overflow-hidden">
                                 <h2 className="text-lg font-bold text-text-base mb-6 flex items-center gap-2">
@@ -105,6 +105,59 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                     <div className="py-10 text-center">
                                         <div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-4"></div>
                                         <p className="text-text-muted text-[14px]">{t("waiting_confirmation")}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div> */}
+
+                        <div className="relative group">
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-accent to-accent-light opacity-10 rounded-2xl md:rounded-3xl blur transition duration-1000"></div>
+
+                            <div className="relative bg-bg-card border border-accent/10 rounded-2xl md:rounded-3xl p-5 md:p-8 overflow-hidden">
+                                <h2 className="text-lg font-bold text-text-base mb-6 flex items-center gap-2">
+                                    <span className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-accent/20 flex items-center justify-center text-accent-light">
+                                        <ExternalIcon size={20} />
+                                    </span>
+
+                                    Access Information
+                                </h2>
+
+                                {order.status === "paid" ? (
+                                    <div className="space-y-5">
+                                        <div className="bg-bg-base/50 border border-accent/10 rounded-xl md:rounded-2xl p-5 md:p-6">
+                                            <p className="text-[16px] md:text-[18px] font-semibold text-text-base mb-2">
+                                                Whitelist Purchase Completed
+                                            </p>
+
+                                            <p className="text-[13px] text-text-muted leading-relaxed">
+                                                Your whitelist access has been successfully activated.
+                                                You can now join the server using the link below.
+                                            </p>
+                                        </div>
+
+                                        {order.products.info_page_url && (
+                                            <a
+                                                href={
+                                                    order.products.info_page_url.startsWith("http")
+                                                        ? order.products.info_page_url
+                                                        : `https://${order.products.info_page_url}`
+                                                }
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-light text-white font-semibold text-[14px] py-3 rounded-xl transition"
+                                            >
+                                                <ExternalIcon size={16} />
+                                                Map Information
+                                            </a>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="py-10 text-center">
+                                        <div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-4"></div>
+
+                                        <p className="text-text-muted text-[14px]">
+                                            Waiting for payment confirmation
+                                        </p>
                                     </div>
                                 )}
                             </div>

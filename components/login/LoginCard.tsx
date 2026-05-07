@@ -17,15 +17,15 @@ export default function LoginCard({ callbackUrl = "/" }: LoginCardProps) {
       {/* ── Title ── */}
       <div className="anim-title text-center mb-2">
         <h1 className="font-display font-bold text-[32px] leading-tight"
-            style={{ color: "var(--color-text-base)" }}>
+          style={{ color: "var(--color-text-base)" }}>
           {t("welcome")}<br />
-          <span style={{ color: "var(--color-accent-light)" }}>Class A Store</span>
+          <span style={{ color: "var(--color-accent-light)" }}>A Class Store</span>
         </h1>
       </div>
 
       {/* ── Desc ── */}
       <p className="anim-desc text-center text-[14px] leading-relaxed mb-8"
-         style={{ color: "var(--color-text-muted)" }}>
+        style={{ color: "var(--color-text-muted)" }}>
         {t("desc")}
       </p>
 
@@ -70,10 +70,10 @@ export default function LoginCard({ callbackUrl = "/" }: LoginCardProps) {
       {/* ── Feature Pills ── */}
       <div className="anim-pills flex flex-wrap gap-2 justify-center mb-8">
         {[
-          { label: t("order_history"),       color: "var(--color-accent-light)" },
+          { label: t("order_history"), color: "var(--color-accent-light)" },
           { label: t("instant_delivery"), color: "var(--color-accent-light)" },
-          { label: t("exclusive_deals"),      color: "var(--color-gold)" },
-          { label: t("support_247"),         color: "var(--color-accent-light)" },
+          { label: t("exclusive_deals"), color: "var(--color-gold)" },
+          { label: t("support_247"), color: "var(--color-accent-light)" },
         ].map(({ label, color }) => (
           <span
             key={label}
@@ -85,7 +85,7 @@ export default function LoginCard({ callbackUrl = "/" }: LoginCardProps) {
             }}
           >
             <span className="w-1.5 h-1.5 rounded-full inline-block shrink-0"
-                  style={{ background: color }} />
+              style={{ background: color }} />
             {label}
           </span>
         ))}
@@ -93,10 +93,26 @@ export default function LoginCard({ callbackUrl = "/" }: LoginCardProps) {
 
       {/* ── Footer note ── */}
       <p className="anim-footer text-center text-[11px]"
-         style={{ color: "var(--color-text-muted)", opacity: .7 }}>
+        style={{ color: "var(--color-text-muted)", opacity: .7 }}>
         {t.rich("agreement", {
-          terms: (chunks) => <Link href="/terms" style={{ color: "var(--color-accent-light)" }} className="hover:underline">{t("terms")}</Link>,
-          privacy: (chunks) => <Link href="/privacy" style={{ color: "var(--color-accent-light)" }} className="hover:underline">{t("privacy")}</Link>
+          terms: () => (
+            <Link
+              href="/terms"
+              className="hover:underline"
+              style={{ color: "var(--color-accent-light)" }}
+            >
+              {t("terms")}
+            </Link>
+          ),
+          privacy: () => (
+            <Link
+              href="/privacy"
+              className="hover:underline"
+              style={{ color: "var(--color-accent-light)" }}
+            >
+              {t("privacy")}
+            </Link>
+          )
         })}
       </p>
     </div>

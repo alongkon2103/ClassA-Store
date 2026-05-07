@@ -5,8 +5,6 @@ import { format } from "date-fns"
 import Image from "next/image"
 import { Link, useRouter } from "@/i18n/routing"
 import { motion, AnimatePresence } from "framer-motion"
-import CopyButton from "./CopyButton"
-
 import { useTranslations, useLocale } from "next-intl"
 
 interface OrderListClientProps {
@@ -23,25 +21,23 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
   const handlePay = async (e: React.MouseEvent, order: any) => {
     e.stopPropagation()
     setPayingId(order.id)
-
     try {
-      if (order.payment_method === "promptpay" || !order.payment_method) {
-        // PromptPay → Go to existing checkout page, no need to create new session
-        router.push(`/checkout/${order.id}`)
-      } else {
-        // Stripe → Create new session
-        const res = await fetch("/api/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            productId: order.product_id,
-            variantId: order.variant_id,
-          }),
-        })
-        if (!res.ok) throw new Error("Checkout failed")
-        const data = await res.json()
-        if (data.url) window.location.href = data.url
-      }
+      // ทุก pending order ไปที่ Stripe checkout ใหม่
+      // แต่ต้องมี whitelisted_username อยู่แล้วใน order
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: order.product_id,
+          variantId: order.variant_id,
+          paymentMethod: order.payment_method ?? "promptpay",
+          locale,
+          whitelistUsername: order.whitelisted_username ?? "",
+        }),
+      })
+      if (!res.ok) throw new Error("Checkout failed")
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
     } catch (err) {
       console.error(err)
       alert("Failed to resume payment")
@@ -55,36 +51,41 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
       <div className="space-y-2">
         {orders.map((order) => {
           const imageUrl = order.products.product_images[0]?.url || "/next.svg"
-          const isPaid    = order.status === "paid"
+          const isPaid = order.status === "paid"
           const isPending = order.status === "pending"
-          const isPaying  = payingId === order.id
+          const isPaying = payingId === order.id
 
           return (
             <div
               key={order.id}
               onClick={() => isPaid && setSelectedOrder(order)}
-              className={`group bg-bg-card border border-accent/10 rounded-xl p-2.5 md:p-4 transition-all duration-300 flex items-center gap-3 md:gap-4 ${
-                isPaid ? "cursor-pointer hover:border-accent/30 hover:shadow-xl hover:shadow-accent/5" : "cursor-default"
-              } ${!isPaid && !isPending ? "opacity-70" : ""}`}
+              className={`group bg-bg-card border border-accent/10 rounded-xl p-2.5 md:p-4 transition-all duration-300 flex items-center gap-3 md:gap-4 ${isPaid ? "cursor-pointer hover:border-accent/30 hover:shadow-xl hover:shadow-accent/5" : "cursor-default"
+                } ${!isPaid && !isPending ? "opacity-70" : ""}`}
             >
               <div className="w-10 h-10 md:w-16 md:h-16 relative rounded-lg overflow-hidden shrink-0 shadow-lg">
-                <Image src={imageUrl} alt={locale === 'th' ? order.products.name_th : order.products.name_en} fill className="object-cover" />
+                <Image
+                  src={imageUrl}
+                  alt={locale === "th" ? order.products.name_th : order.products.name_en}
+                  fill className="object-cover"
+                />
               </div>
 
               <div className="flex-1 min-w-0">
                 <h3 className="text-[13px] md:text-[15px] font-bold text-text-base group-hover:text-accent-light transition-colors truncate mb-0.5">
-                  {locale === 'th' ? order.products.name_th : order.products.name_en}
+                  {locale === "th" ? order.products.name_th : order.products.name_en}
                 </h3>
-                <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-[12px] text-text-muted">
-                  <span className="font-medium text-text-muted/80 truncate max-w-[70px] sm:max-w-none">
-                    {locale === 'th' ? (order.product_variants?.label_th || t("standard_version")) : (order.product_variants?.label_en || t("standard_version"))}
+                <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-[12px] text-text-muted flex-wrap">
+                  <span>
+                    {locale === "th"
+                      ? (order.product_variants?.label_th || t("standard_version"))
+                      : (order.product_variants?.label_en || t("standard_version"))}
                   </span>
                   <span>•</span>
                   <span>{order.created_at ? format(new Date(order.created_at), "dd MMM yy") : "—"}</span>
-                  {order.payment_method && (
+                  {order.whitelisted_username && (
                     <>
                       <span>•</span>
-                      <span className="capitalize">{order.payment_method === "promptpay" ? "PromptPay" : "Card"}</span>
+                      <span className="font-mono text-accent-light">{order.whitelisted_username}</span>
                     </>
                   )}
                 </div>
@@ -95,13 +96,12 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                   <p className="text-[13px] md:text-[15px] font-bold text-text-base mb-0.5">
                     ฿{Number(order.amount).toLocaleString()}
                   </p>
-                  <span className={`text-[7px] md:text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
-                    isPaid
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                      : order.status === "expired"
+                  <span className={`text-[7px] md:text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${isPaid
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                    : order.status === "expired"
                       ? "bg-red-500/10 text-red-400 border-red-500/20"
                       : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                  }`}>
+                    }`}>
                     {order.status}
                   </span>
                 </div>
@@ -112,9 +112,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                     disabled={isPaying}
                     className="text-[10px] md:text-[11px] font-bold bg-accent hover:bg-accent-light text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-2"
                   >
-                    {isPaying && (
-                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    )}
+                    {isPaying && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                     {isPaying ? t("wait") : t("pay_now")}
                   </button>
                 )}
@@ -155,31 +153,70 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                 </button>
                 <div className="relative z-10">
                   <h2 className="text-[17px] md:text-2xl font-display font-bold text-text-base leading-tight truncate max-w-[240px] md:max-w-none">
-                    {locale === 'th' ? selectedOrder.products.name_th : selectedOrder.products.name_en}
+                    {locale === "th" ? selectedOrder.products.name_th : selectedOrder.products.name_en}
                   </h2>
                   <p className="text-accent-light text-[11px] md:text-[14px] font-medium">
-                    {locale === 'th' ? (selectedOrder.product_variants?.label_th || t("standard_version")) : (selectedOrder.product_variants?.label_en || t("standard_version"))}
+                    {locale === "th"
+                      ? (selectedOrder.product_variants?.label_th || t("standard_version"))
+                      : (selectedOrder.product_variants?.label_en || t("standard_version"))}
                   </p>
                 </div>
               </div>
 
               {/* Modal Body */}
               <div className="p-4 md:p-8 space-y-4 md:space-y-6">
-                {/* Key Section */}
-                <div className="bg-bg-base/60 border border-accent/10 rounded-xl md:rounded-2xl p-3 md:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-5">
-                  <div className="w-9 h-9 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-accent/10 flex items-center justify-center text-accent-light shrink-0">
-                    <KeyIcon size={18} />
-                    <KeyIconDesktop mdSize={24} />
-                  </div>
-                  <div className="flex-1 min-w-0 w-full">
-                    <p className="text-[8px] md:text-[10px] text-text-muted uppercase tracking-widest mb-0.5 font-bold">{t("license_key")}</p>
-                    <p className="font-mono text-[13px] md:text-[18px] text-text-base font-bold tracking-wider truncate">
-                      {selectedOrder.game_keys?.key_value || t("provisioning")}
+
+                {/* ✅ Whitelist Status Section */}
+                <div className="bg-bg-base/60 border border-accent/10 rounded-xl md:rounded-2xl p-4 md:p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-text-muted uppercase tracking-widest font-bold">
+                      In-Game Username
                     </p>
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-2 h-2 rounded-full ${selectedOrder.whitelist_status === "whitelisted" ? "bg-green-400" :
+                        selectedOrder.whitelist_status === "removed" ? "bg-red-400" :
+                          "bg-orange-400 animate-pulse"
+                        }`} />
+                      <span className={`text-[11px] font-medium capitalize ${selectedOrder.whitelist_status === "whitelisted" ? "text-green-400" :
+                        selectedOrder.whitelist_status === "removed" ? "text-red-400" :
+                          "text-orange-400"
+                        }`}>
+                        {selectedOrder.whitelist_status === "whitelisted" ? "Whitelisted" :
+                          selectedOrder.whitelist_status === "removed" ? "Access Removed" :
+                            "Pending Whitelist"}
+                      </span>
+                    </div>
                   </div>
-                  <div className="w-full sm:w-auto">
-                    <CopyButton value={selectedOrder.game_keys?.key_value || ""} />
-                  </div>
+
+
+
+                  <p className="font-mono text-[16px] md:text-[20px] text-text-base font-bold">
+                    {selectedOrder.whitelisted_username ?? "—"}
+                  </p>
+
+                  {selectedOrder.whitelist_status === "pending" && (
+                    <div className="bg-orange-500/8 border border-orange-500/20 rounded-xl px-3 py-2.5">
+                      <p className="text-[12px] text-orange-400">
+                        Your username will be whitelisted within 24 hours after payment confirmation.
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedOrder.whitelist_status === "whitelisted" && (
+                    <div className="bg-green-500/8 border border-green-500/20 rounded-xl px-3 py-2.5">
+                      <p className="text-[12px] text-green-400">
+                        You have been whitelisted. You can now access the server.
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedOrder.whitelist_status === "removed" && (
+                    <div className="bg-red-500/8 border border-red-500/20 rounded-xl px-3 py-2.5">
+                      <p className="text-[12px] text-red-400">
+                        Your access has been removed. Please contact support.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Assets & Presets */}
@@ -207,7 +244,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                                 View
                               </a>
                               <a href={assetUrl} download={g.filename || `Asset_${idx + 1}.png`}
-                                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-accent hover:bg-accent-light text-white text-[10px] md:text-[11px] font-bold rounded-lg transition-all shadow-sm shadow-accent/20">
+                                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-accent hover:bg-accent-light text-white text-[10px] md:text-[11px] font-bold rounded-lg transition-all">
                                 <DownloadIcon size={12} />
                                 {t("download")}
                               </a>
@@ -231,7 +268,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                         const assetUrl = p.url.startsWith("http") ? p.url : p.url.startsWith("/") ? p.url : `/${p.url}`
                         return (
                           <a key={p.id} href={assetUrl} download={p.filename || `Preset_${idx + 1}`}
-                            className="flex items-center justify-center gap-2 bg-accent hover:bg-accent-light text-white p-2.5 rounded-lg md:rounded-xl transition-all shadow-sm shadow-accent/20">
+                            className="flex items-center justify-center gap-2 bg-accent hover:bg-accent-light text-white p-2.5 rounded-lg md:rounded-xl transition-all">
                             <DownloadIcon size={14} />
                             <span className="text-[11px] md:text-[12px] font-bold truncate">
                               {p.filename || `Preset_${idx + 1}`}
@@ -245,15 +282,34 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                     )}
                   </div>
                 </div>
+                {/* Server Information Link */}
+                {/* {selectedOrder.products.info_page_url && (
+                  <div className="bg-bg-base/60 border border-accent/10 rounded-xl md:rounded-2xl p-4 md:p-5 space-y-3">
+                    <p className="text-[10px] text-text-muted uppercase tracking-widest font-bold">
+                      Server Information
+                    </p>
 
+                    <a
+                      href={
+                        selectedOrder.products.info_page_url.startsWith("http")
+                          ? selectedOrder.products.info_page_url
+                          : `https://${selectedOrder.products.info_page_url}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-light text-white font-semibold text-[13px] py-3 rounded-xl transition"
+                    >
+                      <ExternalIcon size={16} />
+                      Open Server Information
+                    </a>
+                  </div>
+                )} */}
                 <div className="flex flex-col sm:flex-row justify-between items-center pt-3 border-t border-accent/10 gap-2">
                   <p className="text-[10px] text-text-muted">
                     ID: <span className="font-mono">{selectedOrder.id.slice(0, 8)}...</span>
                   </p>
-                  <Link
-                    href={`/orders/${selectedOrder.id}`}
-                    className="text-[11px] md:text-[12px] font-bold text-accent-light hover:underline"
-                  >
+                  <Link href={`/orders/${selectedOrder.id}`}
+                    className="text-[11px] md:text-[12px] font-bold text-accent-light hover:underline">
                     {t("view_full_details")}
                   </Link>
                 </div>
@@ -266,28 +322,12 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
   )
 }
 
-// ── Icons ─────────────────────────────────────────────────────────
+// ── Icons ──────────────────────────────────────────────────────────
 
 function CloseIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  )
-}
-
-function KeyIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg className="md:hidden" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-    </svg>
-  )
-}
-
-function KeyIconDesktop({ mdSize = 24 }: { mdSize?: number }) {
-  return (
-    <svg className="hidden md:block" width={mdSize} height={mdSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
     </svg>
   )
 }
@@ -303,7 +343,8 @@ function ImageIcon({ size = 20 }: { size?: number }) {
 function PresetIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" />
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+      <circle cx="12" cy="12" r="3" />
     </svg>
   )
 }
@@ -321,6 +362,24 @@ function EyeIcon({ size = 20 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
       <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+function ExternalIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
     </svg>
   )
 }
