@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
 import VariantManager from "./VariantManager"
 import ImageManager from "./ImageManager"
 import KeysPanel from "./KeysPanel"
@@ -28,6 +28,10 @@ export default function ProductForm({ product, mode }: Props) {
         is_active: product?.is_active ?? true,
         is_featured: product?.is_featured ?? false,
         isLower: product?.isLower ?? false,
+        is_consignment: product?.is_consignment ?? false,
+        commission_pct: product?.commission_pct ?? 0,
+        owner_name: product?.owner_name ?? "",
+        owner_contact: product?.owner_contact ?? "",
     })
 
     const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
@@ -67,6 +71,7 @@ export default function ProductForm({ product, mode }: Props) {
         { key: "gifts", label: "Gifts", hidden: mode === "create" },
         { key: "presets", label: "Presets", hidden: mode === "create" },
         { key: "keys", label: "Game Keys", hidden: mode === "create" },
+
     ] as const
 
     return (
@@ -140,6 +145,7 @@ export default function ProductForm({ product, mode }: Props) {
                             { key: "is_active", label: "Active", desc: "Show in store" },
                             { key: "is_featured", label: "Featured", desc: "Show in homepage" },
                             { key: "isLower", label: "Low Stock Flag", desc: "Mark as low stock" },
+                            { key: "is_consignment", label: "Consignment", desc: "commission" },
                         ] as const).map(({ key, label, desc }) => (
                             <button key={key} onClick={() => set(key, !form[key])}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition ${form[key]
@@ -158,6 +164,50 @@ export default function ProductForm({ product, mode }: Props) {
                     </div>
                 </div>
             )}
+            {form.is_consignment && (
+                <div className="lg:col-span-2 grid grid-cols-2 gap-3 p-4 rounded-xl border border-accent/20 bg-accent/5">
+                    <p className="col-span-2 text-[13px] font-semibold text-accent-light">Consignment Info</p>
+
+                    <Field label="Owner Name">
+                        <input value={form.owner_name} onChange={(e) => set("owner_name", e.target.value)}
+                            placeholder="Store / Owner name" className={input} />
+                    </Field>
+
+                    <Field label="Owner Contact">
+                        <input value={form.owner_contact} onChange={(e) => set("owner_contact", e.target.value)}
+                            placeholder="Line / Discord / Email" className={input} />
+                    </Field>
+
+                    <Field label="Our Commission %" required>
+                        <div className="relative">
+                            <input type="number" min="0" max="100" step="0.5"
+                                value={form.commission_pct}
+                                onChange={(e) => set("commission_pct", Number(e.target.value))}
+                                className={input} placeholder="20" />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-[13px]">%</span>
+                        </div>
+                    </Field>
+
+                    {/* Revenue Preview */}
+                    {form.price && (
+                        <div className="flex flex-col justify-center bg-bg-base rounded-xl px-4 py-3 text-[12px] space-y-1.5">
+                            <div className="flex justify-between">
+                                <span className="text-text-muted">Sale Price</span>
+                                <span>฿{Number(form.price).toLocaleString()}</span>
+                            </div>
+                            <div className="h-px bg-white/5" />
+                            <div className="flex justify-between text-green-400">
+                                <span>We earn ({form.commission_pct}%)</span>
+                                <span>฿{(Number(form.price) * Number(form.commission_pct) / 100).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-text-muted">
+                                <span>Owner payout</span>
+                                <span>฿{(Number(form.price) * (100 - Number(form.commission_pct)) / 100).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Tab: Variants */}
             {activeTab === "variants" && <VariantManager productId={product.id} variants={product.product_variants} />}
@@ -167,7 +217,7 @@ export default function ProductForm({ product, mode }: Props) {
 
             {/* Tab: Gifts */}
             {activeTab === "gifts" && <GiftManager productId={product.id} gifts={product.product_gifts ?? []} />}
-            
+
             {/* Tab: Presets */}
             {activeTab === "presets" && <PresetManager productId={product.id} presets={product.product_presets ?? []} />}
 

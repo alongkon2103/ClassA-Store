@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import ProductCard from "./ProductCard"
+import { useTranslations, useLocale } from "next-intl"
 
 type Props = {
   products: any[]
@@ -9,6 +10,9 @@ type Props = {
 }
 
 export default function BestSeller({ products, onSelect }: Props) {
+  const t = useTranslations("Home")
+  const locale = useLocale()
+
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -24,8 +28,6 @@ export default function BestSeller({ products, onSelect }: Props) {
     show: { opacity: 1, y: 0 }
   }
 
-
-
   return (
     <section className="bg-bg-surface px-6 sm:px-10 py-20">
       <div className="max-w-5xl mx-auto">
@@ -35,17 +37,17 @@ export default function BestSeller({ products, onSelect }: Props) {
           viewport={{ once: true }}
           className="text-[11px] tracking-widest text-accent-light uppercase font-medium mb-2"
         >
-          Top Sellers
+          {t("top_sellers")}
         </motion.p>
 
         <motion.h2
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="font-display font-bold mb-1"
+          className="font-display font-bold text-text-base mb-1"
           style={{ fontSize: "clamp(26px, 4vw, 38px)" }}
         >
-          Best Selling Keys
+          {t("best_selling_keys")}
         </motion.h2>
 
         <motion.p
@@ -55,7 +57,7 @@ export default function BestSeller({ products, onSelect }: Props) {
           transition={{ delay: 0.2 }}
           className="text-text-muted text-[13px] mb-8"
         >
-          Updated daily · Instant delivery guaranteed
+          {t("updated_daily")}
         </motion.p>
 
         <motion.div
@@ -69,19 +71,22 @@ export default function BestSeller({ products, onSelect }: Props) {
             products.map((product) => (
               <motion.div key={product.id} variants={item}>
                 <ProductCard
-                  name={product.name_en}
+                  name={locale === "th" ? product.name_th : product.name_en}
                   price={Number(product.price)}
                   image={product.product_images?.[0]?.url || "/placeholder.png"}
                   is_low={product.isLower ?? false}
                   badge={product.is_featured ? "Hot" : undefined}
-                  product_variants={product.product_variants}
+                  product_variants={product.product_variants.map((v: any) => ({
+                    ...v,
+                    label: locale === "th" ? v.label_th : v.label_en
+                  }))}
                   onClick={() => onSelect?.(product)}
                 />
               </motion.div>
             ))
           ) : (
             <div className="col-span-full text-center py-10 text-text-muted text-sm">
-              No featured products available
+              {t("no_featured")}
             </div>
           )}
         </motion.div>
@@ -97,7 +102,7 @@ export default function BestSeller({ products, onSelect }: Props) {
             href="/products"
             className="border border-accent/20 hover:border-accent-light text-text-muted hover:text-text-base text-[13px] px-6 py-2.5 rounded-lg transition-colors"
           >
-            View all products →
+            {t("view_all")}
           </a>
         </motion.div>
       </div>

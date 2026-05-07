@@ -49,14 +49,14 @@ export default function ProductCard({
 
       {/* Content */}
       <div className="p-3 space-y-2">
-        <p className="text-[13px] font-medium line-clamp-1">{name}</p>
+        <p className="text-[13px] font-medium text-text-base line-clamp-1">{name}</p>
 
         {/* Variants with stock for each item */}
         {product_variants && product_variants.length > 0 ? (
           <div className="space-y-1">
             {product_variants.slice(0, 3).map((v) => (
               <div key={v.id} className="flex justify-between text-[12px]">
-                <span className="text-muted-foreground">
+                <span className="text-text-muted">
                   {v.label_en}
                   <span className={`ml-1 text-[10px] ${v.stock > 0 ? "text-green-400" : "text-red-400"}`}>
                     ({v.stock})
@@ -70,11 +70,11 @@ export default function ProductCard({
           <div className="text-[16px] font-bold text-accent-light">฿{price}</div>
         )}
 
-        <div className="h-px bg-white/5" />
+        <div className="h-px bg-accent/10" />
 
         {/* Footer — total stock */}
         <div className="flex justify-between items-center text-[11px]">
-          <span className="text-muted-foreground">Stock</span>
+          <span className="text-text-muted">Stock</span>
           <span className={`font-medium ${is_low ? "text-orange-400" : totalStock > 0 ? "text-green-400" : "text-red-400"}`}>
             {is_low ? "Low" : totalStock > 0 ? "Available" : "Out of stock"} ({totalStock})
           </span>

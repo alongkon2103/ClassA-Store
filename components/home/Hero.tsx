@@ -1,8 +1,11 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { useTranslations } from "next-intl"
 
 export default function Hero() {
+    const t = useTranslations("Home")
+
     return (
         <section
             className="relative min-h-[72vh] flex flex-col items-center justify-center text-center px-6 sm:px-10 py-16 overflow-hidden">
@@ -25,7 +28,7 @@ export default function Hero() {
                     transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
                     className="text-text-muted font-light text-base max-w-md mx-auto mb-8"
                 >
-                    Your trusted Interactive games store — instant delivery, every time.
+                    {t("hero_subtitle")}
                 </motion.p>
                 
                 <motion.div 
@@ -36,11 +39,11 @@ export default function Hero() {
                 >
                     <button
                         className="bg-accent hover:bg-accent-light text-white font-medium text-[15px] px-7 py-3 rounded-xl transition-all hover:-translate-y-0.5 active:scale-95">
-                        Browse Shop
+                        {t("browse_shop")}
                     </button>
                     <button
                         className="border border-accent/20 hover:border-accent-light text-text-base text-[15px] px-7 py-3 rounded-xl transition-colors active:scale-95">
-                        How it works
+                        {t("how_it_works")}
                     </button>
                 </motion.div>
             </div>

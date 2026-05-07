@@ -1,9 +1,12 @@
 "use client"
 
+import { useLocale } from "next-intl"
 import { motion } from "framer-motion"
 import ProductCard from "./ProductCard"
 
 export default function ContainerCard({ products, onSelect }: any) {
+    const locale = useLocale()
+
     const container = {
         hidden: { opacity: 0 },
         show: {
@@ -29,16 +32,15 @@ export default function ContainerCard({ products, onSelect }: any) {
             >
                 {products.map((item: any) => (
                     <motion.div key={item.id} variants={itemAnim}>
-                      <ProductCard
-    name={item.name_en}
-    price={item.price}
-    image={item.product_images?.[0]?.url}
-    is_low={item.isLower}
-    onClick={() => onSelect(item)}
-    is_featured={item.is_featured}
-    product_variants={item.product_variants}
-    // Remove stock={item._count.game_keys}
-/>
+                        <ProductCard
+                            name={locale === "th" ? item.name_th : item.name_en}
+                            price={item.price}
+                            image={item.product_images?.[0]?.url}
+                            is_low={item.isLower}
+                            onClick={() => onSelect(item)}
+                            is_featured={item.is_featured}
+                            product_variants={item.product_variants}
+                        />
                     </motion.div>
                 ))}
             </motion.div>

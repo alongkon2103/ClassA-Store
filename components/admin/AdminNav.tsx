@@ -1,12 +1,12 @@
-// components/admin/AdminNav.tsx
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { Link, usePathname } from "@/i18n/routing"
 
 const links = [
   { href: "/admin",          label: "Dashboard",  icon: "" },
+  { href: "/admin/analytics",  label: "Analytics",  icon: "" },
   { href: "/admin/products", label: "Products",   icon: "" },
+  { href: "/admin/consignment", label: "Consignment", icon: "" },
   { href: "/admin/keys",     label: "Game Keys",  icon: "" },
   { href: "/admin/orders",   label: "Orders",     icon: "" },
   { href: "/admin/users",    label: "Users",      icon: "" },

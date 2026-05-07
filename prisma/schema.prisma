@@ -88,12 +88,18 @@ model products {
   created_at       DateTime?          @default(now()) @db.Timestamptz(6)
   updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
   isLower          Boolean?           @default(false)
+  owner_name       String?            @db.VarChar
+  owner_contact    String?            @db.VarChar
+  commission_pct   Decimal?           @default(0) @db.Decimal(5, 2)
+  is_consignment   Boolean?           @default(false)
   game_keys        game_keys[]
   orders           orders[]
   product_gifts    product_gifts[]
   product_images   product_images[]
   product_presets  product_presets[]
   product_variants product_variants[]
+
+  @@index([is_consignment], map: "idx_products_consignment")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

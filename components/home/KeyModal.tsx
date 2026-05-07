@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
+import { useTranslations, useLocale } from "next-intl"
+
 interface Key {
   label: string
   value: string
@@ -28,6 +30,8 @@ interface KeyModalProps {
 
 export default function KeyModal({ order, isOpen, onClose }: KeyModalProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
+  const t = useTranslations("Orders")
+  const locale = useLocale()
 
   
   useEffect(() => {
@@ -123,7 +127,7 @@ export default function KeyModal({ order, isOpen, onClose }: KeyModalProps) {
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <p className="text-[11px] uppercase tracking-widest mb-0.5 text-text-muted">
-                    Order ID
+                    {t("order_id")}
                   </p>
                   <p className="text-[13px] font-medium text-accent-light">
                     {order.orderId}
@@ -155,8 +159,7 @@ export default function KeyModal({ order, isOpen, onClose }: KeyModalProps) {
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
                 <p className="text-[12px] leading-relaxed">
-                  Keep your key safe — do not share it with anyone. Each key can only
-                  be redeemed once.
+                  {t("key_safe_warning")}
                 </p>
               </div>
 
@@ -192,7 +195,7 @@ export default function KeyModal({ order, isOpen, onClose }: KeyModalProps) {
                             >
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
-                            Copied!
+                            {t("copied")}
                           </>
                         ) : (
                           <>
@@ -208,7 +211,7 @@ export default function KeyModal({ order, isOpen, onClose }: KeyModalProps) {
                               <rect x="9" y="9" width="13" height="13" rx="2" />
                               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                             </svg>
-                            Copy
+                            {t("copy")}
                           </>
                         )}
                       </button>
@@ -221,7 +224,7 @@ export default function KeyModal({ order, isOpen, onClose }: KeyModalProps) {
                 onClick={onClose}
                 className="w-full py-3 rounded-xl text-[14px] font-medium bg-[rgba(66,122,181,.12)] border border-[var(--color-border-soft)] text-text-muted transition-colors hover:bg-[rgba(66,122,181,.18)]"
               >
-                Close
+                {t("close")}
               </button>
             </div>
           </motion.div>

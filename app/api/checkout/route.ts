@@ -13,7 +13,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const { productId, variantId } = await req.json()
+        const { productId, variantId, locale = "en" } = await req.json()
 
         const product = await prisma.products.findUnique({
             where: { id: productId },
@@ -82,8 +82,8 @@ export async function POST(req: Request) {
                 },
             ],
 
-            success_url: `${baseUrl}/orders/${order.id}`,
-            cancel_url: `${baseUrl}/products`,
+            success_url: `${baseUrl}/${locale}/orders/${order.id}`,
+            cancel_url: `${baseUrl}/${locale}/products`,
 
             metadata: {
                 orderId: order.id,

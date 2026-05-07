@@ -1,21 +1,25 @@
 "use client"
 
-import Link from "next/link"
+import { Link, usePathname } from "@/i18n/routing"
 import { signOut, useSession } from "next-auth/react"
-import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useTheme } from "./ThemeContext"
+import { useTranslations } from "next-intl"
+import LanguageSwitcher from "./LanguageSwitcher"
 
 const navItems = [
-  { href: "/",        label: "Home",         auth: false },
-  { href: "/products",label: "Shop",         auth: false },
-  { href: "/orders",  label: "My Orders",    auth: true },
-  { href: "/admin",   label: "Admin Panel",  auth: "admin" },
+  { href: "/",        labelKey: "home",         auth: false },
+  { href: "/products",labelKey: "shop",         auth: false },
+  { href: "/orders",  labelKey: "orders",       auth: true },
+  { href: "/admin",   labelKey: "admin",        auth: "admin" },
 ]
 
 export default function Navbar() {
   const { data: session } = useSession()
   const pathname = usePathname()
+  const t = useTranslations("Navbar")
+  const { theme, toggleTheme } = useTheme()
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [menuOpen, setMenuOpen]     = useState(false)
 
@@ -43,8 +47,11 @@ export default function Navbar() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-10 py-4 border-b bg-bg-base/90 backdrop-blur-md"
-        style={{ borderColor: "var(--color-border-soft)" }}
+        className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-10 py-4 border-b backdrop-blur-md"
+        style={{ 
+          borderColor: "var(--color-border-soft)",
+          background: "var(--color-navbar-bg)"
+        }}
       >
         {/* LOGO */}
         <Link
@@ -66,7 +73,7 @@ export default function Navbar() {
                     : "text-text-muted hover:text-text-base"
                 }`}
               >
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             </li>
           ))}
@@ -74,6 +81,49 @@ export default function Navbar() {
 
         {/* RIGHT SIDE */}
         <div className="flex items-center gap-3">
+          {/* LANGUAGE SWITCHER */}
+          <LanguageSwitcher />
+
+          {/* THEME TOGGLE */}
+          <button
+            onClick={toggleTheme}
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-accent/20 text-text-muted hover:text-accent-light hover:bg-accent/5 transition-all"
+            aria-label="Toggle theme"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              {theme === "dark" ? (
+                <motion.svg
+                  key="moon"
+                  initial={{ y: 10, opacity: 0, rotate: 45 }}
+                  animate={{ y: 0, opacity: 1, rotate: 0 }}
+                  exit={{ y: -10, opacity: 0, rotate: -45 }}
+                  transition={{ duration: 0.2 }}
+                  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                >
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </motion.svg>
+              ) : (
+                <motion.svg
+                  key="sun"
+                  initial={{ y: 10, opacity: 0, rotate: -45 }}
+                  animate={{ y: 0, opacity: 1, rotate: 0 }}
+                  exit={{ y: -10, opacity: 0, rotate: 45 }}
+                  transition={{ duration: 0.2 }}
+                  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </motion.svg>
+              )}
+            </AnimatePresence>
+          </button>
 
           {/* AUTH BUTTON — desktop */}
           <div className="hidden md:block">
@@ -84,7 +134,7 @@ export default function Navbar() {
                 style={{ background: "var(--color-accent)" }}
               >
                 <LoginIcon />
-                Login
+                {t("login")}
               </Link>
             ) : (
               <button
@@ -93,7 +143,7 @@ export default function Navbar() {
                 style={{ background: providerColor(provider) }}
               >
                 <ProviderIcon provider={provider} />
-                {session.user?.name || "Logged in"}
+                {session.user?.name || t("logged_in")}
               </button>
             )}
           </div>
@@ -131,10 +181,9 @@ export default function Navbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMenuOpen(false)}
-              className="md:hidden fixed inset-0 z-40"
+              className="md:hidden fixed inset-0 z-40 backdrop-blur-[4px]"
               style={{
-                background:    "rgba(4,10,18,0.7)",
-                backdropFilter:"blur(4px)",
+                background:    "var(--color-overlay)",
               }}
             />
 
@@ -185,7 +234,7 @@ export default function Navbar() {
                       borderLeft:  isActive(item.href) ? "2px solid var(--color-accent-light)" : "2px solid transparent",
                     }}
                   >
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 ))}
               </nav>
@@ -200,7 +249,7 @@ export default function Navbar() {
                     style={{ background: "var(--color-accent)" }}
                   >
                     <LoginIcon />
-                    Login
+                    {t("login")}
                   </Link>
                 ) : (
                   <div className="flex flex-col gap-2">
@@ -217,10 +266,10 @@ export default function Navbar() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-[13px] font-medium truncate" style={{ color: "var(--color-text-base)" }}>
-                          {session.user?.name || "User"}
+                          {session.user?.name || t("logged_in")}
                         </p>
                         <p className="text-[11px] truncate" style={{ color: "var(--color-text-muted)" }}>
-                          {providerLabel(provider)}
+                          {provider === "google" ? t("signed_in_google") : t("signed_in_discord")}
                         </p>
                       </div>
                     </div>
@@ -239,7 +288,7 @@ export default function Navbar() {
                         <polyline points="16 17 21 12 16 7" />
                         <line x1="21" y1="12" x2="9" y2="12" />
                       </svg>
-                      Sign out
+                      {t("logout")}
                     </button>
                   </div>
                 )}
@@ -256,7 +305,8 @@ export default function Navbar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] flex items-center justify-center backdrop-blur-sm"
+            style={{ background: "var(--color-overlay)" }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 10 }}
@@ -276,14 +326,14 @@ export default function Navbar() {
                   <ProviderIcon provider={provider} size={15} />
                 </div>
                 <div>
-                  <p className="text-white font-semibold text-[15px] leading-tight">Sign out?</p>
+                  <p className="text-white font-semibold text-[15px] leading-tight">{t("logout")}?</p>
                   <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-                    Logged in via {providerLabel(provider)}
+                    {provider === "google" ? t("signed_in_google") : t("signed_in_discord")}
                   </p>
                 </div>
               </div>
               <p className="text-[13px] mb-5" style={{ color: "var(--color-text-muted)" }}>
-                Are you sure you want to sign out?
+                {t("signout_confirm")}
               </p>
               <div className="flex justify-end gap-2">
                 <button
@@ -291,13 +341,13 @@ export default function Navbar() {
                   className="px-4 py-2 text-[13px] rounded-lg transition-colors"
                   style={{ color: "var(--color-text-muted)" }}
                 >
-                  Cancel
+                  {t("cancel")}
                 </button>
                 <button
                   onClick={() => { signOut(); setLogoutOpen(false) }}
                   className="px-4 py-2 text-[13px] rounded-lg bg-red-500 hover:bg-red-600 text-white transition"
                 >
-                  Logout
+                  {t("logout")}
                 </button>
               </div>
             </motion.div>
@@ -318,11 +368,6 @@ function providerColor(provider?: string) {
 function providerBg(provider?: string) {
   if (provider === "google")  return "rgba(66,133,244,.10)"
   return "rgba(88,101,242,.10)"
-}
-
-function providerLabel(provider?: string) {
-  if (provider === "google")  return "Signed in with Google"
-  return "Signed in with Discord"
 }
 
 // ── icons ─────────────────────────────────────────────────────────

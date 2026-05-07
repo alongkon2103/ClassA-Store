@@ -2,34 +2,37 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
 import { motion, AnimatePresence } from "framer-motion"
+import { useTranslations, useLocale } from "next-intl"
 
 function LoginModal({ onClose }: { onClose: () => void }) {
   const router = useRouter()
+  const t = useTranslations("ProductModal")
+
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[300] flex items-center justify-center"
-      style={{ background: "rgba(4,10,18,.75)", backdropFilter: "blur(10px)" }}
+      style={{ background: "var(--color-overlay)", backdropFilter: "blur(10px)" }}
       onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
         className="relative w-[90%] max-w-xs rounded-2xl p-7 flex flex-col items-center gap-4"
-        style={{ background: "#0b1929", border: "1px solid rgba(66,122,181,.25)" }}
+        style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border-soft)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-2xl">🔒</div>
-        <h2 className="text-white text-[18px] font-bold">Login Required</h2>
-        <p className="text-[13px] text-[#7a9bb8] text-center">You need to be logged in to purchase items.</p>
+        <h2 className="text-text-base text-[18px] font-bold">{t("login_required")}</h2>
+        <p className="text-[13px] text-text-muted text-center">{t("login_required_desc")}</p>
         <button onClick={() => router.push("/login")}
           className="w-full py-3 rounded-xl font-semibold text-white bg-accent hover:opacity-90 active:scale-95 transition">
-          Login
+          {t("login_button")}
         </button>
         <button onClick={onClose}
-          className="w-full py-2.5 rounded-xl text-[#7a9bb8] bg-white/5 hover:bg-white/10 transition text-sm">
-          Cancel
+          className="w-full py-2.5 rounded-xl text-text-muted bg-white/5 hover:bg-white/10 transition text-sm">
+          {t("cancel")}
         </button>
       </motion.div>
     </motion.div>
@@ -39,6 +42,8 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 export default function ProductModal({ product, onClose }: any) {
   const { data: session } = useSession()
   const router = useRouter()
+  const t = useTranslations("ProductModal")
+  const locale = useLocale()
   const [index, setIndex] = useState(0)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -112,6 +117,7 @@ export default function ProductModal({ product, onClose }: any) {
           body: JSON.stringify({
             productId: product.id,
             variantId: selectedVariant?.id,
+            locale: locale,
           }),
         })
         const data = await res.json()
@@ -125,6 +131,9 @@ export default function ProductModal({ product, onClose }: any) {
     }
   }
 
+  const productName = locale === "th" ? product.name_th : product.name_en
+  const productDesc = locale === "th" ? (product.description_th || product.description_en) : product.description_en
+
   return (
     <div className="relative">
       <AnimatePresence>
@@ -134,7 +143,7 @@ export default function ProductModal({ product, onClose }: any) {
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
         className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:p-5"
-        style={{ background: "rgba(4,10,18,.85)", backdropFilter: "blur(8px)" }}
+        style={{ background: "var(--color-overlay)", backdropFilter: "blur(8px)" }}
         onClick={onClose}
       >
         <motion.div
@@ -190,28 +199,29 @@ export default function ProductModal({ product, onClose }: any) {
           <div className="p-5 space-y-4">
             {/* Title + total stock */}
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-[20px] font-bold leading-tight">{product.name_en}</h2>
+              <h2 className="text-[20px] font-bold leading-tight">{productName}</h2>
               <span className={`text-[11px] px-2 py-1 rounded-full font-medium whitespace-nowrap ${
                 totalStock === 0 ? "bg-red-500/15 text-red-400"
                 : totalStock <= 5 ? "bg-orange-500/15 text-orange-400"
                 : "bg-green-500/15 text-green-400"
               }`}>
-                {totalStock === 0 ? "Out of stock" : `${totalStock} left`}
+                {totalStock === 0 ? t("out_of_stock") : `${totalStock} ${t("left")}`}
               </span>
             </div>
 
             <p className="text-sm text-text-muted leading-relaxed">
-              {product.description_en || "No description available."}
+              {productDesc || t("no_description")}
             </p>
 
             {/* VARIANTS */}
             {product.product_variants?.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[11px] tracking-widest text-text-muted uppercase">Select Option</p>
+                <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("select_option")}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {product.product_variants.map((v: any) => {
                     const active = selectedVariant?.id === v.id
                     const outOfStock = (v.stock ?? 0) === 0
+                    const variantLabel = locale === "th" ? v.label_th : v.label_en
                     return (
                       <button key={v.id} onClick={() => !outOfStock && setSelectedVariant(v)}
                         disabled={outOfStock}
@@ -223,13 +233,13 @@ export default function ProductModal({ product, onClose }: any) {
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="text-[13px] font-medium">{v.label_en}</p>
+                            <p className="text-[13px] font-medium">{variantLabel}</p>
                             <p className={`text-[10px] mt-0.5 ${
                               outOfStock ? "text-red-400"
                               : (v.stock ?? 0) <= 5 ? "text-orange-400"
                               : "text-green-400"
                             }`}>
-                              {outOfStock ? "Sold out" : `${v.stock} available`}
+                              {outOfStock ? t("sold_out") : `${v.stock} ${t("available")}`}
                             </p>
                           </div>
                           <span className="text-[13px] font-bold text-accent-light">
@@ -245,7 +255,7 @@ export default function ProductModal({ product, onClose }: any) {
 
             {/* PAYMENT METHOD */}
             <div className="space-y-2">
-              <p className="text-[11px] tracking-widest text-text-muted uppercase">Payment Method</p>
+              <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("payment_method")}</p>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setPaymentMethod("promptpay")}
@@ -257,8 +267,8 @@ export default function ProductModal({ product, onClose }: any) {
                 >
                   {/* <span className="text-xl">📱</span> */}
                   <div>
-                    <p className="text-[13px] font-medium">Promp Pay</p>
-                    <p className="text-[10px] text-text-muted">Send slip</p>
+                    <p className="text-[13px] font-medium">{t("promptpay_label")}</p>
+                    <p className="text-[10px] text-text-muted">{t("promptpay_desc")}</p>
                   </div>
                   {paymentMethod === "promptpay" && (
                     <span className="ml-auto w-2 h-2 rounded-full bg-accent-light" />
@@ -275,8 +285,8 @@ export default function ProductModal({ product, onClose }: any) {
                 >
                   {/* <span className="text-xl">💳</span> */}
                   <div>
-                    <p className="text-[13px] font-medium">Credit</p>
-                    <p className="text-[10px] text-text-muted">By Stripe</p>
+                    <p className="text-[13px] font-medium">{t("stripe_label")}</p>
+                    <p className="text-[10px] text-text-muted">{t("stripe_desc")}</p>
                   </div>
                   {paymentMethod === "stripe" && (
                     <span className="ml-auto w-2 h-2 rounded-full bg-accent-light" />
@@ -288,12 +298,12 @@ export default function ProductModal({ product, onClose }: any) {
             {/* PRICE + BUY */}
             <div className="flex items-center gap-3 pt-4 border-t border-white/10">
               <div className="flex-1">
-                <p className="text-[11px] text-text-muted mb-0.5">Total</p>
+                <p className="text-[11px] text-text-muted mb-0.5">{t("total")}</p>
                 <div className="text-[26px] font-bold text-accent-light leading-none">
                   ฿{Number(selectedVariant?.price ?? product.price).toLocaleString()}
                 </div>
                 {isLowStock && (
-                  <p className="text-[11px] text-orange-400 mt-1">⚠ Only {selectedStock} left!</p>
+                  <p className="text-[11px] text-orange-400 mt-1">{t("only_left_warning", { count: selectedStock })}</p>
                 )}
               </div>
 
@@ -309,9 +319,9 @@ export default function ProductModal({ product, onClose }: any) {
                 {loading ? (
                   <>
                     <div className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" />
-                    <span>Loading...</span>
+                    <span>{t("loading")}</span>
                   </>
-                ) : isOutOfStock ? "Out of Stock" : "Buy Now"}
+                ) : isOutOfStock ? t("out_of_stock") : t("buy_now")}
               </button>
             </div>
           </div>
