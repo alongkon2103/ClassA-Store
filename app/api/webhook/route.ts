@@ -163,26 +163,26 @@ export async function POST(req: NextRequest) {
     // ─────────────────────────────────────────────
     // CALL YOUR DISCORD BOT API
     // ─────────────────────────────────────────────
-    if (discordUserId && roleId) {
-      await fetch("http://localhost:3700/assignrole", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": process.env.API_ASSIGN_ROLE_KEY!,
-        },
-        body: JSON.stringify({
-          userId: discordUserId,
-          roleId: roleId,
-          guildId: guildId,
-        }),
-      })
-    }
+    // if (discordUserId && roleId) {
+    //   await fetch("http://localhost:3700/assignrole", {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //       "x-api-key": process.env.API_ASSIGN_ROLE_KEY!,
+    //     },
+    //     body: JSON.stringify({
+    //       userId: discordUserId,
+    //       roleId: roleId,
+    //       guildId: guildId,
+    //     }),
+    //   })
+    // }
 
-    console.log("✅ Paid + Role assigned:", {
-      orderId,
-      discordUserId,
-      roleId,
-    })
+    // console.log("✅ Paid + Role assigned:", {
+    //   orderId,
+    //   discordUserId,
+    //   roleId,
+    // })
   }
 
   // ─────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "@/i18n/routing"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslations, useLocale } from "next-intl"
+import { getImageUrl } from "@/lib/getImageUrl"
 
 function LoginModal({ onClose }: { onClose: () => void }) {
   const router = useRouter()
@@ -54,13 +55,17 @@ export default function ProductModal({ product, onClose }: any) {
   const [loading, setLoading] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<"card" | "promptpay">("promptpay")
   const [whitelistUsername, setWhitelistUsername] = useState("")  // ✅ เพิ่ม
+
+  const sortedVariants = [...(product.product_variants ?? [])].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  )
   const [selectedVariant, setSelectedVariant] = useState<any>(
-    product.product_variants?.[0] || null
+    sortedVariants[0] || null
   )
 
-  const basePrice  = Number(selectedVariant?.price ?? product.price)
-  const cardFee    = paymentMethod === "card" ? basePrice * 0.06 : 0
-  const totalPrice = basePrice + cardFee
+  const variantPrice = Number(selectedVariant?.price ?? 0)
+  const cardFee = paymentMethod === "card" ? variantPrice * 0.06 : 0
+  const totalPrice = variantPrice + cardFee
 
   const images = product.product_images?.length > 0
     ? product.product_images
@@ -97,8 +102,8 @@ export default function ProductModal({ product, onClose }: any) {
     (sum: number, v: any) => sum + (v.stock ?? 0), 0
   ) ?? 0
   const selectedStock = selectedVariant?.stock ?? 0
-  const isOutOfStock  = selectedStock === 0
-  const isLowStock    = selectedStock > 0 && selectedStock <= 5
+  const isOutOfStock = selectedStock === 0
+  const isLowStock = selectedStock > 0 && selectedStock <= 5
 
   const handleBuyClick = async () => {
     if (!session) { setShowLoginModal(true); return }
@@ -116,8 +121,8 @@ export default function ProductModal({ product, onClose }: any) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId:         product.id,
-          variantId:         selectedVariant?.id,
+          productId: product.id,
+          variantId: selectedVariant?.id,
           paymentMethod,
           locale,
           whitelistUsername: whitelistUsername.trim(),  // ✅ ส่งไปด้วย
@@ -160,7 +165,7 @@ export default function ProductModal({ product, onClose }: any) {
             <div className="flex h-full transition-transform duration-300"
               style={{ transform: `translateX(-${index * 100}%)` }}>
               {images.map((img: any, i: number) => (
-                <img key={i} src={img.url} alt="" className="min-w-full h-full object-cover" />
+                <img key={i} src={getImageUrl(img.url)} alt="" className="min-w-full h-full object-cover" />
               ))}
             </div>
 
@@ -194,10 +199,9 @@ export default function ProductModal({ product, onClose }: any) {
             <div className="flex gap-2 px-4 py-3 bg-bg-base border-b border-white/5 overflow-x-auto scrollbar-none">
               {images.map((img: any, i: number) => (
                 <button key={i} onClick={() => setIndex(i)}
-                  className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${
-                    i === index ? "ring-2 ring-accent opacity-100" : "opacity-40 hover:opacity-70"
-                  }`}>
-                  <img src={img.url} alt="" className="w-full h-full object-cover" />
+                  className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${i === index ? "ring-2 ring-accent opacity-100" : "opacity-40 hover:opacity-70"
+                    }`}>
+                  <img src={getImageUrl(img.url)} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -206,53 +210,48 @@ export default function ProductModal({ product, onClose }: any) {
           {/* CONTENT */}
           <div className="p-5 space-y-4">
             {/* Title + stock */}
-            <div className="flex items-start justify-between gap-3">
+            {/* <div className="flex items-start justify-between gap-3">
               <h2 className="text-[20px] font-bold leading-tight">{productName}</h2>
-              <span className={`text-[11px] px-2 py-1 rounded-full font-medium whitespace-nowrap ${
-                totalStock === 0 ? "bg-red-500/15 text-red-400"
+              <span className={`text-[11px] px-2 py-1 rounded-full font-medium whitespace-nowrap ${totalStock === 0 ? "bg-red-500/15 text-red-400"
                 : totalStock <= 5 ? "bg-orange-500/15 text-orange-400"
-                : "bg-green-500/15 text-green-400"
-              }`}>
+                  : "bg-green-500/15 text-green-400"
+                }`}>
                 {totalStock === 0 ? t("out_of_stock") : `${totalStock} ${t("left")}`}
               </span>
-            </div>
+            </div> */}
 
             <p className="text-sm text-text-muted leading-relaxed">
               {productDesc || t("no_description")}
             </p>
 
             {/* VARIANTS */}
-            {product.product_variants?.length > 0 && (
+            {sortedVariants.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("select_option")}</p>
+                <p className="text-[11px] tracking-widest text-text-muted uppercase">
+                  {t("select_option")}
+                </p>
                 <div className="grid grid-cols-2 gap-2">
-                  {product.product_variants.map((v: any) => {
-                    const active      = selectedVariant?.id === v.id
-                    const outOfStock  = (v.stock ?? 0) === 0
+                  {sortedVariants.map((v: any) => {
+                    const active = selectedVariant?.id === v.id
                     const variantLabel = locale === "th" ? v.label_th : v.label_en
                     return (
-                      <button key={v.id} onClick={() => !outOfStock && setSelectedVariant(v)}
-                        disabled={outOfStock}
-                        className={`p-3 rounded-xl border text-left transition ${
-                          outOfStock ? "opacity-40 cursor-not-allowed border-white/5"
-                          : active   ? "border-accent bg-accent/10"
-                          : "border-white/10 hover:border-accent/40"
-                        }`}>
-                        <div className="flex justify-between items-start">
-                          {/* <div>
-                            <p className="text-[13px] font-medium">{variantLabel}</p>
-                            <p className={`text-[10px] mt-0.5 ${
-                              outOfStock ? "text-red-400"
-                              : (v.stock ?? 0) <= 5 ? "text-orange-400"
-                              : "text-green-400"
-                            }`}>
-                              {outOfStock ? t("sold_out") : `${v.stock} ${t("available")}`}
-                            </p>
-                          </div> */}
+                      <button
+                        key={v.id}
+                        onClick={() => setSelectedVariant(v)}
+                        className={`p-3 rounded-xl border text-left transition ${active
+                            ? "border-accent bg-accent/10"
+                            : "border-white/10 hover:border-accent/40"
+                          }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <p className="text-[13px] font-medium">{variantLabel}</p>
                           <span className="text-[13px] font-bold text-accent-light">
                             ฿{Number(v.price).toLocaleString()}
                           </span>
                         </div>
+                        {active && (
+                          <p className="text-[10px] text-accent-light mt-1">Selected</p>
+                        )}
                       </button>
                     )
                   })}
@@ -262,37 +261,35 @@ export default function ProductModal({ product, onClose }: any) {
 
             {/* ✅ IN-GAME USERNAME */}
             <div className="space-y-2">
-              <p className="text-[11px] tracking-widest text-text-muted uppercase">In-Game Username</p>
+              <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("ingame_username")}</p>
               <input
                 value={whitelistUsername}
                 onChange={(e) => setWhitelistUsername(e.target.value)}
-                placeholder="Enter your in-game username"
+                placeholder={t("ingame_username_placeholder")}
                 className="w-full bg-bg-base border border-accent/15 rounded-xl px-4 py-3 text-[13px] placeholder:text-text-muted outline-none focus:border-accent/40 transition"
               />
               <p className="text-[11px] text-text-muted">
-                Double-check your username — it cannot be changed after purchase.
+                {t("ingame_username_hint")}
               </p>
             </div>
 
             {/* PAYMENT METHOD */}
             <div className="space-y-2">
-              <p className="text-[11px] tracking-widest text-text-muted uppercase">Payment Method</p>
+              <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("payment_method")}</p>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setPaymentMethod("promptpay")}
-                  className={`p-3 rounded-xl border text-left transition ${
-                    paymentMethod === "promptpay" ? "border-accent bg-accent/10" : "border-white/10 hover:border-accent/40"
-                  }`}>
-                  <p className="text-[13px] font-medium">PromptPay</p>
-                  <p className="text-[10px] text-green-400">0% Fee</p>
+                  className={`p-3 rounded-xl border text-left transition ${paymentMethod === "promptpay" ? "border-accent bg-accent/10" : "border-white/10 hover:border-accent/40"
+                    }`}>
+                  <p className="text-[13px] font-medium">{t("promptpay_label")}</p>
+                  <p className="text-[10px] text-green-400">{t("promptpay_desc")}</p>
                 </button>
                 <button
                   onClick={() => setPaymentMethod("card")}
-                  className={`p-3 rounded-xl border text-left transition ${
-                    paymentMethod === "card" ? "border-accent bg-accent/10" : "border-white/10 hover:border-accent/40"
-                  }`}>
-                  <p className="text-[13px] font-medium">Credit / Debit Card</p>
-                  <p className="text-[10px] text-orange-400">+6% Fee</p>
+                  className={`p-3 rounded-xl border text-left transition ${paymentMethod === "card" ? "border-accent bg-accent/10" : "border-white/10 hover:border-accent/40"
+                    }`}>
+                  <p className="text-[13px] font-medium">{t("stripe_label")}</p>
+                  <p className="text-[10px] text-orange-400">{t("stripe_desc")}</p>
                 </button>
               </div>
             </div>
@@ -300,12 +297,12 @@ export default function ProductModal({ product, onClose }: any) {
             {/* PRICE + BUY */}
             <div className="flex items-center gap-3 pt-4 border-t border-white/10">
               <div className="flex-1">
-                <p className="text-[11px] text-text-muted mb-0.5">Total Amount</p>
+                <p className="text-[11px] text-text-muted mb-0.5">{t("total")}</p>
                 <div className="text-[26px] font-bold text-accent-light leading-none">
                   ฿{totalPrice.toLocaleString()}
                 </div>
                 {paymentMethod === "card" && (
-                  <p className="text-[10px] text-text-muted mt-1">Includes 6% service fee</p>
+                  <p className="text-[10px] text-text-muted mt-1">{t("card_fee_hint")}</p>
                 )}
                 {/* {isLowStock && (
                   <p className="text-[11px] text-orange-400 mt-1">
@@ -315,19 +312,19 @@ export default function ProductModal({ product, onClose }: any) {
               </div>
 
               <button
-                disabled={isOutOfStock || loading}
+                disabled={loading}
                 onClick={handleBuyClick}
-                className={`flex-1 py-3.5 rounded-xl font-semibold text-[15px] transition flex items-center justify-center gap-2 ${
-                  isOutOfStock || loading
-                    ? "bg-white/5 text-text-muted cursor-not-allowed"
-                    : "bg-accent text-white hover:opacity-90 active:scale-95"
-                }`}>
+                className={`flex-1 py-3.5 rounded-xl font-semibold text-[15px] transition flex items-center justify-center gap-2 ${loading
+                  ? "bg-white/5 text-text-muted cursor-not-allowed"
+                  : "bg-accent text-white hover:opacity-90 active:scale-95"
+                  }`}
+              >
                 {loading ? (
                   <>
                     <div className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" />
                     <span>Processing...</span>
                   </>
-                ) : isOutOfStock ? t("out_of_stock") : "Checkout"}
+                ) : "Checkout"}
               </button>
             </div>
           </div>

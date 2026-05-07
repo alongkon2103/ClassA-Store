@@ -3,9 +3,15 @@
 import { useState, useMemo } from "react"
 import { useRouter } from "@/i18n/routing"
 import { format } from "date-fns"
+import { useTranslations, useLocale } from "next-intl"
+import { th, enUS } from "date-fns/locale"
 
 export default function UsersClient({ users }: { users: any[] }) {
+  const t = useTranslations("Admin")
+  const locale = useLocale()
+  const dateLocale = locale === "th" ? th : enUS
   const router = useRouter()
+  
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<"all" | "admin" | "user">("all")
   const [loadingId, setLoadingId] = useState<string | null>(null)
@@ -21,7 +27,7 @@ export default function UsersClient({ users }: { users: any[] }) {
 
   const handleRoleToggle = async (id: string, current: string) => {
     const newRole = current === "admin" ? "user" : "admin"
-    if (!confirm(`Change role to "${newRole}"?`)) return
+    if (!confirm(t("change_role_confirm", { role: newRole }))) return
     setLoadingId(id)
     await fetch(`/api/admin/users/${id}`, {
       method: "PATCH",
@@ -33,7 +39,7 @@ export default function UsersClient({ users }: { users: any[] }) {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this user? This will also remove their orders.")) return
+    if (!confirm(t("delete_user_confirm"))) return
     setLoadingId(id)
     await fetch(`/api/admin/users/${id}`, { method: "DELETE" })
     setLoadingId(null)
@@ -44,8 +50,8 @@ export default function UsersClient({ users }: { users: any[] }) {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-[24px] font-bold">Users</h1>
-        <p className="text-text-muted text-[13px] mt-0.5">{users.length} total</p>
+        <h1 className="text-[24px] font-bold">{t("users")}</h1>
+        <p className="text-text-muted text-[13px] mt-0.5">{users.length} {t("total")}</p>
       </div>
 
       {/* Filters */}
@@ -53,7 +59,7 @@ export default function UsersClient({ users }: { users: any[] }) {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name or email..."
+          placeholder={t("search_users")}
           className="flex-1 min-w-[200px] bg-bg-card border border-accent/15 rounded-xl px-4 py-2.5 text-[13px] placeholder:text-text-muted outline-none focus:border-accent/40"
         />
         <div className="flex gap-1 bg-bg-card border border-accent/15 rounded-xl p-1">
@@ -62,7 +68,7 @@ export default function UsersClient({ users }: { users: any[] }) {
               className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${
                 filter === f ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
               }`}>
-              {f}
+              {t(f)}
             </button>
           ))}
         </div>
@@ -73,18 +79,18 @@ export default function UsersClient({ users }: { users: any[] }) {
         <table className="w-full text-[13px]">
           <thead>
             <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-white/[0.02]">
-              <th className="px-5 py-3.5 font-medium">User</th>
-              <th className="px-4 py-3.5 font-medium">Provider</th>
-              <th className="px-4 py-3.5 font-medium">Orders</th>
-              <th className="px-4 py-3.5 font-medium">Role</th>
-              <th className="px-4 py-3.5 font-medium">Joined</th>
-              <th className="px-4 py-3.5 font-medium">Actions</th>
+              <th className="px-5 py-3.5 font-medium">{t("user")}</th>
+              <th className="px-4 py-3.5 font-medium">{t("provider")}</th>
+              <th className="px-4 py-3.5 font-medium">{t("orders")}</th>
+              <th className="px-4 py-3.5 font-medium">{t("role")}</th>
+              <th className="px-4 py-3.5 font-medium">{t("joined")}</th>
+              <th className="px-4 py-3.5 font-medium">{t("actions")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-12 text-text-muted">No users found</td>
+                <td colSpan={6} className="text-center py-12 text-text-muted">{t("no_users")}</td>
               </tr>
             )}
             {filtered.map((u) => (
@@ -136,7 +142,7 @@ export default function UsersClient({ users }: { users: any[] }) {
 
                 {/* Joined */}
                 <td className="px-4 py-4 text-text-muted whitespace-nowrap">
-                  {u.created_at ? format(new Date(u.created_at), "dd MMM yyyy") : "—"}
+                  {u.created_at ? format(new Date(u.created_at), "dd MMM yyyy", { locale: dateLocale }) : "—"}
                 </td>
 
                 {/* Actions */}
@@ -154,7 +160,7 @@ export default function UsersClient({ users }: { users: any[] }) {
                       disabled={loadingId === u.id}
                       className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition disabled:opacity-40"
                     >
-                      {loadingId === u.id ? "..." : "Delete"}
+                      {loadingId === u.id ? "..." : t("delete")}
                     </button>
                   </div>
                 </td>

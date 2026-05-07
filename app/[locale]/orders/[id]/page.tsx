@@ -6,6 +6,8 @@ import Image from "next/image"
 import { Link } from "@/i18n/routing"
 import { setRequestLocale, getTranslations } from "next-intl/server"
 import OrderStatusPoller from "@/components/orders/OrderStatusPoller"
+import { getImageUrl } from "@/lib/getImageUrl"
+
 
 export default async function OrderPage({ params }: { params: Promise<{ id: string, locale: string }> }) {
     const { id, locale } = await params
@@ -248,7 +250,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                     <div className="lg:col-span-4 space-y-4 md:space-y-6">
                         <div className="bg-bg-card border border-accent/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl">
                             <div className="relative aspect-[21/9] lg:aspect-video">
-                                <Image src={mainImage} alt={locale === 'th' ? order.products.name_th : order.products.name_en} fill className="object-cover" />
+                                <Image src={getImageUrl(mainImage)} alt={locale === 'th' ? order.products.name_th : order.products.name_en} fill className="object-cover" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-bg-card via-transparent to-transparent"></div>
                             </div>
                             <div className="p-5 md:p-6">

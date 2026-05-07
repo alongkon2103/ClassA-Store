@@ -1,6 +1,7 @@
 "use client"
 
 import { useTranslations, useLocale } from "next-intl"
+import { getImageUrl } from "@/lib/getImageUrl"
 
 type Variant = {
   id: string
@@ -40,7 +41,7 @@ export default function ProductCard({
     >
       <div className="relative aspect-video overflow-hidden">
         <img
-          src={image || "/placeholder.png"}
+          src={getImageUrl(image || "/placeholder.png")}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />

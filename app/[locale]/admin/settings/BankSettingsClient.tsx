@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react"
 import { useRouter } from "@/i18n/routing"
+import { useTranslations } from "next-intl"
 
 const blank = {
   bank_name: "", account_name: "", account_number: "",
@@ -9,6 +10,7 @@ const blank = {
 }
 
 export default function BankSettingsClient({ banks }: { banks: any[] }) {
+  const t = useTranslations("Admin")
   const router = useRouter()
   const [list, setList]     = useState(banks)
   const [form, setForm]     = useState({ ...blank })
@@ -46,7 +48,7 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this account?")) return
+    if (!confirm(t("delete_confirm"))) return
     await fetch(`/api/admin/bank-accounts/${id}`, { method: "DELETE" })
     setList((l) => l.filter((b) => b.id !== id))
   }
@@ -78,15 +80,15 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[24px] font-bold">Payment Settings</h1>
-          <p className="text-text-muted text-[13px] mt-0.5">Manage bank accounts and PromptPay</p>
+          <h1 className="text-[24px] font-bold">{t("payment_settings")}</h1>
+          <p className="text-text-muted text-[13px] mt-0.5">{t("manage_payments")}</p>
         </div>
         {!adding && (
           <button
             onClick={() => { setForm({ ...blank }); setEditId(null); setAdding(true) }}
             className="bg-accent hover:opacity-90 text-white text-[13px] font-semibold px-4 py-2.5 rounded-xl transition active:scale-95"
           >
-            + Add Account
+            + {t("add_account")}
           </button>
         )}
       </div>
@@ -94,11 +96,11 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
       {/* Form */}
       {adding && (
         <div className="bg-bg-card border border-accent/20 rounded-2xl p-5 space-y-4">
-          <p className="text-[15px] font-semibold">{editId ? "Edit Account" : "New Account"}</p>
+          <p className="text-[15px] font-semibold">{editId ? t("edit_account") : t("new_account")}</p>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={lbl}>Bank Name *</label>
+              <label className={lbl}>{t("bank_name")} *</label>
               <input
                 value={form.bank_name}
                 onChange={(e) => set("bank_name", e.target.value)}
@@ -107,7 +109,7 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
               />
             </div>
             <div>
-              <label className={lbl}>Account Name *</label>
+              <label className={lbl}>{t("account_name")} *</label>
               <input
                 value={form.account_name}
                 onChange={(e) => set("account_name", e.target.value)}
@@ -116,7 +118,7 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
               />
             </div>
             <div>
-              <label className={lbl}>Account Number *</label>
+              <label className={lbl}>{t("account_number")} *</label>
               <input
                 value={form.account_number}
                 onChange={(e) => set("account_number", e.target.value)}
@@ -125,7 +127,7 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
               />
             </div>
             <div>
-              <label className={lbl}>PromptPay Number</label>
+              <label className={lbl}>{t("promptpay_no")}</label>
               <input
                 value={form.promptpay_no}
                 onChange={(e) => set("promptpay_no", e.target.value)}
@@ -137,7 +139,7 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
 
           {/* QR Upload */}
           <div>
-            <label className={lbl}>PromptPay QR Code</label>
+            <label className={lbl}>{t("qr_code")}</label>
             {form.qr_code_url ? (
               <div className="flex items-center gap-4">
                 <div className="bg-white rounded-xl p-2">
@@ -147,7 +149,7 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
                   onClick={() => set("qr_code_url", "")}
                   className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition"
                 >
-                  Remove QR
+                  {t("remove_qr")}
                 </button>
               </div>
             ) : (
@@ -160,14 +162,14 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
               onClick={() => { setAdding(false); setEditId(null); setForm({ ...blank }) }}
               className="px-4 py-2 rounded-xl border border-white/10 text-text-muted text-[13px] hover:text-text-base transition"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
               className="px-5 py-2 rounded-xl bg-accent text-white text-[13px] font-semibold hover:opacity-90 transition disabled:opacity-50"
             >
-              {saving ? "Saving..." : editId ? "Save Changes" : "Add Account"}
+              {saving ? t("saving") : editId ? t("save_changes") : t("add_account")}
             </button>
           </div>
         </div>
@@ -177,7 +179,7 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
       <div className="space-y-3">
         {list.length === 0 && (
           <div className="text-center py-16 text-text-muted text-[13px] bg-bg-card border border-accent/10 rounded-2xl">
-            No accounts yet — click "Add Account" to get started.
+            {t("no_accounts")}
           </div>
         )}
 
@@ -213,14 +215,14 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
                     ? "bg-green-500/15 text-green-400"
                     : "bg-white/5 text-text-muted"
                 }`}>
-                  {bank.is_active ? "Active" : "Inactive"}
+                  {bank.is_active ? t("active") : t("inactive")}
                 </span>
               </div>
               <p className="text-[13px] text-text-muted">{bank.account_name}</p>
               <p className="text-[13px] font-mono">{bank.account_number}</p>
               {bank.promptpay_no && (
                 <p className="text-[12px] text-text-muted mt-0.5">
-                  PromptPay: {bank.promptpay_no}
+                  {t("promptpay_no")}: {bank.promptpay_no}
                 </p>
               )}
             </div>
@@ -231,19 +233,19 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
                 onClick={() => handleEdit(bank)}
                 className="text-[12px] px-3 py-1.5 rounded-lg border border-accent/20 text-accent-light hover:bg-accent/10 transition"
               >
-                Edit
+                {t("edit")}
               </button>
               <button
                 onClick={() => handleToggle(bank.id, bank.is_active)}
                 className="text-[12px] px-3 py-1.5 rounded-lg border border-white/10 text-text-muted hover:text-text-base transition"
               >
-                {bank.is_active ? "Disable" : "Enable"}
+                {bank.is_active ? t("disable") : t("enable")}
               </button>
               <button
                 onClick={() => handleDelete(bank.id)}
                 className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition"
               >
-                Delete
+                {t("delete")}
               </button>
             </div>
           </div>
@@ -254,6 +256,7 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
 }
 
 function QRUpload({ onUploaded }: { onUploaded: (url: string) => void }) {
+  const t = useTranslations("Admin")
   const [uploading, setUploading] = useState(false)
   const ref = useRef<HTMLInputElement>(null)
 
@@ -281,11 +284,13 @@ function QRUpload({ onUploaded }: { onUploaded: (url: string) => void }) {
         </svg>
       </div>
       <p className="text-[13px] text-text-muted">
-        {uploading ? "Uploading..." : (
-          <>Click to upload QR Code, or <span className="text-accent-light underline underline-offset-2">browse</span></>
+        {uploading ? t("uploading") : (
+          <>{t.rich("upload_qr", {
+            browse: (chunks) => <span className="text-accent-light underline underline-offset-2">{chunks}</span>
+          })}</>
         )}
       </p>
-      <p className="text-[11px] text-text-muted/50 mt-1">JPG, PNG, WEBP (max 5MB)</p>
+      <p className="text-[11px] text-text-muted/50 mt-1">{t("upload_hint")}</p>
       <input
         ref={ref}
         type="file"

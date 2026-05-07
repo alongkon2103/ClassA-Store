@@ -7,7 +7,9 @@ import AdminNav from "@/components/admin/AdminNav"
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
 
-  if (!session || session.user.role !== "admin") redirect("/")
+  if (!session || session.user.role !== "admin") {
+    redirect({ href: "/", locale: "th" }) 
+  }
 
   return (
     <div className="min-h-screen bg-bg-base flex">

@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { redirect } from "@/i18n/routing"
+import { redirect } from "next/navigation"
+
 import { notFound } from "next/navigation"
 import CheckoutClient from "./CheckoutClient"
 import { setRequestLocale } from "next-intl/server"

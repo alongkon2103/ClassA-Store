@@ -2,8 +2,15 @@
 
 import { useState, useMemo } from "react"
 import { format } from "date-fns"
+import { useTranslations, useLocale } from "next-intl"
+import { th, enUS } from "date-fns/locale"
+import { getImageUrl } from "@/lib/getImageUrl"
 
 export default function AdminOrdersClient({ orders }: { orders: any[] }) {
+  const t = useTranslations("Admin")
+  const locale = useLocale()
+  const dateLocale = locale === "th" ? th : enUS
+
   const [search,        setSearch]        = useState("")
   const [statusFilter,  setStatusFilter]  = useState("all")
   const [wlFilter,      setWlFilter]      = useState("all")
@@ -15,13 +22,14 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
       .filter((o) => wlFilter    === "all" || o.whitelist_status === wlFilter)
       .filter((o) => {
         const q = search.toLowerCase()
+        const productName = (locale === "th" ? o.products?.name_th : o.products?.name_en) || ""
         return (
           (o.whitelisted_username ?? "").toLowerCase().includes(q) ||
           (o.users?.username      ?? "").toLowerCase().includes(q) ||
-          (o.products?.name_en    ?? "").toLowerCase().includes(q)
+          productName.toLowerCase().includes(q)
         )
       })
-  }, [orders, search, statusFilter, wlFilter])
+  }, [orders, search, statusFilter, wlFilter, locale])
 
   const handleWhitelistStatus = async (id: string, whitelist_status: string) => {
     setUpdating(id)
@@ -43,14 +51,14 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[24px] font-bold">Orders</h1>
-          <p className="text-text-muted text-[13px] mt-0.5">{orders.length} total</p>
+          <h1 className="text-[24px] font-bold">{t("orders")}</h1>
+          <p className="text-text-muted text-[13px] mt-0.5">{orders.length} {t("total")}</p>
         </div>
         {pendingWl > 0 && (
           <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-2.5">
             <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
             <span className="text-[13px] text-orange-400 font-medium">
-              {pendingWl} pending whitelist
+              {t("pending_whitelist", { count: pendingWl })}
             </span>
           </div>
         )}
@@ -61,7 +69,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search username, user, product..."
+          placeholder={t("search_orders")}
           className="flex-1 min-w-[200px] bg-bg-card border border-accent/15 rounded-xl px-4 py-2.5 text-[13px] placeholder:text-text-muted outline-none focus:border-accent/40"
         />
         <div className="flex gap-1 bg-bg-card border border-accent/15 rounded-xl p-1">
@@ -70,7 +78,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
               className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${
                 statusFilter === f ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
               }`}>
-              {f}
+              {t(f)}
             </button>
           ))}
         </div>
@@ -80,7 +88,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
               className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${
                 wlFilter === f ? "bg-orange-500/20 text-orange-400" : "text-text-muted hover:text-text-base"
               }`}>
-              {f === "all" ? "All WL" : f}
+              {f === "all" ? t("all") : f}
             </button>
           ))}
         </div>
@@ -92,22 +100,22 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
           <table className="w-full text-[13px]">
             <thead>
               <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-white/[0.02]">
-                <th className="px-5 py-3.5 font-medium">User</th>
-                <th className="px-4 py-3.5 font-medium">Product</th>
-                <th className="px-4 py-3.5 font-medium">In-Game Username</th>
-                <th className="px-4 py-3.5 font-medium">Amount</th>
-                <th className="px-4 py-3.5 font-medium">Payment</th>
-                <th className="px-4 py-3.5 font-medium">Order Status</th>
-                <th className="px-4 py-3.5 font-medium">Whitelist</th>
-                <th className="px-4 py-3.5 font-medium">Date</th>
-                <th className="px-4 py-3.5 font-medium">Actions</th>
+                <th className="px-5 py-3.5 font-medium">{t("user")}</th>
+                <th className="px-4 py-3.5 font-medium">{t("product")}</th>
+                <th className="px-4 py-3.5 font-medium">{t("in_game_username")}</th>
+                <th className="px-4 py-3.5 font-medium">{t("amount")}</th>
+                <th className="px-4 py-3.5 font-medium">{t("payment")}</th>
+                <th className="px-4 py-3.5 font-medium">{t("order_status")}</th>
+                <th className="px-4 py-3.5 font-medium">{t("whitelist")}</th>
+                <th className="px-4 py-3.5 font-medium">{t("date")}</th>
+                <th className="px-4 py-3.5 font-medium">{t("actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={9} className="text-center py-12 text-text-muted">
-                    No orders found
+                    {t("no_orders")}
                   </td>
                 </tr>
               )}
@@ -132,8 +140,8 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
 
                   {/* Product */}
                   <td className="px-4 py-4">
-                    <p className="text-text-base">{o.products?.name_en ?? "—"}</p>
-                    <p className="text-[11px] text-text-muted">{o.product_variants?.label_en ?? ""}</p>
+                    <p className="text-text-base">{locale === "th" ? o.products?.name_th : o.products?.name_en ?? "—"}</p>
+                    <p className="text-[11px] text-text-muted">{locale === "th" ? o.product_variants?.label_th : o.product_variants?.label_en ?? ""}</p>
                   </td>
 
                   {/* In-Game Username */}
@@ -159,7 +167,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                         background: o.payment_method === "promptpay" ? "rgba(27,167,225,.15)" : "rgba(103,114,229,.15)",
                         color:      o.payment_method === "promptpay" ? "#1ba7e1" : "#6772e5",
                       }}>
-                      {o.payment_method === "promptpay" ? "PromptPay" : "Card"}
+                      {o.payment_method === "promptpay" ? t("promptpay") : t("card")}
                     </span>
                   </td>
 
@@ -171,7 +179,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                       o.status === "expired" ? "bg-red-500/15 text-red-400"       :
                       "bg-white/5 text-text-muted"
                     }`}>
-                      {o.status}
+                      {t(o.status)}
                     </span>
                   </td>
 
@@ -183,7 +191,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                         o.whitelist_status === "removed"     ? "bg-red-500/15 text-red-400"       :
                         "bg-orange-500/15 text-orange-400"
                       }`}>
-                        {o.whitelist_status ?? "pending"}
+                        {o.whitelist_status ? t(o.whitelist_status) : t("pending")}
                       </span>
                     ) : (
                       <span className="text-text-muted text-[11px]">—</span>
@@ -192,7 +200,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
 
                   {/* Date */}
                   <td className="px-4 py-4 text-text-muted whitespace-nowrap text-[12px]">
-                    {o.created_at ? format(new Date(o.created_at), "dd MMM HH:mm") : "—"}
+                    {o.created_at ? format(new Date(o.created_at), "dd MMM HH:mm", { locale: dateLocale }) : "—"}
                   </td>
 
                   {/* Actions */}
@@ -205,7 +213,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                             disabled={updating === o.id}
                             className="text-[11px] px-3 py-1.5 rounded-lg bg-green-500/15 text-green-400 hover:bg-green-500/25 transition disabled:opacity-40 whitespace-nowrap"
                           >
-                            {updating === o.id ? "..." : "Whitelist"}
+                            {updating === o.id ? "..." : t("whitelist")}
                           </button>
                         )}
                         {o.whitelist_status === "whitelisted" && (
@@ -214,7 +222,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                             disabled={updating === o.id}
                             className="text-[11px] px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition disabled:opacity-40 whitespace-nowrap"
                           >
-                            {updating === o.id ? "..." : "Remove"}
+                            {updating === o.id ? "..." : t("remove")}
                           </button>
                         )}
                         {o.whitelist_status === "removed" && (
@@ -223,7 +231,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                             disabled={updating === o.id}
                             className="text-[11px] px-3 py-1.5 rounded-lg bg-green-500/15 text-green-400 hover:bg-green-500/25 transition disabled:opacity-40 whitespace-nowrap"
                           >
-                            {updating === o.id ? "..." : "Re-whitelist"}
+                            {updating === o.id ? "..." : t("re_whitelist")}
                           </button>
                         )}
                       </div>

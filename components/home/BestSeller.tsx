@@ -3,6 +3,8 @@
 import { motion } from "framer-motion"
 import ProductCard from "./ProductCard"
 import { useTranslations, useLocale } from "next-intl"
+import { getImageUrl } from "@/lib/getImageUrl"
+
 
 type Props = {
   products: any[]

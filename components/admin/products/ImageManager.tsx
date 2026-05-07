@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { getImageUrl } from "@/lib/getImageUrl"
 
 export default function ImageManager({ productId, images }: { productId: string; images: any[] }) {
   const [list, setList]       = useState(images)
@@ -71,7 +72,7 @@ export default function ImageManager({ productId, images }: { productId: string;
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {list.map((img, i) => (
             <div key={img.id} className="relative group rounded-xl overflow-hidden aspect-video bg-bg-base">
-              <img src={img.url} alt={img.alt_text} className="w-full h-full object-cover" />
+              <img src={getImageUrl(img.url)} alt={img.alt_text} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
                 <span className="text-[11px] text-white/60 font-mono">{img.url}</span>
                 <span className="text-[10px] text-white/40">#{i + 1}</span>
@@ -117,7 +118,7 @@ export default function ImageManager({ productId, images }: { productId: string;
           <p className="text-[13px] font-medium">Preview</p>
 
           <div className="aspect-video rounded-xl overflow-hidden bg-bg-card">
-            <img src={preview} className="w-full h-full object-cover" />
+            <img src={getImageUrl(preview)} className="w-full h-full object-cover" />
           </div>
 
           <div>

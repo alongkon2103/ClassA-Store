@@ -7,6 +7,8 @@ import {
     Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts"
 import { format, parseISO, eachDayOfInterval, subDays } from "date-fns"
+import { useTranslations, useLocale } from "next-intl"
+import { th, enUS } from "date-fns/locale"
 
 // ── Stat Card ──────────────────────────────────────────
 function StatCard({
@@ -65,6 +67,10 @@ function StatusBadge({ status }: { status: string }) {
 
 // ── Main ──────────────────────────────────────────────
 export default function DashboardClient({ data }: { data: any }) {
+    const t = useTranslations("Admin")
+    const locale = useLocale()
+    const dateLocale = locale === "th" ? th : enUS
+
     // Fill in dates with no sales for the full 7 days
     const chartData = useMemo(() => {
         const days = eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() })
@@ -73,41 +79,41 @@ export default function DashboardClient({ data }: { data: any }) {
             const found = data.dailyRevenue.find((r: any) =>
                 format(parseISO(r.day), "yyyy-MM-dd") === key
             )
-            return { day: format(d, "dd MMM"), total: found?.total ?? 0 }
+            return { day: format(d, "dd MMM", { locale: dateLocale }), total: found?.total ?? 0 }
         })
-    }, [data.dailyRevenue])
+    }, [data.dailyRevenue, dateLocale])
 
     return (
         <div className="space-y-8">
             {/* Header */}
             <div>
-                <h1 className="text-[26px] font-bold">Dashboard</h1>
+                <h1 className="text-[26px] font-bold">{t("dashboard")}</h1>
                 <p className="text-text-muted text-[13px] mt-1">
-                    {format(new Date(), "EEEE, d MMMM yyyy")}
+                    {format(new Date(), "EEEE, d MMMM yyyy", { locale: dateLocale })}
                 </p>
             </div>
 
             {/* Stat Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
-                    label="Today's Revenue"
+                    label={t("today_revenue")}
                     value={`฿${data.todayRevenue.toLocaleString()}`}
                     color="accent"
                 />
                 <StatCard
-                    label="Monthly Revenue"
+                    label={t("monthly_revenue")}
                     value={`฿${data.monthRevenue.toLocaleString()}`}
-                    sub="This month"
+                    sub={t("this_month")}
                     color="purple"
                 />
                 <StatCard
-                    label="Pending Orders"
+                    label={t("pending_orders")}
                     value={String(data.pendingOrders)}
-                    sub="Awaiting fulfillment"
+                    sub={t("awaiting_fulfillment")}
                     color="orange"
                 />
                 <StatCard
-                    label="Active Products"
+                    label={t("active_products")}
                     value={String(data.totalProducts)}
                     color="green"
                 />
@@ -117,8 +123,8 @@ export default function DashboardClient({ data }: { data: any }) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Area Chart */}
                 <div className="lg:col-span-2 bg-bg-card border border-accent/10 rounded-2xl p-5">
-                    <p className="text-[13px] font-semibold mb-1">Revenue — Last 7 Days</p>
-                    <p className="text-[11px] text-text-muted mb-5">Daily sales (paid orders)</p>
+                    <p className="text-[13px] font-semibold mb-1">{t("revenue_7days")}</p>
+                    <p className="text-[11px] text-text-muted mb-5">{t("daily_sales")}</p>
                     <ResponsiveContainer width="100%" height={200}>
                         <AreaChart data={chartData}>
                             <defs>
@@ -140,17 +146,21 @@ export default function DashboardClient({ data }: { data: any }) {
 
                 {/* Low Stock */}
                 <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
-                    <p className="text-[13px] font-semibold mb-1">Low Stock</p>
-                    <p className="text-[11px] text-text-muted mb-4">Products flagged as low</p>
+                    <p className="text-[13px] font-semibold mb-1">{t("low_stock")}</p>
+                    <p className="text-[11px] text-text-muted mb-4">{t("low_stock_desc")}</p>
                     {data.lowStockProducts.length === 0 ? (
-                        <p className="text-[13px] text-text-muted text-center py-8">All good ✓</p>
+                        <p className="text-[13px] text-text-muted text-center py-8">{t("all_good")} ✓</p>
                     ) : (
                         <div className="space-y-2">
                             {data.lowStockProducts.map((p: any) => (
                                 <div key={p.id}
                                     className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-orange-500/5 border border-orange-500/15">
-                                    <p className="text-[13px] line-clamp-1 flex-1">{p.name_en}</p>
-                                    <span className="text-[10px] text-orange-400 font-medium ml-2 whitespace-nowrap">Low</span>
+                                    <p className="text-[13px] line-clamp-1 flex-1">
+                                        {locale === "th" ? p.name_th : p.name_en}
+                                    </p>
+                                    <span className="text-[10px] text-orange-400 font-medium ml-2 whitespace-nowrap">
+                                        {t("low_stock")}
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -162,12 +172,14 @@ export default function DashboardClient({ data }: { data: any }) {
             <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-5">
                     <div>
-                        <p className="text-[13px] font-semibold">Recent Orders</p>
-                        <p className="text-[11px] text-text-muted">Latest {data.recentOrders.length} transactions</p>
+                        <p className="text-[13px] font-semibold">{t("recent_orders")}</p>
+                        <p className="text-[11px] text-text-muted">
+                            {t("latest_transactions", { count: data.recentOrders.length })}
+                        </p>
                     </div>
                     <a href="/admin/orders"
                         className="text-[12px] text-accent-light hover:underline">
-                        View all →
+                        {t("view_all")} →
                     </a>
                 </div>
 
@@ -175,11 +187,11 @@ export default function DashboardClient({ data }: { data: any }) {
                     <table className="w-full text-[13px]">
                         <thead>
                             <tr className="text-left text-[11px] text-text-muted border-b border-white/5">
-                                <th className="pb-3 font-medium">User</th>
-                                <th className="pb-3 font-medium">Product</th>
-                                <th className="pb-3 font-medium">Amount</th>
-                                <th className="pb-3 font-medium">Status</th>
-                                <th className="pb-3 font-medium">Date</th>
+                                <th className="pb-3 font-medium">{t("user")}</th>
+                                <th className="pb-3 font-medium">{t("product")}</th>
+                                <th className="pb-3 font-medium">{t("amount")}</th>
+                                <th className="pb-3 font-medium">{t("status")}</th>
+                                <th className="pb-3 font-medium">{t("date")}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -198,7 +210,7 @@ export default function DashboardClient({ data }: { data: any }) {
                                         </div>
                                     </td>
                                     <td className="py-3 text-text-muted line-clamp-1 max-w-[160px]">
-                                        {o.products?.name_en ?? "—"}
+                                        {locale === "th" ? o.products?.name_th : o.products?.name_en ?? "—"}
                                     </td>
                                     <td className="py-3 font-semibold text-accent-light">
                                         ฿{o.amount.toLocaleString()}
@@ -207,7 +219,7 @@ export default function DashboardClient({ data }: { data: any }) {
                                         <StatusBadge status={o.status} />
                                     </td>
                                     <td className="py-3 text-text-muted whitespace-nowrap">
-                                        {format(new Date(o.created_at), "dd MMM HH:mm")}
+                                        {format(new Date(o.created_at), "dd MMM HH:mm", { locale: dateLocale })}
                                     </td>
                                 </tr>
                             ))}

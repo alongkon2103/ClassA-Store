@@ -6,6 +6,7 @@ import Image from "next/image"
 import { Link, useRouter } from "@/i18n/routing"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslations, useLocale } from "next-intl"
+import { getImageUrl } from "@/lib/getImageUrl"
 
 interface OrderListClientProps {
   orders: any[]
@@ -64,7 +65,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
             >
               <div className="w-10 h-10 md:w-16 md:h-16 relative rounded-lg overflow-hidden shrink-0 shadow-lg">
                 <Image
-                  src={imageUrl}
+                  src={getImageUrl(imageUrl)}
                   alt={locale === "th" ? order.products.name_th : order.products.name_en}
                   fill className="object-cover"
                 />
@@ -141,7 +142,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
               {/* Modal Header */}
               <div className="relative h-24 md:h-40 flex items-end p-4 md:p-8">
                 <Image
-                  src={selectedOrder.products.product_images[0]?.url || "/next.svg"}
+                  src={getImageUrl(selectedOrder.products.product_images[0]?.url || "/next.svg")}
                   alt="" fill className="object-cover opacity-30"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-bg-card via-bg-card/20 to-transparent" />
@@ -170,7 +171,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                 <div className="bg-bg-base/60 border border-accent/10 rounded-xl md:rounded-2xl p-4 md:p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] text-text-muted uppercase tracking-widest font-bold">
-                      In-Game Username
+                      {t("ingame_username")}
                     </p>
                     <div className="flex items-center gap-1.5">
                       <div className={`w-2 h-2 rounded-full ${selectedOrder.whitelist_status === "whitelisted" ? "bg-green-400" :
@@ -181,9 +182,9 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                         selectedOrder.whitelist_status === "removed" ? "text-red-400" :
                           "text-orange-400"
                         }`}>
-                        {selectedOrder.whitelist_status === "whitelisted" ? "Whitelisted" :
-                          selectedOrder.whitelist_status === "removed" ? "Access Removed" :
-                            "Pending Whitelist"}
+                        {selectedOrder.whitelist_status === "whitelisted" ? t("whitelisted") :
+                          selectedOrder.whitelist_status === "removed" ? t("removed") :
+                            t("pending")}
                       </span>
                     </div>
                   </div>
@@ -197,7 +198,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                   {selectedOrder.whitelist_status === "pending" && (
                     <div className="bg-orange-500/8 border border-orange-500/20 rounded-xl px-3 py-2.5">
                       <p className="text-[12px] text-orange-400">
-                        Your username will be whitelisted within 24 hours after payment confirmation.
+                        {t("pending_hint")}
                       </p>
                     </div>
                   )}
@@ -205,7 +206,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                   {selectedOrder.whitelist_status === "whitelisted" && (
                     <div className="bg-green-500/8 border border-green-500/20 rounded-xl px-3 py-2.5">
                       <p className="text-[12px] text-green-400">
-                        You have been whitelisted. You can now access the server.
+                        {t("whitelisted_hint")}
                       </p>
                     </div>
                   )}
@@ -213,7 +214,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                   {selectedOrder.whitelist_status === "removed" && (
                     <div className="bg-red-500/8 border border-red-500/20 rounded-xl px-3 py-2.5">
                       <p className="text-[12px] text-red-400">
-                        Your access has been removed. Please contact support.
+                        {t("removed_hint")}
                       </p>
                     </div>
                   )}

@@ -1,10 +1,16 @@
 import { prisma } from "@/lib/prisma"
+import { getTranslations, setRequestLocale } from "next-intl/server"
 
-export default async function ConsignmentPage() {
+export default async function ConsignmentPage({ params }: any) {
+  const { locale } = await params
+  setRequestLocale(locale)
+  const t = await getTranslations("Consignment")
+
   const rawReport = await prisma.$queryRaw<any[]>`
     SELECT
       p.id,
       p.name_en,
+      p.name_th,
       p.owner_name,
       p.owner_contact,
       p.commission_pct,
@@ -15,7 +21,7 @@ export default async function ConsignmentPage() {
     FROM products p
     LEFT JOIN orders o ON o.product_id = p.id AND o.status = 'paid'
     WHERE p.is_consignment = true
-    GROUP BY p.id, p.name_en, p.owner_name, p.owner_contact, p.commission_pct
+    GROUP BY p.id, p.name_en, p.name_th, p.owner_name, p.owner_contact, p.commission_pct
     ORDER BY gross_revenue DESC NULLS LAST
   `
 
@@ -38,21 +44,21 @@ export default async function ConsignmentPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-[24px] font-bold">Consignment Report</h1>
+        <h1 className="text-[24px] font-bold">{t("title")}</h1>
         <p className="text-text-muted text-[13px] mt-0.5">
-          Summary of consignment products and commission
+          {t("subtitle")}
         </p>
       </div>
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Gross Revenue",    value: totals.gross,      color: "text-text-base" },
-          { label: "Our Commission",   value: totals.commission, color: "text-green-400" },
-          { label: "Owner Payout Due", value: totals.payout,     color: "text-orange-400" },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="bg-bg-card border border-accent/10 rounded-2xl p-5">
-            <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{label}</p>
+          { key: "gross_revenue",    value: totals.gross,      color: "text-text-base" },
+          { key: "our_commission",   value: totals.commission, color: "text-green-400" },
+          { key: "owner_payout_due", value: totals.payout,     color: "text-orange-400" },
+        ].map(({ key, value, color }) => (
+          <div key={key} className="bg-bg-card border border-accent/10 rounded-2xl p-5">
+            <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{t(key)}</p>
             <p className={`text-[24px] font-bold ${color}`}>฿{value.toLocaleString()}</p>
           </div>
         ))}
@@ -63,26 +69,26 @@ export default async function ConsignmentPage() {
         <table className="w-full text-[13px]">
           <thead>
             <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-white/[0.02]">
-              <th className="px-5 py-3.5 font-medium">Product</th>
-              <th className="px-4 py-3.5 font-medium">Owner</th>
-              <th className="px-4 py-3.5 font-medium">Com %</th>
-              <th className="px-4 py-3.5 font-medium">Orders</th>
-              <th className="px-4 py-3.5 font-medium">Gross</th>
-              <th className="px-4 py-3.5 font-medium text-green-400">We Get</th>
-              <th className="px-4 py-3.5 font-medium text-orange-400">Pay Owner</th>
+              <th className="px-5 py-3.5 font-medium">{t("product")}</th>
+              <th className="px-4 py-3.5 font-medium">{t("owner")}</th>
+              <th className="px-4 py-3.5 font-medium">{t("commission_pct")}</th>
+              <th className="px-4 py-3.5 font-medium">{t("orders")}</th>
+              <th className="px-4 py-3.5 font-medium">{t("gross")}</th>
+              <th className="px-4 py-3.5 font-medium text-green-400">{t("we_get")}</th>
+              <th className="px-4 py-3.5 font-medium text-orange-400">{t("pay_owner")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
             {report.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-text-muted">
-                  No consignment products yet
+                  {t("no_consignment")}
                 </td>
               </tr>
             ) : (
               report.map((r) => (
                 <tr key={r.id} className="hover:bg-white/[0.02] transition">
-                  <td className="px-5 py-4 font-medium">{r.name_en}</td>
+                  <td className="px-5 py-4 font-medium">{locale === "th" ? r.name_th : r.name_en}</td>
                   <td className="px-4 py-4">
                     <p className="text-text-base">{r.owner_name ?? "—"}</p>
                     <p className="text-[11px] text-text-muted">{r.owner_contact ?? ""}</p>

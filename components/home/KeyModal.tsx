@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { getImageUrl } from "@/lib/getImageUrl"
 
 import { useTranslations, useLocale } from "next-intl"
 
@@ -86,7 +87,7 @@ export default function KeyModal({ order, isOpen, onClose }: KeyModalProps) {
               style={{ background: "linear-gradient(135deg,#0d1e35,#1a3a6a)" }}
             >
               <img
-                src={order.product.image}
+                src={getImageUrl(order.product.image)}
                 alt={order.product.name}
                 className="absolute inset-0 w-full h-full object-cover opacity-60"
               />

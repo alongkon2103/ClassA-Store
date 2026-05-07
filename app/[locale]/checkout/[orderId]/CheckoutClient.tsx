@@ -5,6 +5,7 @@ import { Link, useRouter } from "@/i18n/routing"
 import Navbar from "@/components/Navbar"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslations, useLocale } from "next-intl"
+import { getImageUrl } from "@/lib/getImageUrl"
 
 export default function CheckoutClient({ order, bankAccount }: any) {
   const router = useRouter()
@@ -111,7 +112,7 @@ export default function CheckoutClient({ order, bankAccount }: any) {
                           onClick={() => setIsQRExpanded(true)}
                         >
                           <img
-                            src={bankAccount.qr_code_url}
+                            src={getImageUrl(bankAccount.qr_code_url)}
                             alt="PromptPay QR"
                             className="w-40 h-40 object-contain"
                           />
@@ -146,7 +147,7 @@ export default function CheckoutClient({ order, bankAccount }: any) {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <img
-                                src={bankAccount.qr_code_url}
+                                src={getImageUrl(bankAccount.qr_code_url)}
                                 alt="PromptPay QR Expanded"
                                 className="max-w-[85vw] max-h-[70vh] w-auto h-auto object-contain rounded-xl"
                               />
@@ -247,7 +248,7 @@ export default function CheckoutClient({ order, bankAccount }: any) {
                       className="relative rounded-xl overflow-hidden bg-bg-base cursor-pointer hover:opacity-95 transition group"
                       onClick={() => setIsSlipExpanded(true)}
                     >
-                      <img src={preview} className="w-full object-contain max-h-72" />
+                      <img src={getImageUrl(preview)} className="w-full object-contain max-h-72" />
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                         <div className="bg-white/20 backdrop-blur-md rounded-full p-2">
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
@@ -274,7 +275,7 @@ export default function CheckoutClient({ order, bankAccount }: any) {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <img
-                              src={preview}
+                              src={getImageUrl(preview)}
                               alt="Payment Slip Preview"
                               className="max-w-[90vw] max-h-[85vh] w-auto h-auto object-contain rounded-2xl shadow-2xl border border-white/10"
                             />
@@ -354,7 +355,7 @@ export default function CheckoutClient({ order, bankAccount }: any) {
                 {order.products?.product_images?.[0]?.url && (
                   <div className="aspect-video rounded-xl overflow-hidden bg-bg-base">
                     <img
-                      src={order.products.product_images[0].url}
+                      src={getImageUrl(order.products.product_images[0].url)}
                       className="w-full h-full object-cover"
                     />
                   </div>

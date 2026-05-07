@@ -1,3 +1,6 @@
+import { useTranslations, useLocale } from "next-intl"
+import { getImageUrl } from "@/lib/getImageUrl"
+
 type Variant = {
   id: string
   label_th: string
@@ -25,6 +28,8 @@ export default function ProductCard({
   product_variants,
   onClick
 }: Props) {
+  const t = useTranslations("Common")
+  const locale = useLocale()
   // Calculate total stock from all variants
   const totalStock = product_variants?.reduce((sum, v) => sum + v.stock, 0) ?? 0
 
@@ -36,13 +41,13 @@ export default function ProductCard({
       {/* Image */}
       <div className="relative aspect-video overflow-hidden">
         <img
-          src={image}
+          src={getImageUrl(image)}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         {badge && (
-          <span className="absolute top-2 right-2 bg-gold text-black text-[10px] font-bold px-2 py-0.5 rounded-full">
-            {badge}
+          <span className="absolute top-2 right-2 bg-gold text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+            {badge === "Hot" ? t("hot") : badge}
           </span>
         )}
       </div>
@@ -57,10 +62,7 @@ export default function ProductCard({
             {product_variants.slice(0, 3).map((v) => (
               <div key={v.id} className="flex justify-between text-[12px]">
                 <span className="text-text-muted">
-                  {v.label_en}
-                  {/* <span className={`ml-1 text-[10px] ${v.stock > 0 ? "text-green-400" : "text-red-400"}`}>
-                    ({v.stock})
-                  </span> */}
+                  {locale === "th" ? v.label_th : v.label_en}
                 </span>
                 <span className="font-semibold text-accent-light">฿{v.price}</span>
               </div>
@@ -71,14 +73,6 @@ export default function ProductCard({
         )}
 
         <div className="h-px bg-accent/10" />
-
-        {/* Footer — total stock */}
-        {/* <div className="flex justify-between items-center text-[11px]">
-          <span className="text-text-muted">Stock</span>
-          <span className={`font-medium ${is_low ? "text-orange-400" : totalStock > 0 ? "text-green-400" : "text-red-400"}`}>
-            {is_low ? "Low" : totalStock > 0 ? "Available" : "Out of stock"} ({totalStock})
-          </span>
-        </div> */}
       </div>
     </div>
   )
