@@ -13,7 +13,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const { productId, variantId, locale = "en" } = await req.json()
+        const { productId, variantId, paymentMethod = "promptpay", locale = "en" } = await req.json()
 
         const product = await prisma.products.findUnique({
             where: { id: productId },
@@ -28,9 +28,12 @@ export async function POST(req: Request) {
 
         const variant = product.product_variants.find(v => v.id === variantId)
 
-        const finalPrice = variant
+        const basePrice = variant
             ? Number(variant.price)
             : Number(product.price)
+
+        const feePercent = paymentMethod === "card" ? 0.06 : 0
+        const finalPrice = basePrice * (1 + feePercent)
 
         const title = variant
             ? `${product.name_en} (${variant.label_en})`
@@ -43,6 +46,8 @@ export async function POST(req: Request) {
                 product_id: product.id,
                 variant_id: variant?.id || null,
                 status: "pending",
+                payment_method: paymentMethod,
+                amount: finalPrice,
             }
         })
 
@@ -55,6 +60,7 @@ export async function POST(req: Request) {
                     variant_id: variant?.id,
                     amount: finalPrice,
                     status: "pending",
+                    payment_method: paymentMethod,
                 }
             })
         }
@@ -66,7 +72,7 @@ export async function POST(req: Request) {
 
         const stripeSession = await stripe.checkout.sessions.create({
             mode: "payment",
-            payment_method_types: ["card", "promptpay"],
+            payment_method_types: [paymentMethod as Stripe.Checkout.SessionCreateParams.PaymentMethodType],
             expires_at: Math.floor(Date.now() / 1000) + (30 * 60), // 30 mins from now
 
             line_items: [
@@ -75,6 +81,7 @@ export async function POST(req: Request) {
                         currency: "thb",
                         product_data: {
                             name: title,
+                            description: paymentMethod === "card" ? "Includes 6% service fee" : "No additional fee",
                         },
                         unit_amount: Math.round(finalPrice * 100),
                     },

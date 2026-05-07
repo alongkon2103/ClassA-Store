@@ -190,15 +190,31 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                       <ImageIcon size={12} /> {t("image_assets")}
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 md:gap-2">
-                      {selectedOrder.products.product_gifts.map((g: any, idx: number) => (
-                        <a key={g.id} href={g.url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-2.5 bg-accent/5 hover:bg-violet-500/20 border border-accent/10 text-text-base p-2.5 rounded-lg md:rounded-xl transition-all">
-                          <DownloadIcon size={12} className="text-violet-400" />
-                          <span className="text-[11px] md:text-[12px] font-medium truncate flex-1">
-                            {g.filename || `Asset_${idx + 1}`}
-                          </span>
-                        </a>
-                      ))}
+                      {selectedOrder.products.product_gifts.map((g: any, idx: number) => {
+                        const assetUrl = g.url.startsWith("http") ? g.url : g.url.startsWith("/") ? g.url : `/${g.url}`
+                        return (
+                          <div key={g.id} className="flex flex-col gap-1.5 p-2 md:p-3 bg-accent/5 border border-accent/10 rounded-xl">
+                            <div className="flex items-center gap-2 px-1">
+                              <DownloadIcon size={12} className="text-violet-400 shrink-0" />
+                              <span className="text-[11px] md:text-[12px] font-medium truncate flex-1">
+                                {g.filename || `Asset_${idx + 1}`}
+                              </span>
+                            </div>
+                            <div className="flex gap-1.5">
+                              <a href={assetUrl} target="_blank" rel="noopener noreferrer"
+                                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-white/5 hover:bg-white/10 text-text-base text-[10px] md:text-[11px] font-bold rounded-lg transition-all border border-white/5">
+                                <EyeIcon size={12} />
+                                View
+                              </a>
+                              <a href={assetUrl} download={g.filename || `Asset_${idx + 1}.png`}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-accent hover:bg-accent-light text-white text-[10px] md:text-[11px] font-bold rounded-lg transition-all shadow-sm shadow-accent/20">
+                                <DownloadIcon size={12} />
+                                {t("download")}
+                              </a>
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                     {selectedOrder.products.product_gifts.length === 0 && (
                       <p className="text-[11px] text-text-muted italic px-1">{t("no_image_assets")}</p>
@@ -211,15 +227,18 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                       <PresetIcon size={12} /> {t("config_presets")}
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 md:gap-2">
-                      {selectedOrder.products.product_presets.map((p: any, idx: number) => (
-                        <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-2.5 bg-accent/5 hover:bg-blue-500/20 border border-accent/10 text-text-base p-2.5 rounded-lg md:rounded-xl transition-all">
-                          <DownloadIcon size={12} className="text-blue-400" />
-                          <span className="text-[11px] md:text-[12px] font-medium truncate flex-1">
-                            {p.filename || `Preset_${idx + 1}`}
-                          </span>
-                        </a>
-                      ))}
+                      {selectedOrder.products.product_presets.map((p: any, idx: number) => {
+                        const assetUrl = p.url.startsWith("http") ? p.url : p.url.startsWith("/") ? p.url : `/${p.url}`
+                        return (
+                          <a key={p.id} href={assetUrl} download={p.filename || `Preset_${idx + 1}`}
+                            className="flex items-center justify-center gap-2 bg-accent hover:bg-accent-light text-white p-2.5 rounded-lg md:rounded-xl transition-all shadow-sm shadow-accent/20">
+                            <DownloadIcon size={14} />
+                            <span className="text-[11px] md:text-[12px] font-bold truncate">
+                              {p.filename || `Preset_${idx + 1}`}
+                            </span>
+                          </a>
+                        )
+                      })}
                     </div>
                     {selectedOrder.products.product_presets.length === 0 && (
                       <p className="text-[11px] text-text-muted italic px-1">{t("no_presets")}</p>
@@ -293,6 +312,15 @@ function DownloadIcon({ size = 20, className = "" }: { size?: number; className?
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  )
+}
+
+function EyeIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
     </svg>
   )
 }

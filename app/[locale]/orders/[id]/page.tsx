@@ -122,40 +122,70 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {/* Assets */}
-                                    {order.products.product_gifts.map((gift) => (
-                                        <div key={gift.id} className="flex flex-col bg-bg-base/30 border border-accent/10 rounded-xl p-4 transition-colors hover:border-violet-500/30">
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center text-[18px]">
-                                                    <ImageIcon />
+                                    {order.products.product_gifts.map((gift) => {
+                                        const assetUrl = gift.url.startsWith("http")
+                                            ? gift.url
+                                            : gift.url.startsWith("/")
+                                                ? gift.url
+                                                : `/uploads/${gift.url}`
+                                        return (
+                                            <div key={gift.id} className="flex flex-col bg-bg-base/30 border border-accent/10 rounded-xl p-4 transition-colors hover:border-violet-500/30">
+                                                <div className="flex items-center gap-4 mb-4">
+                                                    <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center text-[18px]">
+                                                        <ImageIcon />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[13px] font-bold text-text-base truncate">{gift.filename || t("media_asset")}</p>
+                                                        <p className="text-[10px] text-text-muted uppercase tracking-wider">{t("image_asset")}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-[13px] font-bold text-text-base truncate">{gift.filename || t("media_asset")}</p>
-                                                    <p className="text-[10px] text-text-muted uppercase tracking-wider">{t("image_asset")}</p>
+                                                <div className="flex gap-2 mt-auto">
+                                                    <a
+                                                        href={assetUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex-1 py-2 bg-accent/5 hover:bg-violet-600/20 text-text-base text-[12px] font-semibold rounded-lg text-center transition flex items-center justify-center gap-2 border border-accent/10"
+                                                    >
+                                                        <EyeIcon size={14} />
+                                                        View
+                                                    </a>
+
+                                                    <a
+                                                        href={assetUrl}
+                                                        download
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex-1 py-2 bg-accent hover:bg-accent-light text-white text-[12px] font-semibold rounded-lg text-center transition flex items-center justify-center gap-2"
+                                                    >
+                                                        <DownloadIcon size={14} />
+                                                        {t("download")}
+                                                    </a>
                                                 </div>
                                             </div>
-                                            <a href={gift.url} target="_blank" rel="noopener noreferrer" className="mt-auto w-full py-2 bg-accent/5 hover:bg-violet-600 text-text-base text-[12px] font-semibold rounded-lg text-center transition">
-                                                {t("download")}
-                                            </a>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
 
                                     {/* Presets */}
-                                    {order.products.product_presets.map((preset) => (
-                                        <div key={preset.id} className="flex flex-col bg-bg-base/30 border border-accent/10 rounded-xl p-4 transition-colors hover:border-blue-500/30">
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-[18px]">
-                                                    ⚙️
+                                    {order.products.product_presets.map((preset) => {
+                                        const assetUrl = preset.url.startsWith("http") ? preset.url : preset.url.startsWith("/") ? preset.url : `/${preset.url}`
+                                        return (
+                                            <div key={preset.id} className="flex flex-col bg-bg-base/30 border border-accent/10 rounded-xl p-4 transition-colors hover:border-blue-500/30">
+                                                <div className="flex items-center gap-4 mb-4">
+                                                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-[18px]">
+                                                        <PresetIcon />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[13px] font-bold text-text-base truncate">{preset.filename || "Config"}</p>
+                                                        <p className="text-[10px] text-text-muted uppercase tracking-wider">{t("config_preset")}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-[13px] font-bold text-text-base truncate">{preset.filename || "Config"}</p>
-                                                    <p className="text-[10px] text-text-muted uppercase tracking-wider">{t("config_preset")}</p>
-                                                </div>
+                                                <a href={assetUrl} download={preset.filename || "preset"} className="mt-auto w-full py-2 bg-accent hover:bg-accent-light text-white text-[12px] font-semibold rounded-lg text-center transition flex items-center justify-center gap-2">
+                                                    <DownloadIcon size={14} />
+                                                    {t("download")}
+                                                </a>
                                             </div>
-                                            <a href={preset.url} target="_blank" rel="noopener noreferrer" className="mt-auto w-full py-2 bg-accent/5 hover:bg-blue-600 text-text-base text-[12px] font-semibold rounded-lg text-center transition">
-                                                {t("download")}
-                                            </a>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -211,6 +241,15 @@ function ExternalIcon({ size = 20 }: { size?: number }) {
     )
 }
 
+function EyeIcon({ size = 20 }: { size?: number }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+        </svg>
+    )
+}
+
 function CloseIcon({ size = 20 }: { size?: number }) {
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -224,7 +263,7 @@ function KeyIcon({ size = 20 }: { size?: number }) {
         <svg
             width={size}
             height={size}
-            className="w-4 h-4 md:w-6 md:h-6" 
+            className="w-4 h-4 md:w-6 md:h-6"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

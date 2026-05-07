@@ -326,7 +326,7 @@ export default function Navbar() {
                   <ProviderIcon provider={provider} size={15} />
                 </div>
                 <div>
-                  <p className="text-white font-semibold text-[15px] leading-tight">{t("logout")}?</p>
+                  <p className="font-semibold text-[15px] leading-tight" style={{ color: "var(--color-text-base)" }}>{t("logout")}?</p>
                   <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
                     {provider === "google" ? t("signed_in_google") : t("signed_in_discord")}
                   </p>

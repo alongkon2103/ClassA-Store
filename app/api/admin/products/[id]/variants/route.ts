@@ -13,13 +13,17 @@ export async function POST(
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
+  if (duration_type === "days" && (!duration_days || Number(duration_days) <= 0)) {
+    return NextResponse.json({ error: "Invalid duration days" }, { status: 400 })
+  }
+
   const variant = await prisma.product_variants.create({
     data: {
       product_id:    id,
       label_en,
       label_th,
       duration_type: duration_type ?? "permanent",
-      duration_days: duration_days ?? null,
+      duration_days: duration_type === "days" ? Number(duration_days) : null,
       price,
       sort_order:    sort_order ?? 0,
       is_active:     is_active  ?? true,

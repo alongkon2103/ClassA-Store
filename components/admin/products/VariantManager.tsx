@@ -20,6 +20,11 @@ export default function VariantManager({ productId, variants }: { productId: str
 
   const handleAdd = async () => {
     if (!form.label_en || !form.price) { alert("Fill label and price"); return }
+    if (form.duration_type === "days" && (!form.duration_days || Number(form.duration_days) <= 0)) {
+      alert("Please enter a valid number of days")
+      return
+    }
+
     setSaving(true)
     const res = await fetch(`/api/admin/products/${productId}/variants`, {
       method: "POST",
@@ -32,7 +37,7 @@ export default function VariantManager({ productId, variants }: { productId: str
     })
     const data = await res.json()
     setSaving(false)
-    if (!res.ok) { alert(data.error); return }
+    if (!res.ok) { alert(data.error || "Failed to add variant"); return }
     setList((l) => [...l, { ...data, price: Number(data.price) }])
     setForm({ ...blankVariant })
     setAdding(false)
@@ -40,8 +45,18 @@ export default function VariantManager({ productId, variants }: { productId: str
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete variant?")) return
-    await fetch(`/api/admin/products/${productId}/variants/${id}`, { method: "DELETE" })
-    setList((l) => l.filter((v) => v.id !== id))
+    try {
+      const res = await fetch(`/api/admin/products/${productId}/variants/${id}`, { method: "DELETE" })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(data.error || "Failed to delete variant")
+        return
+      }
+      setList((l) => l.filter((v) => v.id !== id))
+    } catch (err) {
+      console.error(err)
+      alert("An error occurred")
+    }
   }
 
   const handleToggle = async (id: string, current: boolean) => {
