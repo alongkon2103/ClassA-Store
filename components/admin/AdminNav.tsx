@@ -5,13 +5,15 @@ import { Link, usePathname } from "@/i18n/routing"
 import { useTranslations } from "next-intl"
 
 const links = [
-  { href: "/admin",            key: "dashboard",   icon: "" },
-  { href: "/admin/analytics",  key: "analytics",   icon: "" },
-  { href: "/admin/products",   key: "products",    icon: "" },
+  { href: "/admin", key: "dashboard", icon: "" },
+  { href: "/admin/analytics", key: "analytics", icon: "" },
+  { href: "/admin/products", key: "products", icon: "" },
   { href: "/admin/consignment", key: "consignment", icon: "" },
   // { href: "/admin/keys",       key: "game_keys",   icon: "" },
-  { href: "/admin/orders",     key: "orders",      icon: "" },
-  { href: "/admin/users",      key: "users",       icon: "" },
+  { href: "/admin/orders", key: "orders", icon: "" },
+  { href: "/admin/users", key: "users", icon: "" },
+  { href: "/admin/gifts", key: "gifts", icon: "" },
+
   { href: "/admin/tiktok-simulator", key: "tiktok simulator", icon: "" },
 ]
 
@@ -36,11 +38,10 @@ export default function AdminNav() {
 
           return (
             <Link key={href} href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
-                active
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all ${active
                   ? "bg-accent/15 text-accent-light"
                   : "text-text-muted hover:bg-white/5 hover:text-text-base"
-              }`}
+                }`}
             >
               <span className="text-base">{icon}</span>
               {t(key)}

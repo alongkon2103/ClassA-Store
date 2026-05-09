@@ -23,8 +23,6 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
     e.stopPropagation()
     setPayingId(order.id)
     try {
-      // ทุก pending order ไปที่ Stripe checkout ใหม่
-      // แต่ต้องมี whitelisted_username อยู่แล้วใน order
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -55,14 +53,17 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
           const isPaid = order.status === "paid"
           const isPending = order.status === "pending"
           const isPaying = payingId === order.id
+          const hasFunctions = (order.products?.product_functions?.length ?? 0) > 0
 
           return (
             <div
               key={order.id}
               onClick={() => isPaid && setSelectedOrder(order)}
-              className={`group bg-bg-card border border-accent/10 rounded-xl p-2.5 md:p-4 transition-all duration-300 flex items-center gap-3 md:gap-4 ${isPaid ? "cursor-pointer hover:border-accent/30 hover:shadow-xl hover:shadow-accent/5" : "cursor-default"
-                } ${!isPaid && !isPending ? "opacity-70" : ""}`}
+              className={`group bg-bg-card border border-accent/10 rounded-xl p-2.5 md:p-4 transition-all duration-300 flex items-center gap-3 md:gap-4 ${
+                isPaid ? "cursor-pointer hover:border-accent/30 hover:shadow-xl hover:shadow-accent/5" : "cursor-default"
+              } ${!isPaid && !isPending ? "opacity-70" : ""}`}
             >
+              {/* Thumbnail */}
               <div className="w-10 h-10 md:w-16 md:h-16 relative rounded-lg overflow-hidden shrink-0 shadow-lg">
                 <Image
                   src={getImageUrl(imageUrl)}
@@ -71,6 +72,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                 />
               </div>
 
+              {/* Info */}
               <div className="flex-1 min-w-0">
                 <h3 className="text-[13px] md:text-[15px] font-bold text-text-base group-hover:text-accent-light transition-colors truncate mb-0.5">
                   {locale === "th" ? order.products.name_th : order.products.name_en}
@@ -92,17 +94,19 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                 </div>
               </div>
 
+              {/* Right side */}
               <div className="flex flex-col items-end shrink-0 ml-auto gap-2">
                 <div className="text-right">
                   <p className="text-[13px] md:text-[15px] font-bold text-text-base mb-0.5">
                     ฿{Number(order.amount).toLocaleString()}
                   </p>
-                  <span className={`text-[7px] md:text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${isPaid
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                    : order.status === "expired"
-                      ? "bg-red-500/10 text-red-400 border-red-500/20"
-                      : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                    }`}>
+                  <span className={`text-[7px] md:text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                    isPaid
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                      : order.status === "expired"
+                        ? "bg-red-500/10 text-red-400 border-red-500/20"
+                        : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                  }`}>
                     {order.status}
                   </span>
                 </div>
@@ -117,16 +121,31 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                     {isPaying ? t("wait") : t("pay_now")}
                   </button>
                 )}
+
+                {/* Game Settings shortcut on card (mobile-friendly) */}
+                {isPaid && hasFunctions && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/orders/${order.id}/settings`)
+                    }}
+                    className="text-[9px] md:text-[10px] font-bold border border-accent/20 text-accent-light/70 hover:text-accent-light hover:border-accent/40 px-2 py-1 rounded-lg transition flex items-center gap-1"
+                  >
+                    <SettingsIcon size={10} />
+                    Settings
+                  </button>
+                )}
               </div>
             </div>
           )
         })}
       </div>
 
-      {/* Order Detail Modal */}
+      {/* ── Order Detail Modal ──────────────────────────────────────── */}
       <AnimatePresence>
         {selectedOrder && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 md:p-4">
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSelectedOrder(null)}
@@ -167,29 +186,29 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
               {/* Modal Body */}
               <div className="p-4 md:p-8 space-y-4 md:space-y-6">
 
-                {/* ✅ Whitelist Status Section */}
+                {/* Whitelist Status */}
                 <div className="bg-bg-base/60 border border-accent/10 rounded-xl md:rounded-2xl p-4 md:p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] text-text-muted uppercase tracking-widest font-bold">
                       {t("ingame_username")}
                     </p>
                     <div className="flex items-center gap-1.5">
-                      <div className={`w-2 h-2 rounded-full ${selectedOrder.whitelist_status === "whitelisted" ? "bg-green-400" :
+                      <div className={`w-2 h-2 rounded-full ${
+                        selectedOrder.whitelist_status === "whitelisted" ? "bg-green-400" :
                         selectedOrder.whitelist_status === "removed" ? "bg-red-400" :
-                          "bg-orange-400 animate-pulse"
-                        }`} />
-                      <span className={`text-[11px] font-medium capitalize ${selectedOrder.whitelist_status === "whitelisted" ? "text-green-400" :
+                        "bg-orange-400 animate-pulse"
+                      }`} />
+                      <span className={`text-[11px] font-medium capitalize ${
+                        selectedOrder.whitelist_status === "whitelisted" ? "text-green-400" :
                         selectedOrder.whitelist_status === "removed" ? "text-red-400" :
-                          "text-orange-400"
-                        }`}>
+                        "text-orange-400"
+                      }`}>
                         {selectedOrder.whitelist_status === "whitelisted" ? t("whitelisted") :
                           selectedOrder.whitelist_status === "removed" ? t("removed") :
-                            t("pending")}
+                          t("pending")}
                       </span>
                     </div>
                   </div>
-
-
 
                   <p className="font-mono text-[16px] md:text-[20px] text-text-base font-bold">
                     {selectedOrder.whitelisted_username ?? "—"}
@@ -197,28 +216,39 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
 
                   {selectedOrder.whitelist_status === "pending" && (
                     <div className="bg-orange-500/8 border border-orange-500/20 rounded-xl px-3 py-2.5">
-                      <p className="text-[12px] text-orange-400">
-                        {t("pending_hint")}
-                      </p>
+                      <p className="text-[12px] text-orange-400">{t("pending_hint")}</p>
                     </div>
                   )}
-
                   {selectedOrder.whitelist_status === "whitelisted" && (
                     <div className="bg-green-500/8 border border-green-500/20 rounded-xl px-3 py-2.5">
-                      <p className="text-[12px] text-green-400">
-                        {t("whitelisted_hint")}
-                      </p>
+                      <p className="text-[12px] text-green-400">{t("whitelisted_hint")}</p>
                     </div>
                   )}
-
                   {selectedOrder.whitelist_status === "removed" && (
                     <div className="bg-red-500/8 border border-red-500/20 rounded-xl px-3 py-2.5">
-                      <p className="text-[12px] text-red-400">
-                        {t("removed_hint")}
-                      </p>
+                      <p className="text-[12px] text-red-400">{t("removed_hint")}</p>
                     </div>
                   )}
                 </div>
+
+                {/* Game Settings Button — แสดงเมื่อ product มี functions */}
+                {(selectedOrder.products?.product_functions?.length ?? 0) > 0 && (
+                  <button
+                    onClick={() => router.push(`/orders/${selectedOrder.id}/settings`)}
+                    className="w-full flex items-center justify-between gap-3 bg-accent/8 hover:bg-accent/15 border border-accent/20 hover:border-accent/40 text-text-base px-4 py-3.5 rounded-xl transition group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-accent/15 rounded-lg flex items-center justify-center">
+                        <SettingsIcon size={16} className="text-accent-light" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-[13px] font-semibold text-text-base">Game Settings</p>
+                        <p className="text-[11px] text-text-muted">ตั้งค่า function → gift</p>
+                      </div>
+                    </div>
+                    <ChevronRightIcon size={16} className="text-text-muted group-hover:text-accent-light transition" />
+                  </button>
+                )}
 
                 {/* Assets & Presets */}
                 <div className="grid grid-cols-1 gap-4 md:gap-6">
@@ -283,28 +313,8 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                     )}
                   </div>
                 </div>
-                {/* Server Information Link */}
-                {/* {selectedOrder.products.info_page_url && (
-                  <div className="bg-bg-base/60 border border-accent/10 rounded-xl md:rounded-2xl p-4 md:p-5 space-y-3">
-                    <p className="text-[10px] text-text-muted uppercase tracking-widest font-bold">
-                      Server Information
-                    </p>
 
-                    <a
-                      href={
-                        selectedOrder.products.info_page_url.startsWith("http")
-                          ? selectedOrder.products.info_page_url
-                          : `https://${selectedOrder.products.info_page_url}`
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-light text-white font-semibold text-[13px] py-3 rounded-xl transition"
-                    >
-                      <ExternalIcon size={16} />
-                      Open Server Information
-                    </a>
-                  </div>
-                )} */}
+                {/* Footer */}
                 <div className="flex flex-col sm:flex-row justify-between items-center pt-3 border-t border-accent/10 gap-2">
                   <p className="text-[10px] text-text-muted">
                     ID: <span className="font-mono">{selectedOrder.id.slice(0, 8)}...</span>
@@ -323,12 +333,29 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
   )
 }
 
-// ── Icons ──────────────────────────────────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────
 
 function CloseIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
+
+function SettingsIcon({ size = 20, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+function ChevronRightIcon({ size = 20, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="9 18 15 12 9 6" />
     </svg>
   )
 }
@@ -363,24 +390,6 @@ function EyeIcon({ size = 20 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
       <circle cx="12" cy="12" r="3" />
-    </svg>
-  )
-}
-function ExternalIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-      <polyline points="15 3 21 3 21 9" />
-      <line x1="10" y1="14" x2="21" y2="3" />
     </svg>
   )
 }

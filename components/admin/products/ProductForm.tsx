@@ -7,6 +7,7 @@ import ImageManager from "./ImageManager"
 import KeysPanel from "./KeysPanel"
 import GiftManager from "./GiftManager"
 import PresetManager from "./PresetManager"
+import FunctionManager from "./FunctionManager"
 
 import { useTranslations, useLocale } from "next-intl"
 
@@ -20,7 +21,7 @@ export default function ProductForm({ product, mode }: Props) {
     const locale = useLocale()
     const router = useRouter()
     const [saving, setSaving] = useState(false)
-    const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys" | "consignment">("info")
+    const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys" | "consignment" | "functions"> ("info")
 
     const [form, setForm] = useState({
         name_en: product?.name_en ?? "",
@@ -81,6 +82,7 @@ export default function ProductForm({ product, mode }: Props) {
         { key: "presets", label: t("tab_presets"), hidden: mode === "create" },
         { key: "keys", label: t("tab_keys"), hidden: mode === "create" },
         { key: "consignment", label: t("tab_consignment"), hidden: mode === "create" },
+        { key: "functions", label: "Functions", hidden: mode === "create" },
     ] as const
 
     return (
@@ -298,6 +300,10 @@ export default function ProductForm({ product, mode }: Props) {
                     )}
                 </div>
             )}
+            {activeTab === "functions" && (
+    <FunctionManager productId={product.id} functions={product.product_functions ?? []} />
+)}
+            
         </div>
     )
 }

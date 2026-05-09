@@ -3,10 +3,32 @@ import type { AuthOptions, Session } from "next-auth"
 import type { JWT } from "next-auth/jwt"
 import DiscordProvider from "next-auth/providers/discord"
 import GoogleProvider from "next-auth/providers/google"
+import CredentialsProvider from "next-auth/providers/credentials" // เพิ่ม
 import { prisma } from "@/lib/prisma"
 
 export const authOptions: AuthOptions = {
     providers: [
+        // // ── DEV ONLY mock admin ──────────────────────────────────────
+        // ...(process.env.NODE_ENV === "development"
+        //     ? [
+        //         CredentialsProvider({
+        //             id: "dev-admin",
+        //             name: "Dev Admin",
+        //             credentials: {},
+        //             async authorize() {
+        //                 return {
+        //                     id: "e4ce8ce4-740c-42f3-9cf1-a1b16a30baba", // ← UUID จริงๆ
+        //                     name: "Dev Admin",
+        //                     email: "admin@dev.local",
+        //                     image: null,
+        //                     role: "admin",
+        //                 }
+        //             },
+        //         }),
+        //     ]
+        //     : []),
+        // ────────────────────────────────────────────────────────────
+
         DiscordProvider({
             clientId: process.env.DISCORD_CLIENT_ID!,
             clientSecret: process.env.DISCORD_CLIENT_SECRET!,
@@ -26,14 +48,15 @@ export const authOptions: AuthOptions = {
     },
 
     callbacks: {
-        // ── 1. signIn: upsert user + account ─────────────────────────
         async signIn({ user, account, profile }: any) {
+            // ── skip DB upsert for dev mock ──
+            if (account?.provider === "dev-admin") return true
+
             if (!account) return false
 
             try {
                 const email = user.email ?? null
 
-                // Find user by email first (merge Discord + Google if emails match)
                 let dbUser = email
                     ? await prisma.users.findFirst({ where: { email } })
                     : null
@@ -54,7 +77,6 @@ export const authOptions: AuthOptions = {
                     })
                 }
 
-                // upsert account record for this provider
                 await prisma.accounts.upsert({
                     where: {
                         provider_provider_account_id: {
@@ -80,7 +102,6 @@ export const authOptions: AuthOptions = {
                     },
                 })
 
-                // Attach DB id back to user for jwt callback
                 user.id = dbUser.id
                 return true
 
@@ -90,20 +111,24 @@ export const authOptions: AuthOptions = {
             }
         },
 
-        // ── 2. jwt: store id + role into token (happens once at login) ──
         async jwt({ token, user, account }: any) {
             if (user) {
                 token.id = user.id
 
-                const dbUser = await prisma.users.findUnique({
-                    where: { id: user.id },
-                    select: { role: true },
-                })
-                token.role = dbUser?.role ?? "user"
+                // ── dev mock: skip DB lookup, inject role directly ──
+                if (account?.provider === "dev-admin") {
+                    token.role = "admin"
+                } else {
+                    const dbUser = await prisma.users.findUnique({
+                        where: { id: user.id },
+                        select: { role: true },
+                    })
+                    token.role = dbUser?.role ?? "user"
+                }
             }
-            // Store provider every time login happens
+
             if (account) {
-                token.provider = account.provider  // "discord" | "google"
+                token.provider = account.provider
                 token.providerAccountId = account.providerAccountId
             }
             return token
@@ -112,7 +137,7 @@ export const authOptions: AuthOptions = {
         async session({ session, token }: any) {
             session.user.id = token.id
             session.user.role = token.role
-            session.user.provider = token.provider  // Export to session
+            session.user.provider = token.provider
             session.user.providerAccountId = token.providerAccountId
             return session
         },

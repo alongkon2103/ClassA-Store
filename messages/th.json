@@ -64,7 +64,7 @@
     "ingame_username_placeholder": "กรอกชื่อในเกมของคุณ",
     "ingame_username_hint": "โปรดตรวจสอบชื่อของคุณให้ถูกต้อง — ไม่สามารถเปลี่ยนได้หลังการสั่งซื้อ",
     "card_fee_hint": "รวมค่าธรรมเนียมบริการ 6% แล้ว",
-    "how_to_find":"วิธีตรวจสอบ"
+    "how_to_find": "วิธีตรวจสอบ"
   },
   "Admin": {
     "dashboard": "แดชบอร์ด",
@@ -373,5 +373,71 @@
     "low": "สินค้าใกล้หมด",
     "price": "ราคา",
     "hot": "ยอดฮิต"
+  },
+  "Setting": {
+    "back": "กลับ",
+    "title": "Game Settings",
+    "subtitle": "ตั้งค่า function ของเกมที่จะเชื่อมกับ gift",
+    "game": "เกม",
+    "whitelistUsername": "Whitelist Username",
+    "noFunctions": "ยังไม่มี function ในเกมนี้",
+    "selectGiftForFunction": "เลือก Gift สำหรับแต่ละ Function",
+    "selectGift": "เลือก Gift",
+    "save": "บันทึกการตั้งค่า",
+    "saving": "กำลังบันทึก...",
+    "saved": "✓ บันทึกแล้ว",
+    "saveFailed": "บันทึกไม่สำเร็จ"
+  },
+  "AdminGifts": {
+    "title": "Gifts",
+    "subtitle": "จัดการ Gift ทั้งหมดในระบบ",
+    "addGift": "เพิ่ม Gift",
+    "editGift": "แก้ไข Gift",
+    "newGift": "Gift ใหม่",
+    "id": "ID",
+    "name": "ชื่อ",
+    "diamonds": "Diamonds",
+    "giftImage": "รูปภาพ Gift",
+    "giftPreview": "ตัวอย่าง Gift",
+    "chooseImage": "เลือกรูป",
+    "uploading": "กำลังอัปโหลด...",
+    "uploadFailed": "อัปโหลดไม่สำเร็จ",
+    "validationRequired": "กรุณากรอก ID, ชื่อ และ Diamonds",
+    "save": "บันทึก",
+    "saving": "กำลังบันทึก...",
+    "saveFailed": "บันทึกไม่สำเร็จ",
+    "cancel": "ยกเลิก",
+    "noGifts": "ยังไม่มี Gift",
+    "active": "Active",
+    "inactive": "Off",
+    "edit": "แก้ไข",
+    "delete": "ลบ",
+    "deleting": "กำลังลบ...",
+    "updateFailed": "อัปเดตไม่สำเร็จ",
+    "deleteConfirm": "ลบ Gift นี้?\nผู้ใช้ที่ตั้งค่า Gift นี้ไว้จะถูกลบด้วย",
+    "deleteFailed": "ลบไม่สำเร็จ"
+  },
+    "AdminFunctions": {
+    "title": "Functions",
+    "subtitle": "จัดการ function ของสินค้า เช่น kill, run, bigsize",
+    "addFunction": "เพิ่ม Function",
+    "newFunction": "Function ใหม่",
+
+    "nameKey": "ชื่อ (key)",
+    "labelTh": "Label TH",
+    "labelEn": "Label EN",
+
+    "save": "บันทึก",
+    "saving": "กำลังบันทึก...",
+    "cancel": "ยกเลิก",
+
+    "edit": "แก้ไข",
+    "delete": "ลบ",
+
+    "empty": "ยังไม่มี function — กด \"เพิ่ม Function\" เพื่อเริ่มต้น",
+
+    "deleteConfirm": "ลบ function นี้?\nการตั้งค่าของผู้ใช้ที่เชื่อมกับ function นี้จะถูกลบด้วย",
+
+    "error": "เกิดข้อผิดพลาด"
   }
 }

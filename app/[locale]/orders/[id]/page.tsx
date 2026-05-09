@@ -15,19 +15,21 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
     const t = await getTranslations("Orders")
 
     const order = await prisma.orders.findUnique({
-        where: { id },
-        include: {
-            game_keys: true,
-            product_variants: true,
-            products: {
-                include: {
-                    product_images: { orderBy: { sort_order: "asc" }, take: 1 },
-                    product_gifts: { orderBy: { sort_order: "asc" } },
-                    product_presets: { orderBy: { sort_order: "asc" } },
-                },
+    where: { id },
+    include: {
+        game_keys: true,
+        product_variants: true,
+        products: {
+            include: {
+                product_functions: { orderBy: { sort_order: "asc" } },
+                product_images: { orderBy: { sort_order: "asc" }, take: 1 },
+                product_gifts: { orderBy: { sort_order: "asc" } },
+                product_presets: { orderBy: { sort_order: "asc" } },
+                
             },
         },
-    })
+    },
+})
 
     if (!order) {
         return (

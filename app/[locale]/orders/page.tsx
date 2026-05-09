@@ -29,6 +29,7 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
           product_images: { orderBy: { sort_order: "asc" }, take: 1 },
           product_gifts: { orderBy: { sort_order: "asc" } },
           product_presets: { orderBy: { sort_order: "asc" } },
+          product_functions: { orderBy: { sort_order: "asc" } }, // ← เพิ่มตรงนี้
         }
       },
       product_variants: true

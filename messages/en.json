@@ -64,7 +64,7 @@
     "ingame_username_placeholder": "Enter your in-game username",
     "ingame_username_hint": "Double-check your username — it cannot be changed after purchasing",
     "card_fee_hint": "Includes 6% service fee",
-    "how_to_find":"How to find?"
+    "how_to_find": "How to find?"
   },
   "Admin": {
     "dashboard": "Dashboard",
@@ -154,7 +154,8 @@
     "pending": "Pending",
     "expired": "Expired",
     "whitelisted": "Whitelisted",
-    "removed": "Removed"
+    "removed": "Removed",
+    "gifts": "gifts"
   },
   "AdminKeys": {
     "title": "Game Keys",
@@ -373,5 +374,71 @@
     "low": "Low",
     "price": "Price",
     "hot": "HOT"
+  },
+  "Setting": {
+    "back": "Back",
+    "title": "Game Settings",
+    "subtitle": "Configure which gift triggers each game function.",
+    "game": "Game",
+    "whitelistUsername": "Whitelist Username",
+    "noFunctions": "No functions available for this game.",
+    "selectGiftForFunction": "Select a gift for each function",
+    "selectGift": "Select Gift",
+    "save": "Save Settings",
+    "saving": "Saving...",
+    "saved": "✓ Saved",
+    "saveFailed": "Failed to save settings"
+  },
+  "AdminGifts": {
+    "title": "Gifts",
+    "subtitle": "Manage all gifts in the system",
+    "addGift": "Add Gift",
+    "editGift": "Edit Gift",
+    "newGift": "New Gift",
+    "id": "ID",
+    "name": "Name",
+    "diamonds": "Diamonds",
+    "giftImage": "Gift Image",
+    "giftPreview": "Gift Preview",
+    "chooseImage": "Choose Image",
+    "uploading": "Uploading...",
+    "uploadFailed": "Upload failed",
+    "validationRequired": "Please fill in ID, Name and Diamonds.",
+    "save": "Save",
+    "saving": "Saving...",
+    "saveFailed": "Save failed",
+    "cancel": "Cancel",
+    "noGifts": "No gifts found.",
+    "active": "Active",
+    "inactive": "Off",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "updateFailed": "Update failed",
+    "deleteConfirm": "Delete this gift?\nUsers who selected this gift will also be removed.",
+    "deleteFailed": "Delete failed"
+  },
+  "AdminFunctions": {
+    "title": "Functions",
+    "subtitle": "Manage product functions such as kill, run, bigsize",
+    "addFunction": "Add Function",
+    "newFunction": "New Function",
+
+    "nameKey": "Name (key)",
+    "labelTh": "Label TH",
+    "labelEn": "Label EN",
+
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+
+    "edit": "Edit",
+    "delete": "Delete",
+
+    "empty": "No functions yet — click \"Add Function\" to get started.",
+
+    "deleteConfirm": "Delete this function?\nUser settings linked to this function will also be removed.",
+
+    "error": "Something went wrong."
   }
 }

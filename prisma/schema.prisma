@@ -59,6 +59,7 @@ model orders {
   products              products          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                 users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   product_variants      product_variants? @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_function_gifts   user_function_gifts[]
 
   @@index([user_id], map: "idx_orders_user")
 }
@@ -79,45 +80,35 @@ model product_images {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model products {
   id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-
   slug             String             @unique @db.VarChar
   name_th          String             @db.VarChar
   name_en          String             @db.VarChar
-
   description_th   String?
   description_en   String?
-
   price            Decimal            @db.Decimal(10, 2)
-
   is_active        Boolean?           @default(true)
   is_featured      Boolean?           @default(false)
-
   created_at       DateTime?          @default(now()) @db.Timestamptz(6)
   updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
-
   isLower          Boolean?           @default(false)
-
   owner_name       String?            @db.VarChar
   owner_contact    String?            @db.VarChar
-
   commission_pct   Decimal?           @default(0) @db.Decimal(5, 2)
   is_consignment   Boolean?           @default(false)
-
   info_page_url    String?
   discord_role_id  String?            @db.VarChar
   discord_guild_id String?            @db.VarChar
-
   game_keys        game_keys[]
   orders           orders[]
   product_gifts    product_gifts[]
   product_images   product_images[]
   product_presets  product_presets[]
   product_variants product_variants[]
+  product_functions product_functions[]
 
   @@index([is_consignment], map: "idx_products_consignment")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model users {
   id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -128,6 +119,7 @@ model users {
   avatar     String?    @db.VarChar
   accounts   accounts[]
   orders     orders[]
+  user_function_gifts user_function_gifts[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -208,4 +200,53 @@ model bank_accounts {
   created_at     DateTime? @default(now()) @db.Timestamptz(6)
   updated_at     DateTime? @default(now()) @db.Timestamptz(6)
   qr_code_url    String?
+}
+
+// ── ใหม่ 3 table ─────────────────────────────────────────────────
+
+/// Master list ของ gifts ทั้งหมดในระบบ (admin manage)
+model gifts {
+  id          Int       @id   // ตรงกับ id ใน GIFTS array
+  name        String    @db.VarChar
+  image_url   String?   @db.VarChar
+  diamonds    Int
+  is_active   Boolean   @default(true)
+  sort_order  Int       @default(0)
+
+  user_function_gifts user_function_gifts[]
+}
+
+/// Functions ของแต่ละ product (admin กำหนด เช่น kill, run, bigsize)
+model product_functions {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id String    @db.Uuid
+  name       String    @db.VarChar   // "kill", "run", "bigsize"
+  label_th   String?   @db.VarChar
+  label_en   String?   @db.VarChar
+  sort_order Int       @default(0)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  products            products              @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_function_gifts user_function_gifts[]
+
+  @@index([product_id], map: "idx_product_functions_product")
+}
+
+/// การตั้งค่าของ user ว่า function ไหน → gift อะไร (เปลี่ยนได้ตลอด)
+model user_function_gifts {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  order_id    String    @db.Uuid
+  function_id String    @db.Uuid
+  gift_id     Int
+  updated_at  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  users             users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orders            orders            @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_functions product_functions @relation(fields: [function_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  gifts             gifts             @relation(fields: [gift_id], references: [id], onUpdate: NoAction)
+
+  @@unique([user_id, order_id, function_id])  // 1 function ต่อ order ตั้งได้ 1 gift
+  @@index([user_id], map: "idx_ufg_user")
+  @@index([order_id], map: "idx_ufg_order")
 }

@@ -4,10 +4,10 @@ import { notFound } from "next/navigation"
 import ProductForm from "@/components/admin/products/ProductForm"
 import { setRequestLocale } from "next-intl/server"
 
-export default async function EditProductPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string, locale: string }> 
+export default async function EditProductPage({
+  params
+}: {
+  params: Promise<{ id: string, locale: string }>
 }) {
   const { id, locale } = await params
   setRequestLocale(locale)
@@ -17,8 +17,9 @@ export default async function EditProductPage({
     include: {
       product_variants: { orderBy: { sort_order: "asc" } },
       product_images: { orderBy: { sort_order: "asc" } },
-      product_gifts: { orderBy: { sort_order: "asc" } },  
-      product_presets: { orderBy: { sort_order: "asc" } },  
+      product_gifts: { orderBy: { sort_order: "asc" } },
+      product_presets: { orderBy: { sort_order: "asc" } },
+      product_functions: { orderBy: { sort_order: "asc" } }, // ← เพิ่มตรงนี้
     },
   })
   if (!product) notFound()
