@@ -207,7 +207,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                   <td className="px-4 py-4">
                     {o.status === "paid" && (
                       <div className="flex flex-col gap-1.5">
-                        {o.whitelist_status !== "whitelisted" && (
+                        {/* {o.whitelist_status !== "whitelisted" && (
                           <button
                             onClick={() => handleWhitelistStatus(o.id, "whitelisted")}
                             disabled={updating === o.id}
@@ -215,7 +215,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                           >
                             {updating === o.id ? "..." : t("whitelist")}
                           </button>
-                        )}
+                        )} */}
                         {o.whitelist_status === "whitelisted" && (
                           <button
                             onClick={() => handleWhitelistStatus(o.id, "removed")}

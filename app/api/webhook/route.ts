@@ -163,20 +163,29 @@ export async function POST(req: NextRequest) {
     // ─────────────────────────────────────────────
     // CALL YOUR DISCORD BOT API
     // ─────────────────────────────────────────────
-    // if (discordUserId && roleId) {
-    //   await fetch("http://localhost:3700/assignrole", {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //       "x-api-key": process.env.API_ASSIGN_ROLE_KEY!,
-    //     },
-    //     body: JSON.stringify({
-    //       userId: discordUserId,
-    //       roleId: roleId,
-    //       guildId: guildId,
-    //     }),
-    //   })
-    // }
+    if (discordUserId && roleId) {
+      try {
+        const botResponse = await fetch("http://localhost:3700/assignrole", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": process.env.API_ASSIGN_ROLE_KEY!,
+          },
+          body: JSON.stringify({
+            userId: discordUserId,
+            roleId: roleId,
+            guildId: guildId,
+          }),
+        });
+
+        if (!botResponse.ok) {
+          console.error("Bot API returned error status:", botResponse.status);
+        }
+      } catch (error) {
+        // ถ้าบอทปิดอยู่ หรือร่วงไป ระบบจะมาเข้าที่นี่
+        console.error("Could not connect to Discord Bot API:", error);
+      }
+    }
 
     // console.log("✅ Paid + Role assigned:", {
     //   orderId,

@@ -34,7 +34,7 @@ export default function LoginCard({ callbackUrl = "/" }: LoginCardProps) {
 
         {/* Discord */}
         <button
-          onClick={() => signIn("discord", { callbackUrl })}
+          onClick={() => signIn("discord", { callbackUrl: "https://aclassstore.com/th" })}
           className="btn-provider w-full flex items-center justify-center gap-3 text-white font-medium text-[15px] px-6 py-3.5 rounded-xl transition-all"
           style={{
             background: "var(--color-discord)",
@@ -47,7 +47,7 @@ export default function LoginCard({ callbackUrl = "/" }: LoginCardProps) {
 
         {/* Google */}
         <button
-          onClick={() => signIn("google", { callbackUrl })}
+          onClick={() => signIn("google", { callbackUrl: "https://aclassstore.com/th" })}
           className="btn-provider-outline w-full flex items-center justify-center gap-3 font-medium text-[15px] px-6 py-3.5 rounded-xl transition-all"
           style={{
             background: "rgba(255,255,255,0.05)",

@@ -4,10 +4,13 @@ import {routing} from './i18n/routing';
 export default createMiddleware(routing);
 
 export const config = {
-  // Match all pathnames except for
-  // - API routes (/api/*)
-  // - _next (Next.js internals)
-  // - _vercel (Vercel internals)
-  // - Static files (e.g. favicon.ico, sitemap.xml, robots.txt, etc.)
-  matcher: ['/((?!api/|_next/|_vercel/|.*\\..*).*)']
+  // ปรับ matcher ให้ครอบคลุมหน้าแรก (/) และ locale ต่างๆ
+  matcher: [
+    // Match หน้าแรก
+    '/',
+    // Match ทุกหน้าที่มี /en หรือ /th
+    '/(th|en)/:path*',
+    // Match หน้าอื่นๆ ที่ไม่ใช่ไฟล์ static หรือ api
+    '/((?!api|_next|_vercel|.*\\..*).*)'
+  ]
 };

@@ -23,7 +23,6 @@ export default function ProductForm({ product, mode }: Props) {
     const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys" | "consignment">("info")
 
     const [form, setForm] = useState({
-        product_id: product?.id ?? "",
         name_en: product?.name_en ?? "",
         name_th: product?.name_th ?? "",
         slug: product?.slug ?? "",
@@ -119,10 +118,10 @@ export default function ProductForm({ product, mode }: Props) {
             {/* Tab: Info */}
             {activeTab === "info" && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                     <Field label="Product ID" className="lg:col-span-2">
+                    <Field label="Product ID" className="lg:col-span-2">
                         <div className="flex items-center gap-2">
                             <div className="px-4 py-3 rounded-xl border border-white/10 text-text-muted flex-1 break-all">
-                                {form.product_id || "-"}
+                                {product?.id || "-"}  {/* ✅ เพิ่ม ? */}
                             </div>
                         </div>
                     </Field>

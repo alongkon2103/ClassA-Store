@@ -13,8 +13,8 @@
     "signed_in_discord": "เข้าสู่ระบบด้วย Discord"
   },
   "Home": {
-    "hero_title": "Class A Store",
-    "hero_subtitle": "ร้านค้าเกมแบบโต้ตอบที่คุณไว้วางใจ — ส่งไว ทันใจ ทุกครั้ง",
+    "hero_title": "A Class Store",
+    "hero_subtitle": "ร้านค้าเกม Interactive ที่คุณไว้วางใจ รวดเร็ว ปลอดภัย พร้อมใช้งานทันที",
     "browse_shop": "ดูสินค้าทั้งหมด",
     "Join_disocrd_Hero": "เข้าร่วมเซิร์ฟเวอร์",
     "top_sellers": "สินค้าขายดี",
@@ -30,10 +30,10 @@
     "feature_support": "ซัพพอร์ต 24/7"
   },
   "Footer": {
-    "rights": "© 2026 Class A Store · ชำระเงินปลอดภัยผ่าน Stripe & Omise"
+    "rights": "© 2026 A Class Store · ชำระเงินปลอดภัยผ่าน Stripe"
   },
   "Shop": {
-    "title": "เกมที่โต้ตอบทั้งหมด",
+    "title": "เกม Interactive ทั้งหมด",
     "search_placeholder": "ค้นหาเกม...",
     "showing_filtered": "กำลังแสดงสินค้าที่กรอง",
     "showing_all": "กำลังแสดงสินค้าทั้งหมด",
@@ -63,7 +63,8 @@
     "ingame_username": "ชื่อในเกม (In-Game Username)",
     "ingame_username_placeholder": "กรอกชื่อในเกมของคุณ",
     "ingame_username_hint": "โปรดตรวจสอบชื่อของคุณให้ถูกต้อง — ไม่สามารถเปลี่ยนได้หลังการสั่งซื้อ",
-    "card_fee_hint": "รวมค่าธรรมเนียมบริการ 6% แล้ว"
+    "card_fee_hint": "รวมค่าธรรมเนียมบริการ 6% แล้ว",
+    "how_to_find":"วิธีตรวจสอบ"
   },
   "Admin": {
     "dashboard": "แดชบอร์ด",
@@ -147,7 +148,13 @@
     "remove": "เอาออก",
     "re_whitelist": "เพิ่มไวท์ลิสต์ใหม่",
     "promptpay": "พร้อมเพย์",
-    "card": "บัตร"
+    "card": "บัตร",
+    "tiktok simulator": "Tiktok Simulator",
+    "paid": "ชำระเงินแล้ว",
+    "pending": "รอการตรวจสอบ",
+    "expired": "หมดอายุ",
+    "whitelisted": "เพิ่มในรายการอนุญาตแล้ว",
+    "removed": "ลบออกแล้ว"
   },
   "AdminKeys": {
     "title": "คีย์เกม",
@@ -222,7 +229,7 @@
     "no_consignment": "ยังไม่มีสินค้าฝากขาย"
   },
   "Orders": {
-    "title": "ทรัพย์สินของฉัน",
+    "title": "ประวัติการซื้อ",
     "subtitle": "คลิกที่รายการใดก็ได้เพื่อดูรายละเอียด",
     "secure_inventory": "คลังสินค้าที่ปลอดภัย",
     "total": "ทั้งหมด",
@@ -313,7 +320,7 @@
   "Login": {
     "title": "เข้าสู่ระบบ",
     "back_to_store": "กลับสู่ร้านค้า",
-    "footer_rights": "© 2026 Class A-Store · ชำระเงินปลอดภัยผ่าน Stripe",
+    "footer_rights": "© 2026 A Class Store · ชำระเงินปลอดภัยผ่าน Stripe",
     "welcome": "ยินดีต้อนรับสู่",
     "desc": "เข้าสู่ระบบเพื่อเข้าถึงออเดอร์ของคุณ รับการซัพพอร์ต และรับดีลสุดพิเศษ",
     "continue_discord": "ดำเนินการต่อด้วย Discord",

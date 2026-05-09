@@ -13,6 +13,11 @@ import { th, enUS } from "date-fns/locale"
 function fmt(n: number) {
   return `฿${Number(n ?? 0).toLocaleString()}`
 }
+function fmtShort(n: number) {
+  if (n >= 1_000_000) return `฿${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000)     return `฿${(n / 1_000).toFixed(1)}k`
+  return `฿${n}`
+}
 
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
@@ -62,6 +67,130 @@ const methodColors: Record<string, string> = {
   card:      "#6772e5",
 }
 
+// ── Top Products Table ──────────────────────────────────────────────────────
+type SortKey = "total_revenue" | "net_revenue" | "order_count" | "unique_customers" | "avg_order"
+
+function TopProductsTable({ products, locale }: { products: any[]; locale: string }) {
+  const [sort, setSort] = useState<SortKey>("total_revenue")
+  const [dir,  setDir]  = useState<"desc" | "asc">("desc")
+
+  const sorted = useMemo(() =>
+    [...products].sort((a, b) => {
+      const va = a[sort] ?? 0
+      const vb = b[sort] ?? 0
+      return dir === "desc" ? vb - va : va - vb
+    }), [products, sort, dir])
+
+  const maxRevenue = sorted[0]?.total_revenue ?? 1
+
+  function toggleSort(key: SortKey) {
+    if (sort === key) setDir(d => d === "desc" ? "asc" : "desc")
+    else { setSort(key); setDir("desc") }
+  }
+
+  function SortTh({ label, k }: { label: string; k: SortKey }) {
+    const active = sort === k
+    return (
+      <th
+        onClick={() => toggleSort(k)}
+        className={`px-4 py-3 font-medium text-right cursor-pointer select-none whitespace-nowrap transition ${
+          active ? "text-accent-light" : "text-text-muted hover:text-text-base"
+        }`}
+      >
+        {label} {active ? (dir === "desc" ? "↓" : "↑") : ""}
+      </th>
+    )
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-[13px]">
+        <thead>
+          <tr className="text-left text-[11px] border-b border-white/5 bg-white/[0.02]">
+            <th className="px-5 py-3 font-medium text-text-muted w-6">#</th>
+            <th className="px-4 py-3 font-medium text-text-muted">Product</th>
+            <SortTh label="Revenue"    k="total_revenue"    />
+            <SortTh label="Net Profit" k="net_revenue"      />
+            <SortTh label="Orders"     k="order_count"      />
+            <SortTh label="Customers"  k="unique_customers" />
+            <SortTh label="Avg Order"  k="avg_order"        />
+            <th className="px-4 py-3 font-medium text-text-muted text-right">Last Sale</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/5">
+          {sorted.map((p, i) => {
+            const name = locale === "th" ? p.name_th : p.name_en
+            const revPct = (p.total_revenue / maxRevenue) * 100
+            const profitPct = p.total_revenue > 0
+              ? (p.net_revenue / p.total_revenue) * 100
+              : 0
+
+            return (
+              <tr key={p.product_id} className="hover:bg-white/[0.02] transition group">
+                {/* # */}
+                <td className="px-5 py-3 text-text-muted text-[11px]">{i + 1}</td>
+
+                {/* Product name + consignment badge + bar */}
+                <td className="px-4 py-3 min-w-[180px]">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium truncate max-w-[160px]">{name}</span>
+                    {p.is_consignment && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-400 flex-shrink-0">
+                        Consign {p.commission_pct}%
+                      </span>
+                    )}
+                  </div>
+                  {/* Revenue bar */}
+                  <div className="h-1 bg-white/5 rounded-full overflow-hidden w-full">
+                    <div
+                      className="h-full rounded-full bg-accent/60 transition-all"
+                      style={{ width: `${revPct}%` }}
+                    />
+                  </div>
+                </td>
+
+                {/* Total Revenue */}
+                <td className="px-4 py-3 text-right">
+                  <p className="font-semibold text-accent-light">{fmtShort(p.total_revenue)}</p>
+                </td>
+
+                {/* Net Revenue + profit % */}
+                <td className="px-4 py-3 text-right">
+                  <p className="font-semibold text-green-400">{fmtShort(p.net_revenue)}</p>
+                  <p className="text-[10px] text-text-muted">{profitPct.toFixed(0)}% margin</p>
+                </td>
+
+                {/* Orders */}
+                <td className="px-4 py-3 text-right font-medium">
+                  {p.order_count.toLocaleString()}
+                </td>
+
+                {/* Unique Customers */}
+                <td className="px-4 py-3 text-right text-text-muted">
+                  {p.unique_customers.toLocaleString()}
+                </td>
+
+                {/* Avg Order */}
+                <td className="px-4 py-3 text-right text-text-muted">
+                  {fmtShort(p.avg_order)}
+                </td>
+
+                {/* Last Sale */}
+                <td className="px-4 py-3 text-right text-text-muted whitespace-nowrap text-[12px]">
+                  {p.last_sale
+                    ? format(new Date(p.last_sale), "dd MMM yy")
+                    : "—"}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 export default function AnalyticsClient({ data }: { data: any }) {
   const t = useTranslations("Analytics")
   const locale = useLocale()
@@ -94,81 +223,46 @@ export default function AnalyticsClient({ data }: { data: any }) {
   const chartData = revenueView === "30d" ? daily30 : monthly6
   const xKey      = revenueView === "30d" ? "day" : "month"
 
-  const totalPaid    = data.ordersByStatus?.find((s: any) => s.status === "paid")?.count ?? 0
+  const totalPaid    = data.ordersByStatus?.find((s: any) => s.status === "paid")?.count    ?? 0
   const totalPending = data.ordersByStatus?.find((s: any) => s.status === "pending")?.count ?? 0
   const totalExpired = data.ordersByStatus?.find((s: any) => s.status === "expired")?.count ?? 0
   const conversionRate = data.totalStats?.total_orders
     ? ((totalPaid / data.totalStats.total_orders) * 100).toFixed(1)
     : "0"
 
-  const stripeRevenue    = data.ordersByPayment?.find((p: any) => p.payment_method === "stripe")?.total ?? 0
+  const stripeRevenue    = data.ordersByPayment?.find((p: any) => p.payment_method === "stripe")?.total    ?? 0
   const promptpayRevenue = data.ordersByPayment?.find((p: any) => p.payment_method === "promptpay")?.total ?? 0
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[24px] font-bold">{t("title")}</h1>
-          <p className="text-text-muted text-[13px] mt-0.5">
-            {format(new Date(), "EEEE, d MMMM yyyy", { locale: dateLocale })}
-          </p>
-        </div>
+      <div>
+        <h1 className="text-[24px] font-bold">{t("title")}</h1>
+        <p className="text-text-muted text-[13px] mt-0.5">
+          {format(new Date(), "EEEE, d MMMM yyyy", { locale: dateLocale })}
+        </p>
       </div>
 
       {/* ── Row 1: Core Stats ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          label={t("total_revenue")}
-          value={fmt(data.totalStats?.total_revenue)}
-          sub={t("orders_count", { count: data.totalStats?.total_orders ?? 0 })}
-          color="text-accent-light"
-        />
-        <StatCard
-          label={t("avg_order_value")}
-          value={fmt(data.totalStats?.avg_order)}
-          color="text-purple-400"
-        />
-        <StatCard
-          label={t("unique_customers")}
-          value={Number(data.totalStats?.unique_customers ?? 0).toLocaleString()}
-          color="text-green-400"
-        />
-        <StatCard
-          label={t("conversion_rate")}
-          value={`${conversionRate}%`}
-          sub={`${totalPaid} / ${data.totalStats?.total_orders ?? 0}`}
-          color="text-yellow-400"
-        />
+        <StatCard label={t("total_revenue")}    value={fmt(data.totalStats?.total_revenue)}  sub={t("orders_count", { count: data.totalStats?.total_orders ?? 0 })} color="text-accent-light" />
+        <StatCard label={t("avg_order_value")}  value={fmt(data.totalStats?.avg_order)}      color="text-purple-400" />
+        <StatCard label={t("unique_customers")} value={Number(data.totalStats?.unique_customers ?? 0).toLocaleString()} color="text-green-400" />
+        <StatCard label={t("conversion_rate")}  value={`${conversionRate}%`} sub={`${totalPaid} / ${data.totalStats?.total_orders ?? 0}`} color="text-yellow-400" />
       </div>
 
-      {/* ── Row 2: Net Revenue (Consignment) ── */}
+      {/* ── Row 2: Net Revenue ── */}
       {data.netRevenue && (
         <div className="grid grid-cols-3 gap-3">
-          <StatCard
-            label={t("gross_revenue")}
-            value={fmt(data.netRevenue.total_gross)}
-            sub={t("before_commission")}
-            color="text-text-base"
-          />
-          <StatCard
-            label={t("net_revenue")}
-            value={fmt(data.netRevenue.total_net)}
-            sub={t("after_commission")}
-            color="text-green-400"
-          />
-          <StatCard
-            label={t("owner_payout_due")}
-            value={fmt(data.netRevenue.total_payout)}
-            sub={t("consignment_owners")}
-            color="text-orange-400"
-          />
+          <StatCard label={t("gross_revenue")}    value={fmt(data.netRevenue.total_gross)}  sub={t("before_commission")} color="text-text-base" />
+          <StatCard label={t("net_revenue")}      value={fmt(data.netRevenue.total_net)}    sub={t("after_commission")}  color="text-green-400" />
+          <StatCard label={t("owner_payout_due")} value={fmt(data.netRevenue.total_payout)} sub={t("consignment_owners")} color="text-orange-400" />
         </div>
       )}
 
-      {/* ── Row 3: Order Status Summary ── */}
+      {/* ── Row 3: Order Status ── */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-bg-card border border-green-500/20 rounded-2xl p-4 text-center">
+        <div className="bg-bg-card border border-green-500/20  rounded-2xl p-4 text-center">
           <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">Paid</p>
           <p className="text-[28px] font-bold text-green-400">{totalPaid}</p>
         </div>
@@ -176,7 +270,7 @@ export default function AnalyticsClient({ data }: { data: any }) {
           <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">Pending</p>
           <p className="text-[28px] font-bold text-orange-400">{totalPending}</p>
         </div>
-        <div className="bg-bg-card border border-red-500/20 rounded-2xl p-4 text-center">
+        <div className="bg-bg-card border border-red-500/20    rounded-2xl p-4 text-center">
           <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">Expired</p>
           <p className="text-[28px] font-bold text-red-400">{totalExpired}</p>
         </div>
@@ -222,58 +316,46 @@ export default function AnalyticsClient({ data }: { data: any }) {
 
       {/* ── Row 5: Payment Methods ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Payment Method Cards */}
         <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
           <SectionTitle title={t("payment_methods")} sub={t("revenue_by_channel")} />
           <div className="p-5 space-y-4">
-            {/* Stripe */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[13px]">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#6772e5]" />
-                  <span className="font-medium">{t("card_stripe")}</span>
+            {[
+              { key: "stripe",    label: t("card_stripe"), color: "#6772e5", revenue: stripeRevenue    },
+              { key: "promptpay", label: t("promptpay"),   color: "#1ba7e1", revenue: promptpayRevenue },
+            ].map(({ key, label, color, revenue }) => (
+              <div key={key} className="space-y-1.5">
+                <div className="flex items-center justify-between text-[13px]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                    <span className="font-medium">{label}</span>
+                  </div>
+                  <span className="font-semibold text-accent-light">{fmt(revenue)}</span>
                 </div>
-                <span className="font-semibold text-accent-light">{fmt(stripeRevenue)}</span>
-              </div>
-              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#6772e5]"
-                  style={{ width: `${stripeRevenue + promptpayRevenue ? (stripeRevenue / (stripeRevenue + promptpayRevenue)) * 100 : 0}%` }} />
-              </div>
-              <p className="text-[11px] text-text-muted">
-                {t("orders_count", { count: data.ordersByPayment?.find((p: any) => p.payment_method === "stripe")?.count ?? 0 })}
-              </p>
-            </div>
-
-            {/* PromptPay */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[13px]">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#1ba7e1]" />
-                  <span className="font-medium">{t("promptpay")}</span>
+                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all"
+                    style={{
+                      background: color,
+                      width: `${stripeRevenue + promptpayRevenue
+                        ? (revenue / (stripeRevenue + promptpayRevenue)) * 100
+                        : 0}%`,
+                    }} />
                 </div>
-                <span className="font-semibold text-accent-light">{fmt(promptpayRevenue)}</span>
+                <p className="text-[11px] text-text-muted">
+                  {t("orders_count", { count: data.ordersByPayment?.find((p: any) => p.payment_method === key)?.count ?? 0 })}
+                </p>
               </div>
-              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#1ba7e1]"
-                  style={{ width: `${stripeRevenue + promptpayRevenue ? (stripeRevenue / (stripeRevenue + promptpayRevenue)) * 100 : 0}%` }} />
-              </div>
-              <p className="text-[11px] text-text-muted">
-                {t("orders_count", { count: data.ordersByPayment?.find((p: any) => p.payment_method === "promptpay")?.count ?? 0 })}
-              </p>
-            </div>
+            ))}
 
             <div className="h-px bg-white/5" />
 
-            {/* Pie */}
             <ResponsiveContainer width="100%" height={140}>
               <PieChart>
                 <Pie
                   data={[
-                    { name: t("card_stripe"), value: stripeRevenue },
-                    { name: t("promptpay"), value: promptpayRevenue },
+                    { name: t("card_stripe"), value: stripeRevenue    },
+                    { name: t("promptpay"),   value: promptpayRevenue },
                   ]}
-                  dataKey="value"
-                  nameKey="name"
+                  dataKey="value" nameKey="name"
                   cx="50%" cy="50%"
                   innerRadius={35} outerRadius={55}
                   paddingAngle={4}
@@ -287,42 +369,15 @@ export default function AnalyticsClient({ data }: { data: any }) {
           </div>
         </div>
 
-        {/* Top Products */}
+        {/* ── Top Products (full table) ── */}
         <div className="lg:col-span-2 bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
-          <SectionTitle title={t("top_products")} sub={t("all_time")} />
-          <div className="p-5 space-y-3">
-            {data.topProducts.map((p: any, i: number) => {
-              const maxTotal = data.topProducts[0]?.total ?? 1
-              const pct = (p.total / maxTotal) * 100
-              return (
-                <div key={p.product_id}>
-                  <div className="flex items-center justify-between text-[13px] mb-1.5">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-[11px] text-text-muted w-4 flex-shrink-0">{i + 1}</span>
-                      <span className="font-medium truncate">{locale === "th" ? p.name_th : p.name_en}</span>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                      <span className="text-[11px] text-text-muted">{t("orders_count", { count: p.count })}</span>
-                      <span className="font-semibold text-accent-light">{fmt(p.total)}</span>
-                    </div>
-                  </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${pct}%`,
-                        background: `hsl(${210 + i * 15}, 60%, ${55 - i * 3}%)`,
-                      }} />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          <SectionTitle title={t("top_products")} sub="Revenue · Net Profit · Orders · Customers · Avg Order" />
+          <TopProductsTable products={data.topProducts} locale={locale} />
         </div>
       </div>
 
       {/* ── Row 6: Variants + Order Status ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Top Variants */}
         <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
           <SectionTitle title={t("top_variants")} sub={t("by_orders")} />
           <div className="p-5">
@@ -330,8 +385,8 @@ export default function AnalyticsClient({ data }: { data: any }) {
               <BarChart data={data.topVariants} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.05)" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 11, fill: "#7a9bb8" }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey={locale === "th" ? "label_th" : "label_en"} tick={{ fontSize: 11, fill: "#7a9bb8" }}
-                  axisLine={false} tickLine={false} width={70} />
+                <YAxis type="category" dataKey={locale === "th" ? "label_th" : "label_en"}
+                  tick={{ fontSize: 11, fill: "#7a9bb8" }} axisLine={false} tickLine={false} width={70} />
                 <Tooltip content={<ChartTooltip />} />
                 <Bar dataKey="count" fill="#427ab5" radius={[0, 4, 4, 0]} />
               </BarChart>
@@ -339,20 +394,13 @@ export default function AnalyticsClient({ data }: { data: any }) {
           </div>
         </div>
 
-        {/* Order Status Donut */}
         <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
           <SectionTitle title={t("order_status_distribution")} sub={t("all_time")} />
           <div className="p-5 flex gap-6 items-center">
             <ResponsiveContainer width={160} height={160}>
               <PieChart>
-                <Pie
-                  data={data.ordersByStatus}
-                  dataKey="count"
-                  nameKey="status"
-                  cx="50%" cy="50%"
-                  innerRadius={45} outerRadius={70}
-                  paddingAngle={3}
-                >
+                <Pie data={data.ordersByStatus} dataKey="count" nameKey="status"
+                  cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3}>
                   {data.ordersByStatus.map((entry: any) => (
                     <Cell key={entry.status} fill={statusColors[entry.status] ?? "#7a9bb8"} />
                   ))}
@@ -383,7 +431,7 @@ export default function AnalyticsClient({ data }: { data: any }) {
         </div>
       </div>
 
-      {/* ── Row 7: Recent Orders Table ── */}
+      {/* ── Row 7: Recent Orders ── */}
       <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
           <div>
@@ -428,9 +476,7 @@ export default function AnalyticsClient({ data }: { data: any }) {
                   <td className="px-4 py-3 text-text-muted">
                     {locale === "th" ? o.product_variants?.label_th : o.product_variants?.label_en ?? "—"}
                   </td>
-                  <td className="px-4 py-3 font-semibold text-accent-light">
-                    {fmt(o.amount)}
-                  </td>
+                  <td className="px-4 py-3 font-semibold text-accent-light">{fmt(o.amount)}</td>
                   <td className="px-4 py-3">
                     <span className="text-[11px] px-2 py-0.5 rounded-full font-medium capitalize"
                       style={{

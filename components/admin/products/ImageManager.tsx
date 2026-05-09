@@ -118,7 +118,7 @@ export default function ImageManager({ productId, images }: { productId: string;
           <p className="text-[13px] font-medium">Preview</p>
 
           <div className="aspect-video rounded-xl overflow-hidden bg-bg-card">
-            <img src={getImageUrl(preview)} className="w-full h-full object-cover" />
+            <img src={preview} className="w-full h-full object-cover" />
           </div>
 
           <div>
