@@ -35,43 +35,51 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
       product_variants: true
     }
   })
-
   const orders = rawOrders.map(order => ({
     ...order,
     amount: Number(order.amount),
+
     created_at: order.created_at?.toISOString() || null,
     paid_at: order.paid_at?.toISOString() || null,
     fulfilled_at: order.fulfilled_at?.toISOString() || null,
+
     game_keys: order.game_keys ? {
       ...order.game_keys,
       assigned_at: order.game_keys.assigned_at?.toISOString() || null,
       created_at: order.game_keys.created_at?.toISOString() || null,
     } : null,
-    products: {
+
+    products: order.products ? {
       ...order.products,
       price: Number(order.products.price),
-      commission_pct: Number(order.products.commission_pct ?? 0), 
+      commission_pct: Number(order.products.commission_pct ?? 0),
+
       created_at: order.products.created_at?.toISOString() || null,
       updated_at: order.products.updated_at?.toISOString() || null,
+
       product_images: order.products.product_images.map(img => ({
         ...img,
         created_at: img.created_at?.toISOString() || null,
       })),
+
       product_gifts: order.products.product_gifts.map(gift => ({
         ...gift,
         created_at: gift.created_at?.toISOString() || null,
       })),
+
       product_presets: order.products.product_presets.map(preset => ({
         ...preset,
         created_at: preset.created_at?.toISOString() || null,
       })),
-    },
+    } : null,
+
     product_variants: order.product_variants ? {
       ...order.product_variants,
       price: Number(order.product_variants.price),
+      premium_addon_price: Number(order.product_variants.premium_addon_price ?? 0),
       created_at: order.product_variants.created_at?.toISOString() || null,
       updated_at: order.product_variants.updated_at?.toISOString() || null,
-    } : null,
+    } : null
   }))
 
   return (

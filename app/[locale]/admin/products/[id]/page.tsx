@@ -24,12 +24,20 @@ export default async function EditProductPage({
   })
   if (!product) notFound()
 
+  const gifts = await prisma.gifts.findMany({
+    orderBy: { sort_order: "asc" }
+  })
+
   const safe = {
     ...product,
     price: Number(product.price),
     commission_pct: Number(product.commission_pct ?? 0),
-    product_variants: product.product_variants.map((v) => ({ ...v, price: Number(v.price) })),
+    product_variants: product.product_variants.map((v) => ({ 
+      ...v, 
+      price: Number(v.price),
+      premium_addon_price: Number(v.premium_addon_price ?? 0)
+    })),
   }
 
-  return <ProductForm mode="edit" product={safe} />
+  return <ProductForm mode="edit" product={safe} allGifts={gifts} />
 }

@@ -77,6 +77,8 @@
     "orders": "ออเดอร์",
     "users": "ผู้ใช้งาน",
     "settings": "ตั้งค่า",
+    "TikTok Live": "TikTok Live",
+    "tiktok_simulator": "TikTok Simulator",
     "back_to_store": "กลับสู่หน้าร้าน",
     "admin_panel": "แผงควบคุม",
     "total": "ทั้งหมด",
@@ -393,7 +395,9 @@
     "saveFailed": "ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
     "tiktok_username_label": "ชื่อผู้ใช้ TikTok",
     "tiktok_username_placeholder": "ชื่อผู้ใช้ TikTok ของคุณ",
-    "tiktok_username_hint": "ใส่ชื่อ TikTok เพื่อรับของขวัญจาก Live — ระบบจะจับคู่อัตโนมัติ"
+    "tiktok_username_hint": "ใส่ชื่อ TikTok เพื่อรับของขวัญจาก Live — ระบบจะจับคู่อัตโนมัติ",
+    "advancedSettings": "ตั้งค่าการเชื่อมต่อขั้นสูง (กรณีเชื่อมต่อไม่ได้)",
+    "howToGetToken": "วิธีดึงรหัสเชื่อมต่อ (Connection Token)"
   },
   "AdminGifts": {
     "title": "จัดการของขวัญ",

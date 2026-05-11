@@ -35,15 +35,17 @@ export default async function Home({
   })
 
   const products = rawProducts.map((p) => ({
-    ...p,
-    price: Number(p.price),
-    commission_pct: Number(p.commission_pct ?? 0),
-    product_variants: p.product_variants.map((v) => ({
-      ...v,
-      price: Number(v.price),
-      stock: v._count.game_keys,
-    })),
-  }))
+  ...p,
+  price: Number(p.price),
+  commission_pct: Number(p.commission_pct ?? 0),
+
+  product_variants: p.product_variants.map((v) => ({
+    ...v,
+    price: Number(v.price),
+    premium_addon_price: Number(v.premium_addon_price ?? 0), // ✅ FIX ตรงนี้
+    stock: v._count.game_keys,
+  })),
+}))
 
   return <HomeClient products={products} />
 }

@@ -77,6 +77,8 @@
     "orders": "Orders",
     "users": "Users",
     "settings": "Settings",
+    "TikTok Live": "TikTok Live",
+    "tiktok_simulator": "TikTok Simulator",
     "back_to_store": "Back to Store",
     "admin_panel": "Admin Panel",
     "total": "total",
@@ -393,7 +395,9 @@
     "saveFailed": "Failed to save settings. Please try again.",
     "tiktok_username_label": "TikTok Username",
     "tiktok_username_placeholder": "Your TikTok username",
-    "tiktok_username_hint": "Enter your TikTok username to receive gifts from Live — the system will match automatically"
+    "tiktok_username_hint": "Enter your TikTok username to receive gifts from Live — the system will match automatically",
+    "advancedSettings": "Advanced Connection Settings (If connection fails)",
+    "howToGetToken": "How to get Connection Token?"
   },
   "AdminGifts": {
     "title": "Gift Management",

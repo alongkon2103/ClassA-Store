@@ -1,7 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useTranslations } from "next-intl"
+import Image from "next/image"
+import { getImageUrl } from "@/lib/getImageUrl"
 
 type ProductFunction = {
   id: string
@@ -10,17 +12,20 @@ type ProductFunction = {
   label_th: string | null
   label_en: string | null
   sort_order: number
+  default_gift_id: number | null
   created_at: string | null
 }
 
 type Props = {
   productId: string
   functions: ProductFunction[]
+  allGifts: any[]
 }
 
 export default function FunctionManager({
   productId,
   functions: initial,
+  allGifts,
 }: Props) {
   const t = useTranslations("AdminFunctions")
 
@@ -36,6 +41,7 @@ export default function FunctionManager({
     name: "",
     label_th: "",
     label_en: "",
+    default_gift_id: null as number | null,
   })
   const [adding, setAdding] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
@@ -45,6 +51,7 @@ export default function FunctionManager({
     name: "",
     label_th: "",
     label_en: "",
+    default_gift_id: null as number | null,
   })
 
   // ─────────────────────────────────────────────
@@ -68,6 +75,7 @@ export default function FunctionManager({
             label_th: newForm.label_th.trim() || null,
             label_en: newForm.label_en.trim() || null,
             sort_order: functions.length,
+            default_gift_id: newForm.default_gift_id,
           }),
         }
       )
@@ -89,6 +97,7 @@ export default function FunctionManager({
         name: "",
         label_th: "",
         label_en: "",
+        default_gift_id: null,
       })
 
       setShowAdd(false)
@@ -109,6 +118,7 @@ export default function FunctionManager({
       name: fn.name,
       label_th: fn.label_th ?? "",
       label_en: fn.label_en ?? "",
+      default_gift_id: fn.default_gift_id,
     })
   }
 
@@ -130,6 +140,7 @@ export default function FunctionManager({
             name: editForm.name.trim().toLowerCase(),
             label_th: editForm.label_th.trim() || null,
             label_en: editForm.label_en.trim() || null,
+            default_gift_id: editForm.default_gift_id,
           }),
         }
       )
@@ -240,6 +251,11 @@ export default function FunctionManager({
   // ─────────────────────────────────────────────
   // Render
   // ─────────────────────────────────────────────
+  const getGift = (id: number | null) => {
+      if (!id) return null
+      return allGifts.find(x => x.id === id)
+  }
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -268,19 +284,16 @@ export default function FunctionManager({
 
       {/* Add Form */}
       {showAdd && (
-        <div className="bg-bg-card border border-accent/15 rounded-2xl p-4 space-y-3">
+        <div className="bg-bg-card border border-accent/15 rounded-2xl p-4 space-y-4 shadow-xl">
           <p className="text-[12px] text-text-muted uppercase tracking-wide font-medium">
             {t("newFunction")}
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Name */}
             <div>
-              <label className="block text-[11px] text-text-muted mb-1">
-                {t("nameKey")}{" "}
-                <span className="text-red-400">
-                  *
-                </span>
+              <label className="block text-[11px] text-text-muted mb-1 font-bold">
+                {t("nameKey")} <span className="text-red-400">*</span>
               </label>
               <input
                 value={newForm.name}
@@ -330,6 +343,18 @@ export default function FunctionManager({
                 className={input}
               />
             </div>
+
+            {/* Default Gift Selection */}
+            <div>
+              <label className="block text-[11px] text-text-muted mb-1 font-bold">
+                Default Gift
+              </label>
+              <GiftPicker 
+                  gifts={allGifts} 
+                  value={newForm.default_gift_id} 
+                  onChange={(id) => setNewForm(prev => ({ ...prev, default_gift_id: id }))} 
+              />
+            </div>
           </div>
 
           <div className="flex gap-2 justify-end">
@@ -340,6 +365,7 @@ export default function FunctionManager({
                   name: "",
                   label_th: "",
                   label_en: "",
+                  default_gift_id: null,
                 })
               }}
               className="text-[13px] text-text-muted hover:text-text-base px-4 py-2 rounded-xl transition"
@@ -353,7 +379,7 @@ export default function FunctionManager({
                 adding ||
                 !newForm.name.trim()
               }
-              className="bg-accent hover:opacity-90 text-white text-[13px] font-semibold px-5 py-2 rounded-xl transition disabled:opacity-50"
+              className="bg-accent hover:opacity-90 text-white text-[13px] font-semibold px-6 py-2 rounded-xl transition disabled:opacity-50"
             >
               {adding
                 ? t("saving")
@@ -382,25 +408,15 @@ export default function FunctionManager({
               {/* Reorder Buttons */}
               <div className="flex flex-col gap-0.5">
                 <button
-                  onClick={() =>
-                    move(i, -1)
-                  }
-                  disabled={
-                    i === 0 || loading
-                  }
+                  onClick={() => move(i, -1)}
+                  disabled={i === 0 || loading}
                   className="text-text-muted hover:text-text-base disabled:opacity-20 text-[11px] leading-none px-1"
                 >
                   ▲
                 </button>
                 <button
-                  onClick={() =>
-                    move(i, 1)
-                  }
-                  disabled={
-                    i ===
-                      functions.length -
-                        1 || loading
-                  }
+                  onClick={() => move(i, 1)}
+                  disabled={i === functions.length - 1 || loading}
                   className="text-text-muted hover:text-text-base disabled:opacity-20 text-[11px] leading-none px-1"
                 >
                   ▼
@@ -408,53 +424,35 @@ export default function FunctionManager({
               </div>
 
               {/* Sort Number */}
-              <span className="text-[11px] text-text-muted w-5 text-center">
+              <span className="text-[11px] text-text-muted w-5 text-center flex-shrink-0">
                 {i + 1}
               </span>
 
               {/* Content */}
               {editingId === fn.id ? (
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                   <input
                     value={editForm.name}
-                    onChange={(e) =>
-                      setEditForm(
-                        (prev) => ({
-                          ...prev,
-                          name: e.target.value,
-                        })
-                      )
-                    }
+                    onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="kill"
                     className={input}
                   />
                   <input
                     value={editForm.label_th}
-                    onChange={(e) =>
-                      setEditForm(
-                        (prev) => ({
-                          ...prev,
-                          label_th:
-                            e.target.value,
-                        })
-                      )
-                    }
+                    onChange={(e) => setEditForm(prev => ({ ...prev, label_th: e.target.value }))}
                     placeholder="Label TH"
                     className={input}
                   />
                   <input
                     value={editForm.label_en}
-                    onChange={(e) =>
-                      setEditForm(
-                        (prev) => ({
-                          ...prev,
-                          label_en:
-                            e.target.value,
-                        })
-                      )
-                    }
+                    onChange={(e) => setEditForm(prev => ({ ...prev, label_en: e.target.value }))}
                     placeholder="Label EN"
                     className={input}
+                  />
+                  <GiftPicker 
+                      gifts={allGifts} 
+                      value={editForm.default_gift_id} 
+                      onChange={(id) => setEditForm(prev => ({ ...prev, default_gift_id: id }))} 
                   />
                 </div>
               ) : (
@@ -464,7 +462,7 @@ export default function FunctionManager({
                   </span>
 
                   {fn.label_th && (
-                    <span className="text-[13px] text-text-base">
+                    <span className="text-[13px] text-text-base font-medium">
                       {fn.label_th}
                     </span>
                   )}
@@ -474,6 +472,30 @@ export default function FunctionManager({
                       / {fn.label_en}
                     </span>
                   )}
+
+                  {/* Default Gift Preview */}
+                  <div className="ml-auto flex items-center gap-2 bg-bg-base px-3 py-1.5 rounded-xl border border-white/5">
+                      <span className="text-[10px] uppercase tracking-wider text-text-muted font-bold">Default:</span>
+                      {(() => {
+                          const g = getGift(fn.default_gift_id)
+                          if (!g) return <span className="text-[12px] text-text-muted/50">—</span>
+                          return (
+                              <div className="flex items-center gap-2">
+                                  {g.image_url && (
+                                      <Image 
+                                          src={getImageUrl(g.image_url)} 
+                                          alt="" width={16} height={16} 
+                                          className="rounded-sm" 
+                                          unoptimized
+                                      />
+                                  )}
+                                  <span className="text-[12px] font-medium text-accent-light">
+                                      {g.name}
+                                  </span>
+                              </div>
+                          )
+                      })()}
+                  </div>
                 </div>
               )}
 
@@ -482,20 +504,16 @@ export default function FunctionManager({
                 {editingId === fn.id ? (
                   <>
                     <button
-                      onClick={() =>
-                        setEditingId(null)
-                      }
+                      onClick={() => setEditingId(null)}
                       className="text-[12px] text-text-muted hover:text-text-base px-3 py-1.5 rounded-lg transition"
                     >
                       {t("cancel")}
                     </button>
 
                     <button
-                      onClick={() =>
-                        handleEdit(fn.id)
-                      }
+                      onClick={() => handleEdit(fn.id)}
                       disabled={loading}
-                      className="text-[12px] bg-accent/20 text-accent-light hover:bg-accent/30 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                      className="text-[12px] bg-accent/20 text-accent-light hover:bg-accent/30 px-3 py-1.5 rounded-lg transition disabled:opacity-50 font-bold"
                     >
                       {t("save")}
                     </button>
@@ -503,20 +521,14 @@ export default function FunctionManager({
                 ) : (
                   <>
                     <button
-                      onClick={() =>
-                        startEdit(fn)
-                      }
+                      onClick={() => startEdit(fn)}
                       className="text-[12px] text-text-muted hover:text-text-base px-3 py-1.5 rounded-lg transition"
                     >
                       {t("edit")}
                     </button>
 
                     <button
-                      onClick={() =>
-                        handleDelete(
-                          fn.id
-                        )
-                      }
+                      onClick={() => handleDelete(fn.id)}
                       disabled={loading}
                       className="text-[12px] text-red-400/70 hover:text-red-400 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
                     >
@@ -531,6 +543,85 @@ export default function FunctionManager({
       )}
     </div>
   )
+}
+
+// ── Gift Picker Component ─────────────────────────────────────
+function GiftPicker({ gifts, value, onChange }: { gifts: any[], value: number | null, onChange: (id: number | null) => void }) {
+    const [open, setOpen] = useState(false)
+    const [search, setSearch] = useState("")
+
+    const selected = useMemo(() => gifts.find(g => g.id === value), [gifts, value])
+
+    const filtered = useMemo(() => {
+        const q = search.toLowerCase().trim()
+        if (!q) return gifts.slice(0, 50)
+        return gifts.filter(g => g.name.toLowerCase().includes(q) || String(g.id).includes(q)).slice(0, 50)
+    }, [gifts, search])
+
+    return (
+        <div className="relative">
+            <button 
+                type="button"
+                onClick={() => setOpen(!open)}
+                className="w-full bg-bg-base border border-accent/15 rounded-xl px-3 py-2 text-[13px] flex items-center justify-between hover:border-accent/40 transition"
+            >
+                <div className="flex items-center gap-2 overflow-hidden">
+                    {selected ? (
+                        <>
+                            {selected.image_url && (
+                                <Image src={getImageUrl(selected.image_url)} alt="" width={16} height={16} className="rounded-sm" unoptimized />
+                            )}
+                            <span className="truncate">{selected.name}</span>
+                        </>
+                    ) : (
+                        <span className="text-text-muted">Select Gift...</span>
+                    )}
+                </div>
+                <span className="text-[10px] opacity-40">{open ? "▲" : "▼"}</span>
+            </button>
+
+            {open && (
+                <>
+                    <div className="fixed inset-0 z-[60]" onClick={() => setOpen(false)} />
+                    <div className="absolute top-full left-0 w-[240px] mt-2 bg-bg-card border border-accent/20 rounded-2xl shadow-2xl z-[70] p-2 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2">
+                        <input 
+                            autoFocus
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search gift..."
+                            className="w-full bg-bg-base border border-accent/10 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-accent/30"
+                        />
+                        <div className="max-h-[250px] overflow-y-auto custom-scrollbar">
+                            <button 
+                                onClick={() => { onChange(null); setOpen(false); }}
+                                className="w-full text-left px-3 py-2 rounded-lg text-[12px] hover:bg-white/5 text-text-muted"
+                            >
+                                -- No Default --
+                            </button>
+                            {filtered.map(g => (
+                                <button
+                                    key={g.id}
+                                    onClick={() => { onChange(g.id); setOpen(false); }}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] hover:bg-accent/10 transition ${value === g.id ? "bg-accent/20 text-accent-light" : "text-text-base"}`}
+                                >
+                                    {g.image_url && (
+                                        <Image src={getImageUrl(g.image_url)} alt="" width={20} height={20} className="rounded" unoptimized />
+                                    )}
+                                    <div className="flex-1 text-left">
+                                        <p className="font-medium leading-tight">{g.name}</p>
+                                        <p className="text-[10px] text-text-muted">💎 {g.diamonds}</p>
+                                    </div>
+                                </button>
+                            ))}
+                            {filtered.length === 0 && (
+                                <div className="py-8 text-center text-text-muted text-[11px]">No gifts found</div>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
+    )
 }
 
 const input =

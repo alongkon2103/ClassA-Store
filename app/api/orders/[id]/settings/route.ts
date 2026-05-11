@@ -54,45 +54,49 @@ export async function POST(req: Request, { params }: RouteContext) {
 
         const body = await req.json()
         const mapping: Record<string, number> = body.mapping || {}
+        const isPremium = !!order.is_premium_order
 
-        // บันทึก tiktok_username ลง orders
+        // บันทึก tiktok_username ลง orders (ทำได้ทุกคน)
         await prisma.orders.update({
             where: { id },
             data: { tiktok_username: body.tiktok_username ?? null },
         })
 
-        // Upsert mapping function → gift
-        await prisma.$transaction(
-            Object.entries(mapping).map(([functionId, giftId]) =>
-                prisma.user_function_gifts.upsert({
-                    where: {
-                        user_id_order_id_function_id: {
+        // บันทึก mapping (ทำได้เฉพาะ Premium เท่านั้น)
+        if (isPremium) {
+            // Upsert mapping function → gift
+            await prisma.$transaction(
+                Object.entries(mapping).map(([functionId, giftId]) =>
+                    prisma.user_function_gifts.upsert({
+                        where: {
+                            user_id_order_id_function_id: {
+                                user_id: session.user.id,
+                                order_id: id,
+                                function_id: functionId,
+                            },
+                        },
+                        create: {
                             user_id: session.user.id,
                             order_id: id,
                             function_id: functionId,
+                            gift_id: Number(giftId),
                         },
-                    },
-                    create: {
-                        user_id: session.user.id,
-                        order_id: id,
-                        function_id: functionId,
-                        gift_id: Number(giftId),
-                    },
-                    update: {
-                        gift_id: Number(giftId),
-                    },
-                })
+                        update: {
+                            gift_id: Number(giftId),
+                        },
+                    })
+                )
             )
-        )
 
-        // ลบรายการที่ user เอาออก
-        await prisma.user_function_gifts.deleteMany({
-            where: {
-                user_id: session.user.id,
-                order_id: id,
-                function_id: { notIn: Object.keys(mapping) },
-            },
-        })
+            // ลบรายการที่ user เอาออก
+            await prisma.user_function_gifts.deleteMany({
+                where: {
+                    user_id: session.user.id,
+                    order_id: id,
+                    function_id: { notIn: Object.keys(mapping) },
+                },
+            })
+        }
 
         return NextResponse.json({ ok: true })
     } catch (error) {

@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma"
 
 export const authOptions: AuthOptions = {
     providers: [
-        // // ── DEV ONLY mock admin ──────────────────────────────────────
+        // ── DEV ONLY mock admin ──────────────────────────────────────
         // ...(process.env.NODE_ENV === "development"
         //     ? [
         //         CredentialsProvider({

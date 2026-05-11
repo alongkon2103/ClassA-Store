@@ -66,6 +66,7 @@ export default async function GameSettingsPage({ params }: Props) {
                 savedMapping={savedMapping}
                 savedTiktokUsername={order.tiktok_username}
                 locale={locale}
+                isPremium={!!order.is_premium_order}
             />
             <Footer />
         </div>

@@ -14,9 +14,10 @@ import { useTranslations, useLocale } from "next-intl"
 type Props = {
     product?: any
     mode: "create" | "edit"
+    allGifts?: any[]
 }
 
-export default function ProductForm({ product, mode }: Props) {
+export default function ProductForm({ product, mode, allGifts }: Props) {
     const t = useTranslations("AdminProductForm")
     const locale = useLocale()
     const router = useRouter()
@@ -301,8 +302,8 @@ export default function ProductForm({ product, mode }: Props) {
                 </div>
             )}
             {activeTab === "functions" && (
-    <FunctionManager productId={product.id} functions={product.product_functions ?? []} />
-)}
+                <FunctionManager productId={product.id} functions={product.product_functions ?? []} allGifts={allGifts ?? []} />
+            )}
             
         </div>
     )

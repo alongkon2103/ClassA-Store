@@ -20,6 +20,7 @@ type ProductFunction = {
     label_th: string | null
     label_en: string | null
     sort_order: number
+    default_gift_id?: number | null
 }
 
 type Props = {
@@ -31,6 +32,7 @@ type Props = {
     savedMapping: Record<string, number>
     savedTiktokUsername?: string | null
     locale: string
+    isPremium: boolean
 }
 
 export default function GameSettingsClient({
@@ -42,34 +44,51 @@ export default function GameSettingsClient({
     savedMapping,
     savedTiktokUsername,
     locale,
+    isPremium,
 }: Props) {
     const router = useRouter()
     const t = useTranslations("Setting")
 
-    const [mapping, setMapping]               = useState<Record<string, number>>(savedMapping)
+    // Use default mapping if not premium
+    const effectiveMapping = useMemo(() => {
+        if (isPremium) return savedMapping
+        
+        const dm: Record<string, number> = {}
+        functions.forEach(fn => {
+            if (fn.default_gift_id) dm[fn.id] = fn.default_gift_id
+        })
+        return dm
+    }, [isPremium, savedMapping, functions])
+
+    const [mapping, setMapping] = useState<Record<string, number>>(effectiveMapping)
     const [tiktokUsername, setTiktokUsername] = useState(savedTiktokUsername ?? "")
-    const [saving, setSaving]                 = useState(false)
-    const [openPicker, setOpenPicker]         = useState<string | null>(null)
-    const [searchQuery, setSearchQuery]       = useState("")
+    const [tiktokCookie, setTiktokCookie] = useState("") // New state for manual cookie
+    const [saving, setSaving] = useState(false)
+    const [trackingStatus, setTrackingStatus] = useState<string>("stopped")
+    const [isToggling, setIsToggling] = useState(false)
+    const [openPicker, setOpenPicker] = useState<string | null>(null)
+    const [searchQuery, setSearchQuery] = useState("")
 
-    // ── Logic ──────────────────────────────────────────────────────
+    // Update internal mapping state if props change (e.g. after refresh)
+    useState(() => {
+        setMapping(effectiveMapping)
+    })
 
-    const filteredGifts = useMemo(() => {
-        const query = searchQuery.toLowerCase().trim()
-        if (!query) return gifts
-        return gifts.filter((gift) =>
-            gift.name.toLowerCase().includes(query) ||
-            String(gift.id).includes(query)
-        )
-    }, [gifts, searchQuery])
+    // ... (Status Polling remains same)
+
+    const handleToggleTracking = async () => {
+        // ... (existing logic)
+    }
 
     const selectGift = (functionId: string, giftId: number) => {
+        if (!isPremium) return // Locked for non-premium
         setMapping((prev) => ({ ...prev, [functionId]: giftId }))
         setOpenPicker(null)
         setSearchQuery("")
     }
 
     const togglePicker = (functionId: string) => {
+        if (!isPremium) return // Locked for non-premium
         if (openPicker === functionId) {
             setOpenPicker(null)
             setSearchQuery("")
@@ -79,13 +98,18 @@ export default function GameSettingsClient({
         }
     }
 
+
     const clearGift = (functionId: string) => {
+        if (!isPremium) return // Locked for non-premium
         setMapping((prev) => {
             const next = { ...prev }
             delete next[functionId]
             return next
         })
     }
+    
+    // ... (handleSave remains same)
+
 
     const handleSave = async () => {
         try {
@@ -108,7 +132,17 @@ export default function GameSettingsClient({
         }
     }
 
+
     const getGift = (giftId: number) => gifts.find((g) => g.id === giftId)
+
+    const filteredGifts = useMemo(() => {
+        const query = searchQuery.toLowerCase().trim()
+        if (!query) return gifts
+        return gifts.filter((gift) =>
+            gift.name.toLowerCase().includes(query) ||
+            String(gift.id).includes(query)
+        )
+    }, [gifts, searchQuery])
 
     return (
         <div className="min-h-screen bg-bg-base">
@@ -127,18 +161,38 @@ export default function GameSettingsClient({
                 </div>
 
                 {/* Game Info Card */}
-                <div className="bg-bg-card border border-accent/15 rounded-2xl p-5 flex items-center gap-4">
-                    <div className="flex-1">
-                        <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">{t("game")}</p>
-                        <p className="text-[16px] font-bold text-text-base">{productName}</p>
+                <div className="bg-bg-card border border-accent/15 rounded-2xl p-5 flex flex-col gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="flex-1">
+                            <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">{t("game")}</p>
+                            <p className="text-[16px] font-bold text-text-base">{productName}</p>
+                        </div>
+                        <div className="w-px h-10 bg-accent/10" />
+                        <div className="flex-1">
+                            <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">Whitelist</p>
+                            <p className="font-mono text-[16px] font-bold text-accent-light">
+                                {whitelistedUsername ?? "—"}
+                            </p>
+                        </div>
                     </div>
-                    <div className="w-px h-10 bg-accent/10" />
-                    <div className="flex-1">
-                        <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">Whitelist</p>
-                        <p className="font-mono text-[16px] font-bold text-accent-light">
-                            {whitelistedUsername ?? "—"}
-                        </p>
-                    </div>
+
+                    {!isPremium && (
+                        <div className="bg-accent/10 border border-accent/20 rounded-xl p-3 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5 text-accent-light">
+                                <span className="text-[18px]">⭐</span>
+                                <div>
+                                    <p className="text-[13px] font-bold leading-tight">Upgrade to Premium</p>
+                                    <p className="text-[11px] opacity-80">ปลดล็อกการตั้งค่าของขวัญได้อย่างอิสระ</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => router.push(`/products`)}
+                                className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition"
+                            >
+                                BUY PREMIUM
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* TikTok Username */}
@@ -158,6 +212,71 @@ export default function GameSettingsClient({
                             className="w-full bg-bg-base border border-accent/15 rounded-xl pl-7 pr-4 py-2.5 text-[13px] placeholder:text-text-muted outline-none focus:border-accent/40 transition"
                         />
                     </div>
+
+                    {/* Advanced Settings Disclosure */}
+                    {/* <div className="border-t border-accent/5 pt-4">
+                        <details className="group">
+                            <summary className="flex items-center gap-2 text-[12px] font-medium text-text-muted cursor-pointer hover:text-text-base transition-colors list-none">
+                                <ChevronIcon size={14} className="group-open:rotate-180" />
+                                <span>{t("advancedSettings") || "ตั้งค่าการเชื่อมต่อขั้นสูง (กรณีเชื่อมต่อไม่ได้)"}</span>
+                            </summary>
+                            <div className="mt-3 space-y-3 pl-5 border-l-2 border-accent/10">
+                                <div className="space-y-1.5">
+                                    <p className="text-[11px] font-semibold text-text-base flex items-center gap-2">
+                                        <span>Connection Token (ttwid)</span>
+                                    </p>
+                                    <p className="text-[10px] text-text-muted leading-relaxed">
+                                        * ใช้สำหรับแก้ปัญหาเมื่อระบบไม่สามารถเชื่อมต่อกับ TikTok ได้โดยตรง รหัสนี้จะช่วยระบุตัวตน Browser ของคุณอย่างปลอดภัย (ไม่ต้องใช้รหัสผ่าน)
+                                    </p>
+                                    <input
+                                        value={tiktokCookie}
+                                        onChange={(e) => setTiktokCookie(e.target.value)}
+                                        placeholder="ก๊อปปี้ค่า ttwid จาก Browser มาวางที่นี่..."
+                                        className="w-full bg-bg-base border border-accent/10 rounded-xl px-4 py-2.5 text-[12px] placeholder:text-text-muted outline-none focus:border-accent/30 transition"
+                                    />
+                                    <a 
+                                        href="#" 
+                                        className="text-[10px] text-accent-light hover:underline inline-block"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            alert("วิธีเอา Token: \n1. เข้าหน้า TikTok ในคอม\n2. กด F12 -> Application -> Cookies\n3. ก๊อปปี้ค่า ttwid มาวาง");
+                                        }}
+                                    >
+                                        {t("howToGetToken") || "วิธีดึงรหัสเชื่อมต่อ (Connection Token)"}
+                                    </a>
+                                </div>
+                            </div>
+                        </details>
+                    </div> */}
+
+                    {/* Tracking Controls */}
+                    {/* <div className="flex items-center justify-between gap-3 pt-2">
+                        <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full animate-pulse ${
+                                trackingStatus === "running" ? "bg-green-500" : 
+                                trackingStatus === "connecting" ? "bg-yellow-500" : "bg-red-500"
+                            }`} />
+                            <span className="text-[12px] font-medium capitalize text-text-muted">
+                                {trackingStatus}
+                            </span>
+                        </div>
+                        <button
+                            onClick={handleToggleTracking}
+                            disabled={isToggling}
+                            className={`px-6 py-2 rounded-xl text-[13px] font-bold transition flex items-center gap-2 ${
+                                trackingStatus === "stopped" || trackingStatus === "error"
+                                ? "bg-accent text-white hover:opacity-90"
+                                : "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+                            }`}
+                        >
+                            {isToggling ? (
+                                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                trackingStatus === "stopped" || trackingStatus === "error" ? "Start Tracking" : "Stop Tracking"
+                            )}
+                        </button>
+                    </div> */}
+
                     <p className="text-[11px] text-text-muted">{t("tiktok_username_hint")}</p>
                 </div>
 
@@ -174,8 +293,8 @@ export default function GameSettingsClient({
                     ) : (
                         functions.map((fn) => {
                             const selectedGiftId = mapping[fn.id]
-                            const selectedGift   = selectedGiftId ? getGift(selectedGiftId) : null
-                            const isOpen         = openPicker === fn.id
+                            const selectedGift = selectedGiftId ? getGift(selectedGiftId) : null
+                            const isOpen = openPicker === fn.id
 
                             return (
                                 <div key={fn.id} className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden transition-all">
@@ -192,13 +311,16 @@ export default function GameSettingsClient({
 
                                         <button
                                             onClick={() => togglePicker(fn.id)}
-                                            className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition min-w-[150px] justify-between ${
-                                                selectedGift
-                                                    ? "border-accent/40 bg-accent/5 text-accent-light"
-                                                    : "border-white/10 bg-bg-base text-text-muted"
-                                            }`}
+                                            disabled={!isPremium}
+                                            className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition min-w-[150px] justify-between ${selectedGift
+                                                ? "border-accent/40 bg-accent/5 text-accent-light"
+                                                : "border-white/10 bg-bg-base text-text-muted"
+                                                } ${!isPremium ? "cursor-default opacity-80" : ""}`}
                                         >
                                             <div className="flex items-center gap-2 overflow-hidden">
+                                                {!isPremium && !selectedGift && (
+                                                    <span className="text-[11px] font-bold bg-white/5 px-1.5 py-0.5 rounded text-text-muted">LOCKED</span>
+                                                )}
                                                 {selectedGift ? (
                                                     <>
                                                         {selectedGift.image_url ? (
@@ -216,15 +338,16 @@ export default function GameSettingsClient({
                                                         <span className="text-[13px] font-medium truncate">
                                                             {selectedGift.name}
                                                         </span>
+                                                        {!isPremium && <span className="text-[10px] bg-accent/10 px-1 rounded">DEFAULT</span>}
                                                     </>
                                                 ) : (
                                                     <span className="text-[13px]">{t("selectGift")}</span>
                                                 )}
                                             </div>
-                                            <ChevronIcon size={14} className={isOpen ? "rotate-180" : ""} />
+                                            {isPremium && <ChevronIcon size={14} className={isOpen ? "rotate-180" : ""} />}
                                         </button>
 
-                                        {selectedGift && (
+                                        {selectedGift && isPremium && (
                                             <button
                                                 onClick={() => clearGift(fn.id)}
                                                 className="text-text-muted hover:text-red-400 p-1 transition"
@@ -256,11 +379,10 @@ export default function GameSettingsClient({
                                                     <button
                                                         key={gift.id}
                                                         onClick={() => selectGift(fn.id, gift.id)}
-                                                        className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition ${
-                                                            selectedGiftId === gift.id
-                                                                ? "border-accent bg-accent/10"
-                                                                : "border-white/5 bg-bg-card hover:border-accent/30"
-                                                        }`}
+                                                        className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition ${selectedGiftId === gift.id
+                                                            ? "border-accent bg-accent/10"
+                                                            : "border-white/5 bg-bg-card hover:border-accent/30"
+                                                            }`}
                                                     >
                                                         <div className="w-8 h-8 flex items-center justify-center">
                                                             {gift.image_url ? (
