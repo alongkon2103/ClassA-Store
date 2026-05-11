@@ -8,6 +8,8 @@ type Variant = {
   label_th: string
   label_en: string
   price: number
+  is_active: boolean
+  variant_type?: string // เพิ่มเพื่อให้ Type รองรับการเช็ค premium
 }
 
 type Props = {
@@ -32,8 +34,9 @@ export default function ProductCard({
   const t = useTranslations("Common")
   const locale = useLocale()
 
+  // 🔥 แก้ไขจุดนี้: กรองเอาเฉพาะ Variant ที่เปิดใช้งานอยู่ และต้องไม่ใช่ประเภท premium
   const variants = (product_variants ?? []).filter(
-    (v: any) => v.is_active === true
+    (v: any) => v.is_active === true && v.variant_type !== "premium"
   )
 
   const hasVariants = variants.length > 0
@@ -70,7 +73,7 @@ export default function ProductCard({
           {name}
         </p>
 
-        {/* 💰 PRICE LOGIC */}
+        {/* 💰 PRICE LOGIC: แสดงเฉพาะ 3 รายการแรกที่ไม่ใช่ Premium */}
         {hasVariants ? (
           <div className="space-y-1">
             {variants.slice(0, 3).map((v) => (
@@ -79,12 +82,16 @@ export default function ProductCard({
                   {locale === "th" ? v.label_th : v.label_en}
                 </span>
                 <span className="font-semibold text-accent-light">
-                  ฿{v.price}
+                  ฿{Number(v.price).toLocaleString()}
                 </span>
               </div>
             ))}
           </div>
-        ) : null}
+        ) : (
+          <p className="text-[14px] font-bold text-accent-light">
+            ฿{Number(price).toLocaleString()}
+          </p>
+        )}
 
         <div className="h-px bg-accent/10 my-1" />
       </div>

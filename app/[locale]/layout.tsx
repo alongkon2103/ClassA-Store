@@ -5,7 +5,35 @@ import { NextIntlClientProvider } from "next-intl"
 import { getMessages, setRequestLocale } from "next-intl/server"
 import { routing } from "@/i18n/routing"
 import { notFound } from "next/navigation"
-// ✅ ลบ import Script ออก
+import { Metadata } from "next" // 1. เพิ่มตัวนี้เข้าไป
+
+// 2. วาง Metadata ไว้ตรงนี้ (นอก function RootLayout)
+export const metadata: Metadata = {
+  title: 'A-Class Store | Premium Roblox Maps & Secure Whitelist Systems',
+  description: 'High-quality Roblox maps with advanced anti-copy whitelist protection. Secure your assets and manage licenses effortlessly via our dashboard.',
+  openGraph: {
+    title: 'A-Class Store - Premium Roblox Maps & Secure Whitelist',
+    description: 'Get exclusive access to top-tier Roblox maps. Buy your whitelist license today for instant, secure, and permanent access to our premium creations.',
+    url: 'https://aclassstore.com',
+    siteName: 'A-Class Store',
+    images: [
+      {
+        url: 'https://aclassstore.com/uploads/LogoV.png', 
+        width: 1200,
+        height: 630,
+        alt: 'A-Class Store Whitelist System',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'A-Class Store | Secure Roblox Asset Marketplace',
+    description: 'Stop map leaks today. Professional Whitelist systems and premium assets for Roblox developers.',
+    images: ['https://aclassstore.com/uploads/LogoV.png'],
+  },
+}
 
 const rajdhani = Rajdhani({
   subsets: ["latin"],

@@ -1,4 +1,6 @@
+// app/api/public/next-gift/route.ts
 import { NextResponse } from "next/server"
+
 declare global {
   var giftQueue: any[] | undefined
 }
@@ -9,11 +11,7 @@ export async function GET() {
   const gift = giftQueue.shift() || null
 
   return NextResponse.json(
-    {
-      ok: true,
-      gift,
-      remaining: giftQueue.length,
-    },
+    { ok: true, gift, remaining: giftQueue.length },
     {
       headers: {
         "Access-Control-Allow-Origin": "*",

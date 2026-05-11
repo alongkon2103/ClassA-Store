@@ -1,0 +1,2408 @@
+[
+    {
+        "name": "Rose",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/eba3a9bb85c33e017f3648eaf88d7189~tplv-obj.webp",
+        "image_file": "gift_images/Rose.webp"
+    },
+    {
+        "name": "TikTok",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/802a21ae29f9fae5abe3693de9f874bd~tplv-obj.webp",
+        "image_file": "gift_images/TikTok.webp"
+    },
+    {
+        "name": "GG",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/3f02fa9594bd1495ff4e8aa5ae265eef~tplv-obj.webp",
+        "image_file": "gift_images/GG.webp"
+    },
+    {
+        "name": "Pop",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/0b4f61e8ab637f11449300d03929ef87.png~tplv-obj.webp",
+        "image_file": "gift_images/Pop.webp"
+    },
+    {
+        "name": "You're awesome",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/e9cafce8279220ed26016a71076d6a8a.png~tplv-obj.webp",
+        "image_file": "gift_images/You're_awesome.webp"
+    },
+    {
+        "name": "Creeper",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/d686d45bd66e16b0aca8b0e5eb52a977.png~tplv-obj.webp",
+        "image_file": "gift_images/Creeper.webp"
+    },
+    {
+        "name": "Love you so much",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/fc549cf1bc61f9c8a1c97ebab68dced7.png~tplv-obj.webp",
+        "image_file": "gift_images/Love_you_so_much.webp"
+    },
+    {
+        "name": "Oldies",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/77f6ab69b0b03bda98a0a3d2bfdeb46f.png~tplv-obj.webp",
+        "image_file": "gift_images/Oldies.webp"
+    },
+    {
+        "name": "Freestyle",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/1f5ca5cfb4b98c2761fb85987f47c641.png~tplv-obj.webp",
+        "image_file": "gift_images/Freestyle.webp"
+    },
+    {
+        "name": "Cake Slice",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/f681afb4be36d8a321eac741d387f1e2~tplv-obj.webp",
+        "image_file": "gift_images/Cake_Slice.webp"
+    },
+    {
+        "name": "Glow Stick",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8e1a5d66370c5586545e358e37c10d25~tplv-obj.webp",
+        "image_file": "gift_images/Glow_Stick.webp"
+    },
+    {
+        "name": "Ice Cream Cone",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/968820bc85e274713c795a6aef3f7c67~tplv-obj.webp",
+        "image_file": "gift_images/Ice_Cream_Cone.webp"
+    },
+    {
+        "name": "Wink wink",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/4a68411b3e92fc2bf68d458d5f906b74.png~tplv-obj.webp",
+        "image_file": "gift_images/Wink_wink.webp"
+    },
+    {
+        "name": "Heart Me",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/d56945782445b0b8c8658ed44f894c7b~tplv-obj.webp",
+        "image_file": "gift_images/Heart_Me.webp"
+    },
+    {
+        "name": "Congratulations",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/8e73d843b23a9e68f8d3cf8c46fc0bee.png~tplv-obj.webp",
+        "image_file": "gift_images/Congratulations.webp"
+    },
+    {
+        "name": "So Cute",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/d40d31241efcf57c630e894bb3007b8a.png~tplv-obj.webp",
+        "image_file": "gift_images/So_Cute.webp"
+    },
+    {
+        "name": "Placeholder",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/30fe4cd1b7365dbf073b498c18204eed.png~tplv-obj.webp",
+        "image_file": "gift_images/Placeholder.webp"
+    },
+    {
+        "name": "Light",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/87435dfc3671e4d2db3d0299cd4e7869.png~tplv-obj.webp",
+        "image_file": "gift_images/Light.webp"
+    },
+    {
+        "name": "Thumbs Up",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/570a663e27bdc460e05556fd1596771a~tplv-obj.webp",
+        "image_file": "gift_images/Thumbs_Up.webp"
+    },
+    {
+        "name": "Heart",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/dd300fd35a757d751301fba862a258f1~tplv-obj.webp",
+        "image_file": "gift_images/Heart.webp"
+    },
+    {
+        "name": "Love you",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ab0a7b44bfc140923bb74164f6f880ab~tplv-obj.webp",
+        "image_file": "gift_images/Love_you.webp"
+    },
+    {
+        "name": "Thai Popsicle",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/0a362dcefcd73e84ed4ebc18db887412~tplv-obj.webp",
+        "image_file": "gift_images/Thai_Popsicle.webp"
+    },
+    {
+        "name": "Music  Album",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/2a5378fbb272f5b4be0678084c66bdc1.png~tplv-obj.webp",
+        "image_file": "gift_images/Music__Album.webp"
+    },
+    {
+        "name": "Enjoy Music",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/60b05dddf972bd3290823411510ba6f9.png~tplv-obj.webp",
+        "image_file": "gift_images/Enjoy_Music.webp"
+    },
+    {
+        "name": "Wink Charm",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/295d753e095c6ac8b180691f20d64ea8.png~tplv-obj.webp",
+        "image_file": "gift_images/Wink_Charm.webp"
+    },
+    {
+        "name": "Go Popular",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/b342e28d73dac6547e0b3e2ad57f6597.png~tplv-obj.webp",
+        "image_file": "gift_images/Go_Popular.webp"
+    },
+    {
+        "name": "Club Cheers",
+        "diamonds": 1,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/6a934c90e5533a4145bed7eae66d71bd.png~tplv-obj.webp",
+        "image_file": "gift_images/Club_Cheers.webp"
+    },
+    {
+        "name": "Team Bracelet",
+        "diamonds": 2,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/54cb1eeca369e5bea1b97707ca05d189.png~tplv-obj.webp",
+        "image_file": "gift_images/Team_Bracelet.webp"
+    },
+    {
+        "name": "Finger Heart",
+        "diamonds": 5,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/a4c4dc437fd3a6632aba149769491f49.png~tplv-obj.webp",
+        "image_file": "gift_images/Finger_Heart.webp"
+    },
+    {
+        "name": "Overreact",
+        "diamonds": 5,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/dfd48ef1952b6d315856adda7705d02d.png~tplv-obj.webp",
+        "image_file": "gift_images/Overreact.webp"
+    },
+    {
+        "name": "Name shoutout",
+        "diamonds": 5,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/9b1d432109c95e77e8de11dd442c0a1f.png~tplv-obj.webp",
+        "image_file": "gift_images/Name_shoutout.webp"
+    },
+    {
+        "name": "Duit Raya",
+        "diamonds": 5,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/af543ee556c1c3d3e2610a24d8d02c94~tplv-obj.webp",
+        "image_file": "gift_images/Duit_Raya.webp"
+    },
+    {
+        "name": "The Lucky 9",
+        "diamonds": 9,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/9bae1948b9dd06e3c7d3bafff8a38749.png~tplv-obj.webp",
+        "image_file": "gift_images/The_Lucky_9.webp"
+    },
+    {
+        "name": "Super Popular",
+        "diamonds": 9,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/2fa794a99919386b85402d9a0a991b2b.png~tplv-obj.webp",
+        "image_file": "gift_images/Super_Popular.webp"
+    },
+    {
+        "name": "Cheer You Up",
+        "diamonds": 9,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/97e0529ab9e5cbb60d95fc9ff1133ea6~tplv-obj.webp",
+        "image_file": "gift_images/Cheer_You_Up.webp"
+    },
+    {
+        "name": "Club Power",
+        "diamonds": 9,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/fb8da877eabca4ae295483f7cdfe7d31.png~tplv-obj.webp",
+        "image_file": "gift_images/Club_Power.webp"
+    },
+    {
+        "name": "Rosa",
+        "diamonds": 10,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/eb77ead5c3abb6da6034d3cf6cfeb438~tplv-obj.webp",
+        "image_file": "gift_images/Rosa.webp"
+    },
+    {
+        "name": "Friendship Necklace",
+        "diamonds": 10,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/e033c3f28632e233bebac1668ff66a2f.png~tplv-obj.webp",
+        "image_file": "gift_images/Friendship_Necklace.webp"
+    },
+    {
+        "name": "Journey Pass",
+        "diamonds": 10,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/551ecaf639c5e02354f9e7c1a763ec72.png~tplv-obj.webp",
+        "image_file": "gift_images/Journey_Pass.webp"
+    },
+    {
+        "name": "Slow motion",
+        "diamonds": 10,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/12374117770f779919bf002461fdfac0.png~tplv-obj.webp",
+        "image_file": "gift_images/Slow_motion.webp"
+    },
+    {
+        "name": "Chocolate",
+        "diamonds": 10,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/8e8bfebfad922eed81f4a31a114fc0d3.png~tplv-obj.webp",
+        "image_file": "gift_images/Chocolate.webp"
+    },
+    {
+        "name": "League Ball",
+        "diamonds": 10,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/85e79c76fd9b5ded418565427a67f424.png~tplv-obj.webp",
+        "image_file": "gift_images/League_Ball.webp"
+    },
+    {
+        "name": "Lucky Pony",
+        "diamonds": 10,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/8d005c54c988a6353777ce9c06cfb9cc.png~tplv-obj.webp",
+        "image_file": "gift_images/Lucky_Pony.webp"
+    },
+    {
+        "name": "I love you",
+        "diamonds": 10,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/beaaa3a78a00b5b20661b00924ab0e7f~tplv-obj.webp",
+        "image_file": "gift_images/I_love_you.webp"
+    },
+    {
+        "name": "Style Me Up",
+        "diamonds": 10,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/b676cd3356e7dc11d4dad13fed18d29e.png~tplv-obj.webp",
+        "image_file": "gift_images/Style_Me_Up.webp"
+    },
+    {
+        "name": "Heart Gaze",
+        "diamonds": 10,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/0fe120fdb52724dd157e41cc5c00a924.png~tplv-obj.webp",
+        "image_file": "gift_images/Heart_Gaze.webp"
+    },
+    {
+        "name": "Bravo!",
+        "diamonds": 15,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/075e206d6da035f10ff5f8fecd82abcc.png~tplv-obj.webp",
+        "image_file": "gift_images/Bravo!.webp"
+    },
+    {
+        "name": "Flower Garland",
+        "diamonds": 15,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/e9fa40e9f4967434064fd92aa915cb43.png~tplv-obj.webp",
+        "image_file": "gift_images/Flower_Garland.webp"
+    },
+    {
+        "name": "Baby Hippo",
+        "diamonds": 15,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/d21610bf92ff47696df046b33851671b.png~tplv-obj.webp",
+        "image_file": "gift_images/Baby_Hippo.webp"
+    },
+    {
+        "name": "Live Up",
+        "diamonds": 15,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/bf8157c474f3a2e7209bcc9658411b19.png~tplv-obj.webp",
+        "image_file": "gift_images/Live_Up.webp"
+    },
+    {
+        "name": "Perfume",
+        "diamonds": 20,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/20b8f61246c7b6032777bb81bf4ee055~tplv-obj.webp",
+        "image_file": "gift_images/Perfume.webp"
+    },
+    {
+        "name": "Doughnut",
+        "diamonds": 30,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/4e7ad6bdf0a1d860c538f38026d4e812~tplv-obj.webp",
+        "image_file": "gift_images/Doughnut.webp"
+    },
+    {
+        "name": "Paper Crane",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/0f158a08f7886189cdabf496e8a07c21~tplv-obj.webp",
+        "image_file": "gift_images/Paper_Crane.webp"
+    },
+    {
+        "name": "Little Crown",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/cf3db11b94a975417043b53401d0afe1~tplv-obj.webp",
+        "image_file": "gift_images/Little_Crown.webp"
+    },
+    {
+        "name": "Cap",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/6c2ab2da19249ea570a2ece5e3377f04~tplv-obj.webp",
+        "image_file": "gift_images/Cap.webp"
+    },
+    {
+        "name": "Hat and Mustache",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/2f1e4f3f5c728ffbfa35705b480fdc92~tplv-obj.webp",
+        "image_file": "gift_images/Hat_and_Mustache.webp"
+    },
+    {
+        "name": "Like-Pop",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/75eb7b4aca24eaa6e566b566c7d21e2f~tplv-obj.webp",
+        "image_file": "gift_images/Like-Pop.webp"
+    },
+    {
+        "name": "Love Painting",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/de6f01cb2a0deb2da24cb5d1ecf9a23b.png~tplv-obj.webp",
+        "image_file": "gift_images/Love_Painting.webp"
+    },
+    {
+        "name": "Bubble Gum",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/52ebbe9f3f53b5567ad11ad6f8303c58.png~tplv-obj.webp",
+        "image_file": "gift_images/Bubble_Gum.webp"
+    },
+    {
+        "name": "Mark of Love",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/582475419a820e0b0dbc964799b6146e.png~tplv-obj.webp",
+        "image_file": "gift_images/Mark_of_Love.webp"
+    },
+    {
+        "name": "Sundae Bowl",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/725ba28c17d775db510ca7b240cdd84e.png~tplv-obj.webp",
+        "image_file": "gift_images/Sundae_Bowl.webp"
+    },
+    {
+        "name": "Charmer Bow",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/3cbe9384885eab12ace419cc4f28cf4f.png~tplv-obj.webp",
+        "image_file": "gift_images/Charmer_Bow.webp"
+    },
+    {
+        "name": "Club Victory",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/6639eb3590a59052babc9cb772ae4f5b.png~tplv-obj.webp",
+        "image_file": "gift_images/Club_Victory.webp"
+    },
+    {
+        "name": "Level-up Sparks",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/c6c5b0efea6f1f7e1fd1f3909284d12c.png~tplv-obj.webp",
+        "image_file": "gift_images/Level-up_Sparks.webp"
+    },
+    {
+        "name": "Greeting Heart",
+        "diamonds": 99,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/9325524bd9ca181bd8e76eb99b44c042.png~tplv-obj.webp",
+        "image_file": "gift_images/Greeting_Heart.webp"
+    },
+    {
+        "name": "Game Controller",
+        "diamonds": 100,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/20ec0eb50d82c2c445cb8391fd9fe6e2~tplv-obj.webp",
+        "image_file": "gift_images/Game_Controller.webp"
+    },
+    {
+        "name": "Super GG",
+        "diamonds": 100,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/cbd7588c53ec3df1af0ed6d041566362.png~tplv-obj.webp",
+        "image_file": "gift_images/Super_GG.webp"
+    },
+    {
+        "name": "Mishka Bear",
+        "diamonds": 100,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/d78ed6496fd57286b42ac033acbee299.png~tplv-obj.webp",
+        "image_file": "gift_images/Mishka_Bear.webp"
+    },
+    {
+        "name": "Confetti",
+        "diamonds": 100,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/cb4e11b3834e149f08e1cdcc93870b26~tplv-obj.webp",
+        "image_file": "gift_images/Confetti.webp"
+    },
+    {
+        "name": "Hand Hearts",
+        "diamonds": 100,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/6cd022271dc4669d182cad856384870f~tplv-obj.webp",
+        "image_file": "gift_images/Hand_Hearts.webp"
+    },
+    {
+        "name": "Singing Magic",
+        "diamonds": 100,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/1b76de4373dec56480903c3d5367fd13.png~tplv-obj.webp",
+        "image_file": "gift_images/Singing_Magic.webp"
+    },
+    {
+        "name": "Marvelous Confetti",
+        "diamonds": 100,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/fccc851d351716bc8b34ec65786c727d~tplv-obj.webp",
+        "image_file": "gift_images/Marvelous_Confetti.webp"
+    },
+    {
+        "name": "Bowknot",
+        "diamonds": 149,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/dd02c4c2cb726134314e89abec0b5476.png~tplv-obj.webp",
+        "image_file": "gift_images/Bowknot.webp"
+    },
+    {
+        "name": "Big Shout Out",
+        "diamonds": 149,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/d79737225a5c68dee52b34d1a7c7dec9.png~tplv-obj.webp",
+        "image_file": "gift_images/Big_Shout_Out.webp"
+    },
+    {
+        "name": "Chatting Popcorn",
+        "diamonds": 149,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/f4813ddce6a6b3268df01af9fe3764d9.png~tplv-obj.webp",
+        "image_file": "gift_images/Chatting_Popcorn.webp"
+    },
+    {
+        "name": "Masquerade",
+        "diamonds": 149,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/8fde56ae6a7ea22d3d17184ac362585f.png~tplv-obj.webp",
+        "image_file": "gift_images/Masquerade.webp"
+    },
+    {
+        "name": "Balloon Crown",
+        "diamonds": 149,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/d1cc3f587941bd7af50929aee49ac070.png~tplv-obj.webp",
+        "image_file": "gift_images/Balloon_Crown.webp"
+    },
+    {
+        "name": "Feather Tiara",
+        "diamonds": 149,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/23a0d8c3317d8be5e5a63488a7b2b8c4.png~tplv-obj.webp",
+        "image_file": "gift_images/Feather_Tiara.webp"
+    },
+    {
+        "name": "Caterpillar Chaos",
+        "diamonds": 149,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/5fc71d8f491568b0e258e2de1718e37c.png~tplv-obj.webp",
+        "image_file": "gift_images/Caterpillar_Chaos.webp"
+    },
+    {
+        "name": "Catrina",
+        "diamonds": 149,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/fadb0050e89ad6a1731c1a4742360846.png~tplv-obj.webp",
+        "image_file": "gift_images/Catrina.webp"
+    },
+    {
+        "name": "Raving Snail",
+        "diamonds": 149,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ef4e1229a2f0b67f7d4e92b508667060.png~tplv-obj.webp",
+        "image_file": "gift_images/Raving_Snail.webp"
+    },
+    {
+        "name": "Santa Cocoa",
+        "diamonds": 149,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/8d188b6a7cfd7b98f778f18302a8f7f4.png~tplv-obj.webp",
+        "image_file": "gift_images/Santa_Cocoa.webp"
+    },
+    {
+        "name": "Love Glasses",
+        "diamonds": 149,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/7b3f141efe8a943faba19f855a003943.png~tplv-obj.webp",
+        "image_file": "gift_images/Love_Glasses.webp"
+    },
+    {
+        "name": "Song of Harvest",
+        "diamonds": 150,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/8af5604b926b8d045246d25d4de24550.png~tplv-obj.webp",
+        "image_file": "gift_images/Song_of_Harvest.webp"
+    },
+    {
+        "name": "League Countdown",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/936d94c2e9267c3fa099127fba4e30a2.png~tplv-obj.webp",
+        "image_file": "gift_images/League_Countdown.webp"
+    },
+    {
+        "name": "Sunglasses",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/08af67ab13a8053269bf539fd27f3873.png~tplv-obj.webp",
+        "image_file": "gift_images/Sunglasses.webp"
+    },
+    {
+        "name": "Hearts",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/934b5a10dee8376df5870a61d2ea5cb6.png~tplv-obj.webp",
+        "image_file": "gift_images/Hearts.webp"
+    },
+    {
+        "name": "Garland Headpiece",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/bdbdd8aeb2b69c173a3ef666e63310f3~tplv-obj.webp",
+        "image_file": "gift_images/Garland_Headpiece.webp"
+    },
+    {
+        "name": "Love You",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/134e51c00f46e01976399883ca4e4798~tplv-obj.webp",
+        "image_file": "gift_images/Love_You.webp"
+    },
+    {
+        "name": "Cheer For You",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/1059dfa76c78dc17d7cf0a1fc2ece185~tplv-obj.webp",
+        "image_file": "gift_images/Cheer_For_You.webp"
+    },
+    {
+        "name": "Stinging Bee",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/c37b8f76d503f5787407a8d7c52f8cb7.png~tplv-obj.webp",
+        "image_file": "gift_images/Stinging_Bee.webp"
+    },
+    {
+        "name": "Massage for You",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/3ebdd3746d91eb06bdd4a04c49c3b04a.png~tplv-obj.webp",
+        "image_file": "gift_images/Massage_for_You.webp"
+    },
+    {
+        "name": "Coffee Magic",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/0cb623f44c34f77fe14c2e11bfe4ee62.png~tplv-obj.webp",
+        "image_file": "gift_images/Coffee_Magic.webp"
+    },
+    {
+        "name": "Lots of Bread",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/7a71f21b88ea8d3a4579f9f3d8719328.png~tplv-obj.webp",
+        "image_file": "gift_images/Lots_of_Bread.webp"
+    },
+    {
+        "name": "Cheering Crab",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/7d729b6a8104f5d349ba887608cd35bc.png~tplv-obj.webp",
+        "image_file": "gift_images/Cheering_Crab.webp"
+    },
+    {
+        "name": "Dancing Hands",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/d5d829bbca08bd500317991fbaa84bc3.png~tplv-obj.webp",
+        "image_file": "gift_images/Dancing_Hands.webp"
+    },
+    {
+        "name": "Night Star",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/3d136834fe9964927d6b30499a68b741.png~tplv-obj.webp",
+        "image_file": "gift_images/Night_Star.webp"
+    },
+    {
+        "name": "Twinkling Star",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/f15902127c6750276af4021e818e756e.png~tplv-obj.webp",
+        "image_file": "gift_images/Twinkling_Star.webp"
+    },
+    {
+        "name": "Floating Octopus",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/022d496f79aa50d3042f0660d37ed48a.png~tplv-obj.webp",
+        "image_file": "gift_images/Floating_Octopus.webp"
+    },
+    {
+        "name": "Flower Headband",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/eaec5f24e45bc66ec44830fa5024ab45.png~tplv-obj.webp",
+        "image_file": "gift_images/Flower_Headband.webp"
+    },
+    {
+        "name": "Goalkeeper Save",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/92a80ca0eef371f0b7ae70f76f0f29d5.png~tplv-obj.webp",
+        "image_file": "gift_images/Goalkeeper_Save.webp"
+    },
+    {
+        "name": "Bowtiful Crown",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/49ead973a8b72606222e9afe055d694a.png~tplv-obj.webp",
+        "image_file": "gift_images/Bowtiful_Crown.webp"
+    },
+    {
+        "name": "Sour Buddy",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/963e12ba84805721d96b06deaf5d660b.png~tplv-obj.webp",
+        "image_file": "gift_images/Sour_Buddy.webp"
+    },
+    {
+        "name": "Panda Climb",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/4673a50f307ef9735bb64b2f663b222f.png~tplv-obj.webp",
+        "image_file": "gift_images/Panda_Climb.webp"
+    },
+    {
+        "name": "Rose Hand",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/805e6b8051d50ca6e6c9b74d5fc89045.png~tplv-obj.webp",
+        "image_file": "gift_images/Rose_Hand.webp"
+    },
+    {
+        "name": "Melon Juice",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/912d29e708fe00d72487908114803e77.png~tplv-obj.webp",
+        "image_file": "gift_images/Melon_Juice.webp"
+    },
+    {
+        "name": "Rose Hand",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/805e6b8051d50ca6e6c9b74d5fc89045.png~tplv-obj.webp",
+        "image_file": "gift_images/Rose_Hand.webp"
+    },
+    {
+        "name": "Coconut Juice",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/8157f47f794c8395969034574dd12082.png~tplv-obj.webp",
+        "image_file": "gift_images/Coconut_Juice.webp"
+    },
+    {
+        "name": "Chirpy Kisses",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/c75ec50c453f5b09e4d25c5c69c30ed5.png~tplv-obj.webp",
+        "image_file": "gift_images/Chirpy_Kisses.webp"
+    },
+    {
+        "name": "Joker Ball",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/4227bdbc22921d8cdceb3ab14366624d.png~tplv-obj.webp",
+        "image_file": "gift_images/Joker_Ball.webp"
+    },
+    {
+        "name": "Juicy Smile",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/b897b374103a142ce550afec4c54d9aa.png~tplv-obj.webp",
+        "image_file": "gift_images/Juicy_Smile.webp"
+    },
+    {
+        "name": "Side by Side",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/14b52e1933131d94a2634acf1625559d.png~tplv-obj.webp",
+        "image_file": "gift_images/Side_by_Side.webp"
+    },
+    {
+        "name": "Heart Hood",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/79801ad5ce9f4a97793be5b06ac6804b.png~tplv-obj.webp",
+        "image_file": "gift_images/Heart_Hood.webp"
+    },
+    {
+        "name": "Party Pony",
+        "diamonds": 199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/07c5a2297a00cacc94d329d047d045c8.png~tplv-obj.webp",
+        "image_file": "gift_images/Party_Pony.webp"
+    },
+    {
+        "name": "Balloons",
+        "diamonds": 200,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/49d51360108c4ff1770f2d7c59d7d7cb.png~tplv-obj.webp",
+        "image_file": "gift_images/Balloons.webp"
+    },
+    {
+        "name": "Magic Genie",
+        "diamonds": 200,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/3d306be32f7d6d52c4e74df15a063d45.png~tplv-obj.webp",
+        "image_file": "gift_images/Magic_Genie.webp"
+    },
+    {
+        "name": "Rose Bear",
+        "diamonds": 214,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/adf6e9bd6219788151edb9fa026a0481.png~tplv-obj.webp",
+        "image_file": "gift_images/Rose_Bear.webp"
+    },
+    {
+        "name": "Cat",
+        "diamonds": 222,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ed64975b4e809224ec3dffc616840205.png~tplv-obj.webp",
+        "image_file": "gift_images/Cat.webp"
+    },
+    {
+        "name": "Pinch Face",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/a10aab8940d3d5aee14b14cde033ab2a.png~tplv-obj.webp",
+        "image_file": "gift_images/Pinch_Face.webp"
+    },
+    {
+        "name": "Candy Bouquet",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/935ad03446f993a3630508e5c929b7cf.png~tplv-obj.webp",
+        "image_file": "gift_images/Candy_Bouquet.webp"
+    },
+    {
+        "name": "Ice Cream Mic",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/7f784d1ec7b26d7d8cfd05faede11d76.png~tplv-obj.webp",
+        "image_file": "gift_images/Ice_Cream_Mic.webp"
+    },
+    {
+        "name": "Star Goggles",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/e14483e67a44ce522ba583ec923941fa.png~tplv-obj.webp",
+        "image_file": "gift_images/Star_Goggles.webp"
+    },
+    {
+        "name": "Cheer Mic",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/cf2c95f9642541fa9ebe9bdcfe6e7359.png~tplv-obj.webp",
+        "image_file": "gift_images/Cheer_Mic.webp"
+    },
+    {
+        "name": "Music Bubbles",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/b5786e09eb50f1ea512b2ae9f7034254.png~tplv-obj.webp",
+        "image_file": "gift_images/Music_Bubbles.webp"
+    },
+    {
+        "name": "Palm Breeze",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/dc8043965da9348b305de279cb2fb451.png~tplv-obj.webp",
+        "image_file": "gift_images/Palm_Breeze.webp"
+    },
+    {
+        "name": "Forest Elf",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/1aeb39ecbb493ea520e23588df61caa1.png~tplv-obj.webp",
+        "image_file": "gift_images/Forest_Elf.webp"
+    },
+    {
+        "name": "Face-pulling",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/fbbe8af4280240dfdb11ad1100be0282.png~tplv-obj.webp",
+        "image_file": "gift_images/Face-pulling.webp"
+    },
+    {
+        "name": "Treasured Voice",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/99bb73b9eb5851a2bcafadb6fe9a9815.png~tplv-obj.webp",
+        "image_file": "gift_images/Treasured_Voice.webp"
+    },
+    {
+        "name": "Melodic birds",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/345514d111481a58d76bd53c42f0445d.png~tplv-obj.webp",
+        "image_file": "gift_images/Melodic_birds.webp"
+    },
+    {
+        "name": "Surfing Penguin",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/de7454192584813d5bcb0e64d44bfc64.png~tplv-obj.webp",
+        "image_file": "gift_images/Surfing_Penguin.webp"
+    },
+    {
+        "name": "Party Blossom",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/3065f931274a9c1e6d4cdd0b29ff3c8d.png~tplv-obj.webp",
+        "image_file": "gift_images/Party_Blossom.webp"
+    },
+    {
+        "name": "Dreamy Strings",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/68e68d79a6ad382321c9cbdee966c025.png~tplv-obj.webp",
+        "image_file": "gift_images/Dreamy_Strings.webp"
+    },
+    {
+        "name": "Sweet Flutter",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/f70e199a23a5ff232ce241d07c3dc99b.png~tplv-obj.webp",
+        "image_file": "gift_images/Sweet_Flutter.webp"
+    },
+    {
+        "name": "Snow Bloom",
+        "diamonds": 249,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/8384e240d21a75fd1084e6f9da833ab6.png~tplv-obj.webp",
+        "image_file": "gift_images/Snow_Bloom.webp"
+    },
+    {
+        "name": "LIVE Ranking Crown",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/1bb7f00a3adeb932e5f5518d723fedb5.png~tplv-obj.webp",
+        "image_file": "gift_images/LIVE_Ranking_Crown.webp"
+    },
+    {
+        "name": "EID Gift Box",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ec3bedf704efdbbcfdfd36a99c98d94a.png~tplv-obj.webp",
+        "image_file": "gift_images/EID_Gift_Box.webp"
+    },
+    {
+        "name": "Corgi",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/148eef0884fdb12058d1c6897d1e02b9~tplv-obj.webp",
+        "image_file": "gift_images/Corgi.webp"
+    },
+    {
+        "name": "Fruit Friends",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/1153dd51308c556cb4fcc48c7d62209f.png~tplv-obj.webp",
+        "image_file": "gift_images/Fruit_Friends.webp"
+    },
+    {
+        "name": "Naughty Chicken",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/46a839dbc1c3e9103c71d82b35b21ad4.png~tplv-obj.webp",
+        "image_file": "gift_images/Naughty_Chicken.webp"
+    },
+    {
+        "name": "Play for You",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/34201b86430742595e4dcb5b39560b7a.png~tplv-obj.webp",
+        "image_file": "gift_images/Play_for_You.webp"
+    },
+    {
+        "name": "Rock Star",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/57acaf0590c56c219493b71fe8d2961d.png~tplv-obj.webp",
+        "image_file": "gift_images/Rock_Star.webp"
+    },
+    {
+        "name": "Butterfly for You",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/e02af5a7d59a958bd38536f7e3473f75.png~tplv-obj.webp",
+        "image_file": "gift_images/Butterfly_for_You.webp"
+    },
+    {
+        "name": "Puppy Kisses",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/4ae998a21159b60484169864f8968ba9.png~tplv-obj.webp",
+        "image_file": "gift_images/Puppy_Kisses.webp"
+    },
+    {
+        "name": "Spider on web",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/e6fc469b538b91485c7ed77ad97d3e08.png~tplv-obj.webp",
+        "image_file": "gift_images/Spider_on_web.webp"
+    },
+    {
+        "name": "United Heart",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/72ff280b8c6ce16f6efc9bf4cd6a036b.png~tplv-obj.webp",
+        "image_file": "gift_images/United_Heart.webp"
+    },
+    {
+        "name": "LIVE Ranking Crown",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/1bb7f00a3adeb932e5f5518d723fedb5.png~tplv-obj.webp",
+        "image_file": "gift_images/LIVE_Ranking_Crown.webp"
+    },
+    {
+        "name": "Kicker Challenge",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/8065704646452387f6bed049b194f214.png~tplv-obj.webp",
+        "image_file": "gift_images/Kicker_Challenge.webp"
+    },
+    {
+        "name": "Hawaiian Lei",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/91baf7a414a9ba7fe48cdf990330632b.png~tplv-obj.webp",
+        "image_file": "gift_images/Hawaiian_Lei.webp"
+    },
+    {
+        "name": "Hi! Rosie!",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/c5d90ed49d326785882decc35c4200b0.png~tplv-obj.webp",
+        "image_file": "gift_images/Hi!_Rosie!.webp"
+    },
+    {
+        "name": "Pawfect",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/8710c33f4929aa91c7ec7154f5f90268.png~tplv-obj.webp",
+        "image_file": "gift_images/Pawfect.webp"
+    },
+    {
+        "name": "Go Hamster",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/582131434f4f6edc3f97b96fbc33a492.png~tplv-obj.webp",
+        "image_file": "gift_images/Go_Hamster.webp"
+    },
+    {
+        "name": "Bat Headwear",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/1ba0996c3dd7db45807fd7f255eb66a4.png~tplv-obj.webp",
+        "image_file": "gift_images/Bat_Headwear.webp"
+    },
+    {
+        "name": "Melody Glasses",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/7e4e83b1f8746e2c3205e14f99eaae08.png~tplv-obj.webp",
+        "image_file": "gift_images/Melody_Glasses.webp"
+    },
+    {
+        "name": "Penguin Snowpal",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/29828fedfc36982c9395822e9e5aab20.png~tplv-obj.webp",
+        "image_file": "gift_images/Penguin_Snowpal.webp"
+    },
+    {
+        "name": "Judy Pose",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/d29ad841081c55a1586c10c8d29e6fe7.png~tplv-obj.webp",
+        "image_file": "gift_images/Judy_Pose.webp"
+    },
+    {
+        "name": "Music Mate",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/789d404702b42340359a4b5ea9366dbb.png~tplv-obj.webp",
+        "image_file": "gift_images/Music_Mate.webp"
+    },
+    {
+        "name": "Love Call",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/b9f95b541fa21eb5325fd8f6ffe1a551.png~tplv-obj.webp",
+        "image_file": "gift_images/Love_Call.webp"
+    },
+    {
+        "name": "Pony Lantern",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/513e60117034e851dc6c923ea8a3125b.png~tplv-obj.webp",
+        "image_file": "gift_images/Pony_Lantern.webp"
+    },
+    {
+        "name": "Spring Sprout",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/b81807a156aad66d757bacffebae830f.png~tplv-obj.webp",
+        "image_file": "gift_images/Spring_Sprout.webp"
+    },
+    {
+        "name": "Budding Heart",
+        "diamonds": 299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/80cc308eca861fccd859c089b0647193.png~tplv-obj.webp",
+        "image_file": "gift_images/Budding_Heart.webp"
+    },
+    {
+        "name": "Feather Mask",
+        "diamonds": 300,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/088bdb48e5051844d154948b4eb75e5f.png~tplv-obj.webp",
+        "image_file": "gift_images/Feather_Mask.webp"
+    },
+    {
+        "name": "Backing Monkey",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/758b0367f5746ec6335f4374dd9b45c3.png~tplv-obj.webp",
+        "image_file": "gift_images/Backing_Monkey.webp"
+    },
+    {
+        "name": "Become Kitten",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/2d89dbc83a0999ebab98b4b06d6f5ce1.png~tplv-obj.webp",
+        "image_file": "gift_images/Become_Kitten.webp"
+    },
+    {
+        "name": "Marked with Love",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/2859c21a400e1f40d93da7b68c0254d0.png~tplv-obj.webp",
+        "image_file": "gift_images/Marked_with_Love.webp"
+    },
+    {
+        "name": "Vinyl Flip",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/5f5ed81e3e714fc1a30ec6efd379cd91.png~tplv-obj.webp",
+        "image_file": "gift_images/Vinyl_Flip.webp"
+    },
+    {
+        "name": "Juicy Cap",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/e6ce2ee0daae3693268b77efec17507f.png~tplv-obj.webp",
+        "image_file": "gift_images/Juicy_Cap.webp"
+    },
+    {
+        "name": "Batwing Hat",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/973267050ccb12c111d8048226ac7218.png~tplv-obj.webp",
+        "image_file": "gift_images/Batwing_Hat.webp"
+    },
+    {
+        "name": "Mystic Drink",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/aa2791b5b47ef26b948ed0ff76f878b5.png~tplv-obj.webp",
+        "image_file": "gift_images/Mystic_Drink.webp"
+    },
+    {
+        "name": "Beach Maracas",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/db8bf15e39052e17289b70d9eaa926e0.png~tplv-obj.webp",
+        "image_file": "gift_images/Beach_Maracas.webp"
+    },
+    {
+        "name": "Vintage flight",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/e9764af4b6dce95b8f993b3902eb1d76.png~tplv-obj.webp",
+        "image_file": "gift_images/Vintage_flight.webp"
+    },
+    {
+        "name": "Gingerbread Man",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/47417dd0758e895c33632863017f5d78.png~tplv-obj.webp",
+        "image_file": "gift_images/Gingerbread_Man.webp"
+    },
+    {
+        "name": "Candy Bouquet",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/13a78105483d213723d66d7fbf308001.png~tplv-obj.webp",
+        "image_file": "gift_images/Candy_Bouquet.webp"
+    },
+    {
+        "name": "Rocking Shroom",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/cbc0508afc678106f11392ae1ed3c055.png~tplv-obj.webp",
+        "image_file": "gift_images/Rocking_Shroom.webp"
+    },
+    {
+        "name": "Sparkle Pony",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/28bf38fda66300cd185fd8e3dc28d716.png~tplv-obj.webp",
+        "image_file": "gift_images/Sparkle_Pony.webp"
+    },
+    {
+        "name": "Spring Bouquet",
+        "diamonds": 349,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/97a432fdd0ec5b9a30b2a8bc4d594700.png~tplv-obj.webp",
+        "image_file": "gift_images/Spring_Bouquet.webp"
+    },
+    {
+        "name": "Forever Rosa",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/863e7947bc793f694acbe970d70440a1.png~tplv-obj.webp",
+        "image_file": "gift_images/Forever_Rosa.webp"
+    },
+    {
+        "name": "Magic Rhythm",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/00f1882035fcf9407e4b1955f0b4c48b.png~tplv-obj.webp",
+        "image_file": "gift_images/Magic_Rhythm.webp"
+    },
+    {
+        "name": "Relaxed Goose",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/3961645e741423d7b334fb4b6488852f.png~tplv-obj.webp",
+        "image_file": "gift_images/Relaxed_Goose.webp"
+    },
+    {
+        "name": "Tom's Hug",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/30ba2b172614d3c2da0e7caaca333b41.png~tplv-obj.webp",
+        "image_file": "gift_images/Tom's_Hug.webp"
+    },
+    {
+        "name": "Rosie the Rose Bean",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/3cbaea405cc61e8eaab6f5a14d127511.png~tplv-obj.webp",
+        "image_file": "gift_images/Rosie_the_Rose_Bean.webp"
+    },
+    {
+        "name": "Jollie the Joy Bean",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/0e3769575f5b7b27b67c6330376961a4.png~tplv-obj.webp",
+        "image_file": "gift_images/Jollie_the_Joy_Bean.webp"
+    },
+    {
+        "name": "Rocky the Rock Bean",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/767d7ea90f58f3676bbc5b1ae3c9851d.png~tplv-obj.webp",
+        "image_file": "gift_images/Rocky_the_Rock_Bean.webp"
+    },
+    {
+        "name": "Sage the Smart Bean",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/ed2cc456ab1a8619c5093eb8cfd3d303.png~tplv-obj.webp",
+        "image_file": "gift_images/Sage_the_Smart_Bean.webp"
+    },
+    {
+        "name": "Sage's Slash",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/213605d4582aa3e35b51712c7a0909aa.png~tplv-obj.webp",
+        "image_file": "gift_images/Sage's_Slash.webp"
+    },
+    {
+        "name": "Let butterfly dances",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/754effcbfbc5c6708c32552ab780e14b.png~tplv-obj.webp",
+        "image_file": "gift_images/Let_butterfly_dances.webp"
+    },
+    {
+        "name": "Kitten Kneading",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/40938efafa13a17de483949934570461.png~tplv-obj.webp",
+        "image_file": "gift_images/Kitten_Kneading.webp"
+    },
+    {
+        "name": "Shoot the Apple",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/12a72eac62721ef031f22d935f6aac4b.png~tplv-obj.webp",
+        "image_file": "gift_images/Shoot_the_Apple.webp"
+    },
+    {
+        "name": "Alien Buddy",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/4d39819a9bd9731b747e42a1ee650406.png~tplv-obj.webp",
+        "image_file": "gift_images/Alien_Buddy.webp"
+    },
+    {
+        "name": "Rosie's Concert",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/9e9ccba3ad69fb79462faad2d4bab4a5.png~tplv-obj.webp",
+        "image_file": "gift_images/Rosie's_Concert.webp"
+    },
+    {
+        "name": "Tiger Lift",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/5150422ca02095eef30bd508fe0b7cdd.png~tplv-obj.webp",
+        "image_file": "gift_images/Tiger_Lift.webp"
+    },
+    {
+        "name": "Santa Owl Surprise",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/d70298039a39a03723b95b9a76421bc1.png~tplv-obj.webp",
+        "image_file": "gift_images/Santa_Owl_Surprise.webp"
+    },
+    {
+        "name": "Confetti Bear",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/6e2944bf91135c52cc8004d9b7ef36ab.png~tplv-obj.webp",
+        "image_file": "gift_images/Confetti_Bear.webp"
+    },
+    {
+        "name": "Singing Sax",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/0962211de9b80bda00a7da89400d2a5a.png~tplv-obj.webp",
+        "image_file": "gift_images/Singing_Sax.webp"
+    },
+    {
+        "name": "Fairy Locket",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/02549f9db46985f897f0597b21939947.png~tplv-obj.webp",
+        "image_file": "gift_images/Fairy_Locket.webp"
+    },
+    {
+        "name": "Panda Snap",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/a96c32f3272df1905eb3f3d51b53308b.png~tplv-obj.webp",
+        "image_file": "gift_images/Panda_Snap.webp"
+    },
+    {
+        "name": "Blossom Fairy",
+        "diamonds": 399,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/6bfb67efafa3b5fb509cee8b05a1418f.png~tplv-obj.webp",
+        "image_file": "gift_images/Blossom_Fairy.webp"
+    },
+    {
+        "name": "Crystal Dreams",
+        "diamonds": 400,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/4e21d2956bd289847ab8c006d499d25b.png~tplv-obj.webp",
+        "image_file": "gift_images/Crystal_Dreams.webp"
+    },
+    {
+        "name": "Wishing Cake",
+        "diamonds": 400,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/6142c30d6b06c1c7748709e02f1293ab.png~tplv-obj.webp",
+        "image_file": "gift_images/Wishing_Cake.webp"
+    },
+    {
+        "name": "Mic Champ",
+        "diamonds": 400,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/d8678a19d13ab6e2feffbea41acd0ed9.png~tplv-obj.webp",
+        "image_file": "gift_images/Mic_Champ.webp"
+    },
+    {
+        "name": "Bounce Speakers",
+        "diamonds": 400,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/fc25829fc12db52196c8606000ae17f0.png~tplv-obj.webp",
+        "image_file": "gift_images/Bounce_Speakers.webp"
+    },
+    {
+        "name": "Reindeer Milk",
+        "diamonds": 400,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/c7b922a59b8e77e748803717bd483ccf.png~tplv-obj.webp",
+        "image_file": "gift_images/Reindeer_Milk.webp"
+    },
+    {
+        "name": "Judges voting",
+        "diamonds": 400,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/6f4cfc29f43f7c701f61d7792f718ed9.png~tplv-obj.webp",
+        "image_file": "gift_images/Judges_voting.webp"
+    },
+    {
+        "name": "Beating Heart",
+        "diamonds": 449,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/11769d71ebd3c6a21f4baa7184791da9.png~tplv-obj.webp",
+        "image_file": "gift_images/Beating_Heart.webp"
+    },
+    {
+        "name": "Encore Clap",
+        "diamonds": 449,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/5b5e6863e349500d0c8ad6d67353728b.png~tplv-obj.webp",
+        "image_file": "gift_images/Encore_Clap.webp"
+    },
+    {
+        "name": "Pirate's Treasure",
+        "diamonds": 449,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ec205551b4ed75a5a12e2dd49e70b723.png~tplv-obj.webp",
+        "image_file": "gift_images/Pirate's_Treasure.webp"
+    },
+    {
+        "name": "Candy Loot",
+        "diamonds": 449,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/942191ca3bdc5b648c725e2800a1c3d2.png~tplv-obj.webp",
+        "image_file": "gift_images/Candy_Loot.webp"
+    },
+    {
+        "name": "Captured Vocals",
+        "diamonds": 449,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/73613a349fbac56473acd823675f5752.png~tplv-obj.webp",
+        "image_file": "gift_images/Captured_Vocals.webp"
+    },
+    {
+        "name": "Batting Cutie",
+        "diamonds": 449,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/94b42ab4ffd5ccc79279dffc6b109de2.png~tplv-obj.webp",
+        "image_file": "gift_images/Batting_Cutie.webp"
+    },
+    {
+        "name": "Space Love",
+        "diamonds": 449,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/186d36ad446fe5336a3ddce47eae5dab.png~tplv-obj.webp",
+        "image_file": "gift_images/Space_Love.webp"
+    },
+    {
+        "name": "Xmas Tree Hat",
+        "diamonds": 449,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/07611650030bc00a33787a7a0d91dcec.png~tplv-obj.webp",
+        "image_file": "gift_images/Xmas_Tree_Hat.webp"
+    },
+    {
+        "name": "Powerful Mind",
+        "diamonds": 450,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/2184128b55eaef8a390a1a43a2ffdf16.png~tplv-obj.webp",
+        "image_file": "gift_images/Powerful_Mind.webp"
+    },
+    {
+        "name": "Hat of Joy",
+        "diamonds": 450,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/9fcbc11bf61ee4b5790f2b3677a45ac6.png~tplv-obj.webp",
+        "image_file": "gift_images/Hat_of_Joy.webp"
+    },
+    {
+        "name": "Halloween Fun Hat",
+        "diamonds": 450,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/45a573035e301087d1ffe91e0f1513cb.png~tplv-obj.webp",
+        "image_file": "gift_images/Halloween_Fun_Hat.webp"
+    },
+    {
+        "name": "Music Conductor",
+        "diamonds": 450,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/1351df201d2481a07a33af2ea06af84f.png~tplv-obj.webp",
+        "image_file": "gift_images/Music_Conductor.webp"
+    },
+    {
+        "name": "Celebration Hat",
+        "diamonds": 450,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/39ae5c2723ac3754b25c05ef7c6744c3.png~tplv-obj.webp",
+        "image_file": "gift_images/Celebration_Hat.webp"
+    },
+    {
+        "name": "City Pop",
+        "diamonds": 450,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/d70148f36f3f740123bb9be341c13d77.png~tplv-obj.webp",
+        "image_file": "gift_images/City_Pop.webp"
+    },
+    {
+        "name": "Cupid Koala",
+        "diamonds": 450,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/823041a7f03f56fafd40b7b8c9812bd8.png~tplv-obj.webp",
+        "image_file": "gift_images/Cupid_Koala.webp"
+    },
+    {
+        "name": "Paw Call",
+        "diamonds": 450,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/0be8fcd307c249a9051dcc4e9dc51507.png~tplv-obj.webp",
+        "image_file": "gift_images/Paw_Call.webp"
+    },
+    {
+        "name": "Superwoman",
+        "diamonds": 450,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/0b229a89d79cee14ca681b1ce2abac9b.png~tplv-obj.webp",
+        "image_file": "gift_images/Superwoman.webp"
+    },
+    {
+        "name": "Crystal Heart",
+        "diamonds": 499,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ae46ac6582a606009643440fe4138eb4.png~tplv-obj.webp",
+        "image_file": "gift_images/Crystal_Heart.webp"
+    },
+    {
+        "name": "Coral",
+        "diamonds": 499,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/d4faa402c32bf4f92bee654b2663d9f1~tplv-obj.webp",
+        "image_file": "gift_images/Coral.webp"
+    },
+    {
+        "name": "Rose Soundwave",
+        "diamonds": 499,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/116f10b4d15bcfc0c945554778d52c7c.png~tplv-obj.webp",
+        "image_file": "gift_images/Rose_Soundwave.webp"
+    },
+    {
+        "name": "Basket of Spring",
+        "diamonds": 499,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/8a4457914a240328749e9aed13961c5f.png~tplv-obj.webp",
+        "image_file": "gift_images/Basket_of_Spring.webp"
+    },
+    {
+        "name": "Hands Up",
+        "diamonds": 499,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/f4d906542408e6c87cf0a42f7426f0c6~tplv-obj.webp",
+        "image_file": "gift_images/Hands_Up.webp"
+    },
+    {
+        "name": "Money Gun",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/e0589e95a2b41970f0f30f6202f5fce6~tplv-obj.webp",
+        "image_file": "gift_images/Money_Gun.webp"
+    },
+    {
+        "name": "You’re Amazing",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/b48c69f4df49c28391bcc069bbc31b41.png~tplv-obj.webp",
+        "image_file": "gift_images/You’re_Amazing.webp"
+    },
+    {
+        "name": "VR Goggles",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/18c51791197b413bbd1b4f1b983bda36.png~tplv-obj.webp",
+        "image_file": "gift_images/VR_Goggles.webp"
+    },
+    {
+        "name": "DJ Glasses",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/d4aad726e2759e54a924fbcd628ea143.png~tplv-obj.webp",
+        "image_file": "gift_images/DJ_Glasses.webp"
+    },
+    {
+        "name": "Dragon Crown",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/1d3f3738f57d6a45dd6df904bedd59ae.png~tplv-obj.webp",
+        "image_file": "gift_images/Dragon_Crown.webp"
+    },
+    {
+        "name": "Racing Helmet",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/b9321d0563504990e8fcf73466f4c895.png~tplv-obj.webp",
+        "image_file": "gift_images/Racing_Helmet.webp"
+    },
+    {
+        "name": "Goldfish Scooping",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/50ebe44e92843273e0e212d26ce34fef.png~tplv-obj.webp",
+        "image_file": "gift_images/Goldfish_Scooping.webp"
+    },
+    {
+        "name": "Bunny Crown",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/296fc5bf7a4df1db6de50d80414c5407.png~tplv-obj.webp",
+        "image_file": "gift_images/Bunny_Crown.webp"
+    },
+    {
+        "name": "Magic Prop",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/51b0adff1cf290651c87ec26128658b9.png~tplv-obj.webp",
+        "image_file": "gift_images/Magic_Prop.webp"
+    },
+    {
+        "name": "Cozy Xmas Set",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/cea35adc166d87bd2f9ca00580ce80e2.png~tplv-obj.webp",
+        "image_file": "gift_images/Cozy_Xmas_Set.webp"
+    },
+    {
+        "name": "Mystery Box",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/17667837f58f77f6e189617880315f7c.png~tplv-obj.webp",
+        "image_file": "gift_images/Mystery_Box.webp"
+    },
+    {
+        "name": "Heart Guitar",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/5fcee4f89ea8119ecc5e9c47c008d54b.png~tplv-obj.webp",
+        "image_file": "gift_images/Heart_Guitar.webp"
+    },
+    {
+        "name": "Spark ring",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/e3caf2f396ed7b9b27928067d533ebca.png~tplv-obj.webp",
+        "image_file": "gift_images/Spark_ring.webp"
+    },
+    {
+        "name": "Baby Chicks",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/f1b0b043890f33ba610f2b30fffad49f.png~tplv-obj.webp",
+        "image_file": "gift_images/Baby_Chicks.webp"
+    },
+    {
+        "name": "Gem Gun",
+        "diamonds": 500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/dd06007ade737f1001977590b11d3f61~tplv-obj.webp",
+        "image_file": "gift_images/Gem_Gun.webp"
+    },
+    {
+        "name": "Bubbly Kiss",
+        "diamonds": 530,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/780e304a1f0926d9e4b08e4665bbc93d.png~tplv-obj.webp",
+        "image_file": "gift_images/Bubbly_Kiss.webp"
+    },
+    {
+        "name": "Fully Bloomed Sakura",
+        "diamonds": 599,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/138d5ae217170678f87d632d1b3649e6.png~tplv-obj.webp",
+        "image_file": "gift_images/Fully_Bloomed_Sakura.webp"
+    },
+    {
+        "name": "League Trophy",
+        "diamonds": 599,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/fe5bf1d97adafcdc675222a9facfe6ee.png~tplv-obj.webp",
+        "image_file": "gift_images/League_Trophy.webp"
+    },
+    {
+        "name": "Join Butterflies",
+        "diamonds": 600,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/79afcda7ceb1228d393f4987e12a857c.png~tplv-obj.webp",
+        "image_file": "gift_images/Join_Butterflies.webp"
+    },
+    {
+        "name": "Swan",
+        "diamonds": 699,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/97a26919dbf6afe262c97e22a83f4bf1~tplv-obj.webp",
+        "image_file": "gift_images/Swan.webp"
+    },
+    {
+        "name": "Colorful Wings",
+        "diamonds": 700,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/67f29babb4506da83fed2d9143e6079b.png~tplv-obj.webp",
+        "image_file": "gift_images/Colorful_Wings.webp"
+    },
+    {
+        "name": "Love Flight",
+        "diamonds": 800,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ed700c6f77e12689ca0e8f9b3bd90982.png~tplv-obj.webp",
+        "image_file": "gift_images/Love_Flight.webp"
+    },
+    {
+        "name": "Train",
+        "diamonds": 899,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/4227ed71f2c494b554f9cbe2147d4899~tplv-obj.webp",
+        "image_file": "gift_images/Train.webp"
+    },
+    {
+        "name": "Travel with You",
+        "diamonds": 999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/753098e5a8f45afa965b73616c04cf89~tplv-obj.webp",
+        "image_file": "gift_images/Travel_with_You.webp"
+    },
+    {
+        "name": "Lucky Airdrop Box",
+        "diamonds": 999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/6ae56f08ae3ee57ea2dda0025bfd39d3.png~tplv-obj.webp",
+        "image_file": "gift_images/Lucky_Airdrop_Box.webp"
+    },
+    {
+        "name": "Grand show",
+        "diamonds": 999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/61348c8f1a776122088de3d43fc16fab.png~tplv-obj.webp",
+        "image_file": "gift_images/Grand_show.webp"
+    },
+    {
+        "name": "Trending Figure",
+        "diamonds": 999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/df7b556ccf369bf9a42fe83ec8a77acf.png~tplv-obj.webp",
+        "image_file": "gift_images/Trending_Figure.webp"
+    },
+    {
+        "name": "Watermelon Love",
+        "diamonds": 1000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/1d1650cd9bb0e39d72a6e759525ffe59~tplv-obj.webp",
+        "image_file": "gift_images/Watermelon_Love.webp"
+    },
+    {
+        "name": "Blooming Ribbons",
+        "diamonds": 1000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/f76750ab58ee30fc022c9e4e11d25c9d.png~tplv-obj.webp",
+        "image_file": "gift_images/Blooming_Ribbons.webp"
+    },
+    {
+        "name": "Galaxy",
+        "diamonds": 1000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/79a02148079526539f7599150da9fd28.png~tplv-obj.webp",
+        "image_file": "gift_images/Galaxy.webp"
+    },
+    {
+        "name": "Fairy Wings",
+        "diamonds": 1000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/d9798af8e406e718e66322caddf04440.png~tplv-obj.webp",
+        "image_file": "gift_images/Fairy_Wings.webp"
+    },
+    {
+        "name": "Flamingo Groove",
+        "diamonds": 1000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ef1e4cf78bb27e6164f53e1695e7a5bc.png~tplv-obj.webp",
+        "image_file": "gift_images/Flamingo_Groove.webp"
+    },
+    {
+        "name": "Lightning your world",
+        "diamonds": 1000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/827dcf6f5a588b32b02c578e2954a271.png~tplv-obj.webp",
+        "image_file": "gift_images/Lightning_your_world.webp"
+    },
+    {
+        "name": "Sparkle Dance",
+        "diamonds": 1000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/6d934aacf296e6f24d75b8b2aa4fb22f.png~tplv-obj.webp",
+        "image_file": "gift_images/Sparkle_Dance.webp"
+    },
+    {
+        "name": "Shiny air balloon",
+        "diamonds": 1000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/9e7ebdca64b8f90fcc284bb04ab92d24~tplv-obj.webp",
+        "image_file": "gift_images/Shiny_air_balloon.webp"
+    },
+    {
+        "name": "Joy Floats",
+        "diamonds": 1030,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/be17076f04429b60eb2d7c3e03a2ea9d.png~tplv-obj.webp",
+        "image_file": "gift_images/Joy_Floats.webp"
+    },
+    {
+        "name": "Candy Puffs",
+        "diamonds": 1030,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/776b2cab31f92e2592d27a4c6bd3df53.png~tplv-obj.webp",
+        "image_file": "gift_images/Candy_Puffs.webp"
+    },
+    {
+        "name": "Fireworks",
+        "diamonds": 1088,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/9494c8a0bc5c03521ef65368e59cc2b8~tplv-obj.webp",
+        "image_file": "gift_images/Fireworks.webp"
+    },
+    {
+        "name": "Magic Role",
+        "diamonds": 1088,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/690125ff0a089e5dfc2721d6a6f35fa9.png~tplv-obj.webp",
+        "image_file": "gift_images/Magic_Role.webp"
+    },
+    {
+        "name": "Exclusive Spark",
+        "diamonds": 1099,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/9108da5ad7e112db04db2ce97b81d527.png~tplv-obj.webp",
+        "image_file": "gift_images/Exclusive_Spark.webp"
+    },
+    {
+        "name": "Umbrella of Love",
+        "diamonds": 1200,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/3b1e8de86d841496b87567014827537b.png~tplv-obj.webp",
+        "image_file": "gift_images/Umbrella_of_Love.webp"
+    },
+    {
+        "name": "Frozen Magic",
+        "diamonds": 1299,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/b6433ca3480a06676159fc0d45cbd075.png~tplv-obj.webp",
+        "image_file": "gift_images/Frozen_Magic.webp"
+    },
+    {
+        "name": "Autumn Picnic",
+        "diamonds": 1300,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/f33e074aa9308800afec8c0ecaa0ef42.png~tplv-obj.webp",
+        "image_file": "gift_images/Autumn_Picnic.webp"
+    },
+    {
+        "name": "Party Laser",
+        "diamonds": 1300,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/469999dc1598d243114e9969f8d19467.png~tplv-obj.webp",
+        "image_file": "gift_images/Party_Laser.webp"
+    },
+    {
+        "name": "Vibrant Stage",
+        "diamonds": 1400,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ae0a1abca4313c916e2a4e40813d90d6.png~tplv-obj.webp",
+        "image_file": "gift_images/Vibrant_Stage.webp"
+    },
+    {
+        "name": "Level Ship",
+        "diamonds": 1500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/61863cebe02f25d95f187d3b0033718d.png~tplv-obj.webp",
+        "image_file": "gift_images/Level_Ship.webp"
+    },
+    {
+        "name": "Raya Gift Card",
+        "diamonds": 1500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/b83e4e9e80e501617b6d01582109c00f.png~tplv-obj.webp",
+        "image_file": "gift_images/Raya_Gift_Card.webp"
+    },
+    {
+        "name": "Viking Hammer",
+        "diamonds": 1500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/5b95101816bc9f61f65bd265641ef4d6.png~tplv-obj.webp",
+        "image_file": "gift_images/Viking_Hammer.webp"
+    },
+    {
+        "name": "Chasing the Dream",
+        "diamonds": 1500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/1ea8dbb805466c4ced19f29e9590040f~tplv-obj.webp",
+        "image_file": "gift_images/Chasing_the_Dream.webp"
+    },
+    {
+        "name": "Lover’s Lock",
+        "diamonds": 1500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/f3010d1fcb008ce1b17248e5ea18b178.png~tplv-obj.webp",
+        "image_file": "gift_images/Lover’s_Lock.webp"
+    },
+    {
+        "name": "Greeting Card",
+        "diamonds": 1500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/dac91f95d4135654fe16d09369dd8355.png~tplv-obj.webp",
+        "image_file": "gift_images/Greeting_Card.webp"
+    },
+    {
+        "name": "Future Encounter",
+        "diamonds": 1500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/af980f4ec9ed73f3229df8dfb583abe6.png~tplv-obj.webp",
+        "image_file": "gift_images/Future_Encounter.webp"
+    },
+    {
+        "name": "Under Control",
+        "diamonds": 1500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/af67b28480c552fd8e8c0ae088d07a1d.png~tplv-obj.webp",
+        "image_file": "gift_images/Under_Control.webp"
+    },
+    {
+        "name": "Racing Debut",
+        "diamonds": 1500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/b5ac8bb9da5569185bfdc1be357d3906.png~tplv-obj.webp",
+        "image_file": "gift_images/Racing_Debut.webp"
+    },
+    {
+        "name": "You're So Fly",
+        "diamonds": 1500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/6250163a81c588fca53191e2ae01031a.png~tplv-obj.webp",
+        "image_file": "gift_images/You're_So_Fly.webp"
+    },
+    {
+        "name": "Astrobear",
+        "diamonds": 1500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/9a8c487c3245fbce45f83f1d4dbb956e.png~tplv-obj.webp",
+        "image_file": "gift_images/Astrobear.webp"
+    },
+    {
+        "name": "Wild Mic",
+        "diamonds": 1500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/61e7dc294d766a81abf7bce5591db60c.png~tplv-obj.webp",
+        "image_file": "gift_images/Wild_Mic.webp"
+    },
+    {
+        "name": "Shooting Stars",
+        "diamonds": 1580,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/b79f212fa1831d128ed9ae78538d9485.png~tplv-obj.webp",
+        "image_file": "gift_images/Shooting_Stars.webp"
+    },
+    {
+        "name": "Blooming Heart",
+        "diamonds": 1599,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ff5453b7569d482c873163ce4b1fb703.png~tplv-obj.webp",
+        "image_file": "gift_images/Blooming_Heart.webp"
+    },
+    {
+        "name": "Here We Go",
+        "diamonds": 1799,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/61b76a51a3757f0ff1cdc33b16c4d8ae~tplv-obj.webp",
+        "image_file": "gift_images/Here_We_Go.webp"
+    },
+    {
+        "name": "Love Drop",
+        "diamonds": 1800,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/1ea684b3104abb725491a509022f7c02~tplv-obj.webp",
+        "image_file": "gift_images/Love_Drop.webp"
+    },
+    {
+        "name": "Fox Legend",
+        "diamonds": 1800,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/fac01b1cc3a676a38e749959faca9fb2.png~tplv-obj.webp",
+        "image_file": "gift_images/Fox_Legend.webp"
+    },
+    {
+        "name": "Doll New Year Greeting",
+        "diamonds": 1999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/5ec37123593a6fd309cee3ddc1f93de6.png~tplv-obj.webp",
+        "image_file": "gift_images/Doll_New_Year_Greeting.webp"
+    },
+    {
+        "name": "Star of Red Carpet",
+        "diamonds": 1999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/5b9bf90278f87b9ca0c286d3c8a12936~tplv-obj.webp",
+        "image_file": "gift_images/Star_of_Red_Carpet.webp"
+    },
+    {
+        "name": "Cooper Flies Home",
+        "diamonds": 1999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/3f1945b0d96e665a759f747e5e0cf7a9~tplv-obj.webp",
+        "image_file": "gift_images/Cooper_Flies_Home.webp"
+    },
+    {
+        "name": "Mystery Firework",
+        "diamonds": 1999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/c110230c5db903db5f060a432f5a86cd~tplv-obj.webp",
+        "image_file": "gift_images/Mystery_Firework.webp"
+    },
+    {
+        "name": "Cooper Picnic",
+        "diamonds": 2000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/23b24ff52e8c8129bf2080ac306fc7e3.png~tplv-obj.webp",
+        "image_file": "gift_images/Cooper_Picnic.webp"
+    },
+    {
+        "name": "Sky Drift",
+        "diamonds": 2000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/761bac6eb7c53852bfc702282fd9be85.png~tplv-obj.webp",
+        "image_file": "gift_images/Sky_Drift.webp"
+    },
+    {
+        "name": "Whale Diving",
+        "diamonds": 2150,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/46fa70966d8e931497f5289060f9a794~tplv-obj.webp",
+        "image_file": "gift_images/Whale_Diving.webp"
+    },
+    {
+        "name": "Blow Rosie Kisses",
+        "diamonds": 2199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/710076b6be7de742f800c4ab88fab9ff.png~tplv-obj.webp",
+        "image_file": "gift_images/Blow_Rosie_Kisses.webp"
+    },
+    {
+        "name": "Jollie's Heartland",
+        "diamonds": 2199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/0eafd5c28cdb2563f3386679643abb29.png~tplv-obj.webp",
+        "image_file": "gift_images/Jollie's_Heartland.webp"
+    },
+    {
+        "name": "Rocky's Punch",
+        "diamonds": 2199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/d17fb8a57c708c4f07f95884131df654.png~tplv-obj.webp",
+        "image_file": "gift_images/Rocky's_Punch.webp"
+    },
+    {
+        "name": "Sage's Coinbot",
+        "diamonds": 2199,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/443c163954f4f7636909fb6980518745.png~tplv-obj.webp",
+        "image_file": "gift_images/Sage's_Coinbot.webp"
+    },
+    {
+        "name": "Stargazing",
+        "diamonds": 2200,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/5792ef0fde9ca93d8ce1d793ede8aacc.png~tplv-obj.webp",
+        "image_file": "gift_images/Stargazing.webp"
+    },
+    {
+        "name": "Wave Lights",
+        "diamonds": 2200,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/5734e71ba84d872c08d8c68e94b5ce36.png~tplv-obj.webp",
+        "image_file": "gift_images/Wave_Lights.webp"
+    },
+    {
+        "name": "By the Glaziers",
+        "diamonds": 2380,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/89106a5f53730a2aa745d74602bb9e1c.png~tplv-obj.webp",
+        "image_file": "gift_images/By_the_Glaziers.webp"
+    },
+    {
+        "name": "Hit The Buzzer",
+        "diamonds": 2488,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/6541c0e7a446d9803a3edeeed05b3778.png~tplv-obj.webp",
+        "image_file": "gift_images/Hit_The_Buzzer.webp"
+    },
+    {
+        "name": "Unicorn",
+        "diamonds": 2499,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/fb15a2c7704d5be98ae53f713f8ae7db.png~tplv-obj.webp",
+        "image_file": "gift_images/Unicorn.webp"
+    },
+    {
+        "name": "Animal Band",
+        "diamonds": 2500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/60d8c4148c9cd0c268e570741ccf4150.png~tplv-obj.webp",
+        "image_file": "gift_images/Animal_Band.webp"
+    },
+    {
+        "name": "Stroke Me",
+        "diamonds": 2800,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/833ae87028fde28ef0cc284badc9fc77.png~tplv-obj.webp",
+        "image_file": "gift_images/Stroke_Me.webp"
+    },
+    {
+        "name": "Samfaring Tom",
+        "diamonds": 2850,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/d170a2612408d59bde870ffae406747b.png~tplv-obj.webp",
+        "image_file": "gift_images/Samfaring_Tom.webp"
+    },
+    {
+        "name": "Motorcycle",
+        "diamonds": 2988,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/motor_icon_green.png~tplv-obj.webp",
+        "image_file": "gift_images/Motorcycle.webp"
+    },
+    {
+        "name": "Pink Dream",
+        "diamonds": 2988,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/0de49ea9a79e65307c674596da517792.png~tplv-obj.webp",
+        "image_file": "gift_images/Pink_Dream.webp"
+    },
+    {
+        "name": "Ice Cream Truck",
+        "diamonds": 2988,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/858e9f4a507368b572738981e969b465.png~tplv-obj.webp",
+        "image_file": "gift_images/Ice_Cream_Truck.webp"
+    },
+    {
+        "name": "Ring Of Honor-Cube",
+        "diamonds": 2999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/bb5cbc1ff2bf4370873a1fe98e2b6b50.png~tplv-obj.webp",
+        "image_file": "gift_images/Ring_Of_Honor-Cube.webp"
+    },
+    {
+        "name": "Rhythmic Bear",
+        "diamonds": 2999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/380ced1977319859807292ce490993d2.png~tplv-obj.webp",
+        "image_file": "gift_images/Rhythmic_Bear.webp"
+    },
+    {
+        "name": "Love in Sunset",
+        "diamonds": 2999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/690750b0d08a67f0babaa1fd031ce84c.png~tplv-obj.webp",
+        "image_file": "gift_images/Love_in_Sunset.webp"
+    },
+    {
+        "name": "Party Bus",
+        "diamonds": 2999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/719e1f271c29f2165bda5d787501c307.png~tplv-obj.webp",
+        "image_file": "gift_images/Party_Bus.webp"
+    },
+    {
+        "name": "Ocelot Chase",
+        "diamonds": 2999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/1638ab4f8a6f9efe2c9ddd6fef831fba.png~tplv-obj.webp",
+        "image_file": "gift_images/Ocelot_Chase.webp"
+    },
+    {
+        "name": "Surprise Baby Mob",
+        "diamonds": 2999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/f074f1f73a40902e6087c6ccc747b88f.png~tplv-obj.webp",
+        "image_file": "gift_images/Surprise_Baby_Mob.webp"
+    },
+    {
+        "name": "Level-up Spotlight",
+        "diamonds": 2999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/9a87567b4bb63b175f146745af412bb5.png~tplv-obj.webp",
+        "image_file": "gift_images/Level-up_Spotlight.webp"
+    },
+    {
+        "name": "Meteor Shower",
+        "diamonds": 3000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/71883933511237f7eaa1bf8cd12ed575~tplv-obj.webp",
+        "image_file": "gift_images/Meteor_Shower.webp"
+    },
+    {
+        "name": "Balloon and Dart",
+        "diamonds": 3000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/648041b807bb5165647731b36f975675.png~tplv-obj.webp",
+        "image_file": "gift_images/Balloon_and_Dart.webp"
+    },
+    {
+        "name": "Hip-Hop Hen",
+        "diamonds": 3200,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/796b15068f06c947eeead7517e0bd5e4.png~tplv-obj.webp",
+        "image_file": "gift_images/Hip-Hop_Hen.webp"
+    },
+    {
+        "name": "Look Up",
+        "diamonds": 3350,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/87ed725a0b451b9d007a27fb4e315ab9.png~tplv-obj.webp",
+        "image_file": "gift_images/Look_Up.webp"
+    },
+    {
+        "name": "Dream Big",
+        "diamonds": 3350,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/7bc2c2c9cccc164f07841e6575972311.png~tplv-obj.webp",
+        "image_file": "gift_images/Dream_Big.webp"
+    },
+    {
+        "name": "Go Home",
+        "diamonds": 3999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/fa586ca53d45cd656d4df2f4624da2a0.png~tplv-obj.webp",
+        "image_file": "gift_images/Go_Home.webp"
+    },
+    {
+        "name": "Shine Bright",
+        "diamonds": 4088,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/d4234483e15952a992ae58a088291be1.png~tplv-obj.webp",
+        "image_file": "gift_images/Shine_Bright.webp"
+    },
+    {
+        "name": "Magic World",
+        "diamonds": 4088,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/a91fdba590b29bab1287ec746d8323a8.png~tplv-obj.webp",
+        "image_file": "gift_images/Magic_World.webp"
+    },
+    {
+        "name": "Your Concert",
+        "diamonds": 4500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/86c9c8fb5aa76488b075f139dd575dfe.png~tplv-obj.webp",
+        "image_file": "gift_images/Your_Concert.webp"
+    },
+    {
+        "name": "Private Jet",
+        "diamonds": 4888,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/airplane_icon_gold.png~tplv-obj.webp",
+        "image_file": "gift_images/Private_Jet.webp"
+    },
+    {
+        "name": "Leon the Kitten",
+        "diamonds": 4888,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/a7748baba012c9e2d98a30dce7cc5a27~tplv-obj.webp",
+        "image_file": "gift_images/Leon_the_Kitten.webp"
+    },
+    {
+        "name": "Fiery Dragon",
+        "diamonds": 4888,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/8d1281789de0a5dfa69f90ecf0dc1534.png~tplv-obj.webp",
+        "image_file": "gift_images/Fiery_Dragon.webp"
+    },
+    {
+        "name": "Signature Jet",
+        "diamonds": 4888,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/fe27eba54a50c0a687e3dc0f2c02067d~tplv-obj.webp",
+        "image_file": "gift_images/Signature_Jet.webp"
+    },
+    {
+        "name": "Sugar Whiskers",
+        "diamonds": 4918,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/3d306be32f7d6d52c4e74df15a063d45.png~tplv-obj.webp",
+        "image_file": "gift_images/Sugar_Whiskers.webp"
+    },
+    {
+        "name": "Sage’s Venture",
+        "diamonds": 4999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ea291160b9b69dc5d13938433ba0fae9.png~tplv-obj.webp",
+        "image_file": "gift_images/Sage’s_Venture.webp"
+    },
+    {
+        "name": "Hero Space Ship",
+        "diamonds": 4999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/a384835f6b1fe38987645cbe933f623c.png~tplv-obj.webp",
+        "image_file": "gift_images/Hero_Space_Ship.webp"
+    },
+    {
+        "name": "League Fandom",
+        "diamonds": 5000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/b49db707b60b5e71e7fc2335a5d93b22.png~tplv-obj.webp",
+        "image_file": "gift_images/League_Fandom.webp"
+    },
+    {
+        "name": "Diamond Gun",
+        "diamonds": 5000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/651e705c26b704d03bc9c06d841808f1.png~tplv-obj.webp",
+        "image_file": "gift_images/Diamond_Gun.webp"
+    },
+    {
+        "name": "Flying Jets",
+        "diamonds": 5000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/1d067d13988e8754ed6adbebd89b9ee8.png~tplv-obj.webp",
+        "image_file": "gift_images/Flying_Jets.webp"
+    },
+    {
+        "name": "Diamond Gun",
+        "diamonds": 5000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/651e705c26b704d03bc9c06d841808f1.png~tplv-obj.webp",
+        "image_file": "gift_images/Diamond_Gun.webp"
+    },
+    {
+        "name": "Chopin's Nocturne",
+        "diamonds": 5000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/5abd461e7e9825d7e92eba9661fcd4c2.png~tplv-obj.webp",
+        "image_file": "gift_images/Chopin's_Nocturne.webp"
+    },
+    {
+        "name": "Pink Star Gun",
+        "diamonds": 5000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/2b961cd6505f1810d2b29433edb39441.png~tplv-obj.webp",
+        "image_file": "gift_images/Pink_Star_Gun.webp"
+    },
+    {
+        "name": "Spark stage",
+        "diamonds": 5000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/7fee143b81a0a3937ba40eeee8bd6fec.png~tplv-obj.webp",
+        "image_file": "gift_images/Spark_stage.webp"
+    },
+    {
+        "name": "Fluffy Buddies",
+        "diamonds": 5388,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/368504add2c0f4369d6940552783510e.png~tplv-obj.webp",
+        "image_file": "gift_images/Fluffy_Buddies.webp"
+    },
+    {
+        "name": "Wolf",
+        "diamonds": 5500,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/002d5e13fd6cd18b7574b43dc4fd13ae.png~tplv-obj.webp",
+        "image_file": "gift_images/Wolf.webp"
+    },
+    {
+        "name": "Cub on Clouds",
+        "diamonds": 5888,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/e9c3eec846fb6be179ded64e57252918.png~tplv-obj.webp",
+        "image_file": "gift_images/Cub_on_Clouds.webp"
+    },
+    {
+        "name": "Valiant Odyssey",
+        "diamonds": 5888,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/3b238017dd782ab45f8243abde1406e7.png~tplv-obj.webp",
+        "image_file": "gift_images/Valiant_Odyssey.webp"
+    },
+    {
+        "name": "Devoted Heart",
+        "diamonds": 5999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/bc3e9b4ce077044956fee2ded85f8ff7.png~tplv-obj.webp",
+        "image_file": "gift_images/Devoted_Heart.webp"
+    },
+    {
+        "name": "Future City",
+        "diamonds": 6000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/963b7c25aa2cedc0de22358342645e87.png~tplv-obj.webp",
+        "image_file": "gift_images/Future_City.webp"
+    },
+    {
+        "name": "Sam in New City",
+        "diamonds": 6000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/291de897e4a8c3b72c358a9734c5b7d8.png~tplv-obj.webp",
+        "image_file": "gift_images/Sam_in_New_City.webp"
+    },
+    {
+        "name": "Work Hard Play Harder",
+        "diamonds": 6000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/3257e15b3f6697aed88b4ac51b816603.png~tplv-obj.webp",
+        "image_file": "gift_images/Work_Hard_Play_Harder.webp"
+    },
+    {
+        "name": "Strong Finish",
+        "diamonds": 6000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/9ad035b088dfeaf298fdc9cd84d50000.png~tplv-obj.webp",
+        "image_file": "gift_images/Strong_Finish.webp"
+    },
+    {
+        "name": "Zombie Swarm",
+        "diamonds": 6000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/a58657a7bacadf987329cb4f59cd91fb.png~tplv-obj.webp",
+        "image_file": "gift_images/Zombie_Swarm.webp"
+    },
+    {
+        "name": "Chick Stampede",
+        "diamonds": 6000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/33798b669e13c98ea076ed8eaabc8810.png~tplv-obj.webp",
+        "image_file": "gift_images/Chick_Stampede.webp"
+    },
+    {
+        "name": "Lili the Leopard",
+        "diamonds": 6599,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/7be03e1af477d1dbc6eb742d0c969372.png~tplv-obj.webp",
+        "image_file": "gift_images/Lili_the_Leopard.webp"
+    },
+    {
+        "name": "TikTok Red Carpet",
+        "diamonds": 6600,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/149b8ec691a1b9e5e7dac329e790e150.png~tplv-obj.webp",
+        "image_file": "gift_images/TikTok_Red_Carpet.webp"
+    },
+    {
+        "name": "Celebration Time",
+        "diamonds": 6999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/e73e786041d8218d8e9dbbc150855f1b~tplv-obj.webp",
+        "image_file": "gift_images/Celebration_Time.webp"
+    },
+    {
+        "name": "Happy Party",
+        "diamonds": 6999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/41774a8ba83c59055e5f2946d51215b4~tplv-obj.webp",
+        "image_file": "gift_images/Happy_Party.webp"
+    },
+    {
+        "name": "Sports Car",
+        "diamonds": 7000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/e7ce188da898772f18aaffe49a7bd7db~tplv-obj.webp",
+        "image_file": "gift_images/Sports_Car.webp"
+    },
+    {
+        "name": "Neon Ferris Wheel",
+        "diamonds": 7000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/b8f1a985fd30252bbf99e1c2aa13439b.png~tplv-obj.webp",
+        "image_file": "gift_images/Neon_Ferris_Wheel.webp"
+    },
+    {
+        "name": "Majestic Hearts",
+        "diamonds": 7238,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/a4585c4d71865a5193fafe229c09512b.png~tplv-obj.webp",
+        "image_file": "gift_images/Majestic_Hearts.webp"
+    },
+    {
+        "name": "Star Throne",
+        "diamonds": 7999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/30063f6bc45aecc575c49ff3dbc33831~tplv-obj.webp",
+        "image_file": "gift_images/Star_Throne.webp"
+    },
+    {
+        "name": "Star Throne",
+        "diamonds": 7999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/30063f6bc45aecc575c49ff3dbc33831~tplv-obj.webp",
+        "image_file": "gift_images/Star_Throne.webp"
+    },
+    {
+        "name": "Leon and Lili",
+        "diamonds": 9699,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/6958244f3eeb69ce754f735b5833a4aa.png~tplv-obj.webp",
+        "image_file": "gift_images/Leon_and_Lili.webp"
+    },
+    {
+        "name": "Interstellar",
+        "diamonds": 10000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8520d47b59c202a4534c1560a355ae06~tplv-obj.webp",
+        "image_file": "gift_images/Interstellar.webp"
+    },
+    {
+        "name": "Sunset Speedway",
+        "diamonds": 10000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/df63eee488dc0994f6f5cb2e65f2ae49~tplv-obj.webp",
+        "image_file": "gift_images/Sunset_Speedway.webp"
+    },
+    {
+        "name": "Red Lightning",
+        "diamonds": 12000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/5f48599c8d2a7bbc6e6fcf11ba2c809f~tplv-obj.webp",
+        "image_file": "gift_images/Red_Lightning.webp"
+    },
+    {
+        "name": "Level-up Spectacle",
+        "diamonds": 12999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/52a09724bbe8d78227db67bc5fe78613.png~tplv-obj.webp",
+        "image_file": "gift_images/Level-up_Spectacle.webp"
+    },
+    {
+        "name": "Invincible Hammer",
+        "diamonds": 14999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/52d8c2e23c1800e85ad621e431220724.png~tplv-obj.webp",
+        "image_file": "gift_images/Invincible_Hammer.webp"
+    },
+    {
+        "name": "Tidecaller Trident",
+        "diamonds": 14999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/7bb5606841ee8deaec981c85587ab2be.png~tplv-obj.webp",
+        "image_file": "gift_images/Tidecaller_Trident.webp"
+    },
+    {
+        "name": "Crystal Heart",
+        "diamonds": 14999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/08095e18ae3da6ad5dcf23ce68eb1483.png~tplv-obj.webp",
+        "image_file": "gift_images/Crystal_Heart.webp"
+    },
+    {
+        "name": "Leopard",
+        "diamonds": 15000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/3d837cfcac70929abc0f45e4dc7cee04.png~tplv-obj.webp",
+        "image_file": "gift_images/Leopard.webp"
+    },
+    {
+        "name": "Golden Gallop",
+        "diamonds": 15000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ec26ec5a61ad0490b70e31d6dbe128bc.png~tplv-obj.webp",
+        "image_file": "gift_images/Golden_Gallop.webp"
+    },
+    {
+        "name": "Paris",
+        "diamonds": 15000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/f7a810a338bc0e69709badd3a596559c.png~tplv-obj.webp",
+        "image_file": "gift_images/Paris.webp"
+    },
+    {
+        "name": "Rosa Nebula",
+        "diamonds": 15000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/f722088231103b66875dae33f13f8719.png~tplv-obj.webp",
+        "image_file": "gift_images/Rosa_Nebula.webp"
+    },
+    {
+        "name": "Future Journey",
+        "diamonds": 15000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/dd615b15ed696ee886064d5415dab688.png~tplv-obj.webp",
+        "image_file": "gift_images/Future_Journey.webp"
+    },
+    {
+        "name": "Match star",
+        "diamonds": 15000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/ff3eb2c45a8a4f28b8d680fb128cd93c.png~tplv-obj.webp",
+        "image_file": "gift_images/Match_star.webp"
+    },
+    {
+        "name": "Party On&On",
+        "diamonds": 15000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/c45505ece4a91d9c43e4ba98a000b006.png~tplv-obj.webp",
+        "image_file": "gift_images/Party_On&On.webp"
+    },
+    {
+        "name": "DJ Peak",
+        "diamonds": 15000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ffbc63f7c14eadaf97cdc67a44f8be06.png~tplv-obj.webp",
+        "image_file": "gift_images/DJ_Peak.webp"
+    },
+    {
+        "name": "Sneaky Jockey",
+        "diamonds": 15000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/6401ca229c2a1a07f88701da7a5b2925.png~tplv-obj.webp",
+        "image_file": "gift_images/Sneaky_Jockey.webp"
+    },
+    {
+        "name": "Mystery Stalker",
+        "diamonds": 15000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/665ecce7504349c927bd626a8a0e30c4.png~tplv-obj.webp",
+        "image_file": "gift_images/Mystery_Stalker.webp"
+    },
+    {
+        "name": "Amusement Park",
+        "diamonds": 17000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/12ecc01c2984c5d85bb508e80103a3cb.png~tplv-obj.webp",
+        "image_file": "gift_images/Amusement_Park.webp"
+    },
+    {
+        "name": "Fly Love",
+        "diamonds": 19999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/a598ba4c7024f4d46c1268be4d82f901~tplv-obj.webp",
+        "image_file": "gift_images/Fly_Love.webp"
+    },
+    {
+        "name": "Castle Fantasy",
+        "diamonds": 20000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8173e9b07875cca37caa5219e4903a40~tplv-obj.webp",
+        "image_file": "gift_images/Castle_Fantasy.webp"
+    },
+    {
+        "name": "TikTok Shuttle",
+        "diamonds": 20000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8ef48feba8dd293a75ae9d4376fb17c9~tplv-obj.webp",
+        "image_file": "gift_images/TikTok_Shuttle.webp"
+    },
+    {
+        "name": "Premium Shuttle",
+        "diamonds": 20000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/c2b287adee5151b7889d6e3d45b72e44~tplv-obj.webp",
+        "image_file": "gift_images/Premium_Shuttle.webp"
+    },
+    {
+        "name": "Level Ship",
+        "diamonds": 21000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/aca72c59f99d08b0c0d1cd6cc79dbb16.png~tplv-obj.webp",
+        "image_file": "gift_images/Level_Ship.webp"
+    },
+    {
+        "name": "Infinite Heart",
+        "diamonds": 23999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/de31974d7a94525c6f31872b5b38f76e.png~tplv-obj.webp",
+        "image_file": "gift_images/Infinite_Heart.webp"
+    },
+    {
+        "name": "Rose Carriage",
+        "diamonds": 25000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/2e13179384e1eb5498a417854820c1b9.png~tplv-obj.webp",
+        "image_file": "gift_images/Rose_Carriage.webp"
+    },
+    {
+        "name": "Cyber Roar",
+        "diamonds": 25999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/e36175fdd1bdcda3716a857a509042b2.png~tplv-obj.webp",
+        "image_file": "gift_images/Cyber_Roar.webp"
+    },
+    {
+        "name": "Phoenix",
+        "diamonds": 25999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ef248375c4167d70c1642731c732c982~tplv-obj.webp",
+        "image_file": "gift_images/Phoenix.webp"
+    },
+    {
+        "name": "Adam’s Dream",
+        "diamonds": 25999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/9a586391fbb1e21621c4203e5563a9e0~tplv-obj.webp",
+        "image_file": "gift_images/Adam’s_Dream.webp"
+    },
+    {
+        "name": "Undersea Kingdom",
+        "diamonds": 25999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/13f9ea9d3798f67f6d55cc612c152338.png~tplv-obj.webp",
+        "image_file": "gift_images/Undersea_Kingdom.webp"
+    },
+    {
+        "name": "Dragon Flame",
+        "diamonds": 26999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/89b4d1d93c1cc614e3a0903ac7a94e0c~tplv-obj.webp",
+        "image_file": "gift_images/Dragon_Flame.webp"
+    },
+    {
+        "name": "Lion",
+        "diamonds": 29999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/4fb89af2082a290b37d704e20f4fe729~tplv-obj.webp",
+        "image_file": "gift_images/Lion.webp"
+    },
+    {
+        "name": "Zeus",
+        "diamonds": 34000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/01793f9afe15f5037a9dc10435c37c85.png~tplv-obj.webp",
+        "image_file": "gift_images/Zeus.webp"
+    },
+    {
+        "name": "Leon and Lion",
+        "diamonds": 34000,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/a291aedacf27d22c3fd2d83575d2bee9~tplv-obj.webp",
+        "image_file": "gift_images/Leon_and_Lion.webp"
+    },
+    {
+        "name": "TikTok Universe+",
+        "diamonds": 34999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/b13105782e8bf8fbefaa83b7af413cee~tplv-obj.webp",
+        "image_file": "gift_images/TikTok_Universe+.webp"
+    },
+    {
+        "name": "TikTok Stars",
+        "diamonds": 39999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/b1667c891ed39fd68ba7252fff7a1e7c~tplv-obj.webp",
+        "image_file": "gift_images/TikTok_Stars.webp"
+    },
+    {
+        "name": "Thunder Falcon",
+        "diamonds": 39999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/26f3fbcda383e6093a19b8e7351a164c~tplv-obj.webp",
+        "image_file": "gift_images/Thunder_Falcon.webp"
+    },
+    {
+        "name": "Fire Phoenix",
+        "diamonds": 41999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/bfb8425a7e8fa03f9fec05a973a4a506.png~tplv-obj.webp",
+        "image_file": "gift_images/Fire_Phoenix.webp"
+    },
+    {
+        "name": "Legend Marcellus",
+        "diamonds": 42999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/2493534c2e9d914e6b503c3a836e72e9.png~tplv-obj.webp",
+        "image_file": "gift_images/Legend_Marcellus.webp"
+    },
+    {
+        "name": "Pegasus",
+        "diamonds": 42999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/f600a2495ab5d250e7da2066484a9383.png~tplv-obj.webp",
+        "image_file": "gift_images/Pegasus.webp"
+    },
+    {
+        "name": "Julius the Champion",
+        "diamonds": 43999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/78260c7f1dac82bd979279b5e04bffeb.png~tplv-obj.webp",
+        "image_file": "gift_images/Julius_the_Champion.webp"
+    },
+    {
+        "name": "TikTok Universe",
+        "diamonds": 44999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8f471afbcebfda3841a6cc515e381f58~tplv-obj.webp",
+        "image_file": "gift_images/TikTok_Universe.webp"
+    },
+    {
+        "name": "TikTok Universe",
+        "diamonds": 44999,
+        "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8f471afbcebfda3841a6cc515e381f58~tplv-obj.webp",
+        "image_file": "gift_images/TikTok_Universe.webp"
+    }
+]

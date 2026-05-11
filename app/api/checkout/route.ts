@@ -13,7 +13,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { productId, variantId, paymentMethod, locale = "en", whitelistUsername } = await req.json()
+    // 1. รับค่า isPremium เพิ่มเข้ามา
+    const { productId, variantId, paymentMethod, locale = "en", whitelistUsername, isPremium } = await req.json()
 
     if (!whitelistUsername?.trim()) {
       return NextResponse.json({ error: "In-game username is required" }, { status: 400 })
@@ -28,79 +29,102 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    const variant    = product.product_variants.find(v => v.id === variantId)
-    const finalPrice = variant ? Number(variant.price) : Number(product.price)
-    const title      = variant ? `${product.name_en} (${variant.label_en})` : product.name_en
+    // 2. ค้นหา Variant หลักที่เลือก
+    const variant = product.product_variants.find(v => v.id === variantId)
+    let basePrice = variant ? Number(variant.price) : Number(product.price)
+    let title = variant ? `${product.name_en} (${variant.label_en})` : product.name_en
 
-    // เช็ค pending order เดิม
+    // 3. จัดการเรื่อง Premium Add-on
+    let premiumPrice = 0
+    if (isPremium) {
+      const premiumVar = product.product_variants.find(v => v.variant_type === "premium")
+      if (premiumVar) {
+        premiumPrice = Number(premiumVar.premium_addon_price || 0)
+        title += " + PREMIUM" // เพิ่มข้อความในชื่อสินค้าที่แสดงบน Stripe
+      }
+    }
+
+    const currentSubtotal = basePrice + premiumPrice
+
+    // 4. เช็ค pending order เดิม (เพิ่มเงื่อนไข isPremium เพื่อแยก Order)
     let order = await prisma.orders.findFirst({
       where: {
-        user_id:    session.user.id,
+        user_id: session.user.id,
         product_id: product.id,
         variant_id: variant?.id || null,
-        status:     "pending",
+        status: "pending",
+        // แนะนำให้เพิ่ม field 'is_premium' ใน Order Model ของคุณ
+        // is_premium: isPremium 
       },
     })
 
     if (!order) {
       order = await prisma.orders.create({
         data: {
-          user_id:              session.user.id,
-          product_id:           product.id,
-          variant_id:           variant?.id,
-          amount:               finalPrice,
-          status:               "pending",
-          payment_method:       paymentMethod ?? "promptpay",
+          user_id: session.user.id,
+          product_id: product.id,
+          variant_id: variant?.id,
+          amount: currentSubtotal, // ราคารวม Premium (ก่อนบวกค่าธรรมเนียมบัตร)
+          status: "pending",
+          payment_method: paymentMethod ?? "promptpay",
           whitelisted_username: whitelistUsername.trim(),
-          whitelist_status:     "pending",
+          whitelist_status: "pending",
+          // ถ้ามี field นี้ใน DB ให้เอาคอมเมนต์ออก:
+          // is_premium: isPremium, 
         },
       })
     } else {
-      // อัพ username ถ้ามี order เดิม
       order = await prisma.orders.update({
         where: { id: order.id },
-        data:  { whitelisted_username: whitelistUsername.trim() },
+        data: { 
+          whitelisted_username: whitelistUsername.trim(),
+          amount: currentSubtotal // อัปเดตราคาเผื่อกรณีเปลี่ยนใจติ๊กพรีเมียม
+        },
       })
     }
 
     const protocol = req.headers.get("x-forwarded-proto") || "http"
-    const host     = req.headers.get("host")
-    const baseUrl  = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`
+    const host = req.headers.get("host")
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`
 
-    // คำนวณราคารวม fee ถ้าจ่ายด้วยบัตร
-    const cardFee    = paymentMethod === "card" ? finalPrice * 0.06 : 0
-    const totalPrice = finalPrice + cardFee
+    // 5. คำนวณราคารวมค่าธรรมเนียม Stripe
+    const cardFee = paymentMethod === "card" ? currentSubtotal * 0.06 : 0
+    const totalPrice = currentSubtotal + cardFee
 
     const stripeSession = await stripe.checkout.sessions.create({
-      mode:                "payment",
+      mode: "payment",
       payment_method_types: paymentMethod === "card" ? ["card"] : ["promptpay"],
-      expires_at:          Math.floor(Date.now() / 1000) + 30 * 60,
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
 
       line_items: [
         {
           price_data: {
-            currency:     "thb",
-            product_data: { name: title },
-            unit_amount:  Math.round(totalPrice * 100),
+            currency: "thb",
+            product_data: { 
+              name: title,
+              description: isPremium ? "Included Premium Add-on" : undefined 
+            },
+            unit_amount: Math.round(totalPrice * 100),
           },
           quantity: 1,
         },
       ],
 
       success_url: `${baseUrl}/${locale}/orders/${order.id}`,
-      cancel_url:  `${baseUrl}/${locale}/products`,
+      cancel_url: `${baseUrl}/${locale}/products`,
 
       metadata: {
-        orderId:             order.id,
-        productId:           product.id,
-        variantId:           variant?.id || "",
-        whitelistUsername:   whitelistUsername.trim(),
+        orderId: order.id,
+        productId: product.id,
+        variantId: variant?.id || "",
+        whitelistUsername: whitelistUsername.trim(),
+        isPremium: isPremium ? "true" : "false", // ส่งข้อมูลพรีเมียมไปที่ Stripe Metadata
       },
     })
 
     await prisma.orders.update({
       where: { id: order.id },
-      data:  { stripe_session_id: stripeSession.id },
+      data: { stripe_session_id: stripeSession.id },
     })
 
     return NextResponse.json({ url: stripeSession.url })

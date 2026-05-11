@@ -94,8 +94,7 @@ export default function ProductsClient({ products }: { products: any[] }) {
           <thead>
             <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-white/[0.02]">
               <th className="px-5 py-3.5 font-medium">{t("product")}</th>
-              <th className="px-4 py-3.5 font-medium">Variants</th>
-              {/* <th className="px-4 py-3.5 font-medium">Stock</th> */}
+              <th className="px-4 py-3.5 font-medium">Variants & Prices</th>
               <th className="px-4 py-3.5 font-medium">Orders</th>
               <th className="px-4 py-3.5 font-medium">{t("status")}</th>
               <th className="px-4 py-3.5 font-medium">{t("actions")}</th>
@@ -104,11 +103,10 @@ export default function ProductsClient({ products }: { products: any[] }) {
           <tbody className="divide-y divide-white/5">
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-12 text-text-muted">{t("no_products_found")}</td>
+                <td colSpan={5} className="text-center py-12 text-text-muted">{t("no_products_found")}</td>
               </tr>
             )}
             {filtered.map((p) => {
-              const totalStock = p.product_variants.reduce((s: number, v: any) => s + v.stock, 0)
               const name = locale === "th" ? p.name_th : p.name_en
               return (
                 <tr key={p.id} className="hover:bg-white/[0.02] transition">
@@ -126,28 +124,23 @@ export default function ProductsClient({ products }: { products: any[] }) {
                     </div>
                   </td>
 
-                  {/* Variants */}
+                  {/* Variants (Added Premium Labels) */}
                   <td className="px-4 py-4">
-                    <div className="space-y-0.5">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
                       {p.product_variants.map((v: any) => (
-                        <div key={v.id} className="flex items-center gap-2 text-[12px]">
-                          <span className="text-text-muted">{locale === "th" ? v.label_th : v.label_en}</span>
+                        <div key={v.id} className="flex items-center gap-1.5 text-[12px]">
+                          <span className="text-text-muted whitespace-nowrap">{locale === "th" ? v.label_th : v.label_en}</span>
                           <span className="text-accent-light font-medium">฿{v.price}</span>
+                          {/* Premium Indicator */}
+                          {v.variant_type === "premium" && (
+                            <span className="text-[9px] px-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded font-bold">
+                              PREMIUM
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>
                   </td>
-
-                  {/* Stock */}
-                  {/* <td className="px-4 py-4">
-                    <span className={`text-[12px] font-medium ${
-                      totalStock === 0 ? "text-red-400"
-                      : p.isLower ? "text-orange-400"
-                      : "text-green-400"
-                    }`}>
-                      {totalStock === 0 ? t("out_of_stock") : `${totalStock} keys`}
-                    </span>
-                  </td> */}
 
                   {/* Orders */}
                   <td className="px-4 py-4 text-text-muted">

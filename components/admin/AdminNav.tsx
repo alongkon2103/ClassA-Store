@@ -14,7 +14,7 @@ const links = [
   { href: "/admin/users", key: "users", icon: "" },
   { href: "/admin/gifts", key: "gifts", icon: "" },
 
-  { href: "/admin/tiktok-simulator", key: "tiktok simulator", icon: "" },
+  { href: "/admin/tiktok-simulator", key: "tiktok_simulator", icon: "" },
 ]
 
 export default function AdminNav() {

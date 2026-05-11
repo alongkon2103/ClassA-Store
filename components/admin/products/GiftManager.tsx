@@ -1,77 +1,224 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useRef, useState } from "react"
+import Image from "next/image"
+import { useTranslations } from "next-intl"
 
-export default function GiftManager({ productId, gifts }: { productId: string; gifts: any[] }) {
-  const [list, setList]       = useState(gifts)
+type GiftItem = {
+  id: string
+  url: string
+  filename: string
+  sort_order?: number
+}
+
+type Props = {
+  productId: string
+  gifts: GiftItem[]
+}
+
+export default function GiftManager({
+  productId,
+  gifts,
+}: Props) {
+  const t = useTranslations("AdminGiftImages")
+
+  const [list, setList] = useState<GiftItem[]>(gifts)
   const [uploading, setUploading] = useState(false)
-  const [dragOver, setDragOver]   = useState(false)
-  const [preview, setPreview]     = useState<string | null>(null)
+  const [dragOver, setDragOver] = useState(false)
+  const [preview, setPreview] = useState<string | null>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // ─────────────────────────────────────────────
+  // Select File
+  // ─────────────────────────────────────────────
   const handleFileSelect = (file: File) => {
-    if (!file.type.startsWith("image/")) { alert("Images only"); return }
+    if (!file.type.startsWith("image/")) {
+      alert(t("imagesOnly"))
+      return
+    }
+
+    if (preview) {
+      URL.revokeObjectURL(preview)
+    }
+
     setPendingFile(file)
     setPreview(URL.createObjectURL(file))
   }
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault(); setDragOver(false)
-    const file = e.dataTransfer.files[0]
-    if (file) handleFileSelect(file)
+  // ─────────────────────────────────────────────
+  // Drag & Drop
+  // ─────────────────────────────────────────────
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setDragOver(false)
+
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      handleFileSelect(file)
+    }
   }
 
-  const handleUpload = async () => {
-    if (!pendingFile) return
-    setUploading(true)
+  // ─────────────────────────────────────────────
+  // Reset Preview
+  // ─────────────────────────────────────────────
+  const resetPreview = () => {
+    if (preview) {
+      URL.revokeObjectURL(preview)
+    }
 
-    const fd = new FormData()
-    fd.append("file", pendingFile)
-    fd.append("type", "gift")
-    const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: fd })
-    const { url, filename, error } = await uploadRes.json()
-
-    if (!uploadRes.ok) { alert(error); setUploading(false); return }
-
-    const res = await fetch(`/api/admin/products/${productId}/gifts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url, filename, sort_order: list.length }),
-    })
-    const data = await res.json()
-    setUploading(false)
-    if (!res.ok) { alert(data.error); return }
-
-    setList((l) => [...l, data])
     setPendingFile(null)
     setPreview(null)
+
+    if (inputRef.current) {
+      inputRef.current.value = ""
+    }
   }
 
+  // ─────────────────────────────────────────────
+  // Upload
+  // ─────────────────────────────────────────────
+  const handleUpload = async () => {
+    if (!pendingFile) return
+
+    try {
+      setUploading(true)
+
+      // Upload file
+      const fd = new FormData()
+      fd.append("file", pendingFile)
+      fd.append("type", "gift")
+
+      const uploadRes = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: fd,
+      })
+
+      const uploadData = await uploadRes.json()
+
+      if (!uploadRes.ok) {
+        alert(uploadData.error || t("uploadFailed"))
+        console.log(uploadData.error);
+        return
+      }
+
+      // Save to database
+      const res = await fetch(
+        `/api/admin/products/${productId}/gifts`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            url: uploadData.url,
+            filename: uploadData.filename,
+            sort_order: list.length,
+          }),
+        }
+      )
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        alert(data.error || t("saveFailed"))
+        return
+      }
+
+      setList((prev) => [...prev, data])
+      resetPreview()
+    } catch (error) {
+      console.error("Upload error:", error)
+      alert(t("uploadFailed"))
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // Delete
+  // ─────────────────────────────────────────────
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete gift image?")) return
-    await fetch(`/api/admin/products/${productId}/gifts/${id}`, { method: "DELETE" })
-    setList((l) => l.filter((g) => g.id !== id))
+    if (!confirm(t("deleteConfirm"))) {
+      return
+    }
+
+    try {
+      setDeletingId(id)
+
+      const res = await fetch(
+        `/api/admin/products/${productId}/gifts/${id}`,
+        {
+          method: "DELETE",
+        }
+      )
+
+      if (!res.ok) {
+        alert(t("deleteFailed"))
+        return
+      }
+
+      setList((prev) =>
+        prev.filter((gift) => gift.id !== id)
+      )
+    } catch (error) {
+      console.error("Delete error:", error)
+      alert(t("deleteFailed"))
+    } finally {
+      setDeletingId(null)
+    }
   }
 
+  // ─────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────
   return (
     <div className="space-y-5">
-      <p className="text-[13px] text-text-muted">
-        Your images will be available for download after purchase
-      </p>
+      {/* Header */}
+      <div>
+        <h2 className="text-[18px] font-semibold">
+          {t("title")}
+        </h2>
+        <p className="text-[13px] text-text-muted mt-1">
+          {t("subtitle")}
+        </p>
+      </div>
 
-      {/* Grid */}
+      {/* Existing Images */}
       {list.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {list.map((gift, i) => (
-            <div key={gift.id} className="relative group rounded-xl overflow-hidden aspect-video bg-bg-base">
-              <img src={gift.url} alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
-                <span className="text-[10px] text-white/60">#{i + 1}</span>
-                <span className="text-[11px] text-white/60 font-mono px-2 text-center break-all">{gift.filename}</span>
-                <button onClick={() => handleDelete(gift.id)}
-                  className="text-[12px] px-3 py-1 rounded-lg bg-red-500/80 text-white hover:bg-red-500 transition">
-                  Delete
+          {list.map((gift, index) => (
+            <div
+              key={gift.id}
+              className="relative group rounded-2xl overflow-hidden aspect-video bg-bg-base border border-accent/10"
+            >
+              <Image
+                src={gift.url}
+                alt={gift.filename}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+
+              <div className="absolute inset-0 bg-black/65 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2 p-3">
+                <span className="text-[10px] text-white/60">
+                  #{index + 1}
+                </span>
+
+                <span className="text-[11px] text-white/70 font-mono text-center break-all line-clamp-2">
+                  {gift.filename}
+                </span>
+
+                <button
+                  onClick={() => handleDelete(gift.id)}
+                  disabled={deletingId === gift.id}
+                  className="text-[12px] px-3 py-1 rounded-lg bg-red-500/85 text-white hover:bg-red-500 transition disabled:opacity-50"
+                >
+                  {deletingId === gift.id
+                    ? t("deleting")
+                    : t("delete")}
                 </button>
               </div>
             </div>
@@ -79,39 +226,89 @@ export default function GiftManager({ productId, gifts }: { productId: string; g
         </div>
       )}
 
-      {/* Upload */}
+      {/* Empty State */}
+      {list.length === 0 && !preview && (
+        <div className="text-center py-10 bg-bg-card border border-accent/10 rounded-2xl text-text-muted text-[13px]">
+          {t("empty")}
+        </div>
+      )}
+
+      {/* Upload Area */}
       {!preview ? (
         <div
           onClick={() => inputRef.current?.click()}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver(true)
+          }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition ${
-            dragOver ? "border-accent bg-accent/5" : "border-accent/20 hover:border-accent/40 hover:bg-white/[0.02]"
+            dragOver
+              ? "border-accent bg-accent/5"
+              : "border-accent/20 hover:border-accent/40 hover:bg-white/[0.02]"
           }`}
         >
-          {/* <p className="text-3xl mb-3">🎁</p> */}
           <p className="text-[13px] text-text-muted">
-            Drag & drop gift image, or <span className="text-accent-light underline">browse</span>
+            {t("dragDrop")}{" "}
+            <span className="text-accent-light underline">
+              {t("browse")}
+            </span>
           </p>
-          <p className="text-[11px] text-text-muted/60 mt-1">JPG, PNG, WEBP (max 5MB)</p>
-          <input ref={inputRef} type="file" accept="image/*" className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }} />
+
+          <p className="text-[11px] text-text-muted/60 mt-1">
+            JPG, PNG, WEBP (max 5MB)
+          </p>
+
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) {
+                handleFileSelect(file)
+              }
+            }}
+          />
         </div>
       ) : (
-        <div className="bg-bg-base border border-accent/15 rounded-2xl p-4 space-y-3">
-          <p className="text-[13px] font-medium">Preview</p>
-          <div className="aspect-video rounded-xl overflow-hidden bg-bg-card">
-            <img src={preview} className="w-full h-full object-cover" />
+        <div className="bg-bg-card border border-accent/15 rounded-2xl p-4 space-y-4">
+          <p className="text-[13px] font-medium">
+            {t("preview")}
+          </p>
+
+          <div className="relative aspect-video rounded-xl overflow-hidden bg-bg-base">
+            <Image
+              src={preview}
+              alt="Preview"
+              fill
+              className="object-cover"
+              unoptimized
+            />
           </div>
+
           <div className="flex gap-2">
-            <button onClick={() => { setPendingFile(null); setPreview(null) }}
-              className="flex-1 py-2.5 rounded-xl border border-white/10 text-text-muted text-[13px] hover:text-text-base transition">
-              Cancel
+            <button
+              onClick={resetPreview}
+              className="flex-1 py-2.5 rounded-xl border border-white/10 text-text-muted text-[13px] hover:text-text-base transition"
+            >
+              {t("cancel")}
             </button>
-            <button onClick={handleUpload} disabled={uploading}
-              className="flex-1 py-2.5 rounded-xl bg-accent text-white text-[13px] font-medium hover:opacity-90 transition disabled:opacity-50">
-              {uploading ? "Uploading..." : "Upload Gift"}
+
+            <button
+              onClick={handleUpload}
+              disabled={uploading}
+              className="flex-1 py-2.5 rounded-xl bg-accent text-white text-[13px] font-medium hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {uploading && (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              )}
+
+              {uploading
+                ? t("uploading")
+                : t("upload")}
             </button>
           </div>
         </div>
