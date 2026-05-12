@@ -15,7 +15,7 @@ export default function ProductsClient({ products }: { products: any[] }) {
   const router = useRouter()
   const t = useTranslations("Admin")
   const locale = useLocale()
-  
+
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<"all" | "active" | "inactive" | "featured">("all")
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -23,7 +23,7 @@ export default function ProductsClient({ products }: { products: any[] }) {
   const filtered = useMemo(() => {
     return products
       .filter((p) => {
-        if (filter === "active")   return p.is_active
+        if (filter === "active") return p.is_active
         if (filter === "inactive") return !p.is_active
         if (filter === "featured") return p.is_featured
         return true
@@ -79,9 +79,8 @@ export default function ProductsClient({ products }: { products: any[] }) {
         <div className="flex gap-1 bg-bg-card border border-accent/15 rounded-xl p-1">
           {(["all", "active", "inactive", "featured"] as const).map((f) => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${
-                filter === f ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
-              }`}>
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${filter === f ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
+                }`}>
               {t(f)}
             </button>
           ))}
@@ -128,9 +127,21 @@ export default function ProductsClient({ products }: { products: any[] }) {
                   <td className="px-4 py-4">
                     <div className="flex flex-wrap gap-x-4 gap-y-1">
                       {p.product_variants.map((v: any) => (
-                        <div key={v.id} className="flex items-center gap-1.5 text-[12px]">
-                          <span className="text-text-muted whitespace-nowrap">{locale === "th" ? v.label_th : v.label_en}</span>
-                          <span className="text-accent-light font-medium">฿{v.price}</span>
+                        <div
+                          key={v.id}
+                          className="flex items-center gap-1.5 text-[12px]"
+                        >
+                          <span className="text-text-muted whitespace-nowrap">
+                            {locale === "th" ? v.label_th : v.label_en}
+                          </span>
+
+                          {/* แสดงราคาเฉพาะ variant ที่ไม่ใช่ premium */}
+                          {v.variant_type !== "premium" && (
+                            <span className="text-accent-light font-medium">
+                              ฿{v.price}
+                            </span>
+                          )}
+
                           {/* Premium Indicator */}
                           {v.variant_type === "premium" && (
                             <span className="text-[9px] px-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded font-bold">

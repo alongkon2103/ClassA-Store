@@ -23,24 +23,40 @@ export default async function GameSettingsPage({ params }: Props) {
     if (!UUID_REGEX.test(id)) notFound()
 
     const locale = await getLocale()
-
     const order = await prisma.orders.findUnique({
         where: { id },
         include: {
             products: {
                 include: {
-                    product_functions: { orderBy: { sort_order: "asc" } },
+                    product_functions: {
+                        orderBy: { sort_order: "asc" },
+                    },
+                    product_variants: true, // ดึง variants ของ product นี้มาด้วย
                 },
             },
             user_function_gifts: {
-                include: { gifts: true },
+                include: {
+                    gifts: true,
+                },
             },
+            product_variants: true, // variant ที่ถูกเลือกใน order (ถ้ามี)
         },
     })
 
-    if (!order || order.user_id !== session.user.id || order.status !== "paid") {
+    if (
+        !order ||
+        order.user_id !== session.user.id ||
+        order.status !== "paid"
+    ) {
         notFound()
     }
+
+    // หา variant_type = "premium" จาก products.product_variants
+    const premiumAddonPrice = Number(
+        order.products?.product_variants?.find(
+            (variant) => variant.variant_type === "premium"
+        )?.premium_addon_price ?? 0
+    )
 
     const gifts = await prisma.gifts.findMany({
         where: { is_active: true },
@@ -67,6 +83,7 @@ export default async function GameSettingsPage({ params }: Props) {
                 savedTiktokUsername={order.tiktok_username}
                 locale={locale}
                 isPremium={!!order.is_premium_order}
+                premiumAddonPrice={premiumAddonPrice}
             />
             <Footer />
         </div>

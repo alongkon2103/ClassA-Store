@@ -395,9 +395,18 @@
     "saveFailed": "Failed to save settings. Please try again.",
     "tiktok_username_label": "TikTok Username",
     "tiktok_username_placeholder": "Your TikTok username",
-    "tiktok_username_hint": "Enter your TikTok username to receive gifts from Live — the system will match automatically",
+    "tiktok_username_hint": "Enter your TikTok username to receive gifts from Live — the system will match automatically",            
+    "key_label":"Use this key to copy and paste into our program",
     "advancedSettings": "Advanced Connection Settings (If connection fails)",
-    "howToGetToken": "How to get Connection Token?"
+    "howToGetToken": "How to get Connection Token?",
+    "upgradePremium": "Upgrade to Premium",
+    "upgradeUnlock": "Unlock free gift mapping forever",
+    "buyPremium": "BUY PREMIUM",
+    "premiumLifetime": "Premium",
+    "premiumLifetimeDesc": "Unlock all settings",
+    "proceedToCheckout": "Proceed to Checkout",
+    "upgradeNote": "* Once payment is successful, premium status will be unlocked instantly.",
+    "upgradeSuccess": "Upgrade Successful! You are now a Premium user."
   },
   "AdminGifts": {
     "title": "Gift Management",
@@ -437,9 +446,12 @@
     "subtitle": "Manage product functions such as kill, run, bigsize",
     "addFunction": "Add Function",
     "newFunction": "New Function",
+    "editFunction": "Edit Function",
     "nameKey": "Name (key)",
     "labelTh": "Label TH",
     "labelEn": "Label EN",
+    "icon": "Icon",
+    "defaultGift": "Default Gift",
     "save": "Save",
     "saving": "Saving...",
     "cancel": "Cancel",
@@ -447,7 +459,12 @@
     "delete": "Delete",
     "empty": "No functions yet — click \"Add Function\" to get started.",
     "deleteConfirm": "Delete this function?\nUser settings linked to this function will also be removed.",
-    "error": "Something went wrong."
+    "error": "Something went wrong.",
+    "noIcon": "No Icon",
+    "upload": "Upload",
+    "noDefault": "-- No Default --",
+    "searchGift": "Search gift...",
+    "noGiftsFound": "No gifts found"
   },
   "TikTokSimulator": {
     "title": "TikTok Gift Simulator",

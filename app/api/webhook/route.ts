@@ -132,12 +132,39 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    if (!order || order.status === "paid") {
+    if (!order) {
+      return new Response("ok")
+    }
+
+    const isUpgrade = session.metadata?.isUpgrade === "true"
+
+    if (isUpgrade) {
+        // ─────────────────────────────────────────────
+        // HANDLE PREMIUM UPGRADE
+        // ─────────────────────────────────────────────
+        await prisma.orders.update({
+            where: { id: orderId },
+            data: { is_premium_order: true }
+        })
+
+        // Update current access record if it exists
+        await prisma.user_whitelist_access.updateMany({
+            where: { 
+                user_id: order.user_id,
+                product_id: order.product_id
+            },
+            data: { is_premium: true }
+        })
+
+        return new Response("ok")
+    }
+
+    if (order.status === "paid") {
       return new Response("ok")
     }
 
     // ─────────────────────────────────────────────
-    // update order
+    // update order (NORMAL FLOW)
     // ─────────────────────────────────────────────
     await prisma.orders.update({
       where: { id: orderId },
@@ -145,6 +172,7 @@ export async function POST(req: NextRequest) {
         status: "paid",
         paid_at: new Date(),
         whitelist_status: "whitelisted",
+        is_premium_order: session.metadata?.isPremium === "true" // Handle if paid during initial checkout
       },
     })
 

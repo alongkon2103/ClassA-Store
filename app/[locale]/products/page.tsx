@@ -42,6 +42,7 @@ export default async function Page({
         product_variants: p.product_variants.map((v) => ({
             ...v,
             price: Number(v.price),
+            premium_addon_price: Number(v.premium_addon_price ?? 0),
             stock: v._count.game_keys, // stock per variant
         })),
     }))

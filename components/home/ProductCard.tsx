@@ -6,7 +6,9 @@ type Variant = {
   label_th: string
   label_en: string
   price: number
-  stock: number // Added
+  stock: number
+  is_active?: boolean
+  variant_type?: string | null
 }
 
 type Props = {
@@ -26,12 +28,21 @@ export default function ProductCard({
   badge,
   is_low,
   product_variants,
-  onClick
+  onClick,
 }: Props) {
   const t = useTranslations("Common")
   const locale = useLocale()
-  // Calculate total stock from all variants
-  const totalStock = product_variants?.reduce((sum, v) => sum + v.stock, 0) ?? 0
+
+  // กรองเฉพาะ variant ที่ active และไม่ใช่ premium
+  const variants = (product_variants ?? []).filter(
+    (v) => v.is_active === true && v.variant_type !== "premium"
+  )
+
+  // คำนวณ stock รวมเฉพาะ variant ที่แสดงจริง
+  const totalStock =
+    variants.reduce((sum, v) => sum + (v.stock ?? 0), 0)
+
+  const hasVariants = variants.length > 0
 
   return (
     <div
@@ -45,6 +56,7 @@ export default function ProductCard({
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
+
         {badge && (
           <span className="absolute top-2 right-2 bg-gold text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
             {badge === "Hot" ? t("hot") : badge}
@@ -54,22 +66,31 @@ export default function ProductCard({
 
       {/* Content */}
       <div className="p-3 space-y-2">
-        <p className="text-[13px] font-medium text-text-base line-clamp-1">{name}</p>
+        <p className="text-[13px] font-medium text-text-base line-clamp-1">
+          {name}
+        </p>
 
-        {/* Variants with stock for each item */}
-        {product_variants && product_variants.length > 0 ? (
+        {/* แสดงเฉพาะ variants ที่ไม่ใช่ premium */}
+        {hasVariants ? (
           <div className="space-y-1">
-            {product_variants.slice(0, 3).map((v) => (
-              <div key={v.id} className="flex justify-between text-[12px]">
+            {variants.slice(0, 3).map((v) => (
+              <div
+                key={v.id}
+                className="flex justify-between text-[12px]"
+              >
                 <span className="text-text-muted">
                   {locale === "th" ? v.label_th : v.label_en}
                 </span>
-                <span className="font-semibold text-accent-light">฿{v.price}</span>
+                <span className="font-semibold text-accent-light">
+                  ฿{v.price}
+                </span>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-[16px] font-bold text-accent-light">฿{price}</div>
+          <div className="text-[16px] font-bold text-accent-light">
+            ฿{price}
+          </div>
         )}
 
         <div className="h-px bg-accent/10" />

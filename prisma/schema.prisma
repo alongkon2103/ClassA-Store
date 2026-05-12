@@ -55,14 +55,14 @@ model game_keys {
 }
 
 model gifts {
-  id                  Int                   @id @default(autoincrement())
-  name                String                @unique
-  image_url           String?
-  diamonds            Int                   @default(0)
-  is_active           Boolean               @default(true)
-  sort_order          Int                   @default(0)
-  user_function_gifts user_function_gifts[]
-  default_for_functions product_functions[] @relation("DefaultGift")
+  id                    Int                   @id @default(autoincrement())
+  name                  String                @unique
+  image_url             String?
+  diamonds              Int                   @default(0)
+  is_active             Boolean               @default(true)
+  sort_order            Int                   @default(0)
+  user_function_gifts   user_function_gifts[]
+  default_for_functions product_functions[]   @relation("DefaultGift")
 }
 
 model key_access_logs {
@@ -72,37 +72,39 @@ model key_access_logs {
   accessed_at DateTime? @default(now()) @db.Timestamptz(6)
 }
 
-
 model orders {
-  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id               String                @db.Uuid
-  product_id            String                @db.Uuid
-  stripe_session_id     String?               @unique @db.VarChar
-  stripe_payment_intent String?               @unique @db.VarChar
-  amount                Decimal               @db.Decimal(10, 2)
-  status                String                @default("pending") @db.VarChar
-  paid_at               DateTime?             @db.Timestamptz(6)
-  fulfilled_at          DateTime?             @db.Timestamptz(6)
-  created_at            DateTime?             @default(now()) @db.Timestamptz(6)
-  variant_id            String?               @db.Uuid
-  payment_method        String?               @default("stripe") @db.VarChar
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String    @db.Uuid
+  product_id            String    @db.Uuid
+  stripe_session_id     String?   @unique @db.VarChar
+  stripe_payment_intent String?   @unique @db.VarChar
+  amount                Decimal   @db.Decimal(10, 2)
+  status                String    @default("pending") @db.VarChar
+  paid_at               DateTime? @db.Timestamptz(6)
+  fulfilled_at          DateTime? @db.Timestamptz(6)
+  created_at            DateTime? @default(now()) @db.Timestamptz(6)
+  variant_id            String?   @db.Uuid
+  payment_method        String?   @default("stripe") @db.VarChar
   slip_image_url        String?
-  slip_verified         Boolean?              @default(false)
-  trans_ref             String?               @unique @db.VarChar
-  updated_at            DateTime?             @default(now()) @db.Timestamptz(6)
-  whitelisted_username  String?               @db.VarChar
-  whitelist_status      String?               @default("pending") @db.VarChar
-  tiktok_username       String?               @db.VarChar
-  
+  slip_verified         Boolean?  @default(false)
+  trans_ref             String?   @unique @db.VarChar
+  updated_at            DateTime? @default(now()) @db.Timestamptz(6)
+  whitelisted_username  String?   @db.VarChar
+  whitelist_status      String?   @default("pending") @db.VarChar
+  tiktok_username       String?   @db.VarChar
+
+  activated_device_id String? // ผูก Device ID ครั้งแรกที่ activate
+  activated_at        DateTime? // เวลาที่ activate ครั้งแรก
+  expires_at          DateTime?
   // --- เพิ่มฟิลด์สำหรับระบบ Premium Checkbox ---
-  is_premium_order      Boolean?              @default(false) 
-  order_type            String                @default("NEW") @db.VarChar 
-  
-  game_keys             game_keys?
-  products              products              @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users                 users                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  product_variants      product_variants?     @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user_function_gifts   user_function_gifts[]
+  is_premium_order Boolean? @default(false)
+  order_type       String   @default("NEW") @db.VarChar
+
+  game_keys           game_keys?
+  products            products              @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users               users                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_variants    product_variants?     @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_function_gifts user_function_gifts[]
 
   @@index([user_id], map: "idx_orders_user")
 }
@@ -113,6 +115,7 @@ model product_functions {
   name                String                @db.VarChar
   label_th            String?               @db.VarChar
   label_en            String?               @db.VarChar
+  image_url           String?
   sort_order          Int                   @default(0)
   default_gift_id     Int?
   created_at          DateTime?             @default(now()) @db.Timestamptz(6)
@@ -161,25 +164,25 @@ model product_presets {
 }
 
 model product_variants {
-  id                    String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  product_id            String      @db.Uuid
-  duration_type         String      @db.VarChar
-  duration_days         Int?
-  label_th              String      @db.VarChar
-  label_en              String      @db.VarChar
-  price                 Decimal     @db.Decimal(10, 2)
-  is_active             Boolean?    @default(true)
-  sort_order            Int?        @default(0)
-  created_at            DateTime?   @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime?   @default(now()) @db.Timestamptz(6)
-  
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id    String    @db.Uuid
+  duration_type String    @db.VarChar
+  duration_days Int?
+  label_th      String    @db.VarChar
+  label_en      String    @db.VarChar
+  price         Decimal   @db.Decimal(10, 2)
+  is_active     Boolean?  @default(true)
+  sort_order    Int?      @default(0)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+
   // --- เพิ่มฟิลด์สำหรับระบุประเภท และราคา Add-on ---
-  variant_type          String?     @default("normal") @db.VarChar // "normal" หรือ "premium"
-  premium_addon_price   Decimal?    @default(0) @db.Decimal(10, 2) 
-  
-  game_keys             game_keys[]
-  orders                orders[]
-  products              products    @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  variant_type        String?  @default("normal") @db.VarChar // "normal" หรือ "premium"
+  premium_addon_price Decimal? @default(0) @db.Decimal(10, 2)
+
+  game_keys game_keys[]
+  orders    orders[]
+  products  products    @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([product_id], map: "idx_product_variants_product")
 }
@@ -211,7 +214,7 @@ model products {
   product_images    product_images[]
   product_presets   product_presets[]
   product_variants  product_variants[]
-  
+
   // Relation ไปยังสิทธิ์การใช้งาน
   user_whitelist_access user_whitelist_access[]
 
@@ -220,15 +223,15 @@ model products {
 
 // --- ตารางใหม่: สำหรับเก็บสิทธิ์การเข้าถึงปัจจุบันของ User ---
 model user_whitelist_access {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id     String   @unique @db.Uuid
-  product_id  String   @db.Uuid
-  is_premium  Boolean  @default(false)
-  expires_at  DateTime @db.Timestamptz(6)
-  updated_at  DateTime @default(now()) @db.Timestamptz(6)
-  
-  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  products    products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @unique @db.Uuid
+  product_id String   @db.Uuid
+  is_premium Boolean  @default(false)
+  expires_at DateTime @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  users    users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  products products @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
   @@index([user_id], map: "idx_uwa_user")
 }
@@ -260,7 +263,7 @@ model users {
   accounts            accounts[]
   orders              orders[]
   user_function_gifts user_function_gifts[]
-  
+
   // Relation ไปยังสิทธิ์การใช้งาน
   user_whitelist_access user_whitelist_access?
 }

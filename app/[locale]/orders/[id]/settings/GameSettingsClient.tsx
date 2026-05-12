@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useMemo, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { useTranslations, useLocale } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
+import { motion, AnimatePresence } from "framer-motion"
 
 // ── Types ────────────────────────────────────────────────────────
 type Gift = {
@@ -21,6 +22,7 @@ type ProductFunction = {
     label_en: string | null
     sort_order: number
     default_gift_id?: number | null
+    image_url?: string | null
 }
 
 type Props = {
@@ -33,6 +35,7 @@ type Props = {
     savedTiktokUsername?: string | null
     locale: string
     isPremium: boolean
+    premiumAddonPrice: number
 }
 
 export default function GameSettingsClient({
@@ -45,14 +48,29 @@ export default function GameSettingsClient({
     savedTiktokUsername,
     locale,
     isPremium,
+    premiumAddonPrice,
 }: Props) {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const t = useTranslations("Setting")
+    const tModal = useTranslations("ProductModal")
+
+    useEffect(() => {
+        if (searchParams?.get("upgrade") === "success") {
+            alert(t("upgradeSuccess") || "Upgrade Successful! You are now a Premium user.")
+            window.history.replaceState({}, '', window.location.pathname)
+        }
+    }, [searchParams, t])
+
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+    const [paymentMethod, setPaymentMethod] = useState<"card" | "promptpay">("promptpay")
+    const [upgrading, setUpgrading] = useState(false)
+
 
     // Use default mapping if not premium
     const effectiveMapping = useMemo(() => {
         if (isPremium) return savedMapping
-        
+
         const dm: Record<string, number> = {}
         functions.forEach(fn => {
             if (fn.default_gift_id) dm[fn.id] = fn.default_gift_id
@@ -107,9 +125,27 @@ export default function GameSettingsClient({
             return next
         })
     }
-    
+
     // ... (handleSave remains same)
 
+
+    const handleUpgrade = async () => {
+        try {
+            setUpgrading(true)
+            const res = await fetch(`/api/orders/${orderId}/upgrade`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ paymentMethod, locale })
+            })
+            const data = await res.json()
+            if (data.url) window.location.href = data.url
+            else alert(data.error || "Upgrade failed")
+        } catch (error) {
+            alert("Connection error")
+        } finally {
+            setUpgrading(false)
+        }
+    }
 
     const handleSave = async () => {
         try {
@@ -179,17 +215,17 @@ export default function GameSettingsClient({
                     {!isPremium && (
                         <div className="bg-accent/10 border border-accent/20 rounded-xl p-3 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2.5 text-accent-light">
-                                <span className="text-[18px]">⭐</span>
+                                {/* <span className="text-[18px]">⭐</span> */}
                                 <div>
-                                    <p className="text-[13px] font-bold leading-tight">Upgrade to Premium</p>
-                                    <p className="text-[11px] opacity-80">ปลดล็อกการตั้งค่าของขวัญได้อย่างอิสระ</p>
+                                    <p className="text-[13px] font-bold leading-tight">{t("upgradePremium")}</p>
+                                    <p className="text-[11px] opacity-80">{t("upgradeUnlock")}</p>
                                 </div>
                             </div>
-                            <button 
-                                onClick={() => router.push(`/products`)}
+                            <button
+                                onClick={() => setShowUpgradeModal(true)}
                                 className="bg-accent text-white text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition"
                             >
-                                BUY PREMIUM
+                                {t("buyPremium")}
                             </button>
                         </div>
                     )}
@@ -197,6 +233,8 @@ export default function GameSettingsClient({
 
                 {/* TikTok Username */}
                 <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 space-y-3">
+
+
                     <div className="flex items-center gap-2">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-accent-light flex-shrink-0">
                             <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z" />
@@ -278,7 +316,49 @@ export default function GameSettingsClient({
                     </div> */}
 
                     <p className="text-[11px] text-text-muted">{t("tiktok_username_hint")}</p>
+                    <br />
+                    <div className="space-y-3">
+
+                        {/* Label (style เดียวกับ TikTok header) */}
+                        <div className="flex items-center gap-2">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light flex-shrink-0">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                            <p className="text-[13px] font-semibold">Program Key</p>
+                        </div>
+
+                        {/* Input style = TikTok username style */}
+                        <div className="flex items-center gap-2">
+                            <div className="relative w-full">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[13px]">
+                                    #
+                                </span>
+
+                                <input
+                                    value={orderId}
+                                    readOnly
+                                    className="w-full bg-bg-base border border-accent/15 rounded-xl pl-7 pr-4 py-2.5 text-[13px] text-accent-light outline-none focus:border-accent/40 transition"
+                                />
+                            </div>
+
+                            <button
+                                onClick={() => navigator.clipboard.writeText(orderId)}
+                                className="px-3 py-2 rounded-xl bg-accent/10 hover:bg-accent/20 text-[11px] text-accent-light transition"
+                            >
+                                Copy
+                            </button>
+                        </div>
+
+                        {/* Hint (เหมือน TikTok hint style) */}
+                        <p className="text-[11px] text-text-muted">
+                            {t("key_label")}
+                        </p>
+                    </div>
                 </div>
+
+
+
 
                 {/* Function List */}
                 <div className="space-y-3">
@@ -300,13 +380,27 @@ export default function GameSettingsClient({
                                 <div key={fn.id} className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden transition-all">
                                     {/* Main Row */}
                                     <div className="flex items-center gap-3 p-4">
-                                        <div className="flex-1 flex flex-wrap items-center gap-2">
-                                            <span className="font-mono text-[12px] bg-accent/10 text-accent-light px-2 py-0.5 rounded-md">
-                                                {fn.name}
-                                            </span>
-                                            <span className="text-[13px] text-text-muted">
-                                                {locale === "th" ? fn.label_th : fn.label_en}
-                                            </span>
+                                        <div className="flex-1 flex flex-wrap items-center gap-3">
+                                            {fn.image_url && (
+                                                <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/5 bg-bg-base flex-shrink-0">
+                                                    <Image
+                                                        src={getImageUrl(fn.image_url)}
+                                                        alt=""
+                                                        width={32}
+                                                        height={32}
+                                                        className="w-full h-full object-cover"
+                                                        unoptimized
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[13px] font-bold text-text-base">
+                                                    {locale === "th" ? fn.label_th : fn.label_en}
+                                                </span>
+                                                <span className="font-mono text-[10px] text-accent-light/70 tracking-wider uppercase">
+                                                    {fn.name}
+                                                </span>
+                                            </div>
                                         </div>
 
                                         <button
@@ -436,6 +530,79 @@ export default function GameSettingsClient({
                     </button>
                 )}
             </div>
+
+            {/* Upgrade Modal */}
+            <AnimatePresence>
+                {showUpgradeModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setShowUpgradeModal(false)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="relative w-full max-w-md bg-bg-card border border-accent/20 rounded-3xl overflow-hidden shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="p-6 space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-[18px] font-bold text-text-base">{t("upgradePremium")}</h2>
+                                    <button onClick={() => setShowUpgradeModal(false)} className="text-text-muted hover:text-text-base transition">
+                                        <CloseIcon size={20} />
+                                    </button>
+                                </div>
+
+                                <div className="bg-accent/5 border border-accent/10 rounded-2xl p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        {/* <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500">
+                                            <span className="text-[20px]">⭐</span>
+                                        </div> */}
+                                        <div>
+                                            <p className="text-[14px] font-bold">{t("premiumLifetime")}</p>
+                                            <p className="text-[11px] text-text-muted">{t("premiumLifetimeDesc")}</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-[18px] font-bold text-accent-light">฿{premiumAddonPrice.toLocaleString()}</p>
+                                </div>
+
+                                {/* Payment Methods */}
+                                <div className="space-y-2">
+                                    <p className="text-[11px] tracking-widest text-text-muted uppercase font-medium">{tModal("payment_method")}</p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button onClick={() => setPaymentMethod("promptpay")} className={`p-3 rounded-xl border text-left transition ${paymentMethod === "promptpay" ? "border-accent bg-accent/10 text-accent-light" : "border-white/10"}`}>
+                                            <p className="text-[13px] font-medium">{tModal("promptpay_label")}</p>
+                                            <p className="text-[10px] text-green-400 opacity-80">{tModal("promptpay_desc")}</p>
+                                        </button>
+                                        <button onClick={() => setPaymentMethod("card")} className={`p-3 rounded-xl border text-left transition ${paymentMethod === "card" ? "border-accent bg-accent/10 text-accent-light" : "border-white/10"}`}>
+                                            <p className="text-[13px] font-medium">{tModal("stripe_label")}</p>
+                                            <p className="text-[10px] text-orange-400 opacity-80">{tModal("stripe_desc")}</p>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button
+                                    disabled={upgrading}
+                                    onClick={handleUpgrade}
+                                    className="w-full py-4 bg-accent hover:opacity-90 text-white font-bold rounded-2xl transition shadow-lg shadow-accent/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {upgrading ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <>{t("proceedToCheckout")} (฿{(paymentMethod === "card" ? premiumAddonPrice * 1.06 : premiumAddonPrice).toLocaleString()})</>
+                                    )}
+                                </button>
+
+                                <p className="text-[10px] text-center text-text-muted px-4">
+                                    {t("upgradeNote")}
+                                </p>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
