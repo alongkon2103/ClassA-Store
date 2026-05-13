@@ -88,7 +88,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
               className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${
                 wlFilter === f ? "bg-orange-500/20 text-orange-400" : "text-text-muted hover:text-text-base"
               }`}>
-              {f === "all" ? t("all") : f}
+              {t(f)}
             </button>
           ))}
         </div>

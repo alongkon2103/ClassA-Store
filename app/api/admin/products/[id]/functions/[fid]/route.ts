@@ -23,7 +23,7 @@ export async function PATCH(
 
     const { id, fid } = await params
     const body = await req.json()
-    const { name, label_th, label_en, default_gift_id } = body
+    const { name, label_th, label_en, default_gift_id, image_url } = body
 
     // ตรวจสอบว่า function นี้อยู่ใน product ที่ระบุจริง
     const existing = await prisma.product_functions.findFirst({
@@ -53,6 +53,7 @@ export async function PATCH(
         label_th: label_th ?? null,
         label_en: label_en ?? null,
         default_gift_id: default_gift_id ?? null,
+         image_url:       image_url ?? null,
       },
     })
 

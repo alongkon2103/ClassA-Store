@@ -26,7 +26,7 @@ function ChartTooltip({ active, payload, label }: any) {
       <p className="text-text-muted text-[11px]">{label}</p>
       {payload.map((p: any) => (
         <p key={p.name} style={{ color: p.color }} className="font-semibold">
-          {p.name === "total" || p.name === "revenue" ? fmt(p.value) : p.value}
+          {["total", "revenue", "commission", "payout"].includes(p.name) ? fmt(p.value) : p.value}
         </p>
       ))}
     </div>
@@ -70,7 +70,7 @@ const methodColors: Record<string, string> = {
 // ── Top Products Table ──────────────────────────────────────────────────────
 type SortKey = "total_revenue" | "net_revenue" | "order_count" | "unique_customers" | "avg_order"
 
-function TopProductsTable({ products, locale }: { products: any[]; locale: string }) {
+function TopProductsTable({ products, locale, t }: { products: any[]; locale: string; t: any }) {
   const [sort, setSort] = useState<SortKey>("total_revenue")
   const [dir,  setDir]  = useState<"desc" | "asc">("desc")
 
@@ -108,13 +108,13 @@ function TopProductsTable({ products, locale }: { products: any[]; locale: strin
         <thead>
           <tr className="text-left text-[11px] border-b border-white/5 bg-white/[0.02]">
             <th className="px-5 py-3 font-medium text-text-muted w-6">#</th>
-            <th className="px-4 py-3 font-medium text-text-muted">Product</th>
-            <SortTh label="Revenue"    k="total_revenue"    />
-            <SortTh label="Net Profit" k="net_revenue"      />
-            <SortTh label="Orders"     k="order_count"      />
-            <SortTh label="Customers"  k="unique_customers" />
-            <SortTh label="Avg Order"  k="avg_order"        />
-            <th className="px-4 py-3 font-medium text-text-muted text-right">Last Sale</th>
+            <th className="px-4 py-3 font-medium text-text-muted">{t("product")}</th>
+            <SortTh label={t("revenue")}    k="total_revenue"    />
+            <SortTh label={t("net_profit")} k="net_revenue"      />
+            <SortTh label={t("orders")}     k="order_count"      />
+            <SortTh label={t("customers")}  k="unique_customers" />
+            <SortTh label={t("avg_order")}  k="avg_order"        />
+            <th className="px-4 py-3 font-medium text-text-muted text-right">{t("last_sale")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
@@ -157,7 +157,7 @@ function TopProductsTable({ products, locale }: { products: any[]; locale: strin
                 {/* Net Revenue + profit % */}
                 <td className="px-4 py-3 text-right">
                   <p className="font-semibold text-green-400">{fmtShort(p.net_revenue)}</p>
-                  <p className="text-[10px] text-text-muted">{profitPct.toFixed(0)}% margin</p>
+                  <p className="text-[10px] text-text-muted">{profitPct.toFixed(0)}% {t("margin")}</p>
                 </td>
 
                 {/* Orders */}
@@ -371,8 +371,8 @@ export default function AnalyticsClient({ data }: { data: any }) {
 
         {/* ── Top Products (full table) ── */}
         <div className="lg:col-span-2 bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
-          <SectionTitle title={t("top_products")} sub="Revenue · Net Profit · Orders · Customers · Avg Order" />
-          <TopProductsTable products={data.topProducts} locale={locale} />
+          <SectionTitle title={t("top_products")} sub={t("top_products_sub")} />
+          <TopProductsTable products={data.topProducts} locale={locale} t={t} />
         </div>
       </div>
 
@@ -446,13 +446,13 @@ export default function AnalyticsClient({ data }: { data: any }) {
           <table className="w-full text-[13px]">
             <thead>
               <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-white/[0.02]">
-                <th className="px-5 py-3 font-medium">User</th>
-                <th className="px-4 py-3 font-medium">Product</th>
-                <th className="px-4 py-3 font-medium">Variant</th>
-                <th className="px-4 py-3 font-medium">Amount</th>
-                <th className="px-4 py-3 font-medium">Method</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Date</th>
+                <th className="px-5 py-3 font-medium">{t("user")}</th>
+                <th className="px-4 py-3 font-medium">{t("product")}</th>
+                <th className="px-4 py-3 font-medium">{t("variant")}</th>
+                <th className="px-4 py-3 font-medium">{t("amount")}</th>
+                <th className="px-4 py-3 font-medium">{t("method")}</th>
+                <th className="px-4 py-3 font-medium">{t("status")}</th>
+                <th className="px-4 py-3 font-medium">{t("date")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">

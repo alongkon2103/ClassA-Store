@@ -89,7 +89,9 @@ function UsernameHelpModal({ onClose, images }: { onClose: () => void; images: s
             </>
           )}
         </div>
-        <div className="px-5 py-4 text-center text-[13px] text-text-muted">Step <span className="text-text-base font-semibold">{idx + 1}</span> of <span className="text-text-base font-semibold">{images.length}</span></div>
+        {/* <div className="px-5 py-4 text-center text-[13px] text-text-muted">{t("step") || "Step"} <span className="text-text-base font-semibold">{idx + 1}</span> {t("of") || "of"} <span className="text-text-base font-semibold">{images.length}</span></div>
+         */}
+         <div className="px-5 py-4 text-center text-[13px] text-text-muted">Step <span className="text-text-base font-semibold">{idx + 1}</span> of <span className="text-text-base font-semibold">{images.length}</span></div>
       </motion.div>
     </motion.div>
   )
@@ -112,7 +114,7 @@ export default function ProductModal({ product, onClose }: any) {
   const [paymentMethod, setPaymentMethod] = useState<"card" | "promptpay">("promptpay")
   const [whitelistUsername, setWhitelistUsername] = useState("")
   const [usdRate, setUsdRate] = useState<number | null>(null)
-  const [isPremiumSelected, setIsPremiumSelected] = useState(false)
+  const [isPremiumSelected, setIsPremiumSelected] = useState(true)
 
   useEffect(() => {
     fetch("https://open.er-api.com/v6/latest/THB")
@@ -125,6 +127,10 @@ export default function ProductModal({ product, onClose }: any) {
 
   const premiumVar = (product.product_variants ?? []).find((v: any) => v.variant_type === "premium")
   const premiumAddonPrice = Number(premiumVar?.premium_addon_price ?? 0)
+
+  useEffect(() => {
+    if (premiumAddonPrice <= 0) setIsPremiumSelected(false)
+  }, [premiumAddonPrice])
 
   const [selectedVariant, setSelectedVariant] = useState<any>(sortedVariants[0] || null)
 

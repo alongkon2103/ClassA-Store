@@ -8,6 +8,7 @@ import KeysPanel from "./KeysPanel"
 import GiftManager from "./GiftManager"
 import PresetManager from "./PresetManager"
 import FunctionManager from "./FunctionManager"
+import ConsignmentManager from "./ConsignmentManager"
 
 import { useTranslations, useLocale } from "next-intl"
 
@@ -44,6 +45,7 @@ export default function ProductForm({ product, mode, allGifts }: Props) {
         info_page_url: product?.info_page_url ?? "",
         discord_role_id: product?.discord_role_id ?? "",
         discord_guild_id: product?.discord_guild_id ?? "",
+        consignments: product?.product_consignments ?? [],
     })
 
     const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
@@ -226,80 +228,17 @@ export default function ProductForm({ product, mode, allGifts }: Props) {
             {activeTab === "keys" && <KeysPanel productId={product.id} variants={product.product_variants} />}
 
             {/* Tab: Consignment */}
-            {/* Tab: Consignment */}
             {activeTab === "consignment" && (
-                <div className="space-y-5">
-                    {/* Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-bg-card border border-accent/10 rounded-2xl">
-                        <div>
-                            <p className="text-[14px] font-semibold">{t("consignment_title")}</p>
-                            <p className="text-[12px] text-text-muted mt-0.5">
-                                {t("consignment_desc")}
-                            </p>
-                        </div>
-                        <button onClick={() => set("is_consignment", !form.is_consignment)}
-                            className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${form.is_consignment ? "bg-accent" : "bg-white/10"
-                                }`}>
-                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${form.is_consignment ? "left-7" : "left-1"
-                                }`} />
-                        </button>
-                    </div>
-
-                    {form.is_consignment && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <Field label={t("owner_name")}>
-                                <input value={form.owner_name}
-                                    onChange={(e) => set("owner_name", e.target.value)}
-                                    placeholder="Store / Owner name" className={input} />
-                            </Field>
-
-                            <Field label={t("owner_contact")}>
-                                <input value={form.owner_contact}
-                                    onChange={(e) => set("owner_contact", e.target.value)}
-                                    placeholder="Line / Discord / Email" className={input} />
-                            </Field>
-
-                            <Field label={t("commission")} required>
-                                <div className="relative">
-                                    <input type="number" min="0" max="100" step="0.5"
-                                        value={form.commission_pct}
-                                        onChange={(e) => set("commission_pct", Number(e.target.value))}
-                                        className={input} placeholder="20" />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-[13px]">%</span>
-                                </div>
-                            </Field>
-
-                            {form.price && (
-                                <div className="flex flex-col justify-center bg-bg-base border border-accent/10 rounded-xl px-4 py-4 text-[13px] space-y-2">
-                                    <p className="text-[11px] tracking-widest text-text-muted uppercase font-medium">{t("revenue_preview")}</p>
-                                    <div className="flex justify-between">
-                                        <span className="text-text-muted">{t("sale_price")}</span>
-                                        <span className="font-medium">฿{Number(form.price).toLocaleString()}</span>
-                                    </div>
-                                    <div className="h-px bg-white/5" />
-                                    <div className="flex justify-between text-green-400">
-                                        <span>{t("we_earn", { pct: form.commission_pct })}</span>
-                                        <span className="font-semibold">
-                                            ฿{(Number(form.price) * Number(form.commission_pct) / 100).toLocaleString()}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between text-text-muted">
-                                        <span>{t("owner_payout")}</span>
-                                        <span>
-                                            ฿{(Number(form.price) * (100 - Number(form.commission_pct)) / 100).toLocaleString()}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {!form.is_consignment && (
-                        <div className="text-center py-12 text-text-muted text-[13px] bg-bg-card border border-accent/10 rounded-2xl">
-                            {t("consignment_off_desc")}
-                        </div>
-                    )}
-                </div>
+                <ConsignmentManager 
+                    productId={product.id}
+                    isConsignment={form.is_consignment}
+                    onToggle={(val) => set("is_consignment", val)}
+                    initialConsignments={form.consignments}
+                    onUpdate={(list) => set("consignments", list)}
+                    productPrice={Number(form.price)}
+                    platformCommission={Number(form.commission_pct)}
+                    onCommissionChange={(val) => set("commission_pct", val)}
+                />
             )}
             {activeTab === "functions" && (
                 <FunctionManager productId={product.id} functions={product.product_functions ?? []} allGifts={allGifts ?? []} />

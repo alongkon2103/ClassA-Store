@@ -67,10 +67,23 @@ export default function GameSettingsClient({
     const [upgrading, setUpgrading] = useState(false)
 
 
-    // Use default mapping if not premium
+    // Use default mapping if not premium OR if premium but has no saved settings
     const effectiveMapping = useMemo(() => {
-        if (isPremium) return savedMapping
+        // If not premium, always use defaults
+        if (!isPremium) {
+            const dm: Record<string, number> = {}
+            functions.forEach(fn => {
+                if (fn.default_gift_id) dm[fn.id] = fn.default_gift_id
+            })
+            return dm
+        }
 
+        // If premium but HAS saved mapping, use it
+        if (Object.keys(savedMapping).length > 0) {
+            return savedMapping
+        }
+
+        // If premium but NO saved mapping, fallback to defaults for preview
         const dm: Record<string, number> = {}
         functions.forEach(fn => {
             if (fn.default_gift_id) dm[fn.id] = fn.default_gift_id
@@ -87,10 +100,10 @@ export default function GameSettingsClient({
     const [openPicker, setOpenPicker] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
 
-    // Update internal mapping state if props change (e.g. after refresh)
-    useState(() => {
+    // Update internal mapping state if effectiveMapping changes (e.g. after upgrade)
+    useEffect(() => {
         setMapping(effectiveMapping)
-    })
+    }, [effectiveMapping])
 
     // ... (Status Polling remains same)
 
@@ -205,7 +218,7 @@ export default function GameSettingsClient({
                         </div>
                         <div className="w-px h-10 bg-accent/10" />
                         <div className="flex-1">
-                            <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">Whitelist</p>
+                            <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">{t("whitelist_label") || "Whitelist"}</p>
                             <p className="font-mono text-[16px] font-bold text-accent-light">
                                 {whitelistedUsername ?? "—"}
                             </p>
@@ -256,7 +269,7 @@ export default function GameSettingsClient({
                         <details className="group">
                             <summary className="flex items-center gap-2 text-[12px] font-medium text-text-muted cursor-pointer hover:text-text-base transition-colors list-none">
                                 <ChevronIcon size={14} className="group-open:rotate-180" />
-                                <span>{t("advancedSettings") || "ตั้งค่าการเชื่อมต่อขั้นสูง (กรณีเชื่อมต่อไม่ได้)"}</span>
+                                <span>{t("advancedSettings")}</span>
                             </summary>
                             <div className="mt-3 space-y-3 pl-5 border-l-2 border-accent/10">
                                 <div className="space-y-1.5">
@@ -264,12 +277,12 @@ export default function GameSettingsClient({
                                         <span>Connection Token (ttwid)</span>
                                     </p>
                                     <p className="text-[10px] text-text-muted leading-relaxed">
-                                        * ใช้สำหรับแก้ปัญหาเมื่อระบบไม่สามารถเชื่อมต่อกับ TikTok ได้โดยตรง รหัสนี้จะช่วยระบุตัวตน Browser ของคุณอย่างปลอดภัย (ไม่ต้องใช้รหัสผ่าน)
+                                        {t("ttwid_help_desc")}
                                     </p>
                                     <input
                                         value={tiktokCookie}
                                         onChange={(e) => setTiktokCookie(e.target.value)}
-                                        placeholder="ก๊อปปี้ค่า ttwid จาก Browser มาวางที่นี่..."
+                                        placeholder={t("ttwid_placeholder")}
                                         className="w-full bg-bg-base border border-accent/10 rounded-xl px-4 py-2.5 text-[12px] placeholder:text-text-muted outline-none focus:border-accent/30 transition"
                                     />
                                     <a 
@@ -277,10 +290,10 @@ export default function GameSettingsClient({
                                         className="text-[10px] text-accent-light hover:underline inline-block"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            alert("วิธีเอา Token: \n1. เข้าหน้า TikTok ในคอม\n2. กด F12 -> Application -> Cookies\n3. ก๊อปปี้ค่า ttwid มาวาง");
+                                            alert(t("how_to_get_ttwid_steps"));
                                         }}
                                     >
-                                        {t("howToGetToken") || "วิธีดึงรหัสเชื่อมต่อ (Connection Token)"}
+                                        {t("howToGetToken")}
                                     </a>
                                 </div>
                             </div>
@@ -325,7 +338,7 @@ export default function GameSettingsClient({
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                             </svg>
-                            <p className="text-[13px] font-semibold">Program Key</p>
+                            <p className="text-[13px] font-semibold">{t("program_key") || "Program Key"}</p>
                         </div>
 
                         {/* Input style = TikTok username style */}
@@ -343,10 +356,13 @@ export default function GameSettingsClient({
                             </div>
 
                             <button
-                                onClick={() => navigator.clipboard.writeText(orderId)}
+                                onClick={() => {
+                                    navigator.clipboard.writeText(orderId)
+                                    alert(t("copied") || "Copied")
+                                }}
                                 className="px-3 py-2 rounded-xl bg-accent/10 hover:bg-accent/20 text-[11px] text-accent-light transition"
                             >
-                                Copy
+                                {t("copy") || "Copy"}
                             </button>
                         </div>
 
@@ -362,9 +378,23 @@ export default function GameSettingsClient({
 
                 {/* Function List */}
                 <div className="space-y-3">
-                    <p className="text-[11px] text-text-muted uppercase tracking-widest font-medium px-1">
-                        {t("selectGiftForFunction")}
-                    </p>
+                    <div className="flex items-center justify-between px-1">
+                        <p className="text-[11px] text-text-muted uppercase tracking-widest font-medium">
+                            {t("selectGiftForFunction")}
+                        </p>
+                        {isPremium && Object.keys(mapping).length > 0 && (
+                            <button 
+                                onClick={() => {
+                                    if(confirm(t("confirm_clear_all") || "Clear all selected gifts?")) {
+                                        setMapping({})
+                                    }
+                                }}
+                                className="text-[11px] text-red-400 hover:text-red-500 font-medium transition"
+                            >
+                                {t("clear_all") || "Clear All"}
+                            </button>
+                        )}
+                    </div>
 
                     {functions.length === 0 ? (
                         <div className="text-center py-12 bg-bg-card border border-accent/10 rounded-2xl text-text-muted text-[13px]">
@@ -432,8 +462,11 @@ export default function GameSettingsClient({
                                                         <span className="text-[13px] font-medium truncate">
                                                             {selectedGift.name}
                                                         </span>
-                                                        {!isPremium && <span className="text-[10px] bg-accent/10 px-1 rounded">DEFAULT</span>}
-                                                    </>
+                                                        {(!isPremium || (Object.keys(savedMapping).length === 0 && selectedGiftId === fn.default_gift_id)) && (
+                                                            <span className="text-[10px] bg-accent/10 px-1 rounded">DEFAULT</span>
+                                                        )}
+                                                        </>
+
                                                 ) : (
                                                     <span className="text-[13px]">{t("selectGift")}</span>
                                                 )}

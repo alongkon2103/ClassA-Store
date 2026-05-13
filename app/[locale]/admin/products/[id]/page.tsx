@@ -19,7 +19,8 @@ export default async function EditProductPage({
       product_images: { orderBy: { sort_order: "asc" } },
       product_gifts: { orderBy: { sort_order: "asc" } },
       product_presets: { orderBy: { sort_order: "asc" } },
-      product_functions: { orderBy: { sort_order: "asc" } }, // ← เพิ่มตรงนี้
+      product_functions: { orderBy: { sort_order: "asc" } },
+      product_consignments: { orderBy: { created_at: "asc" } },
     },
   })
   if (!product) notFound()
@@ -32,6 +33,10 @@ export default async function EditProductPage({
     ...product,
     price: Number(product.price),
     commission_pct: Number(product.commission_pct ?? 0),
+    product_consignments: product.product_consignments.map(c => ({
+      ...c,
+      payout_share: Number(c.payout_share)
+    })),
     product_variants: product.product_variants.map((v) => ({ 
       ...v, 
       price: Number(v.price),

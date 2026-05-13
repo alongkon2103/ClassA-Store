@@ -45,13 +45,35 @@
 //     filesize: file.size,
 //   })
 // }
-
 import { writeFile, mkdir } from "fs/promises"
 import { NextRequest, NextResponse } from "next/server"
 import path from "path"
 import sharp from "sharp"
 
-const BASE_UPLOAD_DIR = "/var/www/uploads"
+// Dev  → <project_root>/public/uploads/...  (เสิร์ฟได้ที่ /uploads/...)
+// Prod → /var/www/uploads/...
+const BASE_UPLOAD_DIR =
+  process.env.NODE_ENV === "production"
+    ? "/var/www/uploads"
+    : path.join(process.cwd(), "public", "uploads")
+
+const imageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+const presetTypes = [
+  "application/zip",
+  "application/x-zip-compressed",
+  "application/json",
+  "application/octet-stream",
+  "text/plain",
+]
+
+// Fallback: resolve MIME จาก extension กรณี browser ส่ง file.type ผิด/ว่าง
+const extToMime: Record<string, string> = {
+  jpg:  "image/jpeg",
+  jpeg: "image/jpeg",
+  png:  "image/png",
+  webp: "image/webp",
+  gif:  "image/gif",
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -61,47 +83,50 @@ export async function POST(req: NextRequest) {
 
     if (!file) return NextResponse.json({ error: "No file" }, { status: 400 })
 
-    const imageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
-    const presetTypes = ["application/zip", "application/x-zip-compressed", "application/json", "application/octet-stream", "text/plain"]
-    const allowedTypes = type === "image" || type === "gift" ? imageTypes : [...imageTypes, ...presetTypes]
+    // Resolve MIME — ใช้ extension เป็น fallback
+    const fileExt = file.name.split(".").pop()?.toLowerCase() ?? ""
+    const resolvedMime = imageTypes.includes(file.type)
+      ? file.type
+      : (extToMime[fileExt] ?? file.type)
 
-    if (!allowedTypes.includes(file.type)) {
+    const allowedTypes =
+      type === "image" || type === "gift"
+        ? imageTypes
+        : [...imageTypes, ...presetTypes]
+
+    if (!allowedTypes.includes(resolvedMime)) {
+      console.warn(`[upload] rejected — file.type="${file.type}" resolved="${resolvedMime}" ext="${fileExt}"`)
       return NextResponse.json({ error: "Invalid file type" }, { status: 400 })
     }
 
-    // --- ส่วนที่แก้ไขเรื่อง Type ---
     const bytes = await file.arrayBuffer()
-    // 1. สร้าง Buffer ตัวต้นฉบับให้ชัดเจน (ใช้ const เพื่อล็อค Type)
     const initialBuffer = Buffer.from(new Uint8Array(bytes))
-    
-    // 2. ตัวแปรสำหรับเก็บข้อมูลสุดท้ายที่จะเขียนลง Disk
-    let finalBuffer: Buffer = initialBuffer 
-    
-    let ext = file.name.split(".").pop()
-    const finalFilename = `${Date.now()}-${Math.random().toString(36).slice(2)}`
 
-    // 3. ตรวจสอบเงื่อนไขเพื่อแปลงไฟล์
-    if (imageTypes.includes(file.type) && file.type !== "image/gif" && type !== "preset") {
-      // ส่ง initialBuffer เข้า sharp ตรงๆ (TypeScript จะไม่บ่นเพราะ type ชัดเจนแล้ว)
-      finalBuffer = await sharp(initialBuffer)
-        .webp({ quality: 80 })
-        .toBuffer()
-      
+    let finalBuffer: Buffer = initialBuffer
+    let ext = fileExt
+
+    // แปลงรูปเป็น webp (ยกเว้น gif และ preset)
+    if (imageTypes.includes(resolvedMime) && resolvedMime !== "image/gif" && type !== "preset") {
+      finalBuffer = await sharp(initialBuffer).webp({ quality: 80 }).toBuffer()
       ext = "webp"
     }
-    // ----------------------------
 
+    const finalFilename = `${Date.now()}-${Math.random().toString(36).slice(2)}`
     const filenameWithExt = `${finalFilename}.${ext}`
     const folder = type === "preset" ? "presets" : type === "gift" ? "gifts" : "uploads"
 
     const uploadDir = path.join(BASE_UPLOAD_DIR, folder)
     await mkdir(uploadDir, { recursive: true })
-    
-    // เขียนไฟล์โดยใช้ finalBuffer
     await writeFile(path.join(uploadDir, filenameWithExt), finalBuffer)
 
+    // URL path สำหรับ dev และ prod
+    const urlPath =
+      process.env.NODE_ENV === "production"
+        ? `/${folder}/${filenameWithExt}`
+        : `/uploads/${folder}/${filenameWithExt}`
+
     return NextResponse.json({
-      url: `/${folder}/${filenameWithExt}`,
+      url:      urlPath,
       filename: file.name,
       filesize: finalBuffer.length,
     })
