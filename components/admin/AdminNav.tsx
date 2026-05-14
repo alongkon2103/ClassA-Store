@@ -11,10 +11,12 @@ const links = [
   { href: "/admin/consignment", key: "consignment", icon: "" },
   // { href: "/admin/keys",       key: "game_keys",   icon: "" },
   { href: "/admin/orders", key: "orders", icon: "" },
+  { href: "/admin/upgrade-premium", key: "nav_title", icon: "" },
+
   { href: "/admin/users", key: "users", icon: "" },
   { href: "/admin/gifts", key: "gifts", icon: "" },
 
-  // { href: "/admin/tiktok-simulator", key: "tiktok_simulator", icon: "" },
+  { href: "/admin/tiktok-simulator", key: "tiktok_simulator", icon: "" },
 
   // { href: "/admin/tiktok-live", key: "TikTok Live", icon: "" },
 ]

@@ -145,7 +145,7 @@ export default function DashboardClient({ data }: { data: any }) {
                 </div>
 
                 {/* Low Stock */}
-                <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
+                {/* <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
                     <p className="text-[13px] font-semibold mb-1">{t("low_stock")}</p>
                     <p className="text-[11px] text-text-muted mb-4">{t("low_stock_desc")}</p>
                     {data.lowStockProducts.length === 0 ? (
@@ -165,6 +165,98 @@ export default function DashboardClient({ data }: { data: any }) {
                             ))}
                         </div>
                     )}
+                </div> */}
+                {/* Chart + Top Selling Products */}
+                <div className="grid grid-cols-1 ">
+                    {/* Area Chart */}
+                    {/* <div className="lg:col-span-2 bg-bg-card border border-accent/10 rounded-2xl p-5">
+                        <p className="text-[13px] font-semibold mb-1">{t("revenue_7days")}</p>
+                        <p className="text-[11px] text-text-muted mb-5">{t("daily_sales")}</p>
+
+                        <ResponsiveContainer width="100%" height={200}>
+                            <AreaChart data={chartData}>
+                                <defs>
+                                    <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#427ab5" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#427ab5" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+
+                                <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    stroke="rgba(255,255,255,.05)"
+                                />
+
+                                <XAxis
+                                    dataKey="day"
+                                    tick={{ fontSize: 11, fill: "#7a9bb8" }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+
+                                <YAxis
+                                    tick={{ fontSize: 11, fill: "#7a9bb8" }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tickFormatter={(v) => `฿${v.toLocaleString()}`}
+                                />
+
+                                <Tooltip content={<ChartTooltip />} />
+
+                                <Area
+                                    type="monotone"
+                                    dataKey="total"
+                                    stroke="#427ab5"
+                                    strokeWidth={2}
+                                    fill="url(#grad)"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div> */}
+
+                    {/* Top Selling Products */}
+                    <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 h-full flex flex-col">
+                        <p className="text-[13px] font-semibold mb-1">
+                            {t("top_selling_products")}
+                        </p>
+
+                        <p className="text-[11px] text-text-muted mb-4">
+                            {t("best_sellers_desc")}
+                        </p>
+
+                        {data.topSellingProducts.length === 0 ? (
+                            <div className="flex-1 flex items-center justify-center">
+                                <p className="text-[13px] text-text-muted text-center">
+                                    {t("no_sales_yet")}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2 flex-1">
+                                {data.topSellingProducts.map((p: any, index: number) => (
+                                    <div
+                                        key={p.id}
+                                        className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-accent/5 border border-accent/10"
+                                    >
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            <span className="text-[11px] font-bold text-accent-light w-5">
+                                                #{index + 1}
+                                            </span>
+
+                                            <p className="text-[13px] line-clamp-1">
+                                                {locale === "th"
+                                                    ? p.name_th ?? p.name_en
+                                                    : p.name_en ?? p.name_th}
+                                            </p>
+                                        </div>
+
+                                        <span className="text-[11px] font-medium text-text-muted whitespace-nowrap ml-2">
+                                            {p.salesCount.toLocaleString()} sales
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

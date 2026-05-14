@@ -168,6 +168,54 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         </div>
 
                         {/* 🎁 ASSETS SECTION */}
+                          <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+                            <div className="relative bg-gradient-to-r from-accent/20 via-accent/10 to-transparent px-4 py-3 border-b border-accent/10 overflow-hidden">
+                                <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-accent/10 blur-2xl pointer-events-none" />
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-lg bg-accent/20 border border-accent/30 flex items-center justify-center">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light">
+                                            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p className="text-[12px] font-bold">{t("downloadApp") || "โปรแกรมของร้าน"}</p>
+                                        <p className="text-[10px] text-text-muted">{t("downloadAppSub") || "สำหรับ TikTok Live"}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-4 space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 flex items-center justify-center flex-shrink-0">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light">
+                                            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                                        </svg>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-[13px] font-bold">AclassStore Live</p>
+                                            <span className="text-[9px] font-bold bg-accent/15 text-accent-light px-1.5 py-0.5 rounded border border-accent/20">v3.0</span>
+                                        </div>
+                                        <p className="text-[10px] text-text-muted mt-0.5">{t("downloadDesc") || "จัดการร้านค้า · TikTok Live"}</p>
+                                        <div className="flex items-center gap-1.5 mt-1">
+                                            <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded-full">Windows</span>
+                                            <span className="text-[9px] text-text-muted">.exe · 45 MB</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <a href="https://github.com/alongkon2103/AclassStore-Live/releases/latest/download/AclassStoreLiveV3.exe" download className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent hover:opacity-90 active:scale-[0.98] text-white text-[12px] font-bold rounded-xl transition-all shadow-lg shadow-accent/20">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    {t("download_Program") || "ดาวน์โหลดโปรแกรม"}
+                                </a>
+                                <div className="flex items-start gap-1.5">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500/70 flex-shrink-0 mt-0.5">
+                                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                                    </svg>
+                                    <p className="text-[10px] text-text-muted leading-relaxed">{t("downloadHint") || "Windows อาจแจ้งเตือน ให้กด \"Keep anyway\""}</p>
+                                </div>
+                            </div>
+                        </div>
                         {order.status === "paid" && (order.products.product_gifts.length > 0 || order.products.product_presets.length > 0) && (
                             <div className="bg-bg-card border border-accent/10 rounded-2xl md:rounded-3xl p-5 md:p-8">
                                 <h2 className="text-lg font-bold text-text-base mb-6 md:mb-8 flex items-center gap-2">
@@ -243,9 +291,11 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                             </div>
                                         )
                                     })}
+                               
                                 </div>
                             </div>
                         )}
+
                     </div>
 
                     {/* Sidebar (Right) */}

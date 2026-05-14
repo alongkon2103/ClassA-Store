@@ -71,11 +71,25 @@ export default function ConsignmentManager({
             {t("consignment_desc")}
           </p>
         </div>
-        <button onClick={() => onToggle(!isConsignment)}
-          className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${isConsignment ? "bg-accent" : "bg-white/10"
-            }`}>
-          <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${isConsignment ? "left-7" : "left-1"
-            }`} />
+        <button
+          type="button"
+          onClick={() => onToggle(!isConsignment)}
+          className={`
+    relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full
+    transition-all duration-200 border-2
+    ${isConsignment
+              ? "bg-accent border-accent"
+              : "bg-slate-300 border-slate-400 dark:bg-zinc-700 dark:border-zinc-600"} 
+    focus:outline-none focus:ring-2 focus:ring-accent/20
+  `}
+        >
+          <span
+            className={`
+      inline-block h-4 w-4 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)]
+      transform transition-transform duration-200 ease-in-out
+      ${isConsignment ? "translate-x-5" : "translate-x-1"}
+    `}
+          />
         </button>
       </div>
 

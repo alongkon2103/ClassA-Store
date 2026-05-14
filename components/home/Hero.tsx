@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import { useTranslations } from "next-intl"
+import Link from 'next/link'
 
 export default function Hero() {
     const t = useTranslations("Home")
@@ -37,10 +38,11 @@ export default function Hero() {
                     transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
                     className="flex gap-3 flex-wrap justify-center"
                 >
-                    <button
-                        className="bg-accent hover:bg-accent-light text-white font-medium text-[15px] px-7 py-3 rounded-xl transition-all hover:-translate-y-0.5 active:scale-95">
-                        {t("browse_shop")}
-                    </button>
+                <Link
+  href="/products"
+  className="inline-block bg-accent hover:bg-accent-light text-white font-medium text-[15px] px-7 py-3 rounded-xl transition-all hover:-translate-y-0.5 active:scale-95">
+  {t("browse_shop")}
+</Link>
                     <a
                      href="https://discord.gg/vCuPy8H9ub"
                         className="flex items-center gap-2 border border-accent/20 hover:border-accent-light text-text-base text-[15px] px-7 py-3 rounded-xl transition-colors active:scale-95"

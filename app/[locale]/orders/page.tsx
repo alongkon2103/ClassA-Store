@@ -19,22 +19,40 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
     redirect(`/${locale}/login`)
   }
 
-  const rawOrders = await prisma.orders.findMany({
-    where: { user_id: session.user.id },
-    orderBy: { created_at: "desc" },
-    include: {
-      game_keys: true,
-      products: {
-        include: {
-          product_images: { orderBy: { sort_order: "asc" }, take: 1 },
-          product_gifts: { orderBy: { sort_order: "asc" } },
-          product_presets: { orderBy: { sort_order: "asc" } },
-          product_functions: { orderBy: { sort_order: "asc" } }, // ← เพิ่มตรงนี้
-        }
+const rawOrders = await prisma.orders.findMany({
+  where: {
+    user_id: session.user.id,
+  },
+  orderBy: [
+    {
+      status: "asc",
+    },
+    {
+      created_at: "desc",
+    },
+  ],
+  include: {
+    game_keys: true,
+    products: {
+      include: {
+        product_images: {
+          orderBy: { sort_order: "asc" },
+          take: 1,
+        },
+        product_gifts: {
+          orderBy: { sort_order: "asc" },
+        },
+        product_presets: {
+          orderBy: { sort_order: "asc" },
+        },
+        product_functions: {
+          orderBy: { sort_order: "asc" },
+        },
       },
-      product_variants: true
-    }
-  })
+    },
+    product_variants: true,
+  },
+})
   const orders = rawOrders.map(order => ({
     ...order,
     amount: Number(order.amount),

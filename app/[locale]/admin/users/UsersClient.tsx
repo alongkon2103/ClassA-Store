@@ -11,7 +11,7 @@ export default function UsersClient({ users }: { users: any[] }) {
   const locale = useLocale()
   const dateLocale = locale === "th" ? th : enUS
   const router = useRouter()
-  
+
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<"all" | "admin" | "user">("all")
   const [loadingId, setLoadingId] = useState<string | null>(null)
@@ -65,9 +65,8 @@ export default function UsersClient({ users }: { users: any[] }) {
         <div className="flex gap-1 bg-bg-card border border-accent/15 rounded-xl p-1">
           {(["all", "admin", "user"] as const).map((f) => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${
-                filter === f ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
-              }`}>
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${filter === f ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
+                }`}>
               {t(f)}
             </button>
           ))}
@@ -131,11 +130,10 @@ export default function UsersClient({ users }: { users: any[] }) {
 
                 {/* Role */}
                 <td className="px-4 py-4">
-                  <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${
-                    u.role === "admin"
+                  <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${u.role === "admin"
                       ? "bg-purple-500/15 text-purple-400"
                       : "bg-white/5 text-text-muted"
-                  }`}>
+                    }`}>
                     {u.role}
                   </span>
                 </td>
@@ -155,6 +153,29 @@ export default function UsersClient({ users }: { users: any[] }) {
                     >
                       {u.role === "admin" ? "→ User" : "→ Admin"}
                     </button>
+                    {/* <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        disabled={loadingId === u.id}
+                        onClick={() => handleRoleToggle(u.id, u.role)}
+                        className={`
+      relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full
+      transition-all duration-200 border-2
+      ${u.role === "admin"
+                            ? "bg-accent border-accent"
+                            : "bg-slate-300 border-slate-400 dark:bg-zinc-700 dark:border-zinc-600"}
+      ${loadingId === u.id ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
+    `}
+                      >
+                        <span
+                          className={`
+        inline-block h-4 w-4 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)]
+        transform transition-transform duration-200 ease-in-out
+        ${u.role === "admin" ? "translate-x-5" : "translate-x-1"}
+      `}
+                        />
+                      </button>
+                    </div> */}
                     <button
                       onClick={() => handleDelete(u.id)}
                       disabled={loadingId === u.id}

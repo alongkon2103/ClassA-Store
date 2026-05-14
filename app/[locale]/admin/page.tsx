@@ -1,16 +1,15 @@
-// app/admin/page.tsx
 import { prisma } from "@/lib/prisma"
 import { startOfDay, startOfMonth } from "date-fns"
 import DashboardClient from "./DashboardClient"
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server"
 
 export default async function AdminDashboard({
-  params
+  params,
 }: {
-  params: Promise<{ locale: string }>;
+  params: Promise<{ locale: string }>
 }) {
-  const { locale } = await params;
-  setRequestLocale(locale);
+  const { locale } = await params
+  setRequestLocale(locale)
 
   const now = new Date()
   const todayStart = startOfDay(now)
@@ -22,53 +21,105 @@ export default async function AdminDashboard({
     pendingOrders,
     totalOrders,
     totalProducts,
-    lowStockProducts,
+    topSellingProducts,
     recentOrders,
     dailyRevenue,
   ] = await Promise.all([
     // Today's Sales
     prisma.orders.aggregate({
-      where: { status: "paid", paid_at: { gte: todayStart } },
-      _sum: { amount: true },
+      where: {
+        status: "paid",
+        paid_at: { gte: todayStart },
+      },
+      _sum: {
+        amount: true,
+      },
     }),
 
     // This Month's Sales
     prisma.orders.aggregate({
-      where: { status: "paid", paid_at: { gte: monthStart } },
-      _sum: { amount: true },
+      where: {
+        status: "paid",
+        paid_at: { gte: monthStart },
+      },
+      _sum: {
+        amount: true,
+      },
     }),
 
     // Pending orders
-    prisma.orders.count({ where: { status: "paid", fulfilled_at: null } }),
+    prisma.orders.count({
+      where: {
+        status: "paid",
+        fulfilled_at: null,
+      },
+    }),
 
     // Total orders
     prisma.orders.count(),
 
-    // Total products
-    prisma.products.count({ where: { is_active: true } }),
+    // Total active products
+    prisma.products.count({
+      where: {
+        is_active: true,
+      },
+    }),
 
-    // Low stock products
+    // Top selling products
     prisma.products.findMany({
-      where: { is_active: true, isLower: true },
-      select: { id: true, name_en: true, slug: true },
+      where: {
+        is_active: true,
+      },
+      select: {
+        id: true,
+        slug: true,
+        name_th: true,
+        name_en: true,
+        _count: {
+          select: {
+            orders: {
+              where: {
+                status: "paid",
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        orders: {
+          _count: "desc",
+        },
+      },
       take: 5,
     }),
 
     // Recent orders
     prisma.orders.findMany({
       take: 8,
-      orderBy: { created_at: "desc" },
+      orderBy: {
+        created_at: "desc",
+      },
       include: {
-        users: { select: { username: true, avatar: true } },
-        products: { select: { name_en: true } },
+        users: {
+          select: {
+            username: true,
+            avatar: true,
+          },
+        },
+        products: {
+          select: {
+            name_th: true,
+            name_en: true,
+          },
+        },
       },
     }),
 
-    // Revenue - last 7 days (raw groupBy)
+    // Revenue - last 7 days
     prisma.$queryRaw<{ day: Date; total: number }[]>`
       SELECT
         DATE_TRUNC('day', paid_at) AS day,
-        SUM(amount)::float         AS total
+        SUM(amount)::float AS total
       FROM orders
       WHERE status = 'paid'
         AND paid_at >= NOW() - INTERVAL '7 days'
@@ -83,11 +134,17 @@ export default async function AdminDashboard({
     pendingOrders,
     totalOrders,
     totalProducts,
-    lowStockProducts,
+
+    topSellingProducts: topSellingProducts.map((p) => ({
+      ...p,
+      salesCount: p._count.orders,
+    })),
+
     recentOrders: recentOrders.map((o) => ({
       ...o,
       amount: Number(o.amount),
     })),
+
     dailyRevenue: dailyRevenue.map((d) => ({
       day: d.day.toISOString(),
       total: d.total,
