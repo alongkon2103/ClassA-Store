@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
         variant: variant?.label_en ?? "Permanent",
         duration_type: "permanent",
         expires_at: null,
+        is_premium: !!order.is_premium_order,
       })
     }
 
@@ -123,6 +124,7 @@ export async function POST(req: NextRequest) {
           duration_days: variant.duration_days,
           paid_at: order.paid_at,
           expires_at: expiresAt.toISOString(),
+          is_premium: !!order.is_premium_order,
         })
       }
 
@@ -135,6 +137,7 @@ export async function POST(req: NextRequest) {
         expires_at: expiresAt.toISOString(),
         days_left: daysLeft,
         hours_left: hoursLeft,
+        is_premium: !!order.is_premium_order,
       })
     }
 

@@ -21,12 +21,17 @@ export default async function EditProductPage({
       product_presets: { orderBy: { sort_order: "asc" } },
       product_functions: { orderBy: { sort_order: "asc" } },
       product_consignments: { orderBy: { created_at: "asc" } },
+      product_shares: { include: { partners: true } },
     },
   })
   if (!product) notFound()
 
   const gifts = await prisma.gifts.findMany({
     orderBy: { sort_order: "asc" }
+  })
+
+  const allPartners = await prisma.partners.findMany({
+    orderBy: { name: "asc" }
   })
 
   const safe = {
@@ -37,6 +42,10 @@ export default async function EditProductPage({
       ...c,
       payout_share: Number(c.payout_share)
     })),
+    product_shares: product.product_shares.map(s => ({
+      ...s,
+      share_pct: Number(s.share_pct)
+    })),
     product_variants: product.product_variants.map((v) => ({ 
       ...v, 
       price: Number(v.price),
@@ -44,5 +53,5 @@ export default async function EditProductPage({
     })),
   }
 
-  return <ProductForm mode="edit" product={safe} allGifts={gifts} />
+  return <ProductForm mode="edit" product={safe} allGifts={gifts} allPartners={allPartners} />
 }

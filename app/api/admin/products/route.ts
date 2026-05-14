@@ -2,8 +2,12 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { validateAdmin } from "@/lib/adminAuth"
 
 export async function GET() {
+  const admin = await validateAdmin()
+  if (!admin.isValid) return admin.response
+
   const products = await prisma.products.findMany({
     orderBy: { created_at: "desc" },
     include: {
@@ -32,6 +36,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const admin = await validateAdmin()
+  if (!admin.isValid) return admin.response
+
   const body = await req.json()
   const { name_en, name_th, slug, description_en, description_th, price, is_active, is_featured, isLower } = body
 

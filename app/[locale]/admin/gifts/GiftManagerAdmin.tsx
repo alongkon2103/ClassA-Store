@@ -253,6 +253,7 @@ export default function GiftManagerAdmin({ initialGifts }: Props) {
               <input
                 type="number"
                 value={form.id}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => setF("id", e.target.value)}
                 disabled={editingId !== null}
                 className={`${input} disabled:opacity-50`}
@@ -275,6 +276,7 @@ export default function GiftManagerAdmin({ initialGifts }: Props) {
               <input
                 type="number"
                 value={form.diamonds}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => setF("diamonds", e.target.value)}
                 className={input}
               />

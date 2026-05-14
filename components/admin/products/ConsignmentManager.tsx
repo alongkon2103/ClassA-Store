@@ -12,19 +12,15 @@ type Consignment = {
 
 type Props = {
   productId: string
-  isConsignment: boolean
-  onToggle: (val: boolean) => void
   initialConsignments: Consignment[]
   onUpdate: (consignments: Consignment[]) => void
-  productPrice: number        // เพิ่มบรรทัดนี้
-  platformCommission: number
-  onCommissionChange: (val: number) => void
+  productPrice: number
+  platformCommission: any
+  onCommissionChange: (val: any) => void
 }
 
 export default function ConsignmentManager({
   productId,
-  isConsignment,
-  onToggle,
   initialConsignments,
   onUpdate,
   productPrice,
@@ -32,10 +28,10 @@ export default function ConsignmentManager({
   onCommissionChange
 }: Props) {
   const t = useTranslations("AdminProductForm")
-  const [list, setList] = useState<Consignment[]>(
+  const [list, setList] = useState<any[]>(
     initialConsignments.length > 0
-      ? initialConsignments.map(c => ({ ...c, payout_share: Number(c.payout_share) }))
-      : [{ owner_name: "", owner_contact: "", payout_share: 100 }]
+      ? initialConsignments.map(c => ({ ...c, payout_share: String(c.payout_share) }))
+      : [{ owner_name: "", owner_contact: "", payout_share: "100" }]
   )
 
   useEffect(() => {
@@ -43,7 +39,7 @@ export default function ConsignmentManager({
   }, [list])
 
   const addOwner = () => {
-    setList([...list, { owner_name: "", owner_contact: "", payout_share: 0 }])
+    setList([...list, { owner_name: "", owner_contact: "", payout_share: "" }])
   }
 
   const removeOwner = (idx: number) => {
@@ -63,39 +59,8 @@ export default function ConsignmentManager({
 
   return (
     <div className="space-y-6">
-      {/* Toggle */}
-      <div className="flex items-center justify-between p-4 bg-bg-card border border-accent/10 rounded-2xl">
-        <div>
-          <p className="text-[14px] font-semibold">{t("consignment_title")}</p>
-          <p className="text-[12px] text-text-muted mt-0.5">
-            {t("consignment_desc")}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => onToggle(!isConsignment)}
-          className={`
-    relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full
-    transition-all duration-200 border-2
-    ${isConsignment
-              ? "bg-accent border-accent"
-              : "bg-slate-300 border-slate-400 dark:bg-zinc-700 dark:border-zinc-600"} 
-    focus:outline-none focus:ring-2 focus:ring-accent/20
-  `}
-        >
-          <span
-            className={`
-      inline-block h-4 w-4 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)]
-      transform transition-transform duration-200 ease-in-out
-      ${isConsignment ? "translate-x-5" : "translate-x-1"}
-    `}
-          />
-        </button>
-      </div>
-
-      {isConsignment && (
-        <div className="space-y-6">
-          {/* Section 1: Platform Share */}
+      <div className="space-y-6">
+        {/* Section 1: Platform Share */}
           <div className="bg-bg-card border border-accent/20 rounded-2xl p-5 shadow-lg shadow-accent/5">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent-light">
@@ -114,7 +79,8 @@ export default function ConsignmentManager({
                     max="100"
                     step="0.5"
                     value={platformCommission}
-                    onChange={(e) => onCommissionChange(Number(e.target.value))}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => onCommissionChange(e.target.value)}
                     className="w-full bg-bg-base border border-accent/30 rounded-xl px-4 py-3 text-[16px] font-bold text-accent-light outline-none focus:border-accent transition"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-accent-light/60 font-bold">%</span>
@@ -193,7 +159,8 @@ export default function ConsignmentManager({
                           <input
                             type="number"
                             value={item.payout_share}
-                            onChange={(e) => updateOwner(idx, "payout_share", Number(e.target.value))}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => updateOwner(idx, "payout_share", e.target.value)}
                             className={input}
                             placeholder="50"
                           />
@@ -266,16 +233,6 @@ export default function ConsignmentManager({
             </p>
           </div>
         </div>
-      )}
-
-      {!isConsignment && (
-        <div className="text-center py-16 text-text-muted text-[14px] bg-bg-card border border-accent/10 border-dashed rounded-3xl">
-          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 opacity-50">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-          </div>
-          {t("consignment_off_desc")}
-        </div>
-      )}
     </div>
   )
 }

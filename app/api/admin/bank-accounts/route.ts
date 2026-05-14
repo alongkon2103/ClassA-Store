@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { validateAdmin } from "@/lib/adminAuth"
 
 export async function POST(req: NextRequest) {
+  const admin = await validateAdmin()
+  if (!admin.isValid) return admin.response
+
   const body = await req.json()
   const { bank_name, account_name, account_number, promptpay_no, qr_code_url, is_active } = body
 

@@ -4,21 +4,43 @@ import { Link, usePathname } from "@/i18n/routing"
 
 import { useTranslations } from "next-intl"
 
-const links = [
-  { href: "/admin", key: "dashboard", icon: "" },
-  { href: "/admin/analytics", key: "analytics", icon: "" },
-  { href: "/admin/products", key: "products", icon: "" },
-  { href: "/admin/consignment", key: "consignment", icon: "" },
-  // { href: "/admin/keys",       key: "game_keys",   icon: "" },
-  { href: "/admin/orders", key: "orders", icon: "" },
-  { href: "/admin/upgrade-premium", key: "nav_title", icon: "" },
-
-  { href: "/admin/users", key: "users", icon: "" },
-  { href: "/admin/gifts", key: "gifts", icon: "" },
-
-  { href: "/admin/tiktok-simulator", key: "tiktok_simulator", icon: "" },
-
-  // { href: "/admin/tiktok-live", key: "TikTok Live", icon: "" },
+const groups = [
+  {
+    title: "overview",
+    items: [
+      { href: "/admin", key: "dashboard" },
+      { href: "/admin/analytics", key: "analytics" },
+    ]
+  },
+  {
+    title: "catalog",
+    items: [
+      { href: "/admin/products", key: "products" },
+      { href: "/admin/gifts", key: "gifts" },
+    ]
+  },
+  {
+    title: "revenue_sharing",
+    items: [
+      { href: "/admin/partners", key: "partners" },
+      { href: "/admin/partnership", key: "partnership_earnings" },
+      { href: "/admin/consignment", key: "consignment" },
+    ]
+  },
+  {
+    title: "operations",
+    items: [
+      { href: "/admin/orders", key: "orders" },
+      { href: "/admin/users", key: "users" },
+      { href: "/admin/upgrade-premium", key: "nav_title" },
+    ]
+  },
+  {
+    title: "tools",
+    items: [
+      { href: "/admin/tiktok-simulator", key: "tiktok_simulator" },
+    ]
+  }
 ]
 
 export default function AdminNav() {
@@ -34,33 +56,39 @@ export default function AdminNav() {
       </div>
 
       {/* Nav Links */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {links.map(({ href, key, icon }) => {
-          const active = href === "/admin"
-            ? pathname === "/admin"
-            : pathname.startsWith(href)
+      <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto custom-scrollbar">
+        {groups.map((group, gIdx) => (
+          <div key={gIdx} className="space-y-1">
+            <p className="px-3 text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 opacity-50">
+              {t(group.title) || group.title.replace("_", " ")}
+            </p>
+            {group.items.map(({ href, key }) => {
+              const active = href === "/admin"
+                ? pathname === "/admin"
+                : pathname.startsWith(href)
 
-          return (
-            <Link key={href} href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all ${active
-                  ? "bg-accent/15 text-accent-light"
-                  : "text-text-muted hover:bg-white/5 hover:text-text-base"
-                }`}
-            >
-              <span className="text-base">{icon}</span>
-              {t(key)}
-              {active && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-accent-light" />
-              )}
-            </Link>
-          )
-        })}
+              return (
+                <Link key={href} href={href}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-xl text-[13px] font-medium transition-all ${active
+                      ? "bg-accent/15 text-accent-light"
+                      : "text-text-muted hover:bg-white/5 hover:text-text-base"
+                    }`}
+                >
+                  <span className="truncate">{t(key)}</span>
+                  {active && (
+                    <span className="ml-auto w-1 h-3 rounded-full bg-accent-light" />
+                  )}
+                </Link>
+              )
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Bottom */}
-      <div className="px-4 py-4 border-t border-accent/10">
+      <div className="px-4 py-4 border-t border-accent/10 bg-bg-card">
         <Link href="/" className="flex items-center gap-2 text-[12px] text-text-muted hover:text-text-base transition">
-          <span>←</span> {t("back_to_store")}
+          {t("back_to_store")}
         </Link>
       </div>
     </aside>

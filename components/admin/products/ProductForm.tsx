@@ -9,6 +9,7 @@ import GiftManager from "./GiftManager"
 import PresetManager from "./PresetManager"
 import FunctionManager from "./FunctionManager"
 import ConsignmentManager from "./ConsignmentManager"
+import PartnershipManager from "./PartnershipManager"
 
 import { useTranslations, useLocale } from "next-intl"
 
@@ -16,14 +17,15 @@ type Props = {
     product?: any
     mode: "create" | "edit"
     allGifts?: any[]
+    allPartners?: any[]
 }
 
-export default function ProductForm({ product, mode, allGifts }: Props) {
+export default function ProductForm({ product, mode, allGifts, allPartners }: Props) {
     const t = useTranslations("AdminProductForm")
     const locale = useLocale()
     const router = useRouter()
     const [saving, setSaving] = useState(false)
-    const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys" | "consignment" | "functions"> ("info")
+    const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys" | "consignment" | "functions" | "partnership"> ("info")
 
     const [form, setForm] = useState({
         name_en: product?.name_en ?? "",
@@ -38,7 +40,7 @@ export default function ProductForm({ product, mode, allGifts }: Props) {
         isLower: product?.isLower ?? false,
 
         is_consignment: product?.is_consignment ?? false,
-        commission_pct: product?.commission_pct ?? 0,
+        commission_pct: product?.commission_pct ?? "",
         owner_name: product?.owner_name ?? "",
         owner_contact: product?.owner_contact ?? "",
 
@@ -46,6 +48,7 @@ export default function ProductForm({ product, mode, allGifts }: Props) {
         discord_role_id: product?.discord_role_id ?? "",
         discord_guild_id: product?.discord_guild_id ?? "",
         consignments: product?.product_consignments ?? [],
+        partnership_shares: product?.product_shares ?? [],
     })
 
     const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
@@ -65,10 +68,20 @@ export default function ProductForm({ product, mode, allGifts }: Props) {
         setSaving(true)
         const url = mode === "create" ? "/api/admin/products" : `/api/admin/products/${product.id}`
         const method = mode === "create" ? "POST" : "PATCH"
+
+        // Prepare clean data based on exclusive mode
+        const submissionData = {
+            ...form,
+            price: Number(form.price),
+            commission_pct: form.is_consignment ? Number(form.commission_pct || 0) : 0,
+            consignments: form.is_consignment ? form.consignments : [],
+            partnership_shares: form.is_consignment ? [] : form.partnership_shares,
+        }
+
         const res = await fetch(url, {
             method,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...form, price: Number(form.price) }),
+            body: JSON.stringify(submissionData),
         })
         const data = await res.json()
         setSaving(false)
@@ -83,8 +96,9 @@ export default function ProductForm({ product, mode, allGifts }: Props) {
         { key: "images", label: t("tab_images"), hidden: mode === "create" },
         { key: "gifts", label: t("tab_gifts"), hidden: mode === "create" },
         { key: "presets", label: t("tab_presets"), hidden: mode === "create" },
-        { key: "keys", label: t("tab_keys"), hidden: mode === "create" },
-        { key: "consignment", label: t("tab_consignment"), hidden: mode === "create" },
+        // { key: "keys", label: t("tab_keys"), hidden: mode === "create" }, // Hiding Game Keys UI
+        { key: "consignment", label: t("tab_consignment"), hidden: mode === "create" || !form.is_consignment },
+        { key: "partnership", label: t("tab_partnership"), hidden: mode === "create" || form.is_consignment },
         { key: "functions", label: "Functions", hidden: mode === "create" },
     ] as const
 
@@ -146,7 +160,9 @@ export default function ProductForm({ product, mode, allGifts }: Props) {
                     </Field>
 
                     <Field label={t("label_price")} required>
-                        <input type="number" value={form.price} onChange={(e) => set("price", e.target.value)}
+                        <input type="number" value={form.price} 
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => set("price", e.target.value)}
                             placeholder="550" className={input} />
                     </Field>
 
@@ -187,6 +203,59 @@ export default function ProductForm({ product, mode, allGifts }: Props) {
                             rows={3} placeholder="Thai description..." className={`${input} resize-none`} />
                     </Field>
 
+                    {/* Revenue Model Selection */}
+                    <Field label="Revenue Model" className="lg:col-span-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => set("is_consignment", false)}
+                                className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${!form.is_consignment
+                                        ? "border-accent bg-accent/5 ring-4 ring-accent/5"
+                                        : "border-accent/10 bg-bg-card hover:border-accent/30"
+                                    }`}
+                            >
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${!form.is_consignment ? "bg-accent text-white" : "bg-white/5 text-text-muted"
+                                    }`}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                    </svg>
+                                </div>
+                                <div className="text-left">
+                                    <p className={`text-[15px] font-bold ${!form.is_consignment ? "text-text-base" : "text-text-muted"}`}>
+                                        Standard / Partnership
+                                    </p>
+                                    <p className="text-[11px] text-text-muted opacity-80">
+                                        In-house product with internal profit sharing.
+                                    </p>
+                                </div>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => set("is_consignment", true)}
+                                className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${form.is_consignment
+                                        ? "border-accent bg-accent/5 ring-4 ring-accent/5"
+                                        : "border-accent/10 bg-bg-card hover:border-accent/30"
+                                    }`}
+                            >
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${form.is_consignment ? "bg-accent text-white" : "bg-white/5 text-text-muted"
+                                    }`}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                    </svg>
+                                </div>
+                                <div className="text-left">
+                                    <p className={`text-[15px] font-bold ${form.is_consignment ? "text-text-base" : "text-text-muted"}`}>
+                                        Consignment
+                                    </p>
+                                    <p className="text-[11px] text-text-muted opacity-80">
+                                        External vendor product with platform fee.
+                                    </p>
+                                </div>
+                            </button>
+                        </div>
+                    </Field>
+
                     {/* Toggles */}
                     <div className="lg:col-span-2 flex flex-wrap gap-3">
                         {([
@@ -196,11 +265,11 @@ export default function ProductForm({ product, mode, allGifts }: Props) {
                         ] as const).map(({ key, label, desc }) => (
                             <button key={key} onClick={() => set(key, !form[key])}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition ${form[key]
-                                    ? "border-accent/30 bg-accent/10 text-accent-light"
-                                    : "border-white/10 text-text-muted hover:border-white/20"
+                                    ? "border-accent/40 bg-accent/10 text-accent-light"
+                                    : "border-accent/10 bg-bg-card text-text-muted hover:border-accent/30"
                                     }`}>
-                                <div className={`w-8 h-4 rounded-full transition-colors relative ${form[key] ? "bg-accent" : "bg-white/10"}`}>
-                                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${form[key] ? "left-4" : "left-0.5"}`} />
+                                <div className={`w-8 h-4 rounded-full transition-colors relative ${form[key] ? "bg-accent" : "bg-slate-300 dark:bg-white/10"}`}>
+                                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-all ${form[key] ? "left-4" : "left-0.5"}`} />
                                 </div>
                                 <div className="text-left">
                                     <p className="text-[13px] font-medium">{label}</p>
@@ -231,13 +300,21 @@ export default function ProductForm({ product, mode, allGifts }: Props) {
             {activeTab === "consignment" && (
                 <ConsignmentManager 
                     productId={product.id}
-                    isConsignment={form.is_consignment}
-                    onToggle={(val) => set("is_consignment", val)}
                     initialConsignments={form.consignments}
                     onUpdate={(list) => set("consignments", list)}
                     productPrice={Number(form.price)}
                     platformCommission={Number(form.commission_pct)}
                     onCommissionChange={(val) => set("commission_pct", val)}
+                />
+            )}
+
+            {/* Tab: Partnership */}
+            {activeTab === "partnership" && (
+                <PartnershipManager
+                    productId={product.id}
+                    allPartners={allPartners ?? []}
+                    initialShares={form.partnership_shares}
+                    onUpdate={(list) => set("partnership_shares", list)}
                 />
             )}
             {activeTab === "functions" && (
@@ -259,4 +336,4 @@ function Field({ label, children, required, className = "" }: any) {
     )
 }
 
-const input = "w-full bg-bg-base border border-accent/15 rounded-xl px-4 py-2.5 text-[13px] placeholder:text-text-muted outline-none focus:border-accent/40 transition"
+const input = "w-full bg-bg-input border border-accent/20 rounded-xl px-4 py-2.5 text-[13px] text-text-base placeholder:text-text-muted outline-none focus:border-accent/50 focus:ring-4 focus:ring-accent/5 transition"

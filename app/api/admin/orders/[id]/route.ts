@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { validateAdmin } from "@/lib/adminAuth"
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const admin = await validateAdmin()
+  if (!admin.isValid) return admin.response
+
   const { id }  = await params
   const body    = await req.json()
 

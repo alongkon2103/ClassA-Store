@@ -19,20 +19,22 @@
   --color-overlay: rgba(4, 10, 18, 0.85);
   --color-shadow: rgba(0, 0, 0, 0.6);
   --color-navbar-bg: rgba(7, 16, 26, 0.9);
+  --color-bg-input: #07101a;
 }
 
 [data-theme="light"] {
-  --color-bg-base: #f8fafc;
+  --color-bg-base: #f1f5f9;
   --color-bg-surface: #ffffff;
   --color-bg-card: #ffffff;
+  --color-bg-input: #ffffff;
   --color-text-base: #0f172a;
-  --color-text-muted: #64748b;
+  --color-text-muted: #475569;
   --color-gold: #b45309;
-  --color-border-soft: rgba(0, 0, 0, 0.08);
-  --color-border-hover: rgba(66, 122, 181, 0.3);
+  --color-border-soft: rgba(0, 0, 0, 0.1);
+  --color-border-hover: rgba(66, 122, 181, 0.4);
   --color-overlay: rgba(255, 255, 255, 0.85);
-  --color-shadow: rgba(0, 0, 0, 0.1);
-  --color-navbar-bg: rgba(248, 250, 252, 0.9);
+  --color-shadow: rgba(0, 0, 0, 0.05);
+  --color-navbar-bg: rgba(241, 245, 249, 0.9);
 }
 
 @theme {
@@ -42,6 +44,7 @@
   --color-bg-base: var(--color-bg-base);
   --color-bg-surface: var(--color-bg-surface);
   --color-bg-card: var(--color-bg-card);
+  --color-bg-input: var(--color-bg-input);
   --color-text-base: var(--color-text-base);
   --color-text-muted: var(--color-text-muted);
   --color-gold: var(--color-gold);

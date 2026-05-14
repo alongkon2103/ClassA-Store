@@ -213,10 +213,36 @@ model products {
   product_presets       product_presets[]
   product_variants      product_variants[]
   product_consignments  product_consignments[]
+  product_shares        product_shares[]
   user_whitelist_access user_whitelist_access[]
   premium_upgrades      premium_upgrades[]
 
   @@index([is_consignment], map: "idx_products_consignment")
+}
+
+model partners {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String           @db.VarChar
+  contact        String?          @db.VarChar
+  bank_name      String?          @db.VarChar
+  account_number String?          @db.VarChar
+  created_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  product_shares product_shares[]
+}
+
+model product_shares {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id String   @db.Uuid
+  partner_id String   @db.Uuid
+  share_pct  Decimal  @db.Decimal(5, 2)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  products products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  partners partners @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id])
+  @@index([partner_id])
 }
 
 model product_consignments {

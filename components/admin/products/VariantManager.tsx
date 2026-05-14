@@ -6,9 +6,9 @@ import { useRouter } from "@/i18n/routing"
 const blankVariant = {
   label_en: "", label_th: "",
   duration_type: "permanent", duration_days: "",
-  price: "", sort_order: 0, is_active: true,
+  price: "", sort_order: "", is_active: true,
   variant_type: "normal",
-  premium_addon_price: 0,
+  premium_addon_price: "",
 }
 
 export default function VariantManager({ productId, variants }: { productId: string; variants: any[] }) {
@@ -49,6 +49,7 @@ export default function VariantManager({ productId, variants }: { productId: str
         price: form.variant_type === "premium" ? 0 : Number(form.price),
         premium_addon_price: Number(form.premium_addon_price),
         duration_days: form.duration_type === "days" ? Number(form.duration_days) : null,
+        sort_order: Number(form.sort_order || 0),
       }),
     })
     const data = await res.json()
@@ -160,7 +161,10 @@ export default function VariantManager({ productId, variants }: { productId: str
                 </div>
                 <div>
                   <label className={lbl}>Display Sort Order</label>
-                  <input type="number" value={form.sort_order} onChange={(e) => set("sort_order", Number(e.target.value))} className={inp} />
+                  <input type="number" 
+                    value={form.sort_order} 
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => set("sort_order", e.target.value)} className={inp} />
                 </div>
             </div>
 
@@ -179,12 +183,16 @@ export default function VariantManager({ productId, variants }: { productId: str
                   {form.duration_type === "days" && (
                     <div>
                       <label className={lbl}>Number of Days</label>
-                      <input type="number" value={form.duration_days} onChange={(e) => set("duration_days", e.target.value)} className={inp} />
+                      <input type="number" value={form.duration_days} 
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => set("duration_days", e.target.value)} className={inp} />
                     </div>
                   )}
                   <div>
                     <label className={lbl}>Price (฿)</label>
-                    <input type="number" value={form.price} onChange={(e) => set("price", e.target.value)} className={`${inp} text-lg font-bold text-accent-light`} />
+                    <input type="number" value={form.price} 
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => set("price", e.target.value)} className={`${inp} text-lg font-bold text-accent-light`} />
                   </div>
                 </div>
               ) : (
@@ -199,6 +207,7 @@ export default function VariantManager({ productId, variants }: { productId: str
                     <label className={lbl}>Extra Price to Add (฿)</label>
                     <input type="number" 
                       value={form.premium_addon_price} 
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => set("premium_addon_price", e.target.value)}
                       placeholder="เช่น 50" 
                       className={`${inp} text-xl font-bold text-yellow-500 border-yellow-500/40`} 

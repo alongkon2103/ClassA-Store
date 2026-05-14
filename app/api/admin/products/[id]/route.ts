@@ -1,13 +1,16 @@
-//api/admin/products/[id]
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { validateAdmin } from "@/lib/adminAuth"
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const admin = await validateAdmin()
+  if (!admin.isValid) return admin.response
+
   const { id } = await params
-  const { consignments, ...rest } = await req.json()
+  const { consignments, partnership_shares, ...rest } = await req.json()
 
   const result = await prisma.$transaction(async (tx) => {
     // 1. Update product main info
@@ -24,12 +27,7 @@ export async function PATCH(
 
     // 2. Handle consignments if provided
     if (consignments) {
-      // Clear old ones
-      await tx.product_consignments.deleteMany({
-        where: { product_id: id }
-      })
-
-      // Create new ones
+      await tx.product_consignments.deleteMany({ where: { product_id: id } })
       if (consignments.length > 0) {
         await tx.product_consignments.createMany({
           data: consignments.map((c: any) => ({
@@ -37,6 +35,20 @@ export async function PATCH(
             owner_name: c.owner_name,
             owner_contact: c.owner_contact,
             payout_share: Number(c.payout_share)
+          }))
+        })
+      }
+    }
+
+    // 3. Handle partnership shares if provided
+    if (partnership_shares) {
+      await tx.product_shares.deleteMany({ where: { product_id: id } })
+      if (partnership_shares.length > 0) {
+        await tx.product_shares.createMany({
+          data: partnership_shares.map((s: any) => ({
+            product_id: id,
+            partner_id: s.partner_id,
+            share_pct: Number(s.share_pct)
           }))
         })
       }
@@ -52,6 +64,9 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const admin = await validateAdmin()
+  if (!admin.isValid) return admin.response
+
   const { id } = await params
 
   await prisma.products.delete({ where: { id } })
