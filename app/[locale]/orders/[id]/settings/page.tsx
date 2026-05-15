@@ -79,6 +79,7 @@ export default async function GameSettingsPage({ params }: Props) {
                 productName={productName}
                 productSlug={order.products.slug}
                 whitelistedUsername={order.whitelisted_username}
+                tutorialVideoUrl={order.products.tutorial_video_url}
                 functions={order.products.product_functions}
                 gifts={gifts}
                 savedMapping={savedMapping}

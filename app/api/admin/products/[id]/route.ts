@@ -19,8 +19,8 @@ export async function PATCH(
       where: { id },
       data: {
         ...rest,
-        owner_name: firstOwner ? firstOwner.owner_name : (rest.owner_name ?? null),
-        owner_contact: firstOwner ? firstOwner.owner_contact : (rest.owner_contact ?? null),
+        owner_name: firstOwner ? firstOwner.owner_name : (rest.owner_name ?? undefined),
+        owner_contact: firstOwner ? firstOwner.owner_contact : (rest.owner_contact ?? undefined),
         updated_at: new Date(),
       },
     })

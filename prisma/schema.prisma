@@ -204,6 +204,8 @@ model products {
   info_page_url    String?
   discord_role_id  String?   @db.VarChar
   discord_guild_id String?   @db.VarChar
+  youtube_url      String?
+  tutorial_video_url String?
 
   game_keys             game_keys[]
   orders                orders[]

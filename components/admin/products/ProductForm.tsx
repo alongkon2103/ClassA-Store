@@ -45,6 +45,8 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
         owner_contact: product?.owner_contact ?? "",
 
         info_page_url: product?.info_page_url ?? "",
+        youtube_url: product?.youtube_url ?? "",
+        tutorial_video_url: product?.tutorial_video_url ?? "",
         discord_role_id: product?.discord_role_id ?? "",
         discord_guild_id: product?.discord_guild_id ?? "",
         consignments: product?.product_consignments ?? [],
@@ -171,6 +173,24 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
                             value={form.info_page_url}
                             onChange={(e) => set("info_page_url", e.target.value)}
                             placeholder="https://roblox.com"
+                            className={input}
+                        />
+                    </Field>
+
+                    <Field label={t("label_youtube_url")}>
+                        <input
+                            value={form.youtube_url}
+                            onChange={(e) => set("youtube_url", e.target.value)}
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            className={input}
+                        />
+                    </Field>
+
+                    <Field label={t("label_tutorial_video_url")}>
+                        <input
+                            value={form.tutorial_video_url}
+                            onChange={(e) => set("tutorial_video_url", e.target.value)}
+                            placeholder="https://www.youtube.com/watch?v=..."
                             className={input}
                         />
                     </Field>

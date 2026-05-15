@@ -38,11 +38,12 @@ type Props = {
     locale: string
     isPremium: boolean
     premiumAddonPrice: number
+    tutorialVideoUrl?: string | null
 }
 
 export default function GameSettingsClient({
     orderId, orderType, expiresAt, productName, productSlug, whitelistedUsername, functions, gifts,
-    savedMapping, savedTiktokUsername, locale, isPremium, premiumAddonPrice,
+    savedMapping, savedTiktokUsername, locale, isPremium, premiumAddonPrice, tutorialVideoUrl
 }: Props) {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -52,6 +53,17 @@ export default function GameSettingsClient({
 
     const [timeLeft, setTimeLeft] = useState<number | null>(null)
     const [isExpired, setIsExpired] = useState(false)
+
+    const getYoutubeEmbedUrl = (url: string | null | undefined) => {
+        if (!url) return null
+        let videoId = ""
+        if (url.includes("youtube.com/watch?v=")) videoId = url.split("v=")[1].split("&")[0]
+        else if (url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1].split("?")[0]
+        else if (url.includes("youtube.com/embed/")) videoId = url.split("embed/")[1].split("?")[0]
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : null
+    }
+
+    const tutorialEmbedUrl = getYoutubeEmbedUrl(tutorialVideoUrl)
 
     useEffect(() => {
         if (orderType === "TRIAL" && expiresAt) {
@@ -679,6 +691,20 @@ export default function GameSettingsClient({
                                     <p className="text-text-base font-medium">{tD("release_intro")}</p>
                                     <p>{tD("release_sub")}</p>
                                 </div>
+
+                                {tutorialEmbedUrl && (
+                                    <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-black shadow-2xl">
+                                        <iframe
+                                            width="100%"
+                                            height="100%"
+                                            src={`${tutorialEmbedUrl}?rel=0&modestbranding=1`}
+                                            title="Tutorial video player"
+                                            frameBorder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            allowFullScreen
+                                        ></iframe>
+                                    </div>
+                                )}
 
                                 <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-5">
                                     <p className="text-red-400 font-bold mb-1">{tD("warning_title")}</p>

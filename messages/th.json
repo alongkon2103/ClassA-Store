@@ -458,6 +458,8 @@
     "label_slug": "สลัก (Slug)",
     "label_price": "ราคาเริ่มต้น (฿)",
     "label_info_url": "URL หน้ารายละเอียด",
+    "label_youtube_url": "URL วิดีโอ YouTube",
+    "label_tutorial_video_url": "URL วิดีโอสอนใช้งาน",
     "label_discord_role": "Discord Role ID",
     "label_discord_guild": "Discord Guild ID",
     "label_desc_en": "คำอธิบาย (EN)",

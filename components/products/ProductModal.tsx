@@ -157,8 +157,18 @@ export default function ProductModal({ product, onClose }: any) {
   const toUSD = (thbPrice: number) => usdRate ? (Number(thbPrice) * usdRate).toFixed(2) : null
   const totalPriceUSD = toUSD(totalPrice)
 
+  const getYoutubeEmbedUrl = (url: string) => {
+    if (!url) return null
+    let videoId = ""
+    if (url.includes("youtube.com/watch?v=")) videoId = url.split("v=")[1].split("&")[0]
+    else if (url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1].split("?")[0]
+    else if (url.includes("youtube.com/embed/")) videoId = url.split("embed/")[1].split("?")[0]
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null
+  }
+
+  const youtubeEmbedUrl = getYoutubeEmbedUrl(product.youtube_url)
   const images = product.product_images?.length > 0 ? product.product_images : [{ url: "/placeholder.png" }]
-  const total = images.length
+  const total = images.length + (youtubeEmbedUrl ? 1 : 0)
   const usernameHelpImages = ["/uploads/userHelp.png"]
 
   const prev = useCallback(() => setIndex((p) => Math.max(p - 1, 0)), [])
@@ -259,6 +269,19 @@ export default function ProductModal({ product, onClose }: any) {
               {images.map((img: any, i: number) => (
                 <img key={i} src={getImageUrl(img.url)} alt="" className="min-w-full h-full object-cover" />
               ))}
+              {youtubeEmbedUrl && (
+                <div className="min-w-full h-full bg-black flex items-center justify-center">
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    src={`${youtubeEmbedUrl}?rel=0&modestbranding=1`}
+                    title="YouTube video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              )}
             </div>
             <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center transition">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -282,6 +305,14 @@ export default function ProductModal({ product, onClose }: any) {
                   <img src={getImageUrl(img.url)} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
+              {youtubeEmbedUrl && (
+                <button 
+                  onClick={() => setIndex(images.length)} 
+                  className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all bg-black flex items-center justify-center ${index === images.length ? "ring-2 ring-accent opacity-100" : "opacity-40"}`}
+                >
+                   <svg width="24" height="24" viewBox="0 0 24 24" fill="red" stroke="red" strokeWidth="1"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2c.46-1.7.46-5.33.46-5.33a29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="white"/></svg>
+                </button>
+              )}
             </div>
           )}
 

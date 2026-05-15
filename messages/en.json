@@ -456,6 +456,8 @@
     "label_slug": "Slug",
     "label_price": "Base Price (฿)",
     "label_info_url": "Info Page URL",
+    "label_youtube_url": "YouTube Video URL",
+    "label_tutorial_video_url": "Tutorial Video URL",
     "label_discord_role": "Discord Role ID",
     "label_discord_guild": "Discord Guild ID",
     "label_desc_en": "Description (EN)",
