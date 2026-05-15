@@ -9,24 +9,24 @@ import { prisma } from "@/lib/prisma"
 export const authOptions: AuthOptions = {
     providers: [
         // ── DEV ONLY mock admin ──────────────────────────────────────
-        ...(process.env.NODE_ENV === "development"
-            ? [
-                CredentialsProvider({
-                    id: "dev-admin",
-                    name: "Dev Admin",
-                    credentials: {},
-                    async authorize() {
-                        return {
-                            id: "e4ce8ce4-740c-42f3-9cf1-a1b16a30baba", // ← UUID จริงๆ
-                            name: "Dev Admin",
-                            email: "admin@dev.local",
-                            image: null,
-                            role: "admin",
-                        }
-                    },
-                }),
-            ]
-            : []),
+        // ...(process.env.NODE_ENV === "development"
+        //     ? [
+        //         CredentialsProvider({
+        //             id: "dev-admin",
+        //             name: "Dev Admin",
+        //             credentials: {},
+        //             async authorize() {
+        //                 return {
+        //                     id: "e4ce8ce4-740c-42f3-9cf1-a1b16a30baba", // ← UUID จริงๆ
+        //                     name: "Dev Admin",
+        //                     email: "admin@dev.local",
+        //                     image: null,
+        //                     role: "admin",
+        //                 }
+        //             },
+        //         }),
+        //     ]
+        //     : []),
         // ────────────────────────────────────────────────────────────
 
         DiscordProvider({

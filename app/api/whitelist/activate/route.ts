@@ -85,9 +85,15 @@ export async function POST(req: NextRequest) {
     const order = await prisma.orders.findFirst({
       where: {
         id: licenseKey,
-        status: "paid",
+
+        // อนุญาตทั้ง paid และ Admin Buy
+        status: {
+          in: ["paid", "Admin Buy"],
+        },
+
         whitelist_status: "whitelisted",
       },
+
       include: {
         user_function_gifts: {
           include: {

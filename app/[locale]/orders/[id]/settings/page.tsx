@@ -46,11 +46,10 @@ export default async function GameSettingsPage({ params }: Props) {
     if (
         !order ||
         order.user_id !== session.user.id ||
-        order.status !== "paid"
+        (order.status !== "paid" && order.status !== "Admin Buy")
     ) {
         notFound()
     }
-
     // หา variant_type = "premium" จาก products.product_variants
     const premiumAddonPrice = Number(
         order.products?.product_variants?.find(

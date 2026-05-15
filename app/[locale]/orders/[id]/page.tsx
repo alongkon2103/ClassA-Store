@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import { format } from "date-fns"
 import Image from "next/image"
-import { Link } from "@/i18n/routing"
+import { Link, useRouter } from "@/i18n/routing"
 import { setRequestLocale, getTranslations } from "next-intl/server"
 import OrderStatusPoller from "@/components/orders/OrderStatusPoller"
 import { getImageUrl } from "@/lib/getImageUrl"
@@ -15,21 +15,21 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
     const t = await getTranslations("Orders")
 
     const order = await prisma.orders.findUnique({
-    where: { id },
-    include: {
-        game_keys: true,
-        product_variants: true,
-        products: {
-            include: {
-                product_functions: { orderBy: { sort_order: "asc" } },
-                product_images: { orderBy: { sort_order: "asc" }, take: 1 },
-                product_gifts: { orderBy: { sort_order: "asc" } },
-                product_presets: { orderBy: { sort_order: "asc" } },
-                
+        where: { id },
+        include: {
+            game_keys: true,
+            product_variants: true,
+            products: {
+                include: {
+                    product_functions: { orderBy: { sort_order: "asc" } },
+                    product_images: { orderBy: { sort_order: "asc" }, take: 1 },
+                    product_gifts: { orderBy: { sort_order: "asc" } },
+                    product_presets: { orderBy: { sort_order: "asc" } },
+
+                },
             },
         },
-    },
-})
+    })
 
     if (!order) {
         return (
@@ -82,38 +82,6 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
                     {/* Main Content (Left) */}
                     <div className="lg:col-span-8 space-y-6 md:space-y-8">
-
-                        {/* 🔑 THE KEY SECTION */}
-                        {/* <div className="relative group">
-                            <div className="absolute -inset-0.5 bg-gradient-to-r from-accent to-accent-light opacity-10 rounded-2xl md:rounded-3xl blur transition duration-1000"></div>
-                            <div className="relative bg-bg-card border border-accent/10 rounded-2xl md:rounded-3xl p-5 md:p-8 overflow-hidden">
-                                <h2 className="text-lg font-bold text-text-base mb-6 flex items-center gap-2">
-                                    <span className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-accent/20 flex items-center justify-center text-accent-light">
-                                        <KeyIcon />
-                                    </span>
-                                    {t("license_details")}
-                                </h2>
-
-                                {order.status === "paid" ? (
-                                    <div className="space-y-4">
-                                        <div className="bg-bg-base/50 border border-accent/10 rounded-xl md:rounded-2xl p-4 md:p-6 text-center group/key relative overflow-hidden">
-                                            <p className="font-mono text-lg md:text-2xl font-bold tracking-wider text-accent-light break-all relative z-10">
-                                                {order.game_keys?.key_value || t("processing_key")}
-                                            </p>
-                                        </div>
-                                        <p className="text-[12px] text-text-muted text-center italic">
-                                            {t("activation_hint")}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="py-10 text-center">
-                                        <div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-4"></div>
-                                        <p className="text-text-muted text-[14px]">{t("waiting_confirmation")}</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div> */}
-
                         <div className="relative group">
                             <div className="absolute -inset-0.5 bg-gradient-to-r from-accent to-accent-light opacity-10 rounded-2xl md:rounded-3xl blur transition duration-1000"></div>
 
@@ -126,7 +94,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                     Access Information
                                 </h2>
 
-                                {order.status === "paid" ? (
+                                {order.status === "paid" || order.status === "Admin Buy"   ? (
                                     <div className="space-y-5">
                                         <div className="bg-bg-base/50 border border-accent/10 rounded-xl md:rounded-2xl p-5 md:p-6">
                                             <p className="text-[16px] md:text-[18px] font-semibold text-text-base mb-2">
@@ -167,56 +135,24 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                             </div>
                         </div>
 
-                        {/* 🎁 ASSETS SECTION */}
-                          <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
-                            <div className="relative bg-gradient-to-r from-accent/20 via-accent/10 to-transparent px-4 py-3 border-b border-accent/10 overflow-hidden">
-                                <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-accent/10 blur-2xl pointer-events-none" />
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-lg bg-accent/20 border border-accent/30 flex items-center justify-center">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light">
-                                            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p className="text-[12px] font-bold">{t("downloadApp") || "โปรแกรมของร้าน"}</p>
-                                        <p className="text-[10px] text-text-muted">{t("downloadAppSub") || "สำหรับ TikTok Live"}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="p-4 space-y-3">
+                        <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+                            <Link
+                                href={`/orders/${order.id}/settings`}
+                                className="w-full flex items-center justify-between gap-3 bg-bg-base/30 hover:bg-accent/10 border border-accent/10 hover:border-accent/20 text-text-base px-4 py-3.5 rounded-xl transition group"
+                            >
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 flex items-center justify-center flex-shrink-0">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light">
-                                            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
-                                        </svg>
+                                    <div className="w-8 h-8 bg-accent/10 group-hover:bg-accent/20 rounded-lg flex items-center justify-center transition-colors">
+                                        <SettingsIcon size={16} className="text-accent-light" />
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-[13px] font-bold">AclassStore Live</p>
-                                            <span className="text-[9px] font-bold bg-accent/15 text-accent-light px-1.5 py-0.5 rounded border border-accent/20">v3.0</span>
-                                        </div>
-                                        <p className="text-[10px] text-text-muted mt-0.5">{t("downloadDesc") || "จัดการร้านค้า · TikTok Live"}</p>
-                                        <div className="flex items-center gap-1.5 mt-1">
-                                            <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded-full">Windows</span>
-                                            <span className="text-[9px] text-text-muted">.exe · 45 MB</span>
-                                        </div>
+                                    <div className="text-left">
+                                        <p className="text-[13px] font-semibold text-text-base">Game Settings</p>
+                                        <p className="text-[11px] text-text-muted">ตั้งค่า function → gift</p>
                                     </div>
                                 </div>
-                                <a href="https://github.com/alongkon2103/AclassStore-Live/releases/latest/download/AclassStoreLiveV3.exe" download className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent hover:opacity-90 active:scale-[0.98] text-white text-[12px] font-bold rounded-xl transition-all shadow-lg shadow-accent/20">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                                    </svg>
-                                    {t("download_Program") || "ดาวน์โหลดโปรแกรม"}
-                                </a>
-                                <div className="flex items-start gap-1.5">
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500/70 flex-shrink-0 mt-0.5">
-                                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                                    </svg>
-                                    <p className="text-[10px] text-text-muted leading-relaxed">{t("downloadHint") || "Windows อาจแจ้งเตือน ให้กด \"Keep anyway\""}</p>
-                                </div>
-                            </div>
+                                <ChevronRightIcon size={16} className="text-text-muted group-hover:text-accent-light transition" />
+                            </Link>
                         </div>
-                        {order.status === "paid" && (order.products.product_gifts.length > 0 || order.products.product_presets.length > 0) && (
+                        {(order.status === "paid" || order.status === "Admin Buy" ) && (order.products.product_gifts.length > 0 || order.products.product_presets.length > 0) && (
                             <div className="bg-bg-card border border-accent/10 rounded-2xl md:rounded-3xl p-5 md:p-8">
                                 <h2 className="text-lg font-bold text-text-base mb-6 md:mb-8 flex items-center gap-2">
                                     <span className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-400 text-[14px]">
@@ -291,7 +227,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                             </div>
                                         )
                                     })}
-                               
+
                                 </div>
                             </div>
                         )}
@@ -413,6 +349,22 @@ function DownloadIcon({ size = 20, className = "" }: { size?: number, className?
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+    )
+}
+function ChevronRightIcon({ size = 20, className = "" }: { size?: number; className?: string }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <polyline points="9 18 15 12 9 6" />
+        </svg>
+    )
+}
+
+function SettingsIcon({ size = 20, className = "" }: { size?: number; className?: string }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+            <circle cx="12" cy="12" r="3" />
         </svg>
     )
 }

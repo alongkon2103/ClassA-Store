@@ -50,7 +50,7 @@ export default async function AdminDashboard({
     // Pending orders
     prisma.orders.count({
       where: {
-        status: "paid",
+        status: "pending",
         fulfilled_at: null,
       },
     }),

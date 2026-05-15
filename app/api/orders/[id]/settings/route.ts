@@ -38,45 +38,53 @@ export async function GET(_req: Request, { params }: RouteContext) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
     }
 }
-
 export async function POST(req: Request, { params }: RouteContext) {
     try {
         const session = await getServerSession(authOptions)
         if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+        const userId = session.user.id // ← assert ให้ชัดก่อน
+
         const { id } = await params
 
         const order = await prisma.orders.findUnique({ where: { id } })
 
-        if (!order || order.user_id !== session.user.id || order.status !== "paid") {
-            return NextResponse.json({ error: "Not found" }, { status: 404 })
+        if (!order || order.user_id !== userId) {
+            return NextResponse.json({ error: "Order not found" }, { status: 404 })
+        }
+
+        // ← แยก check status ออกมา เพื่อ debug ได้ง่ายขึ้น
+        if (order.status !== "paid" && order.status !== "Admin Buy") {
+            return NextResponse.json(
+                {
+                    error: `Order status is '${order.status}', expected 'paid' or 'Admin Buy'`,
+                },
+                { status: 403 }
+            )
         }
 
         const body = await req.json()
         const mapping: Record<string, number> = body.mapping || {}
         const isPremium = !!order.is_premium_order
 
-        // บันทึก tiktok_username ลง orders (ทำได้ทุกคน)
         await prisma.orders.update({
             where: { id },
             data: { tiktok_username: body.tiktok_username ?? null },
         })
 
-        // บันทึก mapping (ทำได้เฉพาะ Premium เท่านั้น)
-        if (isPremium) {
-            // Upsert mapping function → gift
+        if (isPremium && Object.keys(mapping).length > 0) {
             await prisma.$transaction(
                 Object.entries(mapping).map(([functionId, giftId]) =>
                     prisma.user_function_gifts.upsert({
                         where: {
                             user_id_order_id_function_id: {
-                                user_id: session.user.id,
+                                user_id: userId, // ← ใช้ userId ที่ assert แล้ว
                                 order_id: id,
                                 function_id: functionId,
                             },
                         },
                         create: {
-                            user_id: session.user.id,
+                            user_id: userId,
                             order_id: id,
                             function_id: functionId,
                             gift_id: Number(giftId),
@@ -88,10 +96,9 @@ export async function POST(req: Request, { params }: RouteContext) {
                 )
             )
 
-            // ลบรายการที่ user เอาออก
             await prisma.user_function_gifts.deleteMany({
                 where: {
-                    user_id: session.user.id,
+                    user_id: userId,
                     order_id: id,
                     function_id: { notIn: Object.keys(mapping) },
                 },

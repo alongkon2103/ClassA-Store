@@ -133,6 +133,21 @@ export default function GameSettingsClient({
         finally { setUpgrading(false) }
     }
 
+    // const handleSave = async () => {
+    //     try {
+    //         setSaving(true)
+    //         const res = await fetch(`/api/orders/${orderId}/settings`, {
+    //             method: "POST",
+    //             headers: { "Content-Type": "application/json" },
+    //             body: JSON.stringify({ mapping, tiktok_username: tiktokUsername.trim() || null }),
+    //         })
+    //         if (!res.ok) throw new Error()
+    //         router.refresh()
+    //         alert(t("saveSuccess") || "Saved successfully")
+    //     } catch (e) { alert(t("saveFailed")) }
+    //     finally { setSaving(false) }
+    // }
+    // GameSettingsClient.tsx - handleSave
     const handleSave = async () => {
         try {
             setSaving(true)
@@ -141,13 +156,25 @@ export default function GameSettingsClient({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ mapping, tiktok_username: tiktokUsername.trim() || null }),
             })
-            if (!res.ok) throw new Error()
+
+            // ← ดู response body ก่อน throw เพื่อให้รู้ว่า error อะไร
+            const data = await res.json()
+
+            if (!res.ok) {
+                console.error("Save failed:", data)
+                alert(`${t("saveFailed")}: ${data.error || res.status}`)
+                return
+            }
+
             router.refresh()
             alert(t("saveSuccess") || "Saved successfully")
-        } catch (e) { alert(t("saveFailed")) }
-        finally { setSaving(false) }
+        } catch (e) {
+            console.error("Save error:", e)
+            alert(t("saveFailed"))
+        } finally {
+            setSaving(false)
+        }
     }
-
     const getGift = (giftId: number) => gifts.find(g => g.id === giftId)
 
     const filteredGifts = useMemo(() => {
@@ -174,7 +201,7 @@ export default function GameSettingsClient({
                         </div>
                         {isPremium && (
                             <span
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-accent/25 bg-accent/10 text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-light whitespace-nowrap"> 
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-accent/25 bg-accent/10 text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-light whitespace-nowrap">
                                 <span className="w-1.5 h-1.5 rounded-full bg-accent-light shrink-0" />
                                 Premium
                             </span>

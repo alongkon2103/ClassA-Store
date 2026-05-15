@@ -422,8 +422,8 @@
     "saveSuccess": "Saved successfully",
     "saveFailed": "Failed to save. Please try again.",
     "upgradeSuccess": "Upgrade successful! You are now Premium.",
-    "premiumLifetime": "Lifetime Premium",
-    "premiumLifetimeDesc": "Unlock all features, no expiry",
+    "premiumLifetime": "Premium",
+    "premiumLifetimeDesc": "Unlock all features",
     "proceedToCheckout": "Proceed to Checkout",
     "upgradeNote": "Upgrade takes effect immediately after payment"
     
@@ -570,8 +570,8 @@
     "saveSuccess": "Saved successfully",
     "saveFailed": "Failed to save. Please try again.",
     "upgradeSuccess": "Upgrade successful! You are now Premium.",
-    "premiumLifetime": "Lifetime Premium",
-    "premiumLifetimeDesc": "Unlock all features, no expiry",
+    "premiumLifetime": "Premium",
+    "premiumLifetimeDesc": "Unlock all features",
     "proceedToCheckout": "Proceed to Checkout",
     "upgradeNote": "Upgrade takes effect immediately after payment"
   },

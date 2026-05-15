@@ -425,8 +425,8 @@
     "saveSuccess": "บันทึกสำเร็จ",
     "saveFailed": "บันทึกไม่สำเร็จ กรุณาลองใหม่",
     "upgradeSuccess": "อัปเกรดสำเร็จ! คุณเป็น Premium แล้ว",
-    "premiumLifetime": "Premium ตลอดชีพ",
-    "premiumLifetimeDesc": "ปลดล็อคทุกฟีเจอร์ ไม่มีวันหมดอายุ",
+    "premiumLifetime": "Premium",
+    "premiumLifetimeDesc": "ปลดล็อคทุกฟีเจอร์",
     "proceedToCheckout": "ดำเนินการชำระเงิน",
     "upgradeNote": "การอัปเกรดจะมีผลทันทีหลังชำระเงิน"
   },
@@ -572,8 +572,8 @@
     "saveSuccess": "บันทึกสำเร็จ",
     "saveFailed": "บันทึกไม่สำเร็จ กรุณาลองใหม่",
     "upgradeSuccess": "อัปเกรดสำเร็จ! คุณเป็น Premium แล้ว",
-    "premiumLifetime": "Premium ตลอดชีพ",
-    "premiumLifetimeDesc": "ปลดล็อคทุกฟีเจอร์ ไม่มีวันหมดอายุ",
+    "premiumLifetime": "Premium",
+    "premiumLifetimeDesc": "ปลดล็อคทุกฟีเจอร์",
     "proceedToCheckout": "ดำเนินการชำระเงิน",
     "upgradeNote": "การอัปเกรดจะมีผลทันทีหลังชำระเงิน"
   },

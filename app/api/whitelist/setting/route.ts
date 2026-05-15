@@ -22,7 +22,9 @@ export async function GET(req: NextRequest) {
             whitelisted_username: { equals: username, mode: "insensitive" },
             product_id: productId,
             whitelist_status: "whitelisted",
-            status: "paid",
+            status: {
+                in: ["paid", "Admin Buy"],
+            }
         },
         include: {
             user_function_gifts: {

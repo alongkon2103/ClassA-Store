@@ -41,7 +41,9 @@ export async function POST(req: NextRequest) {
         const orders = await prisma.orders.findMany({
             where: {
                 product_id,
-                status: "paid",
+                status: {
+                    in: ["paid", "Admin Buy"],
+                },
                 whitelist_status: "whitelisted",
 
                 OR: usernames.map((username: string) => ({

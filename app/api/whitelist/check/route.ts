@@ -43,8 +43,15 @@ export async function POST(req: NextRequest) {
     const order = await prisma.orders.findFirst({
       where: {
         product_id,
-        status: "paid",
+
+        // status ต้องเป็น paid หรือ Admin Buy
+        status: {
+          in: ["paid", "Admin Buy"],
+        },
+
         whitelist_status: "whitelisted",
+
+        // ค้นหา username แบบไม่สนใจตัวพิมพ์เล็ก/ใหญ่
         whitelisted_username: {
           equals: username,
           mode: "insensitive",
@@ -103,7 +110,7 @@ export async function POST(req: NextRequest) {
         0,
         Math.ceil(
           (expiresAt.getTime() - now.getTime()) /
-            (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24)
         )
       )
 
@@ -111,7 +118,7 @@ export async function POST(req: NextRequest) {
         0,
         Math.ceil(
           (expiresAt.getTime() - now.getTime()) /
-            (1000 * 60 * 60)
+          (1000 * 60 * 60)
         )
       )
 

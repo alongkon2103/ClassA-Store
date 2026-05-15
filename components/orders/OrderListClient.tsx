@@ -50,7 +50,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
       <div className="space-y-2">
         {orders.map((order) => {
           const imageUrl = order.products.product_images[0]?.url || "/next.svg"
-          const isPaid = order.status === "paid"
+          const isPaid = order.status === "paid" || order.status === "Admin Buy"
           const isPending = order.status === "pending"
           const isPaying = payingId === order.id
           const hasFunctions = (order.products?.product_functions?.length ?? 0) > 0
