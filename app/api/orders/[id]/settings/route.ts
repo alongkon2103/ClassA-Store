@@ -63,6 +63,11 @@ export async function POST(req: Request, { params }: RouteContext) {
             )
         }
 
+        // Check expiration
+        if (order.expires_at && new Date() > new Date(order.expires_at)) {
+            return NextResponse.json({ error: "Order has expired" }, { status: 403 })
+        }
+
         const body = await req.json()
         const mapping: Record<string, number> = body.mapping || {}
         const isPremium = !!order.is_premium_order

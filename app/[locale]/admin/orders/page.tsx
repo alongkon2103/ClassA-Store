@@ -5,6 +5,9 @@ export const dynamic = "force-dynamic"
 
 export default async function AdminOrdersPage() {
   const orders = await prisma.orders.findMany({
+    where: {
+      NOT: { order_type: "TRIAL" },
+    },
     orderBy: { created_at: "desc" },
     include: {
       users:            { select: { username: true, avatar: true, email: true } },

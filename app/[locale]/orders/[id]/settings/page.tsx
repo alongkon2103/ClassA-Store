@@ -74,7 +74,10 @@ export default async function GameSettingsPage({ params }: Props) {
             <Navbar />
             <GameSettingsClient
                 orderId={order.id}
+                orderType={order.order_type}
+                expiresAt={order.expires_at?.toISOString()}
                 productName={productName}
+                productSlug={order.products.slug}
                 whitelistedUsername={order.whitelisted_username}
                 functions={order.products.product_functions}
                 gifts={gifts}

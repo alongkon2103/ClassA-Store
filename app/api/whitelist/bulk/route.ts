@@ -64,6 +64,18 @@ export async function POST(req: NextRequest) {
         const mapped = orders.map((order) => {
             const variant = order.product_variants
 
+            // ── Check order-level expiration (e.g., TRIAL) ────────────────
+            if (order.expires_at) {
+                const isExpired = now > new Date(order.expires_at)
+                return {
+                    username: order.whitelisted_username,
+                    allowed: !isExpired,
+                    reason: isExpired ? "expired" : undefined,
+                    variant: variant?.label_en ?? "Trial",
+                    expires_at: order.expires_at.toISOString(),
+                }
+            }
+
             const isPermanent =
                 !variant?.duration_type ||
                 variant.duration_type === "permanent"

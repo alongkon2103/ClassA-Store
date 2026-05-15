@@ -321,3 +321,9 @@ model users {
   user_whitelist_access user_whitelist_access[]
   premium_upgrades      premium_upgrades[]
 }
+
+model system_configs {
+  key   String @id
+  value String
+}
+

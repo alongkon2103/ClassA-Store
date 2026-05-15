@@ -30,6 +30,7 @@ export default async function AdminDashboard({
       where: {
         status: "paid",
         paid_at: { gte: todayStart },
+        NOT: { order_type: "TRIAL" },
       },
       _sum: {
         amount: true,
@@ -41,6 +42,7 @@ export default async function AdminDashboard({
       where: {
         status: "paid",
         paid_at: { gte: monthStart },
+        NOT: { order_type: "TRIAL" },
       },
       _sum: {
         amount: true,
@@ -52,11 +54,16 @@ export default async function AdminDashboard({
       where: {
         status: "pending",
         fulfilled_at: null,
+        NOT: { order_type: "TRIAL" },
       },
     }),
 
     // Total orders
-    prisma.orders.count(),
+    prisma.orders.count({
+      where: {
+        NOT: { order_type: "TRIAL" },
+      },
+    }),
 
     // Total active products
     prisma.products.count({
@@ -80,6 +87,7 @@ export default async function AdminDashboard({
             orders: {
               where: {
                 status: "paid",
+                NOT: { order_type: "TRIAL" },
               },
             },
           },
@@ -95,6 +103,9 @@ export default async function AdminDashboard({
 
     // Recent orders
     prisma.orders.findMany({
+      where: {
+        NOT: { order_type: "TRIAL" },
+      },
       take: 8,
       orderBy: {
         created_at: "desc",
@@ -122,6 +133,7 @@ export default async function AdminDashboard({
         SUM(amount)::float AS total
       FROM orders
       WHERE status = 'paid'
+        AND order_type != 'TRIAL'
         AND paid_at >= NOW() - INTERVAL '7 days'
       GROUP BY 1
       ORDER BY 1

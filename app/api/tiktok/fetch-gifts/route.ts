@@ -37,7 +37,11 @@ export async function GET(req: Request) {
         const order = await prisma.orders.findFirst({
             where: { 
                 tiktok_username: { equals: username, mode: 'insensitive' },
-                status: 'paid'
+                status: 'paid',
+                OR: [
+                    { expires_at: null },
+                    { expires_at: { gte: new Date() } }
+                ]
             },
             include: {
                 products: {

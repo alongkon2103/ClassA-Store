@@ -179,6 +179,9 @@
     "whitelisted": "เพิ่มในรายการอนุญาตแล้ว",
     "removed": "ลบออกแล้ว",
     "all": "ทั้งหมด",
+    "trial_duration_settings": "ตั้งค่าระยะเวลาทดลองใช้",
+    "trial_duration_label": "ระยะเวลาทดลองใช้ฟรี (นาที)",
+    "save_config_success": "บันทึกการตั้งค่าเรียบร้อยแล้ว",
     "gifts": "ของขวัญ"
   },
   "Partnership": {
@@ -575,7 +578,12 @@
     "premiumLifetime": "Premium",
     "premiumLifetimeDesc": "ปลดล็อคทุกฟีเจอร์",
     "proceedToCheckout": "ดำเนินการชำระเงิน",
-    "upgradeNote": "การอัปเกรดจะมีผลทันทีหลังชำระเงิน"
+    "upgradeNote": "การอัปเกรดจะมีผลทันทีหลังชำระเงิน",
+    "trial_expired_title": "หมดเวลาทดลองใช้งาน",
+    "trial_expired_desc": "สิทธิ์ทดลองใช้ฟรีของคุณหมดเวลาแล้ว หวังว่าคุณจะสนุกกับการทดสอบระบบ! อัปเกรดเป็น Premium เพื่อใช้งานต่อได้แบบไร้ขีดจำกัด",
+    "order_to_continue": "🛒 สั่งซื้อสินค้าชิ้นนี้เพื่อใช้งานต่อ",
+    "upgrade_to_premium": "อัปเกรดเป็น Premium เพื่อใช้งานต่อ",
+    "back_to_home": "กลับหน้าหลัก"
   },
   "AdminGifts": {
     "title": "จัดการของขวัญ",

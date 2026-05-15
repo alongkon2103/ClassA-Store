@@ -26,7 +26,10 @@ type ProductFunction = {
 
 type Props = {
     orderId: string
+    orderType?: string | null
+    expiresAt?: string | null
     productName: string
+    productSlug?: string | null
     whitelistedUsername: string | null
     functions: ProductFunction[]
     gifts: Gift[]
@@ -38,7 +41,7 @@ type Props = {
 }
 
 export default function GameSettingsClient({
-    orderId, productName, whitelistedUsername, functions, gifts,
+    orderId, orderType, expiresAt, productName, productSlug, whitelistedUsername, functions, gifts,
     savedMapping, savedTiktokUsername, locale, isPremium, premiumAddonPrice,
 }: Props) {
     const router = useRouter()
@@ -46,6 +49,41 @@ export default function GameSettingsClient({
     const t = useTranslations("Setting")
     const tModal = useTranslations("ProductModal")
     const tD = useTranslations("DownloadModal") // 
+
+    const [timeLeft, setTimeLeft] = useState<number | null>(null)
+    const [isExpired, setIsExpired] = useState(false)
+
+    useEffect(() => {
+        if (orderType === "TRIAL" && expiresAt) {
+            const expiry = new Date(expiresAt).getTime()
+            const updateTimer = () => {
+                const now = new Date().getTime()
+                const diff = Math.max(0, Math.floor((expiry - now) / 1000))
+                setTimeLeft(diff)
+                if (diff <= 0) {
+                   setIsExpired(true)
+                }
+            }
+            updateTimer()
+            const interval = setInterval(updateTimer, 1000)
+            return () => clearInterval(interval)
+        }
+    }, [orderType, expiresAt])
+
+    useEffect(() => {
+        // Initial expiration check
+        if (orderType === "TRIAL" && expiresAt) {
+            if (new Date() > new Date(expiresAt)) {
+                setIsExpired(true)
+            }
+        }
+    }, [orderType, expiresAt])
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60)
+        const s = seconds % 60
+        return `${m}:${s.toString().padStart(2, "0")}`
+    }
 
     useEffect(() => {
         if (searchParams?.get("upgrade") === "success") {
@@ -185,9 +223,122 @@ export default function GameSettingsClient({
 
     const maskedKey = "*".repeat(orderId.length)
 
+    if (isExpired) {
+        return (
+            <div className="py-20 flex items-center justify-center">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }} 
+                    animate={{ opacity: 1, y: 0 }}
+                    className="max-w-md w-full bg-bg-card border border-red-500/20 rounded-[32px] p-8 text-center space-y-6 shadow-2xl shadow-red-500/5"
+                >
+                    <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto border border-red-500/20">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-red-500">
+                            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                    </div>
+                    <div className="space-y-2">
+                        <h2 className="text-[24px] font-black text-white">{t("trial_expired_title")}</h2>
+                        <p className="text-[14px] text-text-muted leading-relaxed">
+                            {t("trial_expired_desc")}
+                        </p>
+                    </div>
+                    <div className="pt-4 space-y-3">
+                        <button 
+                            onClick={() => router.push(`/products?slug=${productSlug}`)}
+                            className="w-full py-4 bg-accent hover:opacity-90 text-white font-black text-[15px] rounded-2xl transition-all shadow-xl shadow-accent/20 flex items-center justify-center gap-2 active:scale-[0.98]"
+                        >                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+                            </svg>
+                            {t("order_to_continue")}
+                        </button>
+                        <button 
+                            onClick={() => router.push('/')}
+                            className="w-full py-4 bg-white/5 hover:bg-white/10 text-text-muted font-bold text-[14px] rounded-2xl transition-all"
+                        >
+                            {t("back_to_home")}
+                        </button>
+                    </div>                </motion.div>
+                
+                {/* Modals need to be here too */}
+                <AnimatePresence>
+                    {showUpgradeModal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowUpgradeModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                className="relative w-full max-w-md bg-bg-card border border-accent/20 rounded-3xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                                <div className="p-6 space-y-5">
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-[18px] font-bold">{t("upgradePremium")}</h2>
+                                        <button onClick={() => setShowUpgradeModal(false)} className="text-text-muted hover:text-text-base transition"><CloseIcon size={20} /></button>
+                                    </div>
+                                    <div className="bg-accent/5 border border-accent/10 rounded-2xl p-4 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-[14px] font-bold">{t("premiumLifetime")}</p>
+                                            <p className="text-[11px] text-text-muted">{t("premiumLifetimeDesc")}</p>
+                                        </div>
+                                        <p className="text-[18px] font-bold text-accent-light">{premiumAddonPrice.toLocaleString()}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-[11px] tracking-widest text-text-muted uppercase font-medium">{tModal("payment_method")}</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button onClick={() => setPaymentMethod("promptpay")} className={`p-3 rounded-xl border text-left transition ${paymentMethod === "promptpay" ? "border-accent bg-accent/10 text-accent-light" : "border-white/10"}`}>
+                                                <p className="text-[13px] font-medium">{tModal("promptpay_label")}</p>
+                                                <p className="text-[10px] text-green-400 opacity-80">{tModal("promptpay_desc")}</p>
+                                            </button>
+                                            <button onClick={() => setPaymentMethod("card")} className={`p-3 rounded-xl border text-left transition ${paymentMethod === "card" ? "border-accent bg-accent/10 text-accent-light" : "border-white/10"}`}>
+                                                <p className="text-[13px] font-medium">{tModal("stripe_label")}</p>
+                                                <p className="text-[10px] text-orange-400 opacity-80">{tModal("stripe_desc")}</p>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button disabled={upgrading} onClick={handleUpgrade} className="w-full py-4 bg-accent hover:opacity-90 text-white font-bold rounded-2xl transition shadow-lg shadow-accent/20 flex items-center justify-center gap-2 disabled:opacity-50">
+                                        {upgrading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{t("proceedToCheckout")} ({(paymentMethod === "card" ? premiumAddonPrice * 1.06 : premiumAddonPrice).toLocaleString()})</>}
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+            </div>
+        )
+    }
+
     return (
         <div className="min-h-screen bg-bg-base text-text-base">
             <div className="max-w-6xl mx-auto px-4 py-8">
+
+                {/* Trial Banner */}
+                {orderType === "TRIAL" && (
+                    <div className="mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center animate-pulse shrink-0">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-yellow-500">
+                                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-[15px] font-bold text-yellow-500">
+                                    {locale === "th" ? "[ Trial Mode Active ]" : "[ Trial Mode Active ]"}
+                                </h3>
+                                <p className="text-[13px] text-text-muted mt-0.5">
+                                    {locale === "th" 
+                                        ? "คุณกำลังใช้งานสิทธิ์ Whitelist ทดลองใช้ฟรี ระบบจะหยุดทำงานอัตโนมัติเมื่อหมดเวลา" 
+                                        : "You are using a free trial whitelist. The system will stop automatically when time expires."}
+                                </p>
+                            </div>
+                        </div>
+                        {timeLeft !== null && (
+                            <div className="flex flex-col items-center sm:items-end gap-1 px-6 py-2 bg-yellow-500/5 rounded-2xl border border-yellow-500/10 min-w-[120px]">
+                                <p className="text-[10px] text-yellow-500/70 font-bold uppercase tracking-widest">
+                                    {locale === "th" ? "เวลาที่เหลือ" : "TIME REMAINING"}
+                                </p>
+                                <span className={`font-mono text-[24px] font-black ${timeLeft < 60 ? "text-red-500 animate-pulse" : "text-yellow-500"}`}>
+                                    {formatTime(timeLeft)}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/*  Header  */}
                 <div className="mb-6">
@@ -301,46 +452,48 @@ export default function GameSettingsClient({
                             </div>
                         </div>
 
-                        {/* Download App */}
-                        <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
-                            <div className="relative bg-gradient-to-r from-accent/20 via-accent/10 to-transparent px-4 py-3 border-b border-accent/10 overflow-hidden">
-                                <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-accent/10 blur-2xl pointer-events-none" />
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-lg bg-accent/20 border border-accent/30 flex items-center justify-center">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light">
-                                            <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p className="text-[12px] font-bold">{t("downloadApp") || ""}</p>
-                                        <p className="text-[10px] text-text-muted">{t("downloadAppSub") || " TikTok Live"}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="p-4 space-y-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 flex items-center justify-center flex-shrink-0">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light">
-                                            <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
-                                        </svg>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-[13px] font-bold">AclassStore Live</p>
-                                            <span className="text-[9px] font-bold bg-accent/15 text-accent-light px-1.5 py-0.5 rounded border border-accent/20">v3.0</span>
+                        {/* Download App (Hidden during Trial) */}
+                        {orderType !== "TRIAL" && (
+                            <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+                                <div className="relative bg-gradient-to-r from-accent/20 via-accent/10 to-transparent px-4 py-3 border-b border-accent/10 overflow-hidden">
+                                    <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-accent/10 blur-2xl pointer-events-none" />
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-lg bg-accent/20 border border-accent/30 flex items-center justify-center">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light">
+                                                <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
+                                            </svg>
                                         </div>
-                                        <p className="text-[10px] text-text-muted mt-0.5 line-clamp-1">{t("downloadDesc") || "  TikTok Live"}</p>
+                                        <div>
+                                            <p className="text-[12px] font-bold">{t("downloadApp") || ""}</p>
+                                            <p className="text-[10px] text-text-muted">{t("downloadAppSub") || " TikTok Live"}</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <button
-                                    disabled={!isPremium}
-                                    onClick={() => setShowDownloadModal(true)}
-                                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent hover:opacity-90 active:scale-[0.98] text-white text-[12px] font-bold rounded-xl transition-all shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {t("download") || ""}
-                                </button>
+                                <div className="p-4 space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 flex items-center justify-center flex-shrink-0">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light">
+                                                <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
+                                            </svg>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-[13px] font-bold">AclassStore Live</p>
+                                                <span className="text-[9px] font-bold bg-accent/15 text-accent-light px-1.5 py-0.5 rounded border border-accent/20">v3.0</span>
+                                            </div>
+                                            <p className="text-[10px] text-text-muted mt-0.5 line-clamp-1">{t("downloadDesc") || "  TikTok Live"}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        disabled={!isPremium}
+                                        onClick={() => setShowDownloadModal(true)}
+                                        className="w-full flex items-center justify-center gap-2 py-2.5 bg-accent hover:opacity-90 active:scale-[0.98] text-white text-[12px] font-bold rounded-xl transition-all shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {t("download") || ""}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Save Button (desktop) */}
                         {functions.length > 0 && (

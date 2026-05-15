@@ -176,6 +176,9 @@
     "whitelisted": "Whitelisted",
     "removed": "Removed",
     "all": "All",
+    "trial_duration_settings": "Trial Duration Settings",
+    "trial_duration_label": "Free Trial Duration (Minutes)",
+    "save_config_success": "Settings saved successfully",
     "gifts": "Gifts"
   },
   "Partnership": {
@@ -573,7 +576,12 @@
     "premiumLifetime": "Premium",
     "premiumLifetimeDesc": "Unlock all features",
     "proceedToCheckout": "Proceed to Checkout",
-    "upgradeNote": "Upgrade takes effect immediately after payment"
+    "upgradeNote": "Upgrade takes effect immediately after payment",
+    "trial_expired_title": "Trial Period Expired",
+    "trial_expired_desc": "Your free trial has ended. We hope you enjoyed testing the system! Upgrade to Premium to unlock all features permanently.",
+    "order_to_continue": "Order this product to Continue",
+    "upgrade_to_premium": "Upgrade to Premium to Continue",
+    "back_to_home": "Back to Home"
   },
   "AdminGifts": {
     "title": "Gift Management",

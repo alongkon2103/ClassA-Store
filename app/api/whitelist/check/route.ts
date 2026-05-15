@@ -75,14 +75,29 @@ export async function POST(req: NextRequest) {
     }
 
     const variant = order.product_variants
-
     const now = new Date()
 
+    // ── Check order-level expiration (e.g., TRIAL) ────────────────
+    if (order.expires_at) {
+        const isExpired = now > new Date(order.expires_at)
+        if (isExpired) {
+            return NextResponse.json({
+                allowed: false,
+                reason: "expired",
+                expires_at: order.expires_at,
+            })
+        }
+        return NextResponse.json({
+            allowed: true,
+            variant: variant?.label_en ?? "Trial",
+            expires_at: order.expires_at,
+            is_premium: !!order.is_premium_order,
+        })
+    }
+
+    // ── Check variant-level expiration ──────────────────────────
     // permanent
-    if (
-      !variant?.duration_type ||
-      variant.duration_type === "permanent"
-    ) {
+    if (!variant?.duration_type || variant.duration_type === "permanent") {
       return NextResponse.json({
         allowed: true,
         variant: variant?.label_en ?? "Permanent",

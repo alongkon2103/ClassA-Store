@@ -10,6 +10,7 @@ const groups = [
     items: [
       { href: "/admin", key: "dashboard" },
       { href: "/admin/analytics", key: "analytics" },
+      { href: "/admin/settings", key: "settings" },
     ]
   },
   {

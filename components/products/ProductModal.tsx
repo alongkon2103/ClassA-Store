@@ -89,9 +89,7 @@ function UsernameHelpModal({ onClose, images }: { onClose: () => void; images: s
             </>
           )}
         </div>
-        {/* <div className="px-5 py-4 text-center text-[13px] text-text-muted">{t("step") || "Step"} <span className="text-text-base font-semibold">{idx + 1}</span> {t("of") || "of"} <span className="text-text-base font-semibold">{images.length}</span></div>
-         */}
-         <div className="px-5 py-4 text-center text-[13px] text-text-muted">Step <span className="text-text-base font-semibold">{idx + 1}</span> of <span className="text-text-base font-semibold">{images.length}</span></div>
+        <div className="px-5 py-4 text-center text-[13px] text-text-muted">Step <span className="text-text-base font-semibold">{idx + 1}</span> of <span className="text-text-base font-semibold">{images.length}</span></div>
       </motion.div>
     </motion.div>
   )
@@ -115,6 +113,23 @@ export default function ProductModal({ product, onClose }: any) {
   const [whitelistUsername, setWhitelistUsername] = useState("")
   const [usdRate, setUsdRate] = useState<number | null>(null)
   const [isPremiumSelected, setIsPremiumSelected] = useState(true)
+  const [hasUsedTrial, setHasUsedTrial] = useState(false)
+  const [loadingTrial, setLoadingTrial] = useState(false)
+  const [trialDuration, setTrialDuration] = useState(10)
+  const [isTrialEnabled, setIsTrialEnabled] = useState(true)
+
+  useEffect(() => {
+    if (session) {
+      fetch("/api/checkout/trial")
+        .then(res => res.json())
+        .then(data => {
+          if (data.hasUsedTrial) setHasUsedTrial(true)
+          if (data.trialDuration) setTrialDuration(data.trialDuration)
+          if (data.isTrialEnabled !== undefined) setIsTrialEnabled(data.isTrialEnabled)
+        })
+        .catch(() => {})
+    }
+  }, [session])
 
   useEffect(() => {
     fetch("https://open.er-api.com/v6/latest/THB")
@@ -193,6 +208,29 @@ export default function ProductModal({ product, onClose }: any) {
       if (data.url) window.location.href = data.url
       else { alert(data.error); setLoading(false) }
     } catch (err) { setLoading(false) }
+  }
+
+  const handleTrialClick = async () => {
+    if (!session) { setShowLoginModal(true); return }
+    if (!whitelistUsername.trim()) { alert("Please enter your in-game username"); return }
+    setLoadingTrial(true)
+    try {
+      const res = await fetch("/api/checkout/trial", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: product.id,
+          whitelistUsername: whitelistUsername.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        router.push(`/orders/${data.orderId}/settings`)
+      } else {
+        alert(data.error)
+        setLoadingTrial(false)
+      }
+    } catch (err) { setLoadingTrial(false) }
   }
 
   const productDesc = isTH ? (product.description_th || product.description_en) : product.description_en
@@ -316,6 +354,33 @@ export default function ProductModal({ product, onClose }: any) {
                 onFocus={() => { if (!hasShownUsernameHelp.current) { hasShownUsernameHelp.current = true; setShowUsernameHelp(true) } }}
                 placeholder={t("ingame_username_placeholder")} className="w-full bg-bg-base border border-accent/15 rounded-xl px-4 py-3 text-[13px] outline-none focus:border-accent/40 transition" />
             </div>
+
+            {/* FREE TRIAL OPTION */}
+            {isTrialEnabled && (
+              <div className="pt-2">
+                <button
+                  disabled={loadingTrial || hasUsedTrial}
+                  onClick={handleTrialClick}
+                  className={`w-full py-3.5 rounded-xl font-bold text-[14px] border-2 transition-all flex items-center justify-center gap-2 ${
+                    hasUsedTrial
+                      ? "border-white/5 bg-white/5 text-text-muted cursor-not-allowed"
+                      : "border-accent/30 text-accent-light hover:bg-accent/5 hover:border-accent active:scale-[0.98]"
+                  }`}
+                >
+                  {loadingTrial ? (
+                    <div className="w-4 h-4 border-2 border-accent-light border-t-transparent rounded-full animate-spin"></div>
+                  ) : null}
+                  {hasUsedTrial 
+                    ? (isTH ? "ใช้สิทธิ์ของวันนี้ครบแล้ว" : "Daily trial limit reached") 
+                    : (isTH ? `เปิดใช้งานสิทธิ์ทดลองใช้ฟรี ${trialDuration} นาที` : `Start ${trialDuration}-Minute Free Trial`)}
+                </button>
+                {!hasUsedTrial && (
+                  <p className="text-[11px] text-text-muted text-center mt-2.5">
+                    {isTH ? "*จำกัด 1 ครั้งต่อวัน และจะรีเซ็ตทุกเที่ยงคืน" : "*Limited to once per day, resets at midnight"}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* PAYMENT METHOD */}
             <div className="space-y-2">

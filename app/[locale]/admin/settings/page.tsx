@@ -15,7 +15,6 @@ export default async function SettingsPage({
   })
   return (
     <div className="space-y-10 pb-20">
-      <BankSettingsClient banks={banks} />
       <GlobalSettingsClient />
     </div>
   )
