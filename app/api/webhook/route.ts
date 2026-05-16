@@ -378,13 +378,13 @@ export async function POST(req: NextRequest) {
       // 2. upsert access record
       prisma.user_whitelist_access.upsert({
         where: {
-          user_id_product_id: {
-            user_id:    order.user_id,
+          ign_product_id: {
+            ign:    order.whitelisted_username || "unknown",
             product_id: order.product_id,
           },
         },
         create: {
-          user_id:    order.user_id,
+          ign:    order.whitelisted_username || "unknown",
           product_id: order.product_id,
           is_premium: isPremium,
           expires_at: expiresAt,
@@ -488,4 +488,5 @@ if (event.type === "checkout.session.expired") {
 }
 
   return new Response("ok")
+}w Response("ok")
 }

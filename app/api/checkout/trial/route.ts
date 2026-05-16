@@ -114,13 +114,13 @@ export async function POST(req: Request) {
         // 4. Update Whitelist Access
         await tx.user_whitelist_access.upsert({
             where: {
-                user_id_product_id: {
-                    user_id: session.user.id,
+                ign_product_id: {
+                    ign: whitelistUsername.trim(),
                     product_id: product.id,
                 },
             },
             create: {
-                user_id: session.user.id,
+                ign: whitelistUsername.trim(),
                 product_id: product.id,
                 is_premium: false,
                 expires_at: expiresAt,

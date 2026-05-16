@@ -119,6 +119,42 @@ export default function DashboardClient({ data }: { data: any }) {
                 />
             </div>
 
+            {/* Quick Links / Tools */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <a href="/admin/whitelist" className="flex flex-col items-center justify-center p-4 rounded-2xl border border-accent/15 bg-bg-card hover:bg-accent/5 transition-all group">
+                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent-light">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                    </div>
+                    <span className="text-[13px] font-medium">{t("whitelist")}</span>
+                </a>
+                <a href="/admin/users" className="flex flex-col items-center justify-center p-4 rounded-2xl border border-accent/15 bg-bg-card hover:bg-accent/5 transition-all group">
+                    <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-purple-400">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                    </div>
+                    <span className="text-[13px] font-medium">{t("users")}</span>
+                </a>
+                <a href="/admin/products" className="flex flex-col items-center justify-center p-4 rounded-2xl border border-accent/15 bg-bg-card hover:bg-accent/5 transition-all group">
+                    <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-400">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        </svg>
+                    </div>
+                    <span className="text-[13px] font-medium">{t("products")}</span>
+                </a>
+                <a href="/admin/orders" className="flex flex-col items-center justify-center p-4 rounded-2xl border border-accent/15 bg-bg-card hover:bg-accent/5 transition-all group">
+                    <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-orange-400">
+                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" /><path d="M3 6h18" /><path d="M16 10a4 4 0 0 1-8 0" />
+                        </svg>
+                    </div>
+                    <span className="text-[13px] font-medium">{t("orders")}</span>
+                </a>
+            </div>
+
             {/* Chart + Low Stock */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Area Chart */}

@@ -298,7 +298,7 @@ export default function ProductModal({ product, onClose }: any) {
             )}
           </div>
 
-          {/* {total > 1 && (
+          {total > 1 && (
             <div className="flex gap-2 px-4 py-3 bg-bg-base border-b border-white/5 overflow-x-auto scrollbar-none">
               {images.map((img: any, i: number) => (
                 <button key={i} onClick={() => setIndex(i)} className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${i === index ? "ring-2 ring-accent opacity-100" : "opacity-40"}`}>
@@ -314,7 +314,7 @@ export default function ProductModal({ product, onClose }: any) {
                 </button>
               )}
             </div>
-          )} */}
+          )}
 
           {total > 1 && (
             <div className="flex gap-2 px-4 py-3 bg-bg-base border-b border-white/5 overflow-x-auto scrollbar-none">

@@ -31,6 +31,7 @@ const groups = [
   {
     title: "operations",
     items: [
+      { href: "/admin/whitelist", key: "whitelist" },
       { href: "/admin/orders", key: "orders" },
       { href: "/admin/users", key: "users" },
       { href: "/admin/upgrade-premium", key: "nav_title" },

@@ -24,7 +24,9 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
 
-    const { username, product_id } = body
+    // Support both 'username' and 'ign' in payload
+    const username = body.username || body.ign
+    const { product_id } = body
 
     if (!username) {
       return NextResponse.json(
@@ -40,28 +42,68 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const now = new Date()
+
+    // ──────────────────────────────────────────────────────────────
+    // CHECK 1: user_whitelist_access (Directly added by Admin)
+    // ──────────────────────────────────────────────────────────────
+    const directAccess = await prisma.user_whitelist_access.findUnique({
+      where: {
+        ign_product_id: {
+          ign: username,
+          product_id: product_id
+        }
+      },
+      include: {
+        products: true
+      }
+    })
+
+    if (directAccess) {
+      const expiresAt = new Date(directAccess.expires_at)
+      const isExpired = now > expiresAt
+      
+      if (!isExpired) {
+        const diffMs = expiresAt.getTime() - now.getTime()
+        const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+        const hoursLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60)))
+
+        // If expiry is > 50 years, consider it permanent for the response
+        const isPermanent = expiresAt.getFullYear() > now.getFullYear() + 50
+
+        return NextResponse.json({
+          allowed: true,
+          variant: directAccess.is_premium ? "Premium (Admin)" : "Normal (Admin)",
+          duration_type: isPermanent ? "permanent" : "days",
+          duration_days: isPermanent ? null : daysLeft,
+          paid_at: directAccess.updated_at,
+          expires_at: directAccess.expires_at,
+          days_left: isPermanent ? 9999 : daysLeft,
+          hours_left: isPermanent ? 999999 : hoursLeft,
+          is_premium: directAccess.is_premium,
+          source: "direct_access"
+        })
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // CHECK 2: orders (Purchased via system)
+    // ──────────────────────────────────────────────────────────────
     const order = await prisma.orders.findFirst({
       where: {
         product_id,
-
-        // status ต้องเป็น paid หรือ Admin Buy
         status: {
           in: ["paid", "Admin Buy"],
         },
-
         whitelist_status: "whitelisted",
-
-        // ค้นหา username แบบไม่สนใจตัวพิมพ์เล็ก/ใหญ่
         whitelisted_username: {
           equals: username,
           mode: "insensitive",
         },
       },
-
       orderBy: {
         paid_at: "desc",
       },
-
       include: {
         product_variants: true,
       },
@@ -75,11 +117,11 @@ export async function POST(req: NextRequest) {
     }
 
     const variant = order.product_variants
-    const now = new Date()
 
-    // ── Check order-level expiration (e.g., TRIAL) ────────────────
+    // ── Case A: Order with explicit expires_at (e.g., TRIAL) ──────
     if (order.expires_at) {
-        const isExpired = now > new Date(order.expires_at)
+        const expiresAt = new Date(order.expires_at)
+        const isExpired = now > expiresAt
         if (isExpired) {
             return NextResponse.json({
                 allowed: false,
@@ -87,55 +129,52 @@ export async function POST(req: NextRequest) {
                 expires_at: order.expires_at,
             })
         }
+
+        const diffMs = expiresAt.getTime() - now.getTime()
+        const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+        const hoursLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60)))
+
         return NextResponse.json({
             allowed: true,
             variant: variant?.label_en ?? "Trial",
+            duration_type: "days",
+            duration_days: null,
+            paid_at: order.paid_at,
             expires_at: order.expires_at,
+            days_left: daysLeft,
+            hours_left: hoursLeft,
             is_premium: !!order.is_premium_order,
+            source: "order"
         })
     }
 
-    // ── Check variant-level expiration ──────────────────────────
+    // ── Case B: Order with Variant-based duration ────────────────
     // permanent
     if (!variant?.duration_type || variant.duration_type === "permanent") {
       return NextResponse.json({
         allowed: true,
         variant: variant?.label_en ?? "Permanent",
         duration_type: "permanent",
+        duration_days: null,
+        paid_at: order.paid_at,
         expires_at: null,
+        days_left: 9999,
+        hours_left: 999999,
         is_premium: !!order.is_premium_order,
+        source: "order"
       })
     }
 
     // days
-    if (
-      variant.duration_type === "days" &&
-      variant.duration_days
-    ) {
+    if (variant.duration_type === "days" && variant.duration_days) {
       const paidAt = new Date(order.paid_at!)
       const expiresAt = new Date(paidAt)
-
-      expiresAt.setDate(
-        expiresAt.getDate() + variant.duration_days
-      )
+      expiresAt.setDate(expiresAt.getDate() + variant.duration_days)
 
       const isExpired = now > expiresAt
-
-      const daysLeft = Math.max(
-        0,
-        Math.ceil(
-          (expiresAt.getTime() - now.getTime()) /
-          (1000 * 60 * 60 * 24)
-        )
-      )
-
-      const hoursLeft = Math.max(
-        0,
-        Math.ceil(
-          (expiresAt.getTime() - now.getTime()) /
-          (1000 * 60 * 60)
-        )
-      )
+      const diffMs = expiresAt.getTime() - now.getTime()
+      const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+      const hoursLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60)))
 
       if (isExpired) {
         return NextResponse.json({
@@ -160,6 +199,7 @@ export async function POST(req: NextRequest) {
         days_left: daysLeft,
         hours_left: hoursLeft,
         is_premium: !!order.is_premium_order,
+        source: "order"
       })
     }
 
@@ -170,13 +210,6 @@ export async function POST(req: NextRequest) {
 
   } catch (err) {
     console.error(err)
-
-    return NextResponse.json(
-      {
-        allowed: false,
-        error: "internal server error",
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ allowed: false, error: "internal server error" }, { status: 500 })
   }
 }

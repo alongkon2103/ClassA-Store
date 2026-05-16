@@ -261,17 +261,16 @@ model product_consignments {
 
 model user_whitelist_access {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String   @db.Uuid
+  ign        String   @db.VarChar
   product_id String   @db.Uuid
   is_premium Boolean  @default(false)
   expires_at DateTime @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 
-  users    users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
   products products @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
-  @@unique([user_id, product_id])
-  @@index([user_id], map: "idx_uwa_user")
+  @@unique([ign, product_id])
+  @@index([ign], map: "idx_uwa_ign")
 }
 
 model premium_upgrades {
@@ -320,7 +319,6 @@ model users {
   accounts              accounts[]
   orders                orders[]
   user_function_gifts   user_function_gifts[]
-  user_whitelist_access user_whitelist_access[]
   premium_upgrades      premium_upgrades[]
 }
 
@@ -328,4 +326,3 @@ model system_configs {
   key   String @id
   value String
 }
-
