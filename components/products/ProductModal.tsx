@@ -127,7 +127,7 @@ export default function ProductModal({ product, onClose }: any) {
           if (data.trialDuration) setTrialDuration(data.trialDuration)
           if (data.isTrialEnabled !== undefined) setIsTrialEnabled(data.isTrialEnabled)
         })
-        .catch(() => {})
+        .catch(() => { })
     }
   }, [session])
 
@@ -298,7 +298,7 @@ export default function ProductModal({ product, onClose }: any) {
             )}
           </div>
 
-          {total > 1 && (
+          {/* {total > 1 && (
             <div className="flex gap-2 px-4 py-3 bg-bg-base border-b border-white/5 overflow-x-auto scrollbar-none">
               {images.map((img: any, i: number) => (
                 <button key={i} onClick={() => setIndex(i)} className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${i === index ? "ring-2 ring-accent opacity-100" : "opacity-40"}`}>
@@ -313,6 +313,34 @@ export default function ProductModal({ product, onClose }: any) {
                    <svg width="24" height="24" viewBox="0 0 24 24" fill="red" stroke="red" strokeWidth="1"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2c.46-1.7.46-5.33.46-5.33a29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="white"/></svg>
                 </button>
               )}
+            </div>
+          )} */}
+
+          {total > 1 && (
+            <div className="flex gap-2 px-4 py-3 bg-bg-base border-b border-white/5 overflow-x-auto scrollbar-none">
+              {images.map((img: any, i: number) => (
+                <button key={i} onClick={() => setIndex(i)} className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${i === index ? "ring-2 ring-accent opacity-100" : "opacity-40"}`}>
+                  <img src={getImageUrl(img.url)} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+              {youtubeEmbedUrl && (() => {
+                const videoId = youtubeEmbedUrl.split("/embed/")[1]?.split("?")[0]
+                const thumbUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+                return (
+                  <button
+                    onClick={() => setIndex(images.length)}
+                    className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${index === images.length ? "ring-2 ring-accent opacity-100" : "opacity-40"}`}
+                  >
+                    <img src={thumbUrl} alt="YouTube thumbnail" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="red" stroke="none">
+                        <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2c.46-1.7.46-5.33.46-5.33a29 29 0 0 0-.46-5.33z" />
+                        <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="white" />
+                      </svg>
+                    </div>
+                  </button>
+                )
+              })()}
             </div>
           )}
 
@@ -360,14 +388,14 @@ export default function ProductModal({ product, onClose }: any) {
                   </div>
                 </div>
                 <div className="text-right">
-                   <p className={`text-[13px] font-bold ${isPremiumSelected ? "text-yellow-500" : "text-text-muted"}`}>
-                      {isTH ? `+฿${premiumAddonPrice.toLocaleString()}` : `+$${toUSD(premiumAddonPrice)}`}
-                   </p>
-                   {usdRate && (
-                     <p className="text-[10px] text-text-muted mt-0.5">
-                        {isTH ? `≈ $${toUSD(premiumAddonPrice)}` : `฿${premiumAddonPrice.toLocaleString()} THB`}
-                     </p>
-                   )}
+                  <p className={`text-[13px] font-bold ${isPremiumSelected ? "text-yellow-500" : "text-text-muted"}`}>
+                    {isTH ? `+฿${premiumAddonPrice.toLocaleString()}` : `+$${toUSD(premiumAddonPrice)}`}
+                  </p>
+                  {usdRate && (
+                    <p className="text-[10px] text-text-muted mt-0.5">
+                      {isTH ? `≈ $${toUSD(premiumAddonPrice)}` : `฿${premiumAddonPrice.toLocaleString()} THB`}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -387,22 +415,21 @@ export default function ProductModal({ product, onClose }: any) {
             </div>
 
             {/* FREE TRIAL OPTION */}
-            {isTrialEnabled && (
+            {/* {isTrialEnabled && (
               <div className="pt-2">
                 <button
                   disabled={loadingTrial || hasUsedTrial}
                   onClick={handleTrialClick}
-                  className={`w-full py-3.5 rounded-xl font-bold text-[14px] border-2 transition-all flex items-center justify-center gap-2 ${
-                    hasUsedTrial
+                  className={`w-full py-3.5 rounded-xl font-bold text-[14px] border-2 transition-all flex items-center justify-center gap-2 ${hasUsedTrial
                       ? "border-white/5 bg-white/5 text-text-muted cursor-not-allowed"
                       : "border-accent/30 text-accent-light hover:bg-accent/5 hover:border-accent active:scale-[0.98]"
-                  }`}
+                    }`}
                 >
                   {loadingTrial ? (
                     <div className="w-4 h-4 border-2 border-accent-light border-t-transparent rounded-full animate-spin"></div>
                   ) : null}
-                  {hasUsedTrial 
-                    ? (isTH ? "ใช้สิทธิ์ของวันนี้ครบแล้ว" : "Daily trial limit reached") 
+                  {hasUsedTrial
+                    ? (isTH ? "ใช้สิทธิ์ของวันนี้ครบแล้ว" : "Daily trial limit reached")
                     : (isTH ? `เปิดใช้งานสิทธิ์ทดลองใช้ฟรี ${trialDuration} นาที` : `Start ${trialDuration}-Minute Free Trial`)}
                 </button>
                 {!hasUsedTrial && (
@@ -411,7 +438,7 @@ export default function ProductModal({ product, onClose }: any) {
                   </p>
                 )}
               </div>
-            )}
+            )} */}
 
             {/* PAYMENT METHOD */}
             <div className="space-y-2">
@@ -436,9 +463,9 @@ export default function ProductModal({ product, onClose }: any) {
                   {isTH ? `฿${totalPrice.toLocaleString()}` : `$${totalPriceUSD || '0.00'}`}
                 </div>
                 {usdRate && (
-                   <p className="text-[11px] text-text-muted mt-1 font-medium">
-                      {isTH ? `≈ $${totalPriceUSD} USD` : `฿${totalPrice.toLocaleString()} THB`}
-                   </p>
+                  <p className="text-[11px] text-text-muted mt-1 font-medium">
+                    {isTH ? `≈ $${totalPriceUSD} USD` : `฿${totalPrice.toLocaleString()} THB`}
+                  </p>
                 )}
               </div>
               <button disabled={loading} onClick={handleBuyClick}
