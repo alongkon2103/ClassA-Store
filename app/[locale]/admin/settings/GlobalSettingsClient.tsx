@@ -21,6 +21,7 @@ export default function GlobalSettingsClient() {
     try {
       const res = await fetch("/api/admin/settings/configs")
       const data = await res.json()
+      console.log("Configs loaded:", data)
       if (data.free_trial_duration) {
         setTrialDuration(data.free_trial_duration)
       }
@@ -39,27 +40,35 @@ export default function GlobalSettingsClient() {
 
   const handleSaveConfig = async () => {
     setSaving(true)
+    const payload = {
+      configs: {
+        "free_trial_duration": trialDuration,
+        "free_trial_enabled": String(isTrialEnabled),
+        "free_trial_is_premium": String(isTrialPremium)
+      }
+    }
+
+    console.log("Payload to send:", payload)
+
     try {
-      // Save duration, enabled status, and premium status
-      await Promise.all([
-        fetch("/api/admin/settings/configs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key: "free_trial_duration", value: trialDuration })
-        }),
-        fetch("/api/admin/settings/configs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key: "free_trial_enabled", value: String(isTrialEnabled) })
-        }),
-        fetch("/api/admin/settings/configs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key: "free_trial_is_premium", value: String(isTrialPremium) })
-        })
-      ])
-      alert(t("save_config_success") || "Settings saved successfully")
+      // Save duration, enabled status, and premium status in a single request
+      const res = await fetch("/api/admin/settings/configs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+
+      console.log("Save Response Status:", res.status)
+
+      if (res.ok) {
+        alert(t("save_config_success") || "Settings saved successfully")
+      } else {
+        const errorData = await res.json()
+        console.error("Save Error Detail:", errorData)
+        alert(errorData.error || "Failed to save settings")
+      }
     } catch (error) {
+      console.error("Save error:", error)
       alert("An error occurred")
     } finally {
       setSaving(false)
@@ -68,7 +77,7 @@ export default function GlobalSettingsClient() {
 
   const handleReset = async () => {
     if (!confirm("Are you sure you want to CLEAR ALL gift-to-function mappings? This cannot be undone.")) return
-    
+
     setResetting(true)
     try {
       const res = await fetch("/api/admin/settings/reset-mappings", { method: "DELETE" })
@@ -95,7 +104,7 @@ export default function GlobalSettingsClient() {
           </svg>
           {t("trial_duration_settings")}
         </h2>
-        
+
         <div className="bg-bg-card border border-white/5 rounded-2xl p-6">
           <div className="flex flex-col gap-6">
             {/* Toggle Switch */}
@@ -104,7 +113,7 @@ export default function GlobalSettingsClient() {
                 <p className="text-[14px] font-bold text-text-base">Enable Free Trial System</p>
                 <p className="text-[12px] text-text-muted mt-0.5">Allow users to activate a one-time daily free trial</p>
               </div>
-              <button 
+              <button
                 onClick={() => setIsTrialEnabled(!isTrialEnabled)}
                 className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none ${isTrialEnabled ? 'bg-accent' : 'bg-white/10'}`}
               >
@@ -134,7 +143,7 @@ export default function GlobalSettingsClient() {
 
                 {/* Premium Toggle */}
                 <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 max-w-md">
-                   <button 
+                  <button
                     onClick={() => setIsTrialPremium(!isTrialPremium)}
                     className={`relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${isTrialPremium ? 'bg-accent' : 'bg-white/10'}`}
                   >
@@ -146,7 +155,10 @@ export default function GlobalSettingsClient() {
                   </div>
                 </div>
               </div>
-              
+            </div>
+
+            {/* ย้าย Save ออกมานอก div ที่ pointer-events-none */}
+            <div className="flex justify-end mt-4">
               <button
                 onClick={handleSaveConfig}
                 disabled={saving || loading}
@@ -164,19 +176,19 @@ export default function GlobalSettingsClient() {
       <div className="pt-10 border-t border-white/10">
         <h2 className="text-[20px] font-bold text-red-500 mb-4 flex items-center gap-2">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           Danger Zone
         </h2>
-        
+
         <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <p className="font-semibold text-text-base">Reset Global Mappings</p>
               <p className="text-[13px] text-text-muted mt-1 max-w-md">
-                This will permanently delete all custom gift-to-function mappings for ALL users. 
+                This will permanently delete all custom gift-to-function mappings for ALL users.
                 Users will be reverted to using default mappings.
               </p>
             </div>
