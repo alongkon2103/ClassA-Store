@@ -41,8 +41,19 @@
     "search_results": "ผลการค้นหา"
   },
   "ProductModal": {
+    "premium_warning_title": "ไม่ซื้อ Premium?",
+    "premium_warning_desc_1": "หากไม่ได้ซื้อ ",
+    "premium_warning_desc_2": "Premium",
+    "premium_warning_desc_3": " คุณจะ",
+    "premium_warning_desc_4": " ไม่ได้รับสิทธิ์",
+    "premium_warning_desc_5": "ในการใช้โปรแกรมของทางร้าน และระบบพิเศษใน Map",
+    "premium_warning_feature_1": "สิทธิ์ใช้โปรแกรมของทางร้าน",
+    "premium_warning_feature_2": "ระบบพิเศษใน Map",
+    "premium_warning_feature_3": "ฟีเจอร์ Exclusive สำหรับ Premium",
+    "premium_warning_keep": "เก็บ Premium ไว้",
+    "premium_warning_skip": "ไม่เป็นไร ไม่เอา Premium",
     "upgrade_premium": "อัพเกรดเป็นพรีเมี่ยม",
-    "upgrade_unlock":"ปลดล็อคระบบสุดพรีเมี่ยม",
+    "upgrade_unlock": "ปลดล็อคระบบสุดพรีเมี่ยม",
     "login_required": "ต้องเข้าสู่ระบบ",
     "login_required_desc": "คุณต้องเข้าสู่ระบบก่อนที่จะซื้อสินค้าได้",
     "login_button": "เข้าสู่ระบบ",
@@ -91,7 +102,7 @@
     "settings": "ตั้งค่า",
     "TikTok Live": "TikTok Live",
     "tiktok_simulator": "TikTok Simulator",
-    "nav_title" :"รายการอัพเกรด",
+    "nav_title": "รายการอัพเกรด",
     "downloadApp": "ดาวน์โหลดแอพ",
     "download": "ดาวน์โหลด",
     "downloadHint": "Windows อาจแจ้งเตือนความปลอดภัย กด 'Keep anyway' เพื่อดำเนินการต่อ",
@@ -435,7 +446,7 @@
     "pending_hint": "ชื่อของคุณจะถูกเพิ่มเข้าไวท์ลิสต์ภายใน 24 ชั่วโมงหลังยืนยันการชำระเงิน",
     "whitelisted_hint": "คุณได้รับการเพิ่มไวท์ลิสต์แล้ว สามารถเข้าใช้งานเซิร์ฟเวอร์ได้ทันที",
     "removed_hint": "การเข้าถึงของคุณถูกยกเลิก โปรดติดต่อฝ่ายสนับสนุน",
-     "back": "ย้อนกลับ",
+    "back": "ย้อนกลับ",
     "title": "ตั้งค่าเกม",
     "subtitle": "จัดการการตั้งค่า TikTok และ Gift ของคุณ",
     "game": "เกม",
@@ -583,7 +594,7 @@
     "price": "ราคา",
     "hot": "ยอดฮิต"
   },
- "Setting": {
+  "Setting": {
     "back": "ย้อนกลับ",
     "title": "ตั้งค่าเกม",
     "subtitle": "จัดการการตั้งค่า TikTok และ Gift ของคุณ",
@@ -658,8 +669,8 @@
     "updateFailed": "อัปเดตสถานะไม่สำเร็จ",
     "deleteFailed": "ลบข้อมูลไม่สำเร็จ",
     "deleteConfirm": "คุณแน่ใจหรือไม่ว่าต้องการลบของขวัญนี้?"
-    },
-    "AdminGiftImages": {
+  },
+  "AdminGiftImages": {
     "title": "รูปภาพของขวัญ",
     "subtitle": "จัดการรูปภาพตัวอย่างของขวัญสำหรับระบบจำลองและแกลเลอรี",
     "dragDrop": "ลากรูปภาพมาวางที่นี่ หรือ",
@@ -676,8 +687,8 @@
     "saveFailed": "บันทึกข้อมูลลงฐานข้อมูลไม่สำเร็จ",
     "deleteFailed": "ลบรูปภาพไม่สำเร็จ",
     "deleteConfirm": "ยืนยันการลบรูปภาพของขวัญนี้?"
-    },
-    "AdminFunctions": {
+  },
+  "AdminFunctions": {
     "title": "Functions",
     "subtitle": "จัดการ function ของสินค้า เช่น kill, run, bigsize",
     "addFunction": "เพิ่ม Function",
@@ -703,34 +714,34 @@
     "noGiftsFound": "ไม่พบของขวัญ"
   },
   "TikTokSimulator": {
-  "title": "TikTok Gift Simulator",
-  "subtitle": "จำลองเหตุการณ์ส่งของขวัญ TikTok LIVE เพื่อทดสอบระบบ",
-  "dev_only": "Dev Only",
-  "sender_info": "ข้อมูลผู้ส่ง",
-  "sender_username": "ชื่อผู้ใช้ TikTok (ผู้ส่ง)",
-  "sender_nickname": "ชื่อเล่น (ผู้ส่ง)",
-  "recipient_username": "ชื่อผู้ใช้ TikTok (ผู้รับ / Live)",
-  "recipient_hint": "ชื่อผู้ใช้ของคนที่กำลัง Live อยู่ (คนรับของขวัญ)",
-  "select_gift": "เลือกของขวัญ",
-  "gifts_count": "{count} รายการ",
-  "search_gift": "ค้นหาของขวัญ...",
-  "no_gift_found": "ไม่พบของขวัญที่ชื่อ \"{query}\"",
-  "send_options": "ตัวเลือกการส่ง",
-  "repeat_count": "จำนวนครั้ง",
-  "total_diamonds": "รวม: 💎 {count} เพชร",
-  "send_button": "ส่ง {name} x{count}",
-  "sending": "กำลังส่ง...",
-  "auto_mode": "โหมดอัตโนมัติ",
-  "auto_mode_desc": "ส่งของขวัญสุ่มอัตโนมัติเพื่อทดสอบระบบ",
-  "interval": "ช่วงเวลา (วินาที)",
-  "auto_running": "กำลังทำงาน — ส่งทุก {sec} วินาที",
-  "event_log": "Event Log",
-  "event_log_count": "{count} เหตุการณ์",
-  "clear": "ล้าง",
-  "no_events": "ยังไม่มีเหตุการณ์ — กดส่งของขวัญเพื่อเริ่มต้น",
-  "no_gifts_empty": "ยังไม่มีของขวัญ — กรุณาเพิ่มในหน้า Admin → Gifts ก่อน"
-},
-"AdminUpgrade": {
+    "title": "TikTok Gift Simulator",
+    "subtitle": "จำลองเหตุการณ์ส่งของขวัญ TikTok LIVE เพื่อทดสอบระบบ",
+    "dev_only": "Dev Only",
+    "sender_info": "ข้อมูลผู้ส่ง",
+    "sender_username": "ชื่อผู้ใช้ TikTok (ผู้ส่ง)",
+    "sender_nickname": "ชื่อเล่น (ผู้ส่ง)",
+    "recipient_username": "ชื่อผู้ใช้ TikTok (ผู้รับ / Live)",
+    "recipient_hint": "ชื่อผู้ใช้ของคนที่กำลัง Live อยู่ (คนรับของขวัญ)",
+    "select_gift": "เลือกของขวัญ",
+    "gifts_count": "{count} รายการ",
+    "search_gift": "ค้นหาของขวัญ...",
+    "no_gift_found": "ไม่พบของขวัญที่ชื่อ \"{query}\"",
+    "send_options": "ตัวเลือกการส่ง",
+    "repeat_count": "จำนวนครั้ง",
+    "total_diamonds": "รวม: 💎 {count} เพชร",
+    "send_button": "ส่ง {name} x{count}",
+    "sending": "กำลังส่ง...",
+    "auto_mode": "โหมดอัตโนมัติ",
+    "auto_mode_desc": "ส่งของขวัญสุ่มอัตโนมัติเพื่อทดสอบระบบ",
+    "interval": "ช่วงเวลา (วินาที)",
+    "auto_running": "กำลังทำงาน — ส่งทุก {sec} วินาที",
+    "event_log": "Event Log",
+    "event_log_count": "{count} เหตุการณ์",
+    "clear": "ล้าง",
+    "no_events": "ยังไม่มีเหตุการณ์ — กดส่งของขวัญเพื่อเริ่มต้น",
+    "no_gifts_empty": "ยังไม่มีของขวัญ — กรุณาเพิ่มในหน้า Admin → Gifts ก่อน"
+  },
+  "AdminUpgrade": {
     "title": "แดชบอร์ดอัปเกรดพรีเมียม",
     "subtitle": "ติดตามรายได้และธุรกรรมการอัปเกรด",
     "days": "{count} วัน",
@@ -760,7 +771,7 @@
     "col_method": "วิธีชำระเงิน",
     "col_date": "วันที่"
   },
-   "DownloadModal": {
+  "DownloadModal": {
     "title": "ข้อมูลเวอร์ชัน & ดาวน์โหลด",
     "release_title": "Release v3.0.0: A Class Store — TikTok Live x Roblox Interactive System",
     "release_intro": "A Class Store — TikTok Live เปิดตัวอย่างเป็นทางการแล้ว!",
@@ -791,7 +802,7 @@
     "setup_step5": "กดปุ่ม START — ระบบจะเริ่มส่งข้อมูลจากไลฟ์ไปทำงานร่วมกับเกม Roblox ทันที!",
     "footer_contact": "หากพบปัญหาการใช้งาน หรือมีข้อสงสัยเพิ่มเติม สามารถติดต่อทีมงานได้ที่เพจ หรือผ่านทางเว็บไซต์ AclassStore โดยตรง",
     "download_btn": "ดาวน์โหลดโปรแกรม (AclassStoreLive.exe)",
-     "usage_warning_title": "ข้อควรระวังในการใช้งาน",
+    "usage_warning_title": "ข้อควรระวังในการใช้งาน",
     "usage_warning_intro": "หลังจากได้รับ Key และทำการติดตั้งเรียบร้อยแล้ว ผู้ใช้งานควรหลีกเลี่ยงการกดปุ่ม Start และ Stop ติดต่อกันหลายครั้งในช่วงเวลาสั้น ๆ",
     "usage_warning_interval": "ควรเว้นระยะระหว่างการเริ่มต้นและหยุดการทำงานของระบบในแต่ละครั้งอย่างเหมาะสม",
     "usage_warning_detection": "การเปิดและปิดระบบบ่อยเกินไปอาจทำให้ระบบของ TikTok ตรวจพบพฤติกรรมที่ผิดปกติ และอาจตีความว่าเป็นการใช้งานโดยบอท (Bot)",
@@ -800,5 +811,5 @@
     "usage_warning_disclaimer": "ทางร้านขอสงวนสิทธิ์ไม่รับผิดชอบต่อความเสียหายหรือปัญหาที่เกิดขึ้นจากการใช้งานที่ไม่เป็นไปตามคำแนะนำข้างต้น"
   }
 }นะนำข้างต้น"
-  }
+}
 }

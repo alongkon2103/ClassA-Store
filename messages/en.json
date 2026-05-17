@@ -41,6 +41,17 @@
     "search_results": "Search results"
   },
   "ProductModal": {
+    "premium_warning_title": "Skip Premium?",
+    "premium_warning_desc_1": "Without ",
+    "premium_warning_desc_2": "Premium",
+    "premium_warning_desc_3": " you will ",
+    "premium_warning_desc_4": "not have access",
+    "premium_warning_desc_5": " to our store programs and special Map features.",
+    "premium_warning_feature_1": "Access to store programs",
+    "premium_warning_feature_2": "Special Map features",
+    "premium_warning_feature_3": "Exclusive Premium features",
+    "premium_warning_keep": "Keep Premium",
+    "premium_warning_skip": "No thanks, skip Premium",
     "upgrade_premium": "Upgrade to PREMIUM",
     "upgrade_unlock": "Unlock exclusive premium features",
     "login_required": "Login Required",
@@ -91,7 +102,7 @@
     "settings": "Settings",
     "TikTok Live": "TikTok Live",
     "tiktok_simulator": "TikTok Simulator",
-    "nav_title" :"Premium Upgrade",
+    "nav_title": "Premium Upgrade",
     "back_to_store": "Back to Store",
     "overview": "Overview",
     "catalog": "Catalog",
@@ -338,7 +349,7 @@
     "of_pool": "of pool",
     "no_partners": "No partners defined",
     "no_consignment": "No consignment products yet"
-    },
+  },
   "Analytics": {
     "title": "Analytics Dashboard",
     "total_revenue": "Total Revenue",
@@ -432,7 +443,7 @@
     "pending_hint": "Your username will be whitelisted within 24 hours after payment confirmation.",
     "whitelisted_hint": "You have been whitelisted. You can now access the server.",
     "removed_hint": "Your access has been removed. Please contact support.",
-     "back": "Back",
+    "back": "Back",
     "title": "Game Settings",
     "subtitle": "Manage your TikTok and Gift settings",
     "game": "Game",
@@ -468,7 +479,6 @@
     "premiumLifetimeDesc": "Unlock all features",
     "proceedToCheckout": "Proceed to Checkout",
     "upgradeNote": "Upgrade takes effect immediately after payment"
-    
   },
   "AdminProductForm": {
     "edit": "Edit — {name}",
@@ -581,7 +591,7 @@
     "price": "Price",
     "hot": "HOT"
   },
-   "Setting": {
+  "Setting": {
     "back": "Back",
     "title": "Game Settings",
     "subtitle": "Manage your TikTok and Gift settings",
@@ -757,8 +767,8 @@
     "col_amount": "Amount",
     "col_method": "Payment Method",
     "col_date": "Date"
-},
-"DownloadModal": {
+  },
+  "DownloadModal": {
     "title": "Release Notes & Download",
     "release_title": "Release v3.0.0: A Class Store — TikTok Live x Roblox Interactive System",
     "release_intro": "A Class Store — TikTok Live is officially launched! ",
@@ -797,5 +807,6 @@
     "usage_warning_system_effect": "This will affect the overall functionality of the system, including the display of gifts and event triggers within your Roblox map.",
     "usage_warning_disclaimer": "The seller shall not be held responsible for any issues or damages resulting from improper use that does not follow the above recommendations."
   }
-}}
+}
+}
 }

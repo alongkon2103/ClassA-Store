@@ -95,6 +95,82 @@ function UsernameHelpModal({ onClose, images }: { onClose: () => void; images: s
   )
 }
 
+function PremiumWarningModal({ onConfirm, onCancel }: {
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  const t = useTranslations("ProductModal")  // ← เรียกเองข้างใน
+
+  const features = [
+    t("premium_warning_feature_1"),
+    t("premium_warning_feature_2"),
+    t("premium_warning_feature_3"),
+  ]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+      style={{ background: "var(--color-overlay)", backdropFilter: "blur(10px)" }}
+      onClick={onCancel}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+        className="relative w-[90%] max-w-sm rounded-2xl p-6 flex flex-col items-center gap-4"
+        style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border-soft)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-14 h-14 rounded-full bg-yellow-500/15 flex items-center justify-center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </div>
+
+        <div className="text-center space-y-1.5">
+          <h2 className="text-[17px] font-bold text-white">{t("premium_warning_title")}</h2>
+          <p className="text-[13px] text-text-muted leading-relaxed">
+            {t("premium_warning_desc_1")}
+            <span className="text-yellow-400 font-semibold">{t("premium_warning_desc_2")}</span>
+            {t("premium_warning_desc_3")}
+            <span className="text-red-400 font-semibold">{t("premium_warning_desc_4")}</span>
+            {t("premium_warning_desc_5")}
+          </p>
+        </div>
+
+        <div className="w-full bg-white/5 rounded-xl p-3.5 space-y-2">
+          {features.map((item) => (
+            <div key={item} className="flex items-center gap-2.5">
+              <div className="w-4 h-4 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="3.5">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </div>
+              <p className="text-[12px] text-text-muted">{item}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="w-full flex flex-col gap-2 pt-1">
+          <button
+            onClick={onCancel}
+            className="w-full py-3 rounded-xl font-bold text-[14px] text-black bg-yellow-500 hover:opacity-90 active:scale-95 transition"
+          >
+            {t("premium_warning_keep")}
+          </button>
+          <button
+            onClick={onConfirm}
+            className="w-full py-2.5 rounded-xl text-[13px] text-text-muted bg-white/5 hover:bg-white/10 transition"
+          >
+            {t("premium_warning_skip")}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 // --- Main Component ---
 export default function ProductModal({ product, onClose }: any) {
   const { data: session } = useSession()
@@ -117,6 +193,7 @@ export default function ProductModal({ product, onClose }: any) {
   const [loadingTrial, setLoadingTrial] = useState(false)
   const [trialDuration, setTrialDuration] = useState<number | null>(null)
   const [isTrialEnabled, setIsTrialEnabled] = useState(true)
+  const [showPremiumWarning, setShowPremiumWarning] = useState(false)
 
   useEffect(() => {
     fetch("/api/checkout/trial")
@@ -140,7 +217,7 @@ export default function ProductModal({ product, onClose }: any) {
 
   const premiumVar = (product.product_variants ?? []).find((v: any) => v.variant_type === "premium")
   const premiumAddonPrice = Number(premiumVar?.premium_addon_price ?? 0)
-  
+
   // TypeScript Fix: Strictly cast nullable DB field to boolean
   const isPremiumProduct: boolean = !!product.is_premium
 
@@ -251,8 +328,16 @@ export default function ProductModal({ product, onClose }: any) {
       <AnimatePresence>
         {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
         {showUsernameHelp && <UsernameHelpModal onClose={() => { setShowUsernameHelp(false); inputRef.current?.blur() }} images={usernameHelpImages} />}
+        {showPremiumWarning && (
+          <PremiumWarningModal
+            onConfirm={() => {
+              setIsPremiumSelected(false)
+              setShowPremiumWarning(false)
+            }}
+            onCancel={() => setShowPremiumWarning(false)}
+          />
+        )}
       </AnimatePresence>
-
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:p-5"
@@ -376,7 +461,13 @@ export default function ProductModal({ product, onClose }: any) {
             {/* PREMIUM ADD-ON */}
             {premiumAddonPrice > 0 && (
               <div
-                onClick={() => setIsPremiumSelected(!isPremiumSelected)}
+                onClick={() => {
+                  if (isPremiumSelected) {
+                    setShowPremiumWarning(true)
+                  } else {
+                    setIsPremiumSelected(true)
+                  }
+                }}
                 className={`cursor-pointer p-4 rounded-2xl border transition-all flex items-center justify-between ${isPremiumSelected ? "bg-yellow-500/10 border-yellow-500/50 shadow-lg" : "bg-white/5 border-white/10 hover:border-white/20"}`}
               >
                 <div className="flex items-center gap-3">
@@ -424,18 +515,18 @@ export default function ProductModal({ product, onClose }: any) {
                   disabled={loadingTrial || !!(session && hasUsedTrial)}
                   onClick={handleTrialClick}
                   className={`w-full py-3.5 rounded-xl font-bold text-[14px] border transition-all flex items-center justify-center gap-2 ${(session && hasUsedTrial)
-                      ? "border-white/5 bg-white/5 text-text-muted cursor-not-allowed opacity-50"
-                      : "bg-violet-600/20 hover:bg-violet-600/30 border-violet-500/40 text-violet-400 active:scale-[0.98] shadow-lg shadow-violet-500/10"
+                    ? "border-white/5 bg-white/5 text-text-muted cursor-not-allowed opacity-50"
+                    : "bg-violet-600/20 hover:bg-violet-600/30 border-violet-500/40 text-violet-400 active:scale-[0.98] shadow-lg shadow-violet-500/10"
                     }`}
                 >
                   {loadingTrial ? (
                     <div className="w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin"></div>
                   ) : (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                     </svg>
                   )}
-                  {!session 
+                  {!session
                     ? t("login_to_trial")
                     : hasUsedTrial
                       ? t("trial_limit_reached")
