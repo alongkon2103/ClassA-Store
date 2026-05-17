@@ -17,14 +17,14 @@ interface Gift {
 // PostgreSQL Connection
 // ==============================
 const pool = new Pool({
-  connectionString: "",
+  connectionString: "postgres://gamestore_dev:NWv4aD9KpRYyIBIy%21%40%23012@127.0.0.1:5432/gamestore_db",
 })
 
 // ==============================
 // Config
 // ==============================
 const JSON_FILE = path.join(process.cwd(), "scripts/gifts_th.json")
-const TARGET_DIR = "/var/www/uploads"
+const TARGET_DIR = "/var/www/uploads/uploads"
 const URL_PREFIX = "/uploads"
 
 // ==============================

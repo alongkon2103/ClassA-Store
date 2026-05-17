@@ -269,7 +269,7 @@ model user_whitelist_access {
 
   products products @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
-  @@unique([ign, product_id])
+  @@unique([ign, product_id]) // This generates 'ign_product_id'
   @@index([ign], map: "idx_uwa_ign")
 }
 

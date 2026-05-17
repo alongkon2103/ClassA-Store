@@ -1,15 +1,16 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 
 export async function DELETE(
-    req: Request,
-    { params }: { params: { id: string } }
+    req: NextRequest, // Updated to NextRequest
+    { params }: { params: Promise<{ id: string }> } // Updated to Promise type
 ) {
     const adminCheck = await validateAdmin()
     if (!adminCheck.isValid) return adminCheck.response
 
     try {
+        // This is perfect, now TypeScript knows it's a Promise and can be awaited properly
         const { id } = await params
 
         await prisma.user_whitelist_access.delete({
