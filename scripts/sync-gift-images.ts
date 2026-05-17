@@ -17,7 +17,7 @@ interface Gift {
 // PostgreSQL Connection
 // ==============================
 const pool = new Pool({
-  connectionString: "postgres://gamestore_dev:NWv4aD9KpRYyIBIy%21%40%23012@127.0.0.1:5432/gamestore_db",
+  connectionString: "",
 })
 
 // ==============================
