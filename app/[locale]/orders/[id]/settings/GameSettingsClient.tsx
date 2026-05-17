@@ -474,7 +474,7 @@ export default function GameSettingsClient({
                         </div>
 
                         {/* Download App (Hidden during Trial) */}
-                        {orderType !== "TRIAL" && (
+
                             <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
                                 <div className="relative bg-gradient-to-r from-accent/20 via-accent/10 to-transparent px-4 py-3 border-b border-accent/10 overflow-hidden">
                                     <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-accent/10 blur-2xl pointer-events-none" />
@@ -514,7 +514,6 @@ export default function GameSettingsClient({
                                     </button>
                                 </div>
                             </div>
-                        )}
 
                         {/* Save Button (desktop) */}
                         {functions.length > 0 && (
