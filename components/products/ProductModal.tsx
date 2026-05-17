@@ -115,20 +115,18 @@ export default function ProductModal({ product, onClose }: any) {
   const [isPremiumSelected, setIsPremiumSelected] = useState(true)
   const [hasUsedTrial, setHasUsedTrial] = useState(false)
   const [loadingTrial, setLoadingTrial] = useState(false)
-  const [trialDuration, setTrialDuration] = useState(10)
+  const [trialDuration, setTrialDuration] = useState<number | null>(null)
   const [isTrialEnabled, setIsTrialEnabled] = useState(true)
 
   useEffect(() => {
-    if (session) {
-      fetch("/api/checkout/trial")
-        .then(res => res.json())
-        .then(data => {
-          if (data.hasUsedTrial) setHasUsedTrial(true)
-          if (data.trialDuration) setTrialDuration(data.trialDuration)
-          if (data.isTrialEnabled !== undefined) setIsTrialEnabled(data.isTrialEnabled)
-        })
-        .catch(() => { })
-    }
+    fetch("/api/checkout/trial")
+      .then(res => res.json())
+      .then(data => {
+        if (data.hasUsedTrial) setHasUsedTrial(true)
+        if (data.trialDuration) setTrialDuration(data.trialDuration)
+        if (data.isTrialEnabled !== undefined) setIsTrialEnabled(data.isTrialEnabled)
+      })
+      .catch(() => { })
   }, [session])
 
   useEffect(() => {
@@ -142,6 +140,9 @@ export default function ProductModal({ product, onClose }: any) {
 
   const premiumVar = (product.product_variants ?? []).find((v: any) => v.variant_type === "premium")
   const premiumAddonPrice = Number(premiumVar?.premium_addon_price ?? 0)
+  
+  // TypeScript Fix: Strictly cast nullable DB field to boolean
+  const isPremiumProduct: boolean = !!product.is_premium
 
   useEffect(() => {
     if (premiumAddonPrice <= 0) setIsPremiumSelected(false)
@@ -400,45 +401,55 @@ export default function ProductModal({ product, onClose }: any) {
               </div>
             )}
 
-            {/* IN-GAME USERNAME */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("ingame_username")}</p>
-                <button onClick={() => setShowUsernameHelp(true)} className="text-[11px] text-accent-light hover:opacity-80 transition flex items-center gap-1">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-                  {t("how_to_find")}
-                </button>
+            {/* IN-GAME USERNAME - Auth Guard: Hide if trial enabled but not logged in */}
+            {(!isTrialEnabled || session) ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("ingame_username")}</p>
+                  <button onClick={() => setShowUsernameHelp(true)} className="text-[11px] text-accent-light hover:opacity-80 transition flex items-center gap-1">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                    {t("how_to_find")}
+                  </button>
+                </div>
+                <input ref={inputRef} value={whitelistUsername} onChange={(e) => setWhitelistUsername(e.target.value)}
+                  onFocus={() => { if (!hasShownUsernameHelp.current) { hasShownUsernameHelp.current = true; setShowUsernameHelp(true) } }}
+                  placeholder={t("ingame_username_placeholder")} className="w-full bg-bg-base border border-accent/15 rounded-xl px-4 py-3 text-[13px] outline-none focus:border-accent/40 transition" />
               </div>
-              <input ref={inputRef} value={whitelistUsername} onChange={(e) => setWhitelistUsername(e.target.value)}
-                onFocus={() => { if (!hasShownUsernameHelp.current) { hasShownUsernameHelp.current = true; setShowUsernameHelp(true) } }}
-                placeholder={t("ingame_username_placeholder")} className="w-full bg-bg-base border border-accent/15 rounded-xl px-4 py-3 text-[13px] outline-none focus:border-accent/40 transition" />
-            </div>
+            ) : null}
 
             {/* FREE TRIAL OPTION */}
-            {/* {isTrialEnabled && (
+            {isTrialEnabled && (
               <div className="pt-2">
                 <button
-                  disabled={loadingTrial || hasUsedTrial}
+                  disabled={loadingTrial || !!(session && hasUsedTrial)}
                   onClick={handleTrialClick}
-                  className={`w-full py-3.5 rounded-xl font-bold text-[14px] border-2 transition-all flex items-center justify-center gap-2 ${hasUsedTrial
-                      ? "border-white/5 bg-white/5 text-text-muted cursor-not-allowed"
-                      : "border-accent/30 text-accent-light hover:bg-accent/5 hover:border-accent active:scale-[0.98]"
+                  className={`w-full py-3.5 rounded-xl font-bold text-[14px] border transition-all flex items-center justify-center gap-2 ${(session && hasUsedTrial)
+                      ? "border-white/5 bg-white/5 text-text-muted cursor-not-allowed opacity-50"
+                      : "bg-violet-600/20 hover:bg-violet-600/30 border-violet-500/40 text-violet-400 active:scale-[0.98] shadow-lg shadow-violet-500/10"
                     }`}
                 >
                   {loadingTrial ? (
-                    <div className="w-4 h-4 border-2 border-accent-light border-t-transparent rounded-full animate-spin"></div>
-                  ) : null}
-                  {hasUsedTrial
-                    ? (isTH ? "ใช้สิทธิ์ของวันนี้ครบแล้ว" : "Daily trial limit reached")
-                    : (isTH ? `เปิดใช้งานสิทธิ์ทดลองใช้ฟรี ${trialDuration} นาที` : `Start ${trialDuration}-Minute Free Trial`)}
+                    <div className="w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  )}
+                  {!session 
+                    ? t("login_to_trial")
+                    : hasUsedTrial
+                      ? t("trial_limit_reached")
+                      : t("free_trial_btn", { duration: trialDuration ?? "..." })}
                 </button>
-                {!hasUsedTrial && (
-                  <p className="text-[11px] text-text-muted text-center mt-2.5">
-                    {isTH ? "*จำกัด 1 ครั้งต่อวัน และจะรีเซ็ตทุกเที่ยงคืน" : "*Limited to once per day, resets at midnight"}
+                {(session && !hasUsedTrial) && (
+                  <p className="text-[11px] text-gray-400 font-medium text-center mt-3">
+                    {t("free_trial_limit")}
                   </p>
                 )}
               </div>
-            )} */}
+            )}
+
+            <hr className="border-white/5 my-4" />
 
             {/* PAYMENT METHOD */}
             <div className="space-y-2">

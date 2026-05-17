@@ -115,11 +115,11 @@ export default function LoginCard({ callbackUrl = "/" }: LoginCardProps) {
           )
         })}
 
-        {/* {process.env.NODE_ENV === "development" && (
+        {process.env.NODE_ENV === "development" && (
           <button onClick={() => signIn("dev-admin", { callbackUrl: "/" })}>
             🛠️ Dev Admin Login
           </button>
-        )} */}
+        )}
       </p>
     </div>
   )

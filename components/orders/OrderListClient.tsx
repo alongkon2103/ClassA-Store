@@ -52,6 +52,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
           const imageUrl = order.products.product_images[0]?.url || "/next.svg"
           const isPaid = order.status === "paid" || order.status === "Admin Buy"
           const isPending = order.status === "pending"
+          const isTrial = order.order_type === "TRIAL"
           const isPaying = payingId === order.id
           const hasFunctions = (order.products?.product_functions?.length ?? 0) > 0
 
@@ -61,7 +62,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
               onClick={() => isPaid && setSelectedOrder(order)}
               className={`group bg-bg-card border border-accent/10 rounded-xl p-2.5 md:p-4 transition-all duration-300 flex items-center gap-3 md:gap-4 ${
                 isPaid ? "cursor-pointer hover:border-accent/30 hover:shadow-xl hover:shadow-accent/5" : "cursor-default"
-              } ${!isPaid && !isPending ? "opacity-70" : ""}`}
+              } ${!isPaid && !isPending ? "opacity-70" : ""} ${isTrial ? "border-violet-500/20 bg-violet-500/5 shadow-lg shadow-violet-500/5" : ""}`}
             >
               {/* Thumbnail */}
               <div className="w-10 h-10 md:w-16 md:h-16 relative rounded-lg overflow-hidden shrink-0 shadow-lg">
@@ -70,25 +71,44 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                   alt={locale === "th" ? order.products.name_th : order.products.name_en}
                   fill className="object-cover"
                 />
+                {isTrial && (
+                  <div className="absolute inset-0 bg-violet-500/10 flex items-center justify-center">
+                    <div className="bg-violet-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                      {t("trial_badge")}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <h3 className="text-[13px] md:text-[15px] font-bold text-text-base group-hover:text-accent-light transition-colors truncate mb-0.5">
-                  {locale === "th" ? order.products.name_th : order.products.name_en}
-                </h3>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h3 className={`text-[13px] md:text-[15px] font-bold transition-colors truncate ${isTrial ? "text-violet-400 group-hover:text-violet-300" : "text-text-base group-hover:text-accent-light"}`}>
+                    {locale === "th" ? order.products.name_th : order.products.name_en}
+                  </h3>
+                  {isTrial && (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 text-[9px] font-bold border border-violet-500/20">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      {t("free_trial")}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-[12px] text-text-muted flex-wrap">
                   <span>
-                    {locale === "th"
-                      ? (order.product_variants?.label_th || t("standard_version"))
-                      : (order.product_variants?.label_en || t("standard_version"))}
+                    {isTrial ? (order.is_premium_order ? "Premium Trial" : "Normal Trial") : (
+                      locale === "th"
+                        ? (order.product_variants?.label_th || t("standard_version"))
+                        : (order.product_variants?.label_en || t("standard_version"))
+                    )}
                   </span>
                   <span>•</span>
                   <span>{order.created_at ? format(new Date(order.created_at), "dd MMM yy") : "—"}</span>
                   {order.whitelisted_username && (
                     <>
                       <span>•</span>
-                      <span className="font-mono text-accent-light">{order.whitelisted_username}</span>
+                      <span className={`font-mono ${isTrial ? "text-violet-400" : "text-accent-light"}`}>{order.whitelisted_username}</span>
                     </>
                   )}
                 </div>
@@ -97,17 +117,19 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
               {/* Right side */}
               <div className="flex flex-col items-end shrink-0 ml-auto gap-2">
                 <div className="text-right">
-                  <p className="text-[13px] md:text-[15px] font-bold text-text-base mb-0.5">
-                    ฿{Number(order.amount).toLocaleString()}
+                  <p className={`text-[13px] md:text-[15px] font-bold mb-0.5 ${isTrial ? "text-violet-400" : "text-text-base"}`}>
+                    {isTrial ? "FREE" : `฿${Number(order.amount).toLocaleString()}`}
                   </p>
                   <span className={`text-[7px] md:text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
-                    isPaid
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                      : order.status === "expired"
-                        ? "bg-red-500/10 text-red-400 border-red-500/20"
-                        : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                    isTrial
+                      ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
+                      : isPaid
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                        : order.status === "expired"
+                          ? "bg-red-500/10 text-red-400 border-red-500/20"
+                          : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
                   }`}>
-                    {order.status}
+                    {isTrial ? "Active" : order.status}
                   </span>
                 </div>
 

@@ -6,8 +6,9 @@ import { useTranslations } from "next-intl"
 export default function GlobalSettingsClient() {
   const t = useTranslations("Admin")
   const [resetting, setResetting] = useState(false)
-  const [trialDuration, setTrialDuration] = useState<string>("10")
+  const [trialDuration, setTrialDuration] = useState<string>("1")
   const [isTrialEnabled, setIsTrialEnabled] = useState<boolean>(true)
+  const [isTrialPremium, setIsTrialPremium] = useState<boolean>(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -26,6 +27,9 @@ export default function GlobalSettingsClient() {
       if (data.free_trial_enabled !== undefined) {
         setIsTrialEnabled(data.free_trial_enabled !== "false")
       }
+      if (data.free_trial_is_premium !== undefined) {
+        setIsTrialPremium(data.free_trial_is_premium === "true")
+      }
     } catch (error) {
       console.error("Failed to fetch configs", error)
     } finally {
@@ -36,7 +40,7 @@ export default function GlobalSettingsClient() {
   const handleSaveConfig = async () => {
     setSaving(true)
     try {
-      // Save both duration and enabled status
+      // Save duration, enabled status, and premium status
       await Promise.all([
         fetch("/api/admin/settings/configs", {
           method: "POST",
@@ -47,6 +51,11 @@ export default function GlobalSettingsClient() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ key: "free_trial_enabled", value: String(isTrialEnabled) })
+        }),
+        fetch("/api/admin/settings/configs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: "free_trial_is_premium", value: String(isTrialPremium) })
         })
       ])
       alert(t("save_config_success") || "Settings saved successfully")
@@ -103,20 +112,41 @@ export default function GlobalSettingsClient() {
               </button>
             </div>
 
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-              <div className={`flex-1 space-y-2 transition-opacity duration-200 ${!isTrialEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
-                <label className="text-[13px] text-text-muted font-medium">{t("trial_duration_label")}</label>
-                <div className="relative max-w-[200px]">
-                  <input
-                    type="number"
-                    value={trialDuration}
-                    onChange={e => setTrialDuration(e.target.value)}
-                    className="w-full bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-accent/40 transition"
-                    placeholder="10"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] text-text-muted">min</span>
+            <div className={`flex flex-col md:flex-row md:items-end justify-between gap-6 transition-opacity duration-200 ${!isTrialEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+              <div className="flex-1 space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[13px] text-text-muted font-medium">{t("trial_duration_label")}</label>
+                    <span className="text-[11px] text-accent-light bg-accent/5 px-2 py-0.5 rounded-md border border-accent/10">Unit: Days</span>
+                  </div>
+                  <div className="relative max-w-[200px]">
+                    <input
+                      type="number"
+                      value={trialDuration}
+                      onChange={e => setTrialDuration(e.target.value)}
+                      className="w-full bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-accent/40 transition"
+                      placeholder="e.g. 1 for 1 day"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] text-text-muted">{t("days")}</span>
+                  </div>
+                  <p className="text-[11px] text-text-muted mt-1 italic">* Enter the number of days users can test the system.</p>
+                </div>
+
+                {/* Premium Toggle */}
+                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 max-w-md">
+                   <button 
+                    onClick={() => setIsTrialPremium(!isTrialPremium)}
+                    className={`relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${isTrialPremium ? 'bg-accent' : 'bg-white/10'}`}
+                  >
+                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${isTrialPremium ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                  <div>
+                    <p className="text-[13px] font-bold text-text-base leading-none">{t("trial_premium_label")}</p>
+                    <p className="text-[11px] text-text-muted mt-1">Users will get Premium features during trial</p>
+                  </div>
                 </div>
               </div>
+              
               <button
                 onClick={handleSaveConfig}
                 disabled={saving || loading}

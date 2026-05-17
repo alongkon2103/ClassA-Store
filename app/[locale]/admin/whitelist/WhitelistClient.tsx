@@ -271,7 +271,7 @@ export default function WhitelistClient({
                                             <p className="text-[10px] text-accent-light mt-1.5 ml-1 font-medium">{t("permanent")}</p>
                                         )}
                                     </div>
-                                    {/* <div className="flex flex-col">
+                                    <div className="flex flex-col">
                                         <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("is_premium")}</label>
                                         <button
                                             type="button"
@@ -284,7 +284,7 @@ export default function WhitelistClient({
                                         >
                                             {formData.isPremium ? "★ PREMIUM" : "NORMAL"}
                                         </button>
-                                    </div> */}
+                                    </div>
                                 </div>
 
                                 {/* Footer */}

@@ -69,7 +69,11 @@
     "ingame_username_placeholder": "Enter your in-game username",
     "ingame_username_hint": "Double-check your username — it cannot be changed after purchasing",
     "card_fee_hint": "Includes 6% service fee",
-    "how_to_find": "How to find?"
+    "how_to_find": "How to find?",
+    "free_trial_btn": "Start {duration}-Day Free Trial",
+    "free_trial_limit": "*Limited to once per day, resets at midnight",
+    "trial_limit_reached": "Daily trial limit reached",
+    "login_to_trial": "Please Login to Start Free Trial"
   },
   "Admin": {
     "top_selling_products": "Top Selling Products",
@@ -178,7 +182,8 @@
     "removed": "Removed",
     "all": "All",
     "trial_duration_settings": "Trial Duration Settings",
-    "trial_duration_label": "Free Trial Duration (Minutes)",
+    "trial_duration_label": "Free Trial Duration (Days)",
+    "trial_premium_label": "Enable Premium for Free Trial",
     "save_config_success": "Settings saved successfully",
     "gifts": "Gifts",
     "days": "Days",
@@ -408,6 +413,8 @@
     "wait": "Wait...",
     "license_key": "License Key",
     "provisioning": "PROVISIONING...",
+    "free_trial": "Free Trial",
+    "trial_badge": "Trial",
     "image_assets": "Image Assets",
     "no_image_assets": "No image assets",
     "config_presets": "Config Presets",
@@ -790,4 +797,5 @@
     "usage_warning_system_effect": "This will affect the overall functionality of the system, including the display of gifts and event triggers within your Roblox map.",
     "usage_warning_disclaimer": "The seller shall not be held responsible for any issues or damages resulting from improper use that does not follow the above recommendations."
   }
+}}
 }

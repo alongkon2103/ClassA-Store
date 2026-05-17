@@ -8,33 +8,35 @@ import { startOfDay } from "date-fns"
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions)
-        if (!session?.user?.id) {
-            return NextResponse.json({ hasUsedTrial: false, unauthorized: true })
-        }
-
-        const todayStart = startOfDay(new Date())
-
-        const trialOrder = await prisma.orders.findFirst({
-            where: {
-                user_id: session.user.id,
-                order_type: "TRIAL",
-                created_at: { gte: todayStart }
-            }
-        })
-
+        
         const configs = await prisma.system_configs.findMany()
         const configMap = configs.reduce((acc, curr) => {
             acc[curr.key] = curr.value
             return acc
         }, {} as Record<string, string>)
 
-        const trialMinutes = configMap["free_trial_duration"] ? parseInt(configMap["free_trial_duration"]) : 10
-        const isTrialEnabled = configMap["free_trial_enabled"] !== "false" // Default to true if not found
+        const trialDays = configMap["free_trial_duration"] ? parseInt(configMap["free_trial_duration"]) : 1
+        const isTrialEnabled = configMap["free_trial_enabled"] !== "false"
+        const isTrialPremium = configMap["free_trial_is_premium"] === "true"
+
+        let hasUsedTrial = false
+        if (session?.user?.id) {
+            const todayStart = startOfDay(new Date())
+            const trialOrder = await prisma.orders.findFirst({
+                where: {
+                    user_id: session.user.id,
+                    order_type: "TRIAL",
+                    created_at: { gte: todayStart }
+                }
+            })
+            hasUsedTrial = !!trialOrder
+        }
 
         return NextResponse.json({ 
-            hasUsedTrial: !!trialOrder,
-            trialDuration: trialMinutes,
-            isTrialEnabled
+            hasUsedTrial,
+            trialDuration: trialDays,
+            isTrialEnabled,
+            isTrialPremium
         })
     } catch (err) {
         return NextResponse.json({ error: "Failed to check trial status" }, { status: 500 })
@@ -48,13 +50,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // 0. Check if Trial is Enabled
-    const trialEnabledConfig = await prisma.system_configs.findUnique({
-        where: { key: "free_trial_enabled" }
+    // 0. Check configs
+    const configs = await prisma.system_configs.findMany({
+        where: {
+            key: { in: ["free_trial_enabled", "free_trial_duration", "free_trial_is_premium"] }
+        }
     })
-    if (trialEnabledConfig?.value === "false") {
+    const configMap = configs.reduce((acc, curr) => {
+        acc[curr.key] = curr.value
+        return acc
+    }, {} as Record<string, string>)
+
+    if (configMap["free_trial_enabled"] === "false") {
         return NextResponse.json({ error: "Free trial system is currently disabled." }, { status: 403 })
     }
+
+    const trialDays = configMap["free_trial_duration"] ? parseInt(configMap["free_trial_duration"]) : 1
+    const isTrialPremium = configMap["free_trial_is_premium"] === "true"
 
     const { productId, whitelistUsername } = await req.json()
 
@@ -84,15 +96,11 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "You have already used your free trial for today. Reset at midnight." }, { status: 400 })
     }
 
-    // 2. Get Dynamic Duration
-    const trialConfig = await prisma.system_configs.findUnique({
-        where: { key: "free_trial_duration" }
-    })
-    const trialMinutes = trialConfig ? parseInt(trialConfig.value) : 10
-    const trialDuration = trialMinutes * 60 * 1000 // duration in ms
+    // 2. Calculation
+    const trialDurationMs = trialDays * 24 * 60 * 60 * 1000
 
     // 3. Create Trial Order
-    const expiresAt = new Date(Date.now() + trialDuration)
+    const expiresAt = new Date(Date.now() + trialDurationMs)
 
     const order = await prisma.$transaction(async (tx) => {
         const newOrder = await tx.orders.create({
@@ -107,7 +115,7 @@ export async function POST(req: Request) {
                 order_type: "TRIAL",
                 paid_at: new Date(),
                 expires_at: expiresAt,
-                is_premium_order: false,
+                is_premium_order: isTrialPremium,
             },
         })
 
@@ -122,10 +130,11 @@ export async function POST(req: Request) {
             create: {
                 ign: whitelistUsername.trim(),
                 product_id: product.id,
-                is_premium: false,
+                is_premium: isTrialPremium,
                 expires_at: expiresAt,
             },
             update: {
+                is_premium: isTrialPremium,
                 expires_at: expiresAt,
                 updated_at: new Date(),
             },

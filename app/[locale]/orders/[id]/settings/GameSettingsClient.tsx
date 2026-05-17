@@ -92,9 +92,18 @@ export default function GameSettingsClient({
     }, [orderType, expiresAt])
 
     const formatTime = (seconds: number) => {
-        const m = Math.floor(seconds / 60)
-        const s = seconds % 60
-        return `${m}:${s.toString().padStart(2, "0")}`
+        const days = Math.floor(seconds / (24 * 3600))
+        const hours = Math.floor((seconds % (24 * 3600)) / 3600)
+        const minutes = Math.floor((seconds % 3600) / 60)
+        const secs = seconds % 60
+
+        if (days > 0) {
+            return `${days}d ${hours}h ${minutes}m`
+        }
+        if (hours > 0) {
+            return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+        }
+        return `${minutes}:${secs.toString().padStart(2, "0")}`
     }
 
     useEffect(() => {

@@ -22,9 +22,13 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
 const rawOrders = await prisma.orders.findMany({
   where: {
     user_id: session.user.id,
-    NOT: {
-      order_type: "TRIAL",
-    },
+    OR: [
+      { order_type: { not: "TRIAL" } },
+      { 
+        order_type: "TRIAL",
+        expires_at: { gt: new Date() }
+      }
+    ]
   },
   orderBy: [
     {
