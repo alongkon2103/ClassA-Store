@@ -16,6 +16,7 @@ type ProductFunction = {
   image_url: string | null
   sort_order: number
   default_gift_id: number | null
+  default_trigger_threshold: number | null
   created_at: string | null
 }
 
@@ -37,14 +38,14 @@ export default function FunctionManager({ productId, functions: initial, allGift
   const [functions, setFunctions] = useState<ProductFunction[]>(
     [...initial].sort((a, b) => a.sort_order - b.sort_order)
   )
-  const [loading, setLoading]     = useState(false)
+  const [loading, setLoading] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [uploading, setUploading] = useState<"add" | "edit" | null>(null)
-  const [adding, setAdding]       = useState(false)
-  const [showAdd, setShowAdd]     = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [showAdd, setShowAdd] = useState(false)
 
-  const blankForm = { name: "", label_th: "", label_en: "", image_url: "", default_gift_id: null as number | null }
-  const [newForm, setNewForm]   = useState(blankForm)
+  const blankForm = { name: "", label_th: "", label_en: "", image_url: "", default_gift_id: null as number | null, default_trigger_threshold: "" as string }
+  const [newForm, setNewForm] = useState(blankForm)
   const [editForm, setEditForm] = useState(blankForm)
 
   // ── Upload ──────────────────────────────────────────────────
@@ -54,13 +55,13 @@ export default function FunctionManager({ productId, functions: initial, allGift
       const fd = new FormData()
       fd.append("file", file)
       fd.append("type", "image")
-      const res  = await fetch("/api/admin/upload", { method: "POST", body: fd })
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      if (target === "add")  setNewForm(p  => ({ ...p, image_url: data.url }))
+      if (target === "add") setNewForm(p => ({ ...p, image_url: data.url }))
       if (target === "edit") setEditForm(p => ({ ...p, image_url: data.url }))
     } catch { alert("Upload failed") }
-    finally  { setUploading(null) }
+    finally { setUploading(null) }
   }
 
   // ── Add ─────────────────────────────────────────────────────
@@ -72,12 +73,13 @@ export default function FunctionManager({ productId, functions: initial, allGift
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name:            newForm.name.trim().toLowerCase(),
-          label_th:        newForm.label_th.trim() || null,
-          label_en:        newForm.label_en.trim() || null,
-          image_url:       newForm.image_url || null,
-          sort_order:      functions.length,
+          name: newForm.name.trim().toLowerCase(),
+          label_th: newForm.label_th.trim() || null,
+          label_en: newForm.label_en.trim() || null,
+          image_url: newForm.image_url || null,
+          sort_order: functions.length,
           default_gift_id: newForm.default_gift_id,
+          default_trigger_threshold: newForm.default_trigger_threshold !== "" ? parseInt(newForm.default_trigger_threshold, 10) : null,
         }),
       })
       const data = await res.json()
@@ -93,11 +95,12 @@ export default function FunctionManager({ productId, functions: initial, allGift
   const startEdit = (fn: ProductFunction) => {
     setEditingId(fn.id)
     setEditForm({
-      name:            fn.name,
-      label_th:        fn.label_th ?? "",
-      label_en:        fn.label_en ?? "",
-      image_url:       fn.image_url ?? "",
+      name: fn.name,
+      label_th: fn.label_th ?? "",
+      label_en: fn.label_en ?? "",
+      image_url: fn.image_url ?? "",
       default_gift_id: fn.default_gift_id,
+      default_trigger_threshold: fn.default_trigger_threshold?.toString() ?? "",
     })
   }
 
@@ -108,11 +111,12 @@ export default function FunctionManager({ productId, functions: initial, allGift
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name:            editForm.name.trim().toLowerCase(),
-          label_th:        editForm.label_th.trim() || null,
-          label_en:        editForm.label_en.trim() || null,
-          image_url:       editForm.image_url || null,
+          name: editForm.name.trim().toLowerCase(),
+          label_th: editForm.label_th.trim() || null,
+          label_en: editForm.label_en.trim() || null,
+          image_url: editForm.image_url || null,
           default_gift_id: editForm.default_gift_id,
+          default_trigger_threshold: editForm.default_trigger_threshold !== "" ? parseInt(editForm.default_trigger_threshold, 10) : null,
         }),
       })
       const data = await res.json()
@@ -140,7 +144,7 @@ export default function FunctionManager({ productId, functions: initial, allGift
     const next = [...functions]
     const swap = index + dir
     if (swap < 0 || swap >= next.length) return
-    ;[next[index], next[swap]] = [next[swap], next[index]]
+      ;[next[index], next[swap]] = [next[swap], next[index]]
     const updated = next.map((f, i) => ({ ...f, sort_order: i }))
     setFunctions(updated)
     try {
@@ -168,7 +172,7 @@ export default function FunctionManager({ productId, functions: initial, allGift
           className="flex items-center gap-2 bg-accent hover:opacity-90 text-white text-[13px] font-semibold px-4 py-2.5 rounded-xl transition active:scale-95"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           {t("addFunction")}
         </button>
@@ -189,7 +193,7 @@ export default function FunctionManager({ productId, functions: initial, allGift
               <p className="text-[11px] tracking-widest text-accent-light uppercase font-medium">
                 {t("newFunction")}
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
 
                 {/* Icon + Name */}
                 <div className="space-y-3">
@@ -240,10 +244,25 @@ export default function FunctionManager({ productId, functions: initial, allGift
                   <GiftPicker
                     gifts={allGifts}
                     value={newForm.default_gift_id}
-                    onChange={id => setNewForm(p => ({ ...p, default_gift_id: id }))}
+                    onChange={id => setNewForm(p => ({ ...p, default_gift_id: id, default_trigger_threshold: "" }))}
                     placeholder={t("noDefault")}
                   />
                 </div>
+
+                {/* Default Threshold */}
+                {getGift(newForm.default_gift_id)?.trigger_type === 'Like' && (
+                  <div>
+                    <FieldLabel>{t("defaultThreshold")}</FieldLabel>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newForm.default_trigger_threshold}
+                      onChange={e => setNewForm(p => ({ ...p, default_trigger_threshold: e.target.value }))}
+                      placeholder="เช่น 50, 100, 200"
+                      className={inp}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
@@ -273,7 +292,7 @@ export default function FunctionManager({ productId, functions: initial, allGift
         <div className="text-center py-16 bg-bg-card border border-dashed border-accent/15 rounded-2xl">
           <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-accent/10 flex items-center justify-center">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-accent-light">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
           </div>
           <p className="text-[13px] text-text-muted">{t("empty")}</p>
@@ -284,20 +303,19 @@ export default function FunctionManager({ productId, functions: initial, allGift
       <div className="space-y-2">
         {functions.map((fn, i) => {
           const isEditing = editingId === fn.id
-          const gift      = getGift(fn.default_gift_id)
+          const gift = getGift(fn.default_gift_id)
 
           return (
             <div
               key={fn.id}
-              className={`group bg-bg-card border rounded-2xl transition-all duration-200 ${
-                isEditing
+              className={`group bg-bg-card border rounded-2xl transition-all duration-200 ${isEditing
                   ? "border-accent/40 shadow-lg shadow-accent/5"
                   : "border-accent/10 hover:border-accent/25"
-              }`}
+                }`}
             >
               {isEditing ? (
                 <div className="p-4 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
 
                     {/* Icon */}
                     <div className="space-y-1.5">
@@ -344,10 +362,25 @@ export default function FunctionManager({ productId, functions: initial, allGift
                       <GiftPicker
                         gifts={allGifts}
                         value={editForm.default_gift_id}
-                        onChange={id => setEditForm(p => ({ ...p, default_gift_id: id }))}
+                        onChange={id => setEditForm(p => ({ ...p, default_gift_id: id, default_trigger_threshold: "" }))}
                         placeholder={t("noDefault")}
                       />
                     </div>
+
+                    {/* Default Threshold */}
+                    {getGift(editForm.default_gift_id)?.trigger_type === 'Like' && (
+                      <div className="space-y-1.5">
+                        <FieldLabel small>{t("defaultThreshold")}</FieldLabel>
+                        <input
+                          type="number"
+                          min="1"
+                          value={editForm.default_trigger_threshold}
+                          onChange={e => setEditForm(p => ({ ...p, default_trigger_threshold: e.target.value }))}
+                          placeholder="เช่น 50, 100"
+                          className={inpSm}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-end gap-2">
@@ -371,14 +404,14 @@ export default function FunctionManager({ productId, functions: initial, allGift
                     <button onClick={() => move(i, -1)} disabled={i === 0 || loading}
                       className="p-1 rounded hover:bg-white/5 disabled:opacity-20 transition">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                        <polyline points="18 15 12 9 6 15"/>
+                        <polyline points="18 15 12 9 6 15" />
                       </svg>
                     </button>
                     <span className="text-[9px] font-mono text-text-muted">{i + 1}</span>
                     <button onClick={() => move(i, 1)} disabled={i === functions.length - 1 || loading}
                       className="p-1 rounded hover:bg-white/5 disabled:opacity-20 transition">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                        <polyline points="6 9 12 15 18 9"/>
+                        <polyline points="6 9 12 15 18 9" />
                       </svg>
                     </button>
                   </div>
@@ -419,6 +452,11 @@ export default function FunctionManager({ productId, functions: initial, allGift
                         )}
                         <span className="text-[12px] font-semibold text-accent-light">{gift.name}</span>
                         <span className="text-[10px] text-text-muted">💎{gift.diamonds}</span>
+                        {fn.default_trigger_threshold !== null && (
+                          <span className="text-[10px] text-text-muted ml-1">
+                            (Threshold: {fn.default_trigger_threshold})
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <span className="text-[12px] text-text-muted/40">—</span>
@@ -430,15 +468,15 @@ export default function FunctionManager({ productId, functions: initial, allGift
                     <button onClick={() => startEdit(fn)}
                       className="p-2 rounded-lg text-text-muted hover:text-text-base hover:bg-white/5 transition">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
                     </button>
                     <button onClick={() => handleDelete(fn.id)} disabled={loading}
                       className="p-2 rounded-lg text-text-muted hover:text-red-400 hover:bg-red-500/10 transition disabled:opacity-40">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                       </svg>
                     </button>
                   </div>
@@ -472,54 +510,54 @@ function GiftPicker({ gifts, value, onChange, placeholder }: {
   const selectStyles: StylesConfig<GiftOption, false> = {
     control: (base, state) => ({
       ...base,
-      background:   "var(--color-bg-base, #0f0f1a)",
-      border:       `1px solid ${state.isFocused
+      background: "var(--color-bg-base, #0f0f1a)",
+      border: `1px solid ${state.isFocused
         ? "rgba(120,80,255,0.4)"
         : "rgba(120,80,255,0.15)"}`,
       borderRadius: "0.75rem",
-      boxShadow:    "none",
-      minHeight:    "38px",
-      cursor:       "pointer",
-      transition:   "border-color 0.15s",
+      boxShadow: "none",
+      minHeight: "38px",
+      cursor: "pointer",
+      transition: "border-color 0.15s",
       "&:hover": { borderColor: "rgba(120,80,255,0.4)" },
     }),
-    valueContainer:     base => ({ ...base, padding: "0 10px", gap: "6px", flexWrap: "nowrap" }),
-    input:              base => ({ ...base, color: "var(--color-text-base, #e2e2e2)", fontSize: "12px", margin: 0, padding: 0 }),
-    placeholder:        base => ({ ...base, color: "var(--color-text-muted, #666)", fontSize: "12px" }),
-    singleValue:        base => ({ ...base, color: "var(--color-text-base, #e2e2e2)", fontSize: "12px", overflow: "visible" }),
-    indicatorSeparator: ()   => ({ display: "none" }),
-    dropdownIndicator:  base => ({ ...base, padding: "0 8px", color: "var(--color-text-muted, #666)" }),
+    valueContainer: base => ({ ...base, padding: "0 10px", gap: "6px", flexWrap: "nowrap" }),
+    input: base => ({ ...base, color: "var(--color-text-base, #e2e2e2)", fontSize: "12px", margin: 0, padding: 0 }),
+    placeholder: base => ({ ...base, color: "var(--color-text-muted, #666)", fontSize: "12px" }),
+    singleValue: base => ({ ...base, color: "var(--color-text-base, #e2e2e2)", fontSize: "12px", overflow: "visible" }),
+    indicatorSeparator: () => ({ display: "none" }),
+    dropdownIndicator: base => ({ ...base, padding: "0 8px", color: "var(--color-text-muted, #666)" }),
     menu: base => ({
       ...base,
-      background:   "var(--color-bg-card, #16213e)",
-      border:       "1px solid rgba(120,80,255,0.2)",
+      background: "var(--color-bg-card, #16213e)",
+      border: "1px solid rgba(120,80,255,0.2)",
       borderRadius: "1rem",
-      boxShadow:    "0 16px 48px rgba(0,0,0,0.5)",
-      overflow:     "hidden",
-      zIndex:       9999,
-      marginTop:    "4px",
+      boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
+      overflow: "hidden",
+      zIndex: 9999,
+      marginTop: "4px",
     }),
     menuList: base => ({ ...base, padding: "6px", maxHeight: "240px" }),
     option: (base, state) => ({
       ...base,
-      background:   state.isSelected
+      background: state.isSelected
         ? "rgba(120,80,255,0.2)"
         : state.isFocused
           ? "rgba(255,255,255,0.05)"
           : "transparent",
-      color:        state.isSelected
+      color: state.isSelected
         ? "var(--color-accent-light, #a899ff)"
         : "var(--color-text-base, #e2e2e2)",
       borderRadius: "0.5rem",
-      padding:      "8px 10px",
-      cursor:       "pointer",
-      fontSize:     "12px",
+      padding: "8px 10px",
+      cursor: "pointer",
+      fontSize: "12px",
     }),
     noOptionsMessage: base => ({
       ...base,
-      color:    "var(--color-text-muted, #666)",
+      color: "var(--color-text-muted, #666)",
       fontSize: "11px",
-      padding:  "2rem 1rem",
+      padding: "2rem 1rem",
       textAlign: "center",
     }),
   }
@@ -539,7 +577,7 @@ function GiftPicker({ gifts, value, onChange, placeholder }: {
           ) : (
             <div className="w-5 h-5 rounded bg-white/5 flex items-center justify-center flex-shrink-0 text-text-muted">
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </div>
           )}
@@ -615,7 +653,7 @@ function ImageUploadBox({ url, uploading, onUpload, onClear, t }: {
             <button onClick={onClear}
               className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition flex items-center justify-center rounded-xl">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
           </>
@@ -626,9 +664,9 @@ function ImageUploadBox({ url, uploading, onUpload, onClear, t }: {
             ) : (
               <>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-text-muted">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="17 8 12 3 7 8"/>
-                  <line x1="12" y1="3" x2="12" y2="15"/>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
                 <span className="text-[9px] text-text-muted uppercase font-bold">{t("upload")}</span>
               </>
@@ -657,5 +695,5 @@ function FieldLabel({ children, required, small }: {
 }
 
 // ── Styles ───────────────────────────────────────────────────
-const inp   = "w-full bg-bg-base border border-accent/15 rounded-xl px-4 py-2.5 text-[13px] placeholder:text-text-muted outline-none focus:border-accent/40 transition"
+const inp = "w-full bg-bg-base border border-accent/15 rounded-xl px-4 py-2.5 text-[13px] placeholder:text-text-muted outline-none focus:border-accent/40 transition"
 const inpSm = "w-full bg-bg-base border border-accent/15 rounded-xl px-3 py-2 text-[12px] placeholder:text-text-muted outline-none focus:border-accent/40 transition"

@@ -10,6 +10,7 @@ type Gift = {
   name: string
   image_url: string | null
   diamonds: number
+  trigger_type: string | null
   is_active: boolean
   sort_order: number
 }
@@ -23,6 +24,7 @@ const EMPTY_FORM = {
   name: "",
   diamonds: "",
   image_url: "",
+  trigger_type: "Gift",
 }
 
 const ITEMS_PER_PAGE = 10 // จำนวนรายการต่อหน้า
@@ -113,6 +115,7 @@ export default function GiftManagerAdmin({ initialGifts }: Props) {
       name: gift.name,
       diamonds: String(gift.diamonds),
       image_url: gift.image_url ?? "",
+      trigger_type: gift.trigger_type ?? "Gift",
     })
     setShowForm(true)
   }
@@ -143,6 +146,7 @@ export default function GiftManagerAdmin({ initialGifts }: Props) {
           name: form.name.trim(),
           diamonds: Number(form.diamonds),
           image_url: form.image_url || null,
+          trigger_type: form.trigger_type,
         }),
       })
 
@@ -281,6 +285,21 @@ export default function GiftManagerAdmin({ initialGifts }: Props) {
                 className={input}
               />
             </div>
+            <div>
+              <label className="block text-[11px] text-text-muted mb-1.5">
+                {t("triggerType") || "Trigger Type"} <span className="text-red-400">*</span>
+              </label>
+              <select
+                value={form.trigger_type}
+                onChange={(e) => setF("trigger_type", e.target.value)}
+                className={input}
+              >
+                <option value="Gift">Gift</option>
+                <option value="Like">Like</option>
+                <option value="Follow">Follow</option>
+                <option value="Share">Share</option>
+              </select>
+            </div>
           </div>
 
           <div>
@@ -377,6 +396,7 @@ export default function GiftManagerAdmin({ initialGifts }: Props) {
                 <div className="text-center w-full">
                   <p className="text-[13px] font-semibold truncate px-1">{gift.name}</p>
                   <p className="text-[11px] text-text-muted">💎 {gift.diamonds}</p>
+                  <p className="text-[10px] text-accent-light/80 font-bold uppercase tracking-wider mt-0.5">{gift.trigger_type || "Gift"}</p>
                   <p className="text-[10px] text-text-muted/60 font-mono">ID: {gift.id}</p>
                 </div>
 

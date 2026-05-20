@@ -37,8 +37,9 @@ export async function POST(req: NextRequest) {
     const name = body.name?.trim()
     const diamonds = Number(body.diamonds)
     const image_url = body.image_url || null
+    const trigger_type = body.trigger_type || "Gift"
 
-    if (!id || !name || !diamonds) {
+    if (!id || !name || diamonds === undefined) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest) {
         name,
         diamonds,
         image_url,
+        trigger_type,
         sort_order: (maxSort._max.sort_order ?? 0) + 1,
       },
     })

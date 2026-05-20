@@ -4,18 +4,19 @@ import GlobalSettingsClient from "./GlobalSettingsClient"
 import { setRequestLocale } from "next-intl/server"
 
 export default async function SettingsPage({
-  params
+    params
 }: {
-  params: Promise<{ locale: string }>
+    params: Promise<{ locale: string }>
 }) {
-  const { locale } = await params
-  setRequestLocale(locale)
-  const banks = await prisma.bank_accounts.findMany({
-    orderBy: { created_at: "desc" },
-  })
-  return (
-    <div className="space-y-10 pb-20">
-      <GlobalSettingsClient />
-    </div>
-  )
+    const { locale } = await params
+    setRequestLocale(locale)
+
+    const configs = await prisma.system_configs.findMany()
+    const configMap = Object.fromEntries(configs.map(c => [c.key, c.value]))
+
+    return (
+        <div className="space-y-10 pb-20">
+            <GlobalSettingsClient initialConfigs={configMap} />
+        </div>
+    )
 }

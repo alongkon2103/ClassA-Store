@@ -301,56 +301,6 @@
     "delete": "Delete"
   },
   "Analytics": {
-    "title": "Analytics",
-    "total_revenue": "Total Revenue",
-    "avg_order_value": "Avg. Order Value",
-    "unique_customers": "Unique Customers",
-    "conversion_rate": "Conversion Rate",
-    "gross_revenue": "Gross Revenue",
-    "net_revenue": "Net Revenue (Ours)",
-    "owner_payout_due": "Owner Payout Due",
-    "revenue_over_time": "Revenue Over Time",
-    "paid_orders_only": "Paid orders only",
-    "payment_methods": "Payment Methods",
-    "revenue_by_channel": "Revenue by channel",
-    "top_products": "Top Products by Revenue",
-    "top_variants": "Top Variants",
-    "order_status_distribution": "Order Status Distribution",
-    "recent_orders": "Recent Orders",
-    "before_commission": "Before commission",
-    "after_commission": "After commission deduction",
-    "consignment_owners": "Consignment owners",
-    "all_time": "All time",
-    "view_30d": "30 Days",
-    "view_6m": "6 Months",
-    "card_stripe": "Card (Stripe)",
-    "promptpay": "PromptPay",
-    "orders_count": "{count} orders",
-    "by_orders": "By number of orders",
-    "view_all": "View all"
-  },
-  "Consignment": {
-    "title": "Consignment Report",
-    "subtitle": "Summary of consignment products and commission",
-    "gross_revenue": "Gross Revenue",
-    "our_commission": "Our Commission",
-    "owner_payout_due": "Owner Payout Due",
-    "product": "Product",
-    "owner": "Owner",
-    "commission_pct": "Com %",
-    "orders": "Orders",
-    "gross": "Gross",
-    "we_get": "We Get",
-    "pay_owner": "Owner Payout",
-    "revenue_breakdown": "Revenue Breakdown",
-    "actual_sales": "Total from paid orders",
-    "platform_net": "System net earnings",
-    "to_be_distributed": "To be shared with partners",
-    "of_pool": "of pool",
-    "no_partners": "No partners defined",
-    "no_consignment": "No consignment products yet"
-  },
-  "Analytics": {
     "title": "Analytics Dashboard",
     "total_revenue": "Total Revenue",
     "avg_order_value": "Avg. Order",
@@ -643,6 +593,7 @@
     "id": "ID",
     "name": "Gift Name",
     "diamonds": "Diamonds",
+    "triggerType": "Trigger Type",
     "giftImage": "Gift Image",
     "giftPreview": "Gift Preview",
     "chooseImage": "Choose Image",
@@ -708,7 +659,9 @@
     "upload": "Upload",
     "noDefault": "-- No Default --",
     "searchGift": "Search gift...",
-    "noGiftsFound": "No gifts found"
+    "noGiftsFound": "No gifts found",
+    "defaultThreshold": "Default Threshold",
+    "selectThreshold": "Select Threshold"
   },
   "TikTokSimulator": {
     "title": "TikTok Gift Simulator",
@@ -807,6 +760,4 @@
     "usage_warning_system_effect": "This will affect the overall functionality of the system, including the display of gifts and event triggers within your Roblox map.",
     "usage_warning_disclaimer": "The seller shall not be held responsible for any issues or damages resulting from improper use that does not follow the above recommendations."
   }
-}
-}
 }

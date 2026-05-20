@@ -8,8 +8,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (session?.user?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     const { id } = await params  // ← await params
-    const { name, label_th, label_en, image_url, sort_order, default_gift_id } = await req.json()
+    const { name, label_th, label_en, image_url, sort_order, default_gift_id, default_trigger_threshold } = await req.json()
     if (!name) return NextResponse.json({ error: "name required" }, { status: 400 })
+
+    // Validate Like trigger threshold
+    if (default_gift_id && default_trigger_threshold !== undefined && default_trigger_threshold !== null) {
+      const gift = await prisma.gifts.findUnique({ where: { id: default_gift_id } })
+      if (gift?.trigger_type === 'Like') {
+        const allowedLikes = [15, 30, 45, 60, 75, 90, 105]
+        if (!allowedLikes.includes(default_trigger_threshold)) {
+          return NextResponse.json({ error: "Invalid trigger threshold for Like type" }, { status: 400 })
+        }
+      }
+    }
 
     const fn = await prisma.product_functions.create({
         data: {
@@ -19,7 +30,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             label_en: label_en ?? null,
             image_url: image_url ?? null,  // ✅ เพิ่ม
             sort_order: sort_order ?? 0,
-            default_gift_id: default_gift_id ?? null
+            default_gift_id: default_gift_id ?? null,
+            default_trigger_threshold: default_trigger_threshold ?? null,
         },
     })
     return NextResponse.json(fn, { status: 201 })

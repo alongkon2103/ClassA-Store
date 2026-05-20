@@ -17,7 +17,11 @@ export async function GET(_req: Request, { params }: RouteContext) {
 
         const order = await prisma.orders.findUnique({
             where: { id },
-            include: { user_function_gifts: true },
+            include: { 
+                user_function_gifts: {
+                    include: { gifts: true }
+                } 
+            },
         })
 
         if (!order || order.user_id !== session.user.id) {
@@ -25,12 +29,17 @@ export async function GET(_req: Request, { params }: RouteContext) {
         }
 
         const mapping: Record<string, number> = {}
+        const thresholds: Record<string, number> = {}
         for (const row of order.user_function_gifts) {
             mapping[row.function_id] = row.gift_id
+            if (row.trigger_threshold) {
+                thresholds[row.function_id] = row.trigger_threshold
+            }
         }
 
         return NextResponse.json({
             mapping,
+            thresholds,
             tiktok_username: order.tiktok_username ?? null,
         })
     } catch (error) {
@@ -70,6 +79,7 @@ export async function POST(req: Request, { params }: RouteContext) {
 
         const body = await req.json()
         const mapping: Record<string, number> = body.mapping || {}
+        const thresholds: Record<string, number> = body.thresholds || {}
         const isPremium = !!order.is_premium_order
 
         await prisma.orders.update({
@@ -78,9 +88,18 @@ export async function POST(req: Request, { params }: RouteContext) {
         })
 
         if (isPremium && Object.keys(mapping).length > 0) {
+            // Get gifts to validate trigger types
+            const giftIds = Object.values(mapping).map(id => Number(id))
+            const gifts = await prisma.gifts.findMany({
+                where: { id: { in: giftIds } }
+            })
+
             await prisma.$transaction(
-                Object.entries(mapping).map(([functionId, giftId]) =>
-                    prisma.user_function_gifts.upsert({
+                Object.entries(mapping).map(([functionId, giftId]) => {
+                    const gift = gifts.find(g => g.id === Number(giftId))
+                    const threshold = gift?.trigger_type === 'Like' ? thresholds[functionId] : null
+                    
+                    return prisma.user_function_gifts.upsert({
                         where: {
                             user_id_order_id_function_id: {
                                 user_id: userId, // ← ใช้ userId ที่ assert แล้ว
@@ -93,12 +112,14 @@ export async function POST(req: Request, { params }: RouteContext) {
                             order_id: id,
                             function_id: functionId,
                             gift_id: Number(giftId),
+                            trigger_threshold: threshold ? Number(threshold) : null,
                         },
                         update: {
                             gift_id: Number(giftId),
+                            trigger_threshold: threshold ? Number(threshold) : null,
                         },
                     })
-                )
+                })
             )
 
             await prisma.user_function_gifts.deleteMany({

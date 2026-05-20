@@ -37,6 +37,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       data.image_url = body.image_url || null
     }
 
+    if (body.trigger_type !== undefined) {
+      data.trigger_type = body.trigger_type || "Gift"
+    }
+
     if (body.is_active !== undefined) {
       data.is_active = Boolean(body.is_active)
     }

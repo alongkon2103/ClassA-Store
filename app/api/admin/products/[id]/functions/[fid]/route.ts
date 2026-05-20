@@ -23,7 +23,18 @@ export async function PATCH(
 
     const { id, fid } = await params
     const body = await req.json()
-    const { name, label_th, label_en, default_gift_id, image_url } = body
+    const { name, label_th, label_en, default_gift_id, image_url, default_trigger_threshold } = body
+
+    // Validate Like trigger threshold
+    if (default_gift_id && default_trigger_threshold !== undefined && default_trigger_threshold !== null) {
+      const gift = await prisma.gifts.findUnique({ where: { id: default_gift_id } })
+      if (gift?.trigger_type === 'Like') {
+        const allowedLikes = [15, 30, 45, 60, 75, 90, 105]
+        if (!allowedLikes.includes(default_trigger_threshold)) {
+          return NextResponse.json({ error: "Invalid trigger threshold for Like type" }, { status: 400 })
+        }
+      }
+    }
 
     // ตรวจสอบว่า function นี้อยู่ใน product ที่ระบุจริง
     const existing = await prisma.product_functions.findFirst({
@@ -53,7 +64,8 @@ export async function PATCH(
         label_th: label_th ?? null,
         label_en: label_en ?? null,
         default_gift_id: default_gift_id ?? null,
-         image_url:       image_url ?? null,
+        image_url:       image_url ?? null,
+        default_trigger_threshold: default_trigger_threshold ?? null,
       },
     })
 

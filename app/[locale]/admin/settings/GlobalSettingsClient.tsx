@@ -3,48 +3,29 @@
 import { useState, useEffect } from "react"
 import { useTranslations } from "next-intl"
 
-export default function GlobalSettingsClient() {
+type Props = {
+  initialConfigs?: Record<string, string>
+}
+
+export default function GlobalSettingsClient({ initialConfigs = {} }: Props) {
   const t = useTranslations("Admin")
   const [resetting, setResetting] = useState(false)
-  const [trialDuration, setTrialDuration] = useState<string>("1")
-  const [isTrialEnabled, setIsTrialEnabled] = useState<boolean>(true)
-  const [isTrialPremium, setIsTrialPremium] = useState<boolean>(false)
-  const [loading, setLoading] = useState(false)
+  const [downloadUrl, setDownloadUrl] = useState<string>(initialConfigs.app_download_url ?? "")
+  const [trialDuration, setTrialDuration] = useState<string>(initialConfigs.free_trial_duration ?? "1")
+  const [isTrialEnabled, setIsTrialEnabled] = useState<boolean>(initialConfigs.free_trial_enabled !== "false")
+  const [isTrialPremium, setIsTrialPremium] = useState<boolean>(initialConfigs.free_trial_is_premium === "true")
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    fetchConfigs()
-  }, [])
 
-  const fetchConfigs = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/admin/settings/configs")
-      const data = await res.json()
-      console.log("Configs loaded:", data)
-      if (data.free_trial_duration) {
-        setTrialDuration(data.free_trial_duration)
-      }
-      if (data.free_trial_enabled !== undefined) {
-        setIsTrialEnabled(data.free_trial_enabled !== "false")
-      }
-      if (data.free_trial_is_premium !== undefined) {
-        setIsTrialPremium(data.free_trial_is_premium === "true")
-      }
-    } catch (error) {
-      console.error("Failed to fetch configs", error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleSaveConfig = async () => {
     setSaving(true)
     const payload = {
-      configs: {
+      "configs": {
         "free_trial_duration": trialDuration,
         "free_trial_enabled": String(isTrialEnabled),
-        "free_trial_is_premium": String(isTrialPremium)
+        "free_trial_is_premium": String(isTrialPremium),
+        "app_download_url": downloadUrl,   // ✅ เพิ่มตรงนี้
       }
     }
 
@@ -156,12 +137,26 @@ export default function GlobalSettingsClient() {
                 </div>
               </div>
             </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[13px] text-text-muted font-medium">Download URL</label>
+                <span className="text-[11px] text-accent-light bg-accent/5 px-2 py-0.5 rounded-md border border-accent/10">.exe / .zip</span>
+              </div>
+              <input
+                type="url"
+                value={downloadUrl}
+                onChange={e => setDownloadUrl(e.target.value)}
+                className="w-full bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-accent/40 transition"
+                placeholder="https://github.com/.../download/app.exe"
+              />
+              <p className="text-[11px] text-text-muted italic">* ลิงค์ที่ใช้ในปุ่ม Download ในหน้า Settings ของ user</p>
+            </div>
 
             {/* ย้าย Save ออกมานอก div ที่ pointer-events-none */}
             <div className="flex justify-end mt-4">
               <button
                 onClick={handleSaveConfig}
-                disabled={saving || loading}
+                disabled={saving}
                 className="px-8 py-2.5 rounded-xl bg-accent hover:opacity-90 text-white font-bold text-[14px] transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {saving ? (

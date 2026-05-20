@@ -18,6 +18,7 @@ export default async function GiftsAdminPage() {
     name: gift.name,
     image_url: gift.image_url,
     diamonds: gift.diamonds,
+    trigger_type: gift.trigger_type,
     is_active: gift.is_active,
     sort_order: gift.sort_order,
   }))

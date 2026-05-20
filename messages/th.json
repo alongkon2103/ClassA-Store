@@ -197,6 +197,7 @@
     "all": "ทั้งหมด",
     "trial_duration_settings": "ตั้งค่าระยะเวลาทดลองใช้",
     "trial_duration_label": "ระยะเวลาทดลองใช้ฟรี (นาที)",
+    "trial_premium_label": "เปิดใช้งาน Premium สำหรับการทดลองใช้",
     "save_config_success": "บันทึกการตั้งค่าเรียบร้อยแล้ว",
     "gifts": "ของขวัญ",
     "days": "วัน",
@@ -301,56 +302,6 @@
     "no_keys_alert": "กรุณากรอกคีย์",
     "cancel": "ยกเลิก",
     "delete": "ลบ"
-  },
-  "Analytics": {
-    "title": "การวิเคราะห์",
-    "total_revenue": "รายได้รวม",
-    "avg_order_value": "มูลค่าเฉลี่ยต่อออเดอร์",
-    "unique_customers": "ลูกค้าทั้งหมด",
-    "conversion_rate": "อัตราการซื้อสำเร็จ",
-    "gross_revenue": "รายได้รวม (Gross)",
-    "net_revenue": "รายได้สุทธิ (ส่วนของเรา)",
-    "owner_payout_due": "ยอดค้างจ่ายเจ้าของ",
-    "revenue_over_time": "รายได้ตามช่วงเวลา",
-    "paid_orders_only": "เฉพาะออเดอร์ที่ชำระเงินแล้ว",
-    "payment_methods": "ช่องทางการชำระเงิน",
-    "revenue_by_channel": "รายได้แยกตามช่องทาง",
-    "top_products": "สินค้าที่ทำรายได้สูงสุด",
-    "top_variants": "ตัวเลือกสินค้าที่ขายดีที่สุด",
-    "order_status_distribution": "สัดส่วนสถานะออเดอร์",
-    "recent_orders": "ออเดอร์ล่าสุด",
-    "before_commission": "ก่อนหักค่าคอมมิชชั่น",
-    "after_commission": "หลังหักค่าคอมมิชชั่น",
-    "consignment_owners": "เจ้าของสินค้าฝากขาย",
-    "all_time": "ทั้งหมดที่ผ่านมา",
-    "view_30d": "30 วันล่าสุด",
-    "view_6m": "6 เดือนล่าสุด",
-    "card_stripe": "บัตร (Stripe)",
-    "promptpay": "พร้อมเพย์",
-    "orders_count": "{count} ออเดอร์",
-    "by_orders": "ตามจำนวนออเดอร์",
-    "view_all": "ดูทั้งหมด"
-  },
-  "Consignment": {
-    "title": "รายงานสินค้าฝากขาย",
-    "subtitle": "สรุปรายการสินค้าฝากขายและค่าคอมมิชชั่น",
-    "gross_revenue": "ยอดขายรวม",
-    "our_commission": "ค่าคอมมิชชั่นของระบบ",
-    "owner_payout_due": "ยอดที่ต้องจ่ายเจ้าของ",
-    "product": "สินค้า",
-    "owner": "เจ้าของ",
-    "commission_pct": "ค่าคอม %",
-    "orders": "ออเดอร์",
-    "gross": "ยอดรวม",
-    "we_get": "เราได้รับ",
-    "pay_owner": "ยอดจ่ายเจ้าของ",
-    "revenue_breakdown": "รายละเอียดรายได้",
-    "actual_sales": "ยอดขายจริงจากออเดอร์",
-    "platform_net": "กำไรสุทธิของระบบ",
-    "to_be_distributed": "ยอดที่ต้องแบ่งพาร์ทเนอร์",
-    "of_pool": "ของกองกลาง",
-    "no_partners": "ไม่ได้ระบุผู้ร่วมหาร",
-    "no_consignment": "ยังไม่มีรายการสินค้าฝากขาย"
   },
   "Analytics": {
     "title": "แผงควบคุมการวิเคราะห์",
@@ -646,6 +597,7 @@
     "id": "ไอดี (ID)",
     "name": "ชื่อของขวัญ",
     "diamonds": "จำนวนเพชร",
+    "triggerType": "ประเภทตัวกระตุ้น (Trigger)",
     "giftImage": "รูปภาพของขวัญ",
     "giftPreview": "ตัวอย่างรูปภาพ",
     "chooseImage": "เลือกรูปภาพ",
@@ -711,7 +663,9 @@
     "upload": "อัปโหลด",
     "noDefault": "-- ไม่มีค่าเริ่มต้น --",
     "searchGift": "ค้นหาของขวัญ...",
-    "noGiftsFound": "ไม่พบของขวัญ"
+    "noGiftsFound": "ไม่พบของขวัญ",
+    "defaultThreshold": "เกณฑ์กระตุ้นเริ่มต้น (Threshold)",
+    "selectThreshold": "เลือกจำนวน"
   },
   "TikTokSimulator": {
     "title": "TikTok Gift Simulator",
@@ -810,6 +764,4 @@
     "usage_warning_system_effect": "ปัญหาดังกล่าวจะส่งผลต่อการทำงานของระบบทั้งหมด รวมถึงการแสดงผลของขวัญและอีเวนต์ต่าง ๆ ภายใน Roblox",
     "usage_warning_disclaimer": "ทางร้านขอสงวนสิทธิ์ไม่รับผิดชอบต่อความเสียหายหรือปัญหาที่เกิดขึ้นจากการใช้งานที่ไม่เป็นไปตามคำแนะนำข้างต้น"
   }
-}นะนำข้างต้น"
-}
 }

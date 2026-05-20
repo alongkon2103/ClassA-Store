@@ -24,8 +24,16 @@ export async function GET(req: NextRequest) {
             whitelist_status: "whitelisted",
             status: {
                 in: ["paid", "Admin Buy"],
-            }
+            },
+            OR: [
+                { expires_at: null },                          // ไม่มีวันหมดอายุ = ตลอดชีพ
+                { expires_at: { gt: new Date() } },            // ยังไม่หมดอายุ
+            ],
         },
+        orderBy: [
+            { is_premium_order: "desc" },                      // premium ก่อน
+            { expires_at: "desc" },                            // หมดอายุช้าที่สุดก่อน
+        ],
         include: {
             user_function_gifts: {
                 include: {
@@ -65,6 +73,7 @@ export async function GET(req: NextRequest) {
             product_functions: fn,
             gifts: fn.default_gift,
             gift_id: fn.default_gift?.id ?? null,
+            trigger_threshold: fn.default_trigger_threshold, // ✅ ใช้จากค่าเริ่มต้นของระบบ
         }))
     }
 
@@ -82,6 +91,8 @@ export async function GET(req: NextRequest) {
             gift_name: ufg.gifts?.name ?? null,
             gift_image_url: ufg.gifts?.image_url ?? null,
             gift_diamonds: ufg.gifts?.diamonds ?? 0,
+            trigger_type: ufg.gifts?.trigger_type ?? null, 
+            trigger_threshold: ufg.trigger_threshold ?? null, 
         })),
     })
 }

@@ -63,9 +63,17 @@ export default async function GameSettingsPage({ params }: Props) {
     })
 
     const savedMapping: Record<string, number> = {}
+    const savedThresholds: Record<string, number> = {}
     for (const ufg of order.user_function_gifts) {
         savedMapping[ufg.function_id] = ufg.gift_id
+        if (ufg.trigger_threshold) {
+            savedThresholds[ufg.function_id] = ufg.trigger_threshold
+        }
     }
+
+    const downloadConfig = await prisma.system_configs.findUnique({
+        where: { key: "app_download_url" }
+    })
 
     const productName = locale === "th" ? order.products.name_th : order.products.name_en
 
@@ -83,10 +91,13 @@ export default async function GameSettingsPage({ params }: Props) {
                 functions={order.products.product_functions}
                 gifts={gifts}
                 savedMapping={savedMapping}
+                savedThresholds={savedThresholds}
                 savedTiktokUsername={order.tiktok_username}
                 locale={locale}
                 isPremium={!!order.is_premium_order}
                 premiumAddonPrice={premiumAddonPrice}
+                downloadUrl={downloadConfig?.value ?? null}
+
             />
             <Footer />
         </div>
