@@ -294,10 +294,10 @@ export default function GiftManagerAdmin({ initialGifts }: Props) {
                 onChange={(e) => setF("trigger_type", e.target.value)}
                 className={input}
               >
-                <option value="Gift">Gift</option>
-                <option value="Like">Like</option>
-                <option value="Follow">Follow</option>
-                <option value="Share">Share</option>
+                <option value="gift">Gift</option>
+                <option value="like">Like</option>
+                <option value="follow">Follow</option>
+                <option value="share">Share</option>
               </select>
             </div>
           </div>
@@ -407,7 +407,7 @@ export default function GiftManagerAdmin({ initialGifts }: Props) {
                       gift.is_active ? "border-accent/20 text-accent-light" : "border-white/10 text-text-muted"
                     }`}
                   >
-                    {gift.is_active ? t("active") : t("inactive")}
+                    {gift.is_active ?  t("inactive") : t("active")}
                   </button>
                   <button
                     onClick={() => openEdit(gift)}
