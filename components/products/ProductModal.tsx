@@ -99,7 +99,8 @@ function PremiumWarningModal({ onConfirm, onCancel }: {
   onConfirm: () => void
   onCancel: () => void
 }) {
-  const t = useTranslations("ProductModal")  // ← เรียกเองข้างใน
+  const t = useTranslations("ProductModal")
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const features = [
     t("premium_warning_feature_1"),
@@ -108,66 +109,123 @@ function PremiumWarningModal({ onConfirm, onCancel }: {
   ]
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[300] flex items-center justify-center p-4"
-      style={{ background: "var(--color-overlay)", backdropFilter: "blur(10px)" }}
-      onClick={onCancel}
-    >
+    <>
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[400] flex items-center justify-center p-4 md:p-10"
+            style={{ background: "rgba(0,0,0,0.9)", backdropFilter: "blur(15px)" }}
+            onClick={() => setIsExpanded(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-5xl w-full aspect-video rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img src="/uploads/premiumWorning.png" alt="Full Preview" className="w-full h-full object-contain" />
+              <button 
+                onClick={() => setIsExpanded(false)}
+                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-all"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-[90%] max-w-sm rounded-2xl p-6 flex flex-col items-center gap-4"
-        style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border-soft)" }}
-        onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+        style={{ background: "var(--color-overlay)", backdropFilter: "blur(10px)" }}
+        onClick={onCancel}
       >
-        <div className="w-14 h-14 rounded-full bg-yellow-500/15 flex items-center justify-center">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+          className="relative w-[95%] max-w-[460px] rounded-3xl p-7 flex flex-col items-center gap-5"
+          style={{ background: "var(--color-bg-card)", border: "1px solid var(--color-border-soft)" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="w-14 h-14 rounded-full bg-yellow-500/15 flex items-center justify-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </div>
 
-        <div className="text-center space-y-1.5">
-          <h2 className="text-[17px] font-bold text-white">{t("premium_warning_title")}</h2>
-          <p className="text-[13px] text-text-muted leading-relaxed">
-            {t("premium_warning_desc_1")}
-            <span className="text-yellow-400 font-semibold">{t("premium_warning_desc_2")}</span>
-            {t("premium_warning_desc_3")}
-            <span className="text-red-400 font-semibold">{t("premium_warning_desc_4")}</span>
-            {t("premium_warning_desc_5")}
-          </p>
-        </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-[19px] font-bold text-white tracking-tight">{t("premium_warning_title")}</h2>
+            <p className="text-[13px] text-text-muted leading-relaxed px-2">
+              {t("premium_warning_desc_1")}
+              <span className="text-yellow-400 font-bold">{t("premium_warning_desc_2")}</span>
+              {t("premium_warning_desc_3")}
+              <span className="text-red-400 font-bold">{t("premium_warning_desc_4")}</span>
+              {t("premium_warning_desc_5")}
+            </p>
+          </div>
 
-        <div className="w-full bg-white/5 rounded-xl p-3.5 space-y-2">
-          {features.map((item) => (
-            <div key={item} className="flex items-center gap-2.5">
-              <div className="w-4 h-4 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="3.5">
-                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+          {/* Premium Preview Image */}
+          <div 
+            onClick={() => setIsExpanded(true)}
+            className="w-full group relative aspect-video rounded-2xl overflow-hidden border border-yellow-500/20 bg-black/40 cursor-zoom-in"
+          >
+            <img 
+              src="/uploads/premiumWorning.png" 
+              alt="Premium Settings Preview" 
+              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-125"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            {/* Hover UI Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
+              <div className="bg-yellow-500/90 text-black px-4 py-2 rounded-full text-[11px] font-bold flex items-center gap-2 shadow-2xl">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                CLICK TO PREVIEW
               </div>
-              <p className="text-[12px] text-text-muted">{item}</p>
             </div>
-          ))}
-        </div>
 
-        <div className="w-full flex flex-col gap-2 pt-1">
-          <button
-            onClick={onCancel}
-            className="w-full py-3 rounded-xl font-bold text-[14px] text-black bg-yellow-500 hover:opacity-90 active:scale-95 transition"
-          >
-            {t("premium_warning_keep")}
-          </button>
-          <button
-            onClick={onConfirm}
-            className="w-full py-2.5 rounded-xl text-[13px] text-text-muted bg-white/5 hover:bg-white/10 transition"
-          >
-            {t("premium_warning_skip")}
-          </button>
-        </div>
+            <div className="absolute bottom-3 left-4 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest drop-shadow-md">Interface Preview</span>
+            </div>
+          </div>
+
+          <div className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-4 space-y-2.5">
+            {features.map((item) => (
+              <div key={item} className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0 border border-red-500/20">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="3.5">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </div>
+                <p className="text-[12.5px] text-text-muted font-medium">{item}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="w-full flex flex-col gap-2.5 pt-2">
+            <button
+              onClick={onCancel}
+              className="w-full py-3.5 rounded-xl font-bold text-[14px] text-black bg-yellow-500 hover:bg-yellow-400 active:scale-95 transition-all shadow-lg shadow-yellow-500/10"
+            >
+              {t("premium_warning_keep")}
+            </button>
+            <button
+              onClick={onConfirm}
+              className="w-full py-3 rounded-xl text-[13px] font-semibold text-text-muted hover:text-white hover:bg-white/5 transition-all"
+            >
+              {t("premium_warning_skip")}
+            </button>
+          </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </>
   )
 }
 
