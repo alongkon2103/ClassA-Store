@@ -37,42 +37,58 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json()
-        const { ign, productId, isPremium, durationDays } = body
+        const { userId, ign, productId, isPremium, durationDays } = body
 
-        if (!ign || !productId || durationDays === undefined) {
+        if (!userId || !ign || !productId || durationDays === undefined) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
         }
 
         // Calculate expiration date
-        // If durationDays is -1, set it to 100 years from now (permanent-like)
-        let expiresAt: Date
-        if (durationDays === -1) {
-            expiresAt = addDays(new Date(), 365 * 100)
-        } else {
-            expiresAt = addDays(new Date(), durationDays)
-        }
+        const expiresAt = addDays(new Date(), durationDays)
 
-        const record = await prisma.user_whitelist_access.upsert({
-            where: {
-                ign_product_id: {
-                    ign: ign,
-                    product_id: productId
+        const result = await prisma.$transaction(async (tx) => {
+            // 1. Create Order
+            const order = await tx.orders.create({
+                data: {
+                    user_id: userId,
+                    product_id: productId,
+                    amount: 0,
+                    status: "paid",
+                    payment_method: "admin_manual",
+                    order_type: "TRIAL",
+                    whitelisted_username: ign,
+                    is_premium_order: isPremium,
+                    paid_at: new Date(),
+                    expires_at: expiresAt,
+                    whitelist_status: "whitelisted"
                 }
-            },
-            update: {
-                is_premium: isPremium,
-                expires_at: expiresAt,
-                updated_at: new Date()
-            },
-            create: {
-                ign: ign,
-                product_id: productId,
-                is_premium: isPremium,
-                expires_at: expiresAt
-            }
+            })
+
+            // 2. Upsert Whitelist Access
+            const whitelist = await tx.user_whitelist_access.upsert({
+                where: {
+                    ign_product_id: {
+                        ign: ign,
+                        product_id: productId
+                    }
+                },
+                update: {
+                    is_premium: isPremium,
+                    expires_at: expiresAt,
+                    updated_at: new Date()
+                },
+                create: {
+                    ign: ign,
+                    product_id: productId,
+                    is_premium: isPremium,
+                    expires_at: expiresAt
+                }
+            })
+
+            return { order, whitelist }
         })
 
-        return NextResponse.json(record)
+        return NextResponse.json(result.whitelist)
     } catch (error) {
         console.error("[WHITELIST_POST]", error)
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })

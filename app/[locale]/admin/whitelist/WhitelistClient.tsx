@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "@/i18n/routing"
 import { format } from "date-fns"
 import { useTranslations, useLocale } from "next-intl"
@@ -9,10 +9,14 @@ import { motion, AnimatePresence } from "framer-motion"
 
 export default function WhitelistClient({ 
     initialWhitelist, 
-    products 
+    products,
+    users = [],
+    config = {}
 }: { 
     initialWhitelist: any[], 
-    products: any[] 
+    products: any[],
+    users?: any[],
+    config?: Record<string, string>
 }) {
     const t = useTranslations("AdminWhitelist")
     const commonT = useTranslations("Admin")
@@ -25,13 +29,43 @@ export default function WhitelistClient({
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [loading, setLoading] = useState(false)
 
+    // User Search State
+    const [userSearch, setUserSearch] = useState("")
+    const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
+
     // Form State
     const [formData, setFormData] = useState({
+        userId: "",
         ign: "",
         productId: "",
         isPremium: false,
         durationDays: 30
     })
+
+    // Set default duration and premium from config when modal opens
+    useEffect(() => {
+        if (isModalOpen) {
+            const defDuration = parseInt(config?.free_trial_duration || "30")
+            const defPremium = config?.free_trial_is_premium === "true"
+            setFormData(prev => ({
+                ...prev,
+                durationDays: defDuration,
+                isPremium: defPremium
+            }))
+        }
+    }, [isModalOpen, config])
+
+    const filteredUsers = useMemo(() => {
+        const q = userSearch.toLowerCase()
+        return users.filter(u => 
+            u.username.toLowerCase().includes(q) || 
+            u.email?.toLowerCase().includes(q)
+        )
+    }, [users, userSearch])
+
+    const selectedUser = useMemo(() => 
+        users.find(u => u.id === formData.userId),
+    [users, formData.userId])
 
     const filtered = useMemo(() => {
         return whitelist.filter((item) => 
@@ -57,7 +91,10 @@ export default function WhitelistClient({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!formData.ign || !formData.productId) return
+        if (!formData.userId || !formData.ign || !formData.productId) {
+            alert("Please fill all required fields")
+            return
+        }
 
         setLoading(true)
         try {
@@ -71,8 +108,12 @@ export default function WhitelistClient({
                 const updated = await fetch("/api/admin/whitelist").then(r => r.json())
                 setWhitelist(updated)
                 setIsModalOpen(false)
-                setFormData({ ign: "", productId: "", isPremium: false, durationDays: 30 })
+                setFormData({ userId: "", ign: "", productId: "", isPremium: false, durationDays: 30 })
+                setUserSearch("")
                 router.refresh()
+            } else {
+                const err = await res.json()
+                alert(err.error || t("error_save"))
             }
         } catch (error) {
             alert(t("error_save"))
@@ -206,10 +247,64 @@ export default function WhitelistClient({
                             <h2 className="text-[20px] font-bold mb-1">{t("new_whitelist")}</h2>
                             <p className="text-text-muted text-[13px] mb-6">{t("subtitle")}</p>
 
-                            <form onSubmit={handleSubmit} className="space-y-5">
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {/* Select User */}
+                                <div className="relative">
+                                    <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("select_user")}</label>
+                                    <div 
+                                        onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                                        className="w-full bg-white/[0.03] border border-accent/15 rounded-xl px-4 py-3 text-[13px] cursor-pointer flex items-center justify-between"
+                                    >
+                                        <span className={selectedUser ? "text-text-base" : "text-text-muted"}>
+                                            {selectedUser ? `${selectedUser.username} (${selectedUser.email || 'No email'})` : t("select_user")}
+                                        </span>
+                                        <svg className={`transition-transform ${isUserDropdownOpen ? 'rotate-180' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                            <polyline points="6 9 12 15 18 9" />
+                                        </svg>
+                                    </div>
+
+                                    {isUserDropdownOpen && (
+                                        <div className="absolute z-10 w-full mt-2 bg-bg-card border border-accent/20 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                                            <div className="p-2 border-b border-white/5">
+                                                <input 
+                                                    autoFocus
+                                                    placeholder="Search user..."
+                                                    value={userSearch}
+                                                    onChange={(e) => setUserSearch(e.target.value)}
+                                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[12px] outline-none focus:border-accent/40"
+                                                />
+                                            </div>
+                                            <div className="max-h-[200px] overflow-y-auto">
+                                                {filteredUsers.length === 0 ? (
+                                                    <div className="p-4 text-center text-[12px] text-text-muted italic">No users found</div>
+                                                ) : (
+                                                    filteredUsers.map(u => (
+                                                        <div 
+                                                            key={u.id}
+                                                            onClick={() => {
+                                                                setFormData({ ...formData, userId: u.id })
+                                                                setIsUserDropdownOpen(false)
+                                                            }}
+                                                            className="p-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors"
+                                                        >
+                                                            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-[12px] font-bold text-accent-light">
+                                                                {u.username[0].toUpperCase()}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-[13px] font-medium text-text-base truncate">{u.username}</p>
+                                                                <p className="text-[11px] text-text-muted truncate">{u.email}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* IGN Input */}
                                 <div>
-                                    <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("select_user")}</label>
+                                    <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("ign")}</label>
                                     <input
                                         required
                                         type="text"
@@ -239,44 +334,27 @@ export default function WhitelistClient({
                                 </div>
 
                                 {/* Options Row */}
-                                <div className="grid">
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">
-                                            {t("duration")} ({commonT("days")})
+                                            {t("duration")}
                                         </label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="number"
-                                                min="-1"
-                                                required
-                                                value={formData.durationDays}
-                                                onChange={(e) => setFormData({...formData, durationDays: parseInt(e.target.value) || 0})}
-                                                className="w-full bg-white/[0.03] border border-accent/15 rounded-xl px-4 py-3 text-[13px] outline-none focus:border-accent/40 transition-all"
-                                                placeholder="30"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData({...formData, durationDays: formData.durationDays === -1 ? 30 : -1})}
-                                                className={`px-3 rounded-xl border transition-all text-[10px] font-bold uppercase whitespace-nowrap ${
-                                                    formData.durationDays === -1 
-                                                    ? "bg-accent/20 border-accent/30 text-accent-light" 
-                                                    : "bg-white/5 border-white/10 text-text-muted hover:bg-white/10"
-                                                }`}
-                                                title={t("permanent")}
-                                            >
-                                                ∞
-                                            </button>
-                                        </div>
-                                        {formData.durationDays === -1 && (
-                                            <p className="text-[10px] text-accent-light mt-1.5 ml-1 font-medium">{t("permanent")}</p>
-                                        )}
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            required
+                                            value={formData.durationDays}
+                                            onChange={(e) => setFormData({...formData, durationDays: parseInt(e.target.value) || 0})}
+                                            className="w-full bg-white/[0.03] border border-accent/15 rounded-xl px-4 py-3 text-[13px] outline-none focus:border-accent/40 transition-all"
+                                            placeholder="30"
+                                        />
                                     </div>
                                     <div className="flex flex-col">
                                         <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("is_premium")}</label>
                                         <button
                                             type="button"
                                             onClick={() => setFormData({...formData, isPremium: !formData.isPremium})}
-                                            className={`flex-1 flex items-center justify-center rounded-xl border transition-all text-[13px] font-medium ${
+                                            className={`flex-1 flex items-center justify-center rounded-xl border transition-all text-[12px] font-bold ${
                                                 formData.isPremium 
                                                 ? "bg-amber-500/10 border-amber-500/30 text-amber-500" 
                                                 : "bg-white/5 border-white/10 text-text-muted"
@@ -299,7 +377,7 @@ export default function WhitelistClient({
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="flex-1 bg-accent hover:bg-accent-light text-white px-5 py-3 rounded-xl text-[13px] font-medium transition-all shadow-lg shadow-accent/20 disabled:opacity-50"
+                                        className="flex-1 bg-accent hover:bg-accent-light text-white px-5 py-3 rounded-xl text-[13px] font-bold transition-all shadow-lg shadow-accent/20 disabled:opacity-50"
                                     >
                                         {loading ? t("saving") : t("save")}
                                     </button>
