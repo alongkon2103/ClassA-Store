@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect ,useCallback} from "react"
 import Image from "next/image"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { useTranslations } from "next-intl"
-
 type Gift = {
     id: number
     name: string
@@ -37,18 +36,18 @@ function buildGiftEvent(
     count: number
 ) {
     return {
-        uniqueId:        username,
-        nickname:        nickname || username,
+        uniqueId: username,
+        nickname: nickname || username,
         tiktokRecipient: tiktokRecipient || "",
-        giftName:        gift.name,
-        repeatCount:     count,
-        diamondCount:    gift.diamonds,
-        totalDiamonds:   gift.diamonds * count,
-        time:            Date.now(),
-        giftId:          gift.id,
-        giftPictureUrl:  gift.image_url ?? "",
-        repeatEnd:       true,
-        msgId:           Date.now().toString(),
+        giftName: gift.name,
+        repeatCount: count,
+        diamondCount: gift.diamonds,
+        totalDiamonds: gift.diamonds * count,
+        time: Date.now(),
+        giftId: gift.id,
+        giftPictureUrl: gift.image_url ?? "",
+        repeatEnd: true,
+        msgId: Date.now().toString(),
     }
 }
 
@@ -69,18 +68,18 @@ function GiftImage({ url, name, size = 32 }: { url: string | null; name: string;
 export default function TikTokSimulator({ gifts }: Props) {
     const t = useTranslations("TikTokSimulator")
 
-    const [username, setUsername]               = useState("user_test")
-    const [nickname, setNickname]               = useState("Test User")
+    const [username, setUsername] = useState("user_test")
+    const [nickname, setNickname] = useState("Test User")
     const [tiktokRecipient, setTiktokRecipient] = useState("Test Tiktok")
-    const [selectedGift, setSelectedGift]       = useState<Gift>(gifts[0])
-    const [giftSearch, setGiftSearch]           = useState("")
-    const [repeatCount, setRepeatCount]         = useState(1)
-    const [logs, setLogs]                       = useState<LogEntry[]>([])
-    const [sending, setSending]                 = useState(false)
-    const [autoMode, setAutoMode]               = useState(false)
-    const [autoInterval, setAutoIntervalVal]    = useState(3)
+    const [selectedGift, setSelectedGift] = useState<Gift>(gifts[0])
+    const [giftSearch, setGiftSearch] = useState("")
+    const [repeatCount, setRepeatCount] = useState(1)
+    const [logs, setLogs] = useState<LogEntry[]>([])
+    const [sending, setSending] = useState(false)
+    const [autoMode, setAutoMode] = useState(false)
+    const [autoInterval, setAutoIntervalVal] = useState(3)
 
-    const autoRef   = useRef<NodeJS.Timeout | null>(null)
+    const autoRef = useRef<NodeJS.Timeout | null>(null)
     const logEndRef = useRef<HTMLDivElement>(null)
 
     const filteredGifts = giftSearch.trim()
@@ -91,8 +90,8 @@ export default function TikTokSimulator({ gifts }: Props) {
         logEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }, [logs])
 
-    const sendGift = async (overrideGift?: Gift, overrideCount?: number) => {
-        const gift  = overrideGift ?? selectedGift
+    const sendGift = useCallback(async (overrideGift?: Gift, overrideCount?: number) => {
+        const gift = overrideGift ?? selectedGift
         const count = overrideCount ?? repeatCount
         if (!gift) return
 
@@ -108,28 +107,28 @@ export default function TikTokSimulator({ gifts }: Props) {
             await res.json()
 
             setLogs((l) => [...l.slice(-99), {
-                id:              Math.random().toString(36).slice(2),
-                time:            new Date().toLocaleTimeString(),
-                uniqueId:        event.uniqueId,
-                nickname:        event.nickname,
+                id: Math.random().toString(36).slice(2),
+                time: new Date().toLocaleTimeString(),
+                uniqueId: event.uniqueId,
+                nickname: event.nickname,
                 tiktokRecipient: event.tiktokRecipient,
-                giftName:        gift.name,
-                giftImage:       gift.image_url,
-                diamonds:        gift.diamonds,
-                repeatCount:     count,
-                total:           gift.diamonds * count,
+                giftName: gift.name,
+                giftImage: gift.image_url,
+                diamonds: gift.diamonds,
+                repeatCount: count,
+                total: gift.diamonds * count,
             }])
         } catch (err) {
             console.error(err)
         } finally {
             setSending(false)
         }
-    }
+    }, [username, nickname, tiktokRecipient, selectedGift, repeatCount])
 
     useEffect(() => {
         if (autoMode && gifts.length > 0) {
             autoRef.current = setInterval(() => {
-                const randomGift  = gifts[Math.floor(Math.random() * gifts.length)]
+                const randomGift = gifts[Math.floor(Math.random() * gifts.length)]
                 const randomCount = Math.floor(Math.random() * 10) + 1
                 sendGift(randomGift, randomCount)
             }, autoInterval * 1000)
@@ -137,15 +136,7 @@ export default function TikTokSimulator({ gifts }: Props) {
             if (autoRef.current) clearInterval(autoRef.current)
         }
         return () => { if (autoRef.current) clearInterval(autoRef.current) }
-    }, [autoMode, autoInterval, username, nickname, tiktokRecipient])
-
-    if (gifts.length === 0) {
-        return (
-            <div className="text-center py-24 text-text-muted text-[13px]">
-                {t("no_gifts_empty")}
-            </div>
-        )
-    }
+    }, [autoMode, autoInterval, sendGift])
 
     return (
         <div className="space-y-6">
@@ -223,11 +214,10 @@ export default function TikTokSimulator({ gifts }: Props) {
                             )}
                             {filteredGifts.map((g) => (
                                 <button key={g.id} onClick={() => setSelectedGift(g)}
-                                    className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border text-center transition ${
-                                        selectedGift?.id === g.id
+                                    className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border text-center transition ${selectedGift?.id === g.id
                                             ? "border-accent bg-accent/10"
                                             : "border-white/10 hover:border-accent/30"
-                                    }`}>
+                                        }`}>
                                     <div className="w-8 h-8 flex items-center justify-center">
                                         <GiftImage url={g.image_url} name={g.name} size={32} />
                                     </div>
@@ -256,11 +246,10 @@ export default function TikTokSimulator({ gifts }: Props) {
                         <div className="flex gap-2 flex-wrap">
                             {[1, 5, 10, 25, 50, 99].map((n) => (
                                 <button key={n} onClick={() => setRepeatCount(n)}
-                                    className={`px-3 py-1 rounded-lg text-[12px] border transition ${
-                                        repeatCount === n
+                                    className={`px-3 py-1 rounded-lg text-[12px] border transition ${repeatCount === n
                                             ? "border-accent bg-accent/15 text-accent-light"
                                             : "border-white/10 text-text-muted hover:border-accent/30"
-                                    }`}>
+                                        }`}>
                                     x{n}
                                 </button>
                             ))}

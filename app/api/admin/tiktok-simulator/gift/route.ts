@@ -1,13 +1,13 @@
+//app/api/admin/tiktok-simulator/gift/route.ts
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
 
-const MIDDLEWARE_URL = process.env.MIDDLEWARE_URL   // http://localhost:3001
+const MIDDLEWARE_URL = process.env.MIDDLEWARE_URL
 const JWT_SECRET     = process.env.JWT_SECRET!
 
 export async function POST(req: NextRequest) {
-  // Admin only
   const session = await getServerSession(authOptions)
   if (session?.user?.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -24,26 +24,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "missing tiktokRecipient" }, { status: 400 })
   }
 
-  // Sign JWT แบบเดียวกับที่ Python client ได้รับ
   const token = jwt.sign(
     {
       tiktokUsername: username,
       orderId:        "simulator",
       role:           "simulator",
+      sub:            username,
     },
     JWT_SECRET,
     { expiresIn: "5m" }
   )
 
   try {
-    // 1. Register ก่อน (middleware ต้องรู้จัก username)
+    // 1. Register ก่อน
     await fetch(`${MIDDLEWARE_URL}/register`, {
       method:  "POST",
       headers: {
         "Content-Type":  "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({ 
+        username,
+        orderId: "simulator",
+      }),
     })
 
     // 2. Push gift event
@@ -61,9 +64,11 @@ export async function POST(req: NextRequest) {
           giftId:            event.giftId,
           giftName:          event.giftName,
           username:          event.uniqueId,
+          uniqueId:          event.uniqueId,
           nickname:          event.nickname,
+          diamondCount:      event.diamondCount,
           diamond:           event.diamondCount,
-          repeatCount:       event.repeatCount,
+          repeatCount:       event.repeatCount ?? 1,
           repeatEnd:         true,
           profilePictureUrl: event.giftPictureUrl ?? "",
         },

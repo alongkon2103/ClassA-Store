@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     siteName: 'A-Class Store',
     images: [
       {
-        url: 'https://aclassstore.com/uploads/LogoV.png', 
+        url: 'https://aclassstore.com/uploads/AClassStore.png', 
         width: 1200,
         height: 630,
         alt: 'A-Class Store Whitelist System',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'A-Class Store | Secure Roblox Asset Marketplace',
     description: 'Stop map leaks today. Professional Whitelist systems and premium assets for Roblox developers.',
-    images: ['https://aclassstore.com/uploads/LogoV.png'],
+    images: ['https://aclassstore.com/uploads/AClassStore.png'],
   },
 }
 
