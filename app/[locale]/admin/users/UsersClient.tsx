@@ -4,17 +4,23 @@ import { useState, useMemo } from "react"
 import { useRouter } from "@/i18n/routing"
 import { format } from "date-fns"
 import { useTranslations, useLocale } from "next-intl"
+import { useSession } from "next-auth/react"
 import { th, enUS } from "date-fns/locale"
+import { motion, AnimatePresence } from "framer-motion"
 
 export default function UsersClient({ users }: { users: any[] }) {
   const t = useTranslations("Admin")
   const locale = useLocale()
   const dateLocale = locale === "th" ? th : enUS
   const router = useRouter()
-
+  const { data: session } = useSession()
   const [search, setSearch] = useState("")
-  const [filter, setFilter] = useState<"all" | "admin" | "user">("all")
+  const [filter, setFilter] = useState<"all" | "admin" | "partnership" | "user">("all")
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  
+  // Edit State
+  const [editingUser, setEditingUser] = useState<any | null>(null)
+  const [editRole, setEditRole] = useState("")
 
   const filtered = useMemo(() => {
     return users
@@ -25,17 +31,22 @@ export default function UsersClient({ users }: { users: any[] }) {
       )
   }, [users, search, filter])
 
-  const handleRoleToggle = async (id: string, current: string) => {
-    const newRole = current === "admin" ? "user" : "admin"
-    if (!confirm(t("change_role_confirm", { role: newRole }))) return
-    setLoadingId(id)
-    await fetch(`/api/admin/users/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role: newRole }),
-    })
-    setLoadingId(null)
-    router.refresh()
+  const handleUpdateRole = async () => {
+    if (!editingUser) return
+    setLoadingId(editingUser.id)
+    try {
+      await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: editRole }),
+      })
+      setEditingUser(null)
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setLoadingId(null)
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -63,11 +74,11 @@ export default function UsersClient({ users }: { users: any[] }) {
           className="flex-1 min-w-[200px] bg-bg-card border border-accent/15 rounded-xl px-4 py-2.5 text-[13px] placeholder:text-text-muted outline-none focus:border-accent/40"
         />
         <div className="flex gap-1 bg-bg-card border border-accent/15 rounded-xl p-1">
-          {(["all", "admin", "user"] as const).map((f) => (
+          {(["all", "admin", "partnership", "user"] as const).map((f) => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${filter === f ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
                 }`}>
-              {t(f)}
+              {t(f) || f}
             </button>
           ))}
         </div>
@@ -132,6 +143,8 @@ export default function UsersClient({ users }: { users: any[] }) {
                 <td className="px-4 py-4">
                   <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${u.role === "admin"
                       ? "bg-purple-500/15 text-purple-400"
+                      : u.role === "partnership"
+                      ? "bg-blue-500/15 text-blue-400"
                       : "bg-white/5 text-text-muted"
                     }`}>
                     {u.role}
@@ -145,51 +158,88 @@ export default function UsersClient({ users }: { users: any[] }) {
 
                 {/* Actions */}
                 <td className="px-4 py-4">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleRoleToggle(u.id, u.role)}
-                      disabled={loadingId === u.id}
-                      className="text-[12px] px-3 py-1.5 rounded-lg border border-accent/20 text-accent-light hover:bg-accent/10 transition disabled:opacity-40"
-                    >
-                      {u.role === "admin" ? "→ User" : "→ Admin"}
-                    </button>
-                    {/* <div className="flex items-center gap-3">
+                  {session?.user?.role === "admin" && (
+                    <div className="flex items-center gap-2">
                       <button
-                        type="button"
-                        disabled={loadingId === u.id}
-                        onClick={() => handleRoleToggle(u.id, u.role)}
-                        className={`
-      relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full
-      transition-all duration-200 border-2
-      ${u.role === "admin"
-                            ? "bg-accent border-accent"
-                            : "bg-slate-300 border-slate-400 dark:bg-zinc-700 dark:border-zinc-600"}
-      ${loadingId === u.id ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
-    `}
+                        onClick={() => {
+                          setEditingUser(u)
+                          setEditRole(u.role)
+                        }}
+                        className="text-[12px] px-3 py-1.5 rounded-lg border border-accent/20 text-accent-light hover:bg-accent/10 transition"
                       >
-                        <span
-                          className={`
-        inline-block h-4 w-4 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.3)]
-        transform transition-transform duration-200 ease-in-out
-        ${u.role === "admin" ? "translate-x-5" : "translate-x-1"}
-      `}
-                        />
+                        {t("edit")}
                       </button>
-                    </div> */}
-                    <button
-                      onClick={() => handleDelete(u.id)}
-                      disabled={loadingId === u.id}
-                      className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition disabled:opacity-40"
-                    >
-                      {loadingId === u.id ? "..." : t("delete")}
-                    </button>
-                  </div>
+                      <button
+                        onClick={() => handleDelete(u.id)}
+                        disabled={loadingId === u.id}
+                        className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition disabled:opacity-40"
+                      >
+                        {loadingId === u.id ? "..." : t("delete")}
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Edit User Modal */}
+      <AnimatePresence>
+        {editingUser && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingUser(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-sm bg-bg-card border border-accent/20 rounded-3xl p-6 shadow-2xl"
+            >
+              <h2 className="text-[20px] font-bold mb-1">{t("edit_user")}</h2>
+              <p className="text-text-muted text-[13px] mb-6">{editingUser.username}</p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("role")}</label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value)}
+                    className="w-full bg-white/[0.03] border border-accent/15 rounded-xl px-4 py-3 text-[13px] outline-none focus:border-accent/40 transition-all appearance-none"
+                  >
+                    <option value="user" className="bg-bg-card">{t("user")}</option>
+                    <option value="partnership" className="bg-bg-card">{t("partnership")}</option>
+                    <option value="admin" className="bg-bg-card">{t("admin")}</option>
+                  </select>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingUser(null)}
+                    className="flex-1 px-5 py-3 rounded-xl border border-white/10 text-[13px] font-medium hover:bg-white/5 transition-all"
+                  >
+                    {t("cancel")}
+                  </button>
+                  <button
+                    onClick={handleUpdateRole}
+                    disabled={loadingId === editingUser.id}
+                    className="flex-1 bg-accent hover:bg-accent-light text-white px-5 py-3 rounded-xl text-[13px] font-bold transition-all shadow-lg shadow-accent/20 disabled:opacity-50"
+                  >
+                    {loadingId === editingUser.id ? t("saving") : t("save")}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

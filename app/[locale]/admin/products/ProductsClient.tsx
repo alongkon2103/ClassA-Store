@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react"
 import { Link, useRouter } from "@/i18n/routing"
 import { useTranslations, useLocale } from "next-intl"
+import { useSession } from "next-auth/react"
 import { getImageUrl } from "@/lib/getImageUrl"
 
 function StatusDot({ active }: { active: boolean }) {
@@ -15,6 +16,7 @@ export default function ProductsClient({ products }: { products: any[] }) {
   const router = useRouter()
   const t = useTranslations("Admin")
   const locale = useLocale()
+  const { data: session } = useSession()
 
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<"all" | "active" | "inactive" | "featured">("all")
@@ -179,16 +181,20 @@ export default function ProductsClient({ products }: { products: any[] }) {
                   {/* Actions */}
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
-                      <Link href={`/admin/products/${p.id}`}
-                        className="text-[12px] px-3 py-1.5 rounded-lg border border-accent/20 text-accent-light hover:bg-accent/10 transition">
-                        {t("edit")}
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(p.id)}
-                        disabled={deleting === p.id}
-                        className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition disabled:opacity-40">
-                        {deleting === p.id ? "..." : t("delete")}
-                      </button>
+                      {(session?.user?.role === "admin" || session?.user?.id === p.created_by_id) && (
+                        <Link href={`/admin/products/${p.id}`}
+                          className="text-[12px] px-3 py-1.5 rounded-lg border border-accent/20 text-accent-light hover:bg-accent/10 transition">
+                          {t("edit")}
+                        </Link>
+                      )}
+                      {(session?.user?.role === "admin" || session?.user?.id === p.created_by_id) && (
+                        <button
+                          onClick={() => handleDelete(p.id)}
+                          disabled={deleting === p.id}
+                          className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition disabled:opacity-40">
+                          {deleting === p.id ? "..." : t("delete")}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

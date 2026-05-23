@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { validateAdmin } from "@/lib/adminAuth"
 
 type Params = {
   params: Promise<{
@@ -10,6 +11,9 @@ type Params = {
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
+  const admin = await validateAdmin(["admin"])
+  if (!admin.isValid) return admin.response
+
   try {
     const { id } = await params
     const giftId = Number(id)
@@ -71,6 +75,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: Params
 ) {
+  const admin = await validateAdmin(["admin"])
+  if (!admin.isValid) return admin.response
+
   try {
     const { id } = await params
     const giftId = Number(id)

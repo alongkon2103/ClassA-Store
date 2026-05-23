@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       isLower:     isLower     ?? false,
       youtube_url: youtube_url ?? null,
       tutorial_video_url: tutorial_video_url ?? null,
+      created_by_id: admin?.session?.user.id,
     },
   })
 

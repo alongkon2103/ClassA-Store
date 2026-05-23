@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 
 export async function POST(req: NextRequest) {
-  const admin = await validateAdmin()
+  const admin = await validateAdmin(["admin"])
   if (!admin.isValid) return admin.response
 
   const body = await req.json()

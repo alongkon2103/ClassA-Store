@@ -2,6 +2,7 @@ import { writeFile, mkdir } from "fs/promises"
 import { NextRequest, NextResponse } from "next/server"
 import path from "path"
 import sharp from "sharp"
+import { validateAdmin } from "@/lib/adminAuth"
 
 // Dev  → <project_root>/public/uploads/...  (เข้าผ่าน /uploads/...)
 // Prod → /var/www/uploads/...
@@ -35,6 +36,9 @@ const extToMime: Record<string, string> = {
 }
 
 export async function POST(req: NextRequest) {
+  const adminCheck = await validateAdmin()
+  if (!adminCheck.isValid) return adminCheck.response
+
   try {
     const formData = await req.formData()
     const file = formData.get("file") as File | null

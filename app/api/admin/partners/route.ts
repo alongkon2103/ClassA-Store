@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { validateAdmin } from "@/lib/adminAuth"
 
 export async function GET() {
-  const admin = await validateAdmin()
+  const admin = await validateAdmin(["admin"])
   if (!admin.isValid) return admin.response
 
   try {
@@ -18,7 +18,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const admin = await validateAdmin()
+  const admin = await validateAdmin(["admin"])
   if (!admin.isValid) return admin.response
 
   try {

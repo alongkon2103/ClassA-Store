@@ -10,6 +10,19 @@ export async function PATCH(
   if (!admin.isValid) return admin.response
 
   const { id } = await params
+
+  // Partnership can only edit their own products
+  if (admin.session?.user?.role === "partnership") {
+    const product = await prisma.products.findUnique({
+      where: { id },
+      select: { created_by_id: true }
+    })
+    
+    if (!product || product.created_by_id !== admin.session.user.id) {
+      return NextResponse.json({ error: "Forbidden: You can only edit your own products" }, { status: 403 })
+    }
+  }
+
   const { consignments, partnership_shares, ...rest } = await req.json()
 
   const result = await prisma.$transaction(async (tx) => {
@@ -68,6 +81,18 @@ export async function DELETE(
   if (!admin.isValid) return admin.response
 
   const { id } = await params
+
+  // Partnership can only delete their own products
+  if (admin?.session?.user.role === "partnership") {
+    const product = await prisma.products.findUnique({
+      where: { id },
+      select: { created_by_id: true }
+    })
+    
+    if (!product || product.created_by_id !== admin.session.user.id) {
+      return NextResponse.json({ error: "Forbidden: You can only delete your own products" }, { status: 403 })
+    }
+  }
 
   await prisma.products.delete({ where: { id } })
 

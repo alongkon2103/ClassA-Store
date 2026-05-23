@@ -22,8 +22,7 @@ export const authOptions: AuthOptions = {
                             email: "admin@dev.local",
                             image: null,
                             role: "admin",
-                        }
-                    },
+                            }                    },
                 }),
             ]
             : []),

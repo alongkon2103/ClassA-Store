@@ -208,7 +208,9 @@ model products {
   discord_guild_id String?   @db.VarChar
   youtube_url      String?
   tutorial_video_url String?
+  created_by_id    String?   @db.Uuid
 
+  created_by            users?                @relation("ProductCreator", fields: [created_by_id], references: [id])
   game_keys             game_keys[]
   orders                orders[]
   product_functions     product_functions[]
@@ -222,6 +224,7 @@ model products {
   premium_upgrades      premium_upgrades[]
 
   @@index([is_consignment], map: "idx_products_consignment")
+  @@index([created_by_id], map: "idx_products_creator")
 }
 
 model partners {
@@ -323,6 +326,7 @@ model users {
   orders                orders[]
   user_function_gifts   user_function_gifts[]
   premium_upgrades      premium_upgrades[]
+  created_products      products[]              @relation("ProductCreator")
 }
 
 model system_configs {

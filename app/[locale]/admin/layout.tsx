@@ -7,7 +7,7 @@ import AdminNav from "@/components/admin/AdminNav"
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
 
-  if (!session || session.user.role !== "admin") {
+  if (!session || !["admin", "partnership"].includes(session.user.role)) {
     redirect({ href: "/", locale: "th" }) 
   }
 

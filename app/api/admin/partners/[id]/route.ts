@@ -1,10 +1,14 @@
 import { prisma } from "@/lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
+import { validateAdmin } from "@/lib/adminAuth"
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const admin = await validateAdmin(["admin"])
+  if (!admin.isValid) return admin.response
+
   try {
     const { id } = await params
     const body = await req.json()
@@ -32,6 +36,9 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const admin = await validateAdmin(["admin"])
+  if (!admin.isValid) return admin.response
+
   try {
     const { id } = await params
 

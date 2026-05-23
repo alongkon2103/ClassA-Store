@@ -6,7 +6,7 @@ export async function DELETE(
     req: NextRequest, // Updated to NextRequest
     { params }: { params: Promise<{ id: string }> } // Updated to Promise type
 ) {
-    const adminCheck = await validateAdmin()
+    const adminCheck = await validateAdmin(["admin"])
     if (!adminCheck.isValid) return adminCheck.response
 
     try {

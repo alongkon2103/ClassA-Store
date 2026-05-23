@@ -55,8 +55,7 @@ export async function POST(req: Request) {
         product_id: product.id,
         variant_id: variant?.id || null,
         status: "pending",
-        // แนะนำให้เพิ่ม field 'is_premium' ใน Order Model ของคุณ
-        // is_premium: isPremium 
+        payment_method: paymentMethod, // ✅ เพิ่ม
       },
     })
 
@@ -78,9 +77,10 @@ export async function POST(req: Request) {
     } else {
       order = await prisma.orders.update({
         where: { id: order.id },
-        data: { 
+        data: {
           whitelisted_username: whitelistUsername.trim(),
-          amount: currentSubtotal // อัปเดตราคาเผื่อกรณีเปลี่ยนใจติ๊กพรีเมียม
+          amount: currentSubtotal,
+          payment_method: paymentMethod, // ✅ เพิ่ม
         },
       })
     }
@@ -102,9 +102,9 @@ export async function POST(req: Request) {
         {
           price_data: {
             currency: "thb",
-            product_data: { 
+            product_data: {
               name: title,
-              description: isPremium ? "Included Premium Add-on" : undefined 
+              description: isPremium ? "Included Premium Add-on" : undefined
             },
             unit_amount: Math.round(totalPrice * 100),
           },

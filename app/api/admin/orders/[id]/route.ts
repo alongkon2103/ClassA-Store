@@ -6,7 +6,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const admin = await validateAdmin()
+  const admin = await validateAdmin(["admin"])
   if (!admin.isValid) return admin.response
 
   const { id }  = await params

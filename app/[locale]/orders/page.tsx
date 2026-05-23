@@ -19,47 +19,54 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
     redirect(`/${locale}/login`)
   }
 
-const rawOrders = await prisma.orders.findMany({
-  where: {
-    user_id: session.user.id,
-    OR: [
-      { order_type: { not: "TRIAL" } },
-      { 
-        order_type: "TRIAL",
-        expires_at: { gt: new Date() }
+  const rawOrders = await prisma.orders.findMany({
+    where: {
+      user_id: session.user.id,
+      OR: [
+        { order_type: { not: "TRIAL" } },
+        {
+          order_type: "TRIAL",
+          expires_at: { gt: new Date() }
+        }
+      ],
+      NOT: {
+        AND: [
+          { status: "pending" },
+          { expires_at: { lt: new Date() } }
+        ]
       }
-    ]
-  },
-  orderBy: [
-    {
-      status: "asc",
     },
-    {
-      created_at: "desc",
-    },
-  ],
-  include: {
-    game_keys: true,
-    products: {
-      include: {
-        product_images: {
-          orderBy: { sort_order: "asc" },
-          take: 1,
-        },
-        product_gifts: {
-          orderBy: { sort_order: "asc" },
-        },
-        product_presets: {
-          orderBy: { sort_order: "asc" },
-        },
-        product_functions: {
-          orderBy: { sort_order: "asc" },
+
+    orderBy: [
+      {
+        status: "asc",
+      },
+      {
+        created_at: "desc",
+      },
+    ],
+    include: {
+      game_keys: true,
+      products: {
+        include: {
+          product_images: {
+            orderBy: { sort_order: "asc" },
+            take: 1,
+          },
+          product_gifts: {
+            orderBy: { sort_order: "asc" },
+          },
+          product_presets: {
+            orderBy: { sort_order: "asc" },
+          },
+          product_functions: {
+            orderBy: { sort_order: "asc" },
+          },
         },
       },
+      product_variants: true,
     },
-    product_variants: true,
-  },
-})
+  })
   const orders = rawOrders.map(order => ({
     ...order,
     amount: Number(order.amount),

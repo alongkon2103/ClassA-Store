@@ -1,46 +1,46 @@
 "use client"
 
 import { Link, usePathname } from "@/i18n/routing"
-
+import { useSession } from "next-auth/react"
 import { useTranslations } from "next-intl"
 
 const groups = [
   {
     title: "overview",
     items: [
-      { href: "/admin", key: "dashboard" },
-      { href: "/admin/analytics", key: "analytics" },
-      { href: "/admin/settings", key: "settings" },
+      { href: "/admin", key: "dashboard", roles: ["admin"] },
+      { href: "/admin/analytics", key: "analytics", roles: ["admin"] },
+      { href: "/admin/settings", key: "settings", roles: ["admin"] },
     ]
   },
   {
     title: "catalog",
     items: [
-      { href: "/admin/products", key: "products" },
-      { href: "/admin/gifts", key: "gifts" },
+      { href: "/admin/products", key: "products", roles: ["admin", "partnership"] },
+      { href: "/admin/gifts", key: "gifts", roles: ["admin"] },
     ]
   },
   {
     title: "revenue_sharing",
     items: [
-      { href: "/admin/partners", key: "partners" },
-      { href: "/admin/partnership", key: "partnership_earnings" },
-      { href: "/admin/consignment", key: "consignment" },
+      { href: "/admin/partners", key: "partners", roles: ["admin"] },
+      { href: "/admin/partnership", key: "partnership_earnings", roles: ["admin"] },
+      { href: "/admin/consignment", key: "consignment", roles: ["admin"] },
     ]
   },
   {
     title: "operations",
     items: [
-      { href: "/admin/whitelist", key: "whitelist" },
-      { href: "/admin/orders", key: "orders" },
-      { href: "/admin/users", key: "users" },
-      { href: "/admin/upgrade-premium", key: "nav_title" },
+      { href: "/admin/whitelist", key: "whitelist", roles: ["admin", "partnership"] },
+      { href: "/admin/orders", key: "orders", roles: ["admin", "partnership"] },
+      { href: "/admin/users", key: "users", roles: ["admin", "partnership"] },
+      { href: "/admin/upgrade-premium", key: "nav_title", roles: ["admin"] },
     ]
   },
   {
     title: "tools",
     items: [
-      { href: "/admin/tiktok-simulator", key: "tiktok_simulator" },
+      { href: "/admin/tiktok-simulator", key: "tiktok_simulator", roles: ["admin"] },
     ]
   }
 ]
@@ -48,6 +48,13 @@ const groups = [
 export default function AdminNav() {
   const pathname = usePathname()
   const t = useTranslations("Admin")
+  const { data: session } = useSession()
+  const userRole = session?.user?.role || "user"
+
+  const filteredGroups = groups.map(group => ({
+    ...group,
+    items: group.items.filter(item => item.roles.includes(userRole))
+  })).filter(group => group.items.length > 0)
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-56 bg-bg-card border-r border-accent/10 flex flex-col">
@@ -59,7 +66,7 @@ export default function AdminNav() {
 
       {/* Nav Links */}
       <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto custom-scrollbar">
-        {groups.map((group, gIdx) => (
+        {filteredGroups.map((group, gIdx) => (
           <div key={gIdx} className="space-y-1">
             <p className="px-3 text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 opacity-50">
               {t(group.title) || group.title.replace("_", " ")}

@@ -61,7 +61,7 @@ export default async function ConsignmentPage({ params }: any) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
           { key: "gross_revenue",    value: totals.gross,      color: "text-text-base", sub: t("actual_sales") },
-          { key: "our_commission",   value: totals.commission, color: "text-green-400", sub: t("platform_net") },
+          { key: "our_commission",   value: totals.commission, color: "text-green-400", sub: t("platform_net_summary") },
           { key: "owner_payout_due", value: totals.payout,     color: "text-orange-400", sub: t("to_be_distributed") },
         ].map(({ key, value, color, sub }) => (
           <div key={key} className="bg-bg-card border border-accent/10 rounded-2xl p-5">
