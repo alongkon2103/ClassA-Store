@@ -30,9 +30,14 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
         }
       ],
       NOT: {
-        AND: [
-          { status: "pending" },
-          { expires_at: { lt: new Date() } }
+        OR: [
+          {
+            AND: [
+              { status: "pending" },
+              { expires_at: { lt: new Date() } },
+            ]
+          },
+          { status: "expired" }
         ]
       }
     },

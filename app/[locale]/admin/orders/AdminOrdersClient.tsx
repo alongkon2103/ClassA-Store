@@ -5,27 +5,29 @@ import { format } from "date-fns"
 import { useTranslations, useLocale } from "next-intl"
 import { th, enUS } from "date-fns/locale"
 import { getImageUrl } from "@/lib/getImageUrl"
+import { useSession } from "next-auth/react"
 
 export default function AdminOrdersClient({ orders }: { orders: any[] }) {
+  const { data: session } = useSession()
   const t = useTranslations("Admin")
   const locale = useLocale()
   const dateLocale = locale === "th" ? th : enUS
 
-  const [search,        setSearch]        = useState("")
-  const [statusFilter,  setStatusFilter]  = useState("all")
-  const [wlFilter,      setWlFilter]      = useState("all")
-  const [updating,      setUpdating]      = useState<string | null>(null)
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [wlFilter, setWlFilter] = useState("all")
+  const [updating, setUpdating] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
     return orders
       .filter((o) => statusFilter === "all" || o.status === statusFilter)
-      .filter((o) => wlFilter    === "all" || o.whitelist_status === wlFilter)
+      .filter((o) => wlFilter === "all" || o.whitelist_status === wlFilter)
       .filter((o) => {
         const q = search.toLowerCase()
         const productName = (locale === "th" ? o.products?.name_th : o.products?.name_en) || ""
         return (
           (o.whitelisted_username ?? "").toLowerCase().includes(q) ||
-          (o.users?.username      ?? "").toLowerCase().includes(q) ||
+          (o.users?.username ?? "").toLowerCase().includes(q) ||
           productName.toLowerCase().includes(q)
         )
       })
@@ -34,9 +36,9 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
   const handleWhitelistStatus = async (id: string, whitelist_status: string) => {
     setUpdating(id)
     await fetch(`/api/admin/orders/${id}`, {
-      method:  "PATCH",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ whitelist_status }),
+      body: JSON.stringify({ whitelist_status }),
     })
     setUpdating(null)
     window.location.reload()
@@ -75,9 +77,8 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
         <div className="flex gap-1 bg-bg-card border border-accent/15 rounded-xl p-1">
           {["all", "paid", "pending", "expired"].map((f) => (
             <button key={f} onClick={() => setStatusFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${
-                statusFilter === f ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
-              }`}>
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${statusFilter === f ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
+                }`}>
               {t(f)}
             </button>
           ))}
@@ -85,9 +86,8 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
         <div className="flex gap-1 bg-bg-card border border-accent/15 rounded-xl p-1">
           {["all", "pending", "whitelisted", "removed"].map((f) => (
             <button key={f} onClick={() => setWlFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${
-                wlFilter === f ? "bg-orange-500/20 text-orange-400" : "text-text-muted hover:text-text-base"
-              }`}>
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${wlFilter === f ? "bg-orange-500/20 text-orange-400" : "text-text-muted hover:text-text-base"
+                }`}>
               {t(f)}
             </button>
           ))}
@@ -165,7 +165,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                     <span className="text-[11px] px-2 py-0.5 rounded-full capitalize"
                       style={{
                         background: o.payment_method === "promptpay" ? "rgba(27,167,225,.15)" : "rgba(103,114,229,.15)",
-                        color:      o.payment_method === "promptpay" ? "#1ba7e1" : "#6772e5",
+                        color: o.payment_method === "promptpay" ? "#1ba7e1" : "#6772e5",
                       }}>
                       {o.payment_method === "promptpay" ? t("promptpay") : t("card")}
                     </span>
@@ -173,12 +173,11 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
 
                   {/* Order Status */}
                   <td className="px-4 py-4">
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                      o.status === "paid"    ? "bg-green-500/15 text-green-400"   :
-                      o.status === "pending" ? "bg-orange-500/15 text-orange-400" :
-                      o.status === "expired" ? "bg-red-500/15 text-red-400"       :
-                      "bg-white/5 text-text-muted"
-                    }`}>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${o.status === "paid" ? "bg-green-500/15 text-green-400" :
+                        o.status === "pending" ? "bg-orange-500/15 text-orange-400" :
+                          o.status === "expired" ? "bg-red-500/15 text-red-400" :
+                            "bg-white/5 text-text-muted"
+                      }`}>
                       {t(o.status)}
                     </span>
                   </td>
@@ -186,11 +185,10 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                   {/* Whitelist Status */}
                   <td className="px-4 py-4">
                     {o.status === "paid" ? (
-                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                        o.whitelist_status === "whitelisted" ? "bg-green-500/15 text-green-400"   :
-                        o.whitelist_status === "removed"     ? "bg-red-500/15 text-red-400"       :
-                        "bg-orange-500/15 text-orange-400"
-                      }`}>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${o.whitelist_status === "whitelisted" ? "bg-green-500/15 text-green-400" :
+                          o.whitelist_status === "removed" ? "bg-red-500/15 text-red-400" :
+                            "bg-orange-500/15 text-orange-400"
+                        }`}>
                         {o.whitelist_status ? t(o.whitelist_status) : t("pending")}
                       </span>
                     ) : (
@@ -216,7 +214,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                             {updating === o.id ? "..." : t("whitelist")}
                           </button>
                         )} */}
-                        {o.whitelist_status === "whitelisted" && (
+                        {o.whitelist_status === "whitelisted" && session?.user?.role === "admin" && (
                           <button
                             onClick={() => handleWhitelistStatus(o.id, "removed")}
                             disabled={updating === o.id}

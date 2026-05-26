@@ -42,20 +42,24 @@ export async function POST(req: Request) {
       const premiumVar = product.product_variants.find(v => v.variant_type === "premium")
       if (premiumVar) {
         premiumPrice = Number(premiumVar.premium_addon_price || 0)
-        title += " + PREMIUM" // เพิ่มข้อความในชื่อสินค้าที่แสดงบน Stripe
+        title += " + PREMIUM"
       }
     }
 
     const currentSubtotal = basePrice + premiumPrice
 
-    // 4. เช็ค pending order เดิม (เพิ่มเงื่อนไข isPremium เพื่อแยก Order)
+    // 4. ✅ คำนวณราคารวมค่าธรรมเนียมก่อน เพื่อให้ order ในฐานข้อมูลได้ราคาที่ถูกต้อง
+    const cardFee = paymentMethod === "card" ? currentSubtotal * 0.06 : 0
+    const totalPrice = currentSubtotal + cardFee
+
+    // 5. เช็ค pending order เดิม
     let order = await prisma.orders.findFirst({
       where: {
         user_id: session.user.id,
         product_id: product.id,
         variant_id: variant?.id || null,
         status: "pending",
-        payment_method: paymentMethod, // ✅ เพิ่ม
+        payment_method: paymentMethod,
       },
     })
 
@@ -65,13 +69,12 @@ export async function POST(req: Request) {
           user_id: session.user.id,
           product_id: product.id,
           variant_id: variant?.id,
-          amount: currentSubtotal, // ราคารวม Premium (ก่อนบวกค่าธรรมเนียมบัตร)
+          amount: totalPrice, 
           status: "pending",
           payment_method: paymentMethod ?? "promptpay",
           whitelisted_username: whitelistUsername.trim(),
           whitelist_status: "pending",
-          // ถ้ามี field นี้ใน DB ให้เอาคอมเมนต์ออก:
-          // is_premium: isPremium, 
+          // is_premium: isPremium,
         },
       })
     } else {
@@ -79,8 +82,8 @@ export async function POST(req: Request) {
         where: { id: order.id },
         data: {
           whitelisted_username: whitelistUsername.trim(),
-          amount: currentSubtotal,
-          payment_method: paymentMethod, // ✅ เพิ่ม
+          amount: totalPrice, 
+          payment_method: paymentMethod,
         },
       })
     }
@@ -88,10 +91,6 @@ export async function POST(req: Request) {
     const protocol = req.headers.get("x-forwarded-proto") || "http"
     const host = req.headers.get("host")
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`
-
-    // 5. คำนวณราคารวมค่าธรรมเนียม Stripe
-    const cardFee = paymentMethod === "card" ? currentSubtotal * 0.06 : 0
-    const totalPrice = currentSubtotal + cardFee
 
     const stripeSession = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -120,7 +119,7 @@ export async function POST(req: Request) {
         productId: product.id,
         variantId: variant?.id || "",
         whitelistUsername: whitelistUsername.trim(),
-        isPremium: isPremium ? "true" : "false", // ส่งข้อมูลพรีเมียมไปที่ Stripe Metadata
+        isPremium: isPremium ? "true" : "false",
       },
     })
 
