@@ -5,7 +5,7 @@ import { startOfMonth, subMonths, format } from "date-fns"
 export default async function AnalyticsPage() {
   const now = new Date()
 
- const [
+  const [
     monthlyRevenue,
     topProducts,
     recentOrders,
@@ -16,7 +16,7 @@ export default async function AnalyticsPage() {
     totalStats,
     netRevenue,
   ] = await Promise.all([
- 
+
     prisma.$queryRaw<{ month: Date; total: number; count: number }[]>`
       SELECT
         DATE_TRUNC('month', paid_at) AS month,
@@ -24,27 +24,28 @@ export default async function AnalyticsPage() {
         COUNT(*)::int                AS count
       FROM orders
       WHERE status = 'paid'
+        AND order_type = 'NEW'
         AND paid_at >= NOW() - INTERVAL '6 months'
       GROUP BY 1
       ORDER BY 1
     `,
- 
+
     // ── Top Products: revenue, profit, orders, customers, avg order ──
     prisma.$queryRaw<{
-      product_id:       string
-      name_th:          string
-      name_en:          string
-      is_consignment:   boolean
-      commission_pct:   number
-      owner_name:       string | null
-      total_revenue:    number
-      net_revenue:      number
-      payout:           number
-      order_count:      number
+      product_id: string
+      name_th: string
+      name_en: string
+      is_consignment: boolean
+      commission_pct: number
+      owner_name: string | null
+      total_revenue: number
+      net_revenue: number
+      payout: number
+      order_count: number
       unique_customers: number
-      avg_order:        number
-      first_sale:       string
-      last_sale:        string
+      avg_order: number
+      first_sale: string
+      last_sale: string
     }[]>`
       SELECT
         p.id                                            AS product_id,
@@ -76,38 +77,48 @@ export default async function AnalyticsPage() {
       FROM orders o
       JOIN products p ON p.id = o.product_id
       WHERE o.status = 'paid'
+        AND o.order_type = 'NEW'
       GROUP BY p.id, p.name_th, p.name_en, p.is_consignment, p.commission_pct, p.owner_name
       ORDER BY total_revenue DESC
       LIMIT 10
     `,
- 
+
     prisma.orders.findMany({
       take: 20,
       orderBy: { created_at: "desc" },
+      where: {
+        status: "paid",
+        order_type: "NEW",
+      },
       include: {
-        users:            { select: { username: true, avatar: true, email: true } },
-        products:         { select: { name_en: true, name_th: true } },
+        users: { select: { username: true, avatar: true, email: true } },
+        products: { select: { name_en: true, name_th: true } },
         product_variants: { select: { label_en: true, label_th: true } },
-        game_keys:        { select: { key_value: true } },
+        game_keys: { select: { key_value: true } },
       },
     }),
- 
+
     prisma.$queryRaw<{ status: string; count: number }[]>`
       SELECT status, COUNT(*)::int AS count
       FROM orders
+      WHERE order_type = 'NEW'
       GROUP BY status
       ORDER BY count DESC
     `,
- 
+
     prisma.$queryRaw<{ payment_method: string; count: number; total: number }[]>`
       SELECT
-        COALESCE(payment_method, 'stripe') AS payment_method,
+        CASE
+          WHEN COALESCE(payment_method, 'stripe') IN ('stripe', 'card') THEN 'stripe'
+          ELSE COALESCE(payment_method, 'stripe')
+        END AS payment_method,
         COUNT(*)::int                      AS count,
         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END)::float AS total
       FROM orders
+      WHERE order_type = 'NEW'
       GROUP BY payment_method
     `,
- 
+
     prisma.$queryRaw<{ day: Date; total: number; count: number }[]>`
       SELECT
         DATE_TRUNC('day', paid_at) AS day,
@@ -115,11 +126,12 @@ export default async function AnalyticsPage() {
         COUNT(*)::int              AS count
       FROM orders
       WHERE status = 'paid'
+        AND order_type = 'NEW'
         AND paid_at >= NOW() - INTERVAL '30 days'
       GROUP BY 1
       ORDER BY 1
     `,
- 
+
     prisma.$queryRaw<{ label_en: string; label_th: string; total: number; count: number }[]>`
       SELECT
         pv.label_en,
@@ -129,11 +141,12 @@ export default async function AnalyticsPage() {
       FROM orders o
       JOIN product_variants pv ON pv.id = o.variant_id
       WHERE o.status = 'paid'
+        AND o.order_type = 'NEW'
       GROUP BY pv.label_en, pv.label_th
       ORDER BY count DESC
       LIMIT 5
     `,
- 
+
     prisma.$queryRaw<{ total_revenue: number; total_orders: number; avg_order: number; unique_customers: number }[]>`
       SELECT
         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END)::float AS total_revenue,
@@ -141,8 +154,9 @@ export default async function AnalyticsPage() {
         AVG(CASE WHEN status = 'paid' THEN amount END)::float          AS avg_order,
         COUNT(DISTINCT user_id)::int                                   AS unique_customers
       FROM orders
+      WHERE order_type = 'NEW'
     `,
- 
+
     prisma.$queryRaw<{ total_gross: number; total_net: number; total_payout: number }[]>`
       SELECT
         SUM(o.amount)::float AS total_gross,
@@ -163,9 +177,10 @@ export default async function AnalyticsPage() {
       FROM orders o
       JOIN products p ON p.id = o.product_id
       WHERE o.status = 'paid'
+        AND o.order_type = 'NEW'
     `,
   ])
- 
+
   return (
     <AnalyticsClient
       data={{
@@ -177,14 +192,14 @@ export default async function AnalyticsPage() {
         topProducts,
         recentOrders: recentOrders.map((o) => ({
           ...o,
-          amount:     Number(o.amount),
+          amount: Number(o.amount),
           created_at: o.created_at?.toISOString() ?? null,
-          paid_at:    o.paid_at?.toISOString()    ?? null,
+          paid_at: o.paid_at?.toISOString() ?? null,
         })),
         ordersByStatus,
         ordersByPayment,
         dailyRevenue30: dailyRevenue30.map((d) => ({
-          day:   d.day.toISOString(),
+          day: d.day.toISOString(),
           total: d.total,
           count: d.count,
         })),
@@ -195,108 +210,3 @@ export default async function AnalyticsPage() {
     />
   )
 }
-
-// import { prisma } from "@/lib/prisma"
-// import AnalyticsClient from "./AnalyticsClient"
-
-// export default async function AnalyticsPage() {
-//   const [
-//     monthlyRevenue,
-//     topProducts,
-//     recentOrders,
-//     ordersByStatus,
-//     ordersByPayment,
-//     dailyRevenue30,
-//     totalStats,
-//     netRevenue,
-//   ] = await Promise.all([
-//     // 1. รายได้รายเดือน (6 เดือนย้อนหลัง)
-//     prisma.$queryRaw<{ month: Date; total: number; count: number }[]>`
-//       SELECT DATE_TRUNC('month', paid_at) AS month, SUM(amount)::float AS total, COUNT(*)::int AS count
-//       FROM orders WHERE status = 'paid' AND paid_at >= NOW() - INTERVAL '6 months'
-//       GROUP BY 1 ORDER BY 1
-//     `,
-
-//     // 2. สินค้าขายดีที่สุด (คำนวณกำไรสุทธิหลังหัก Commission ในตัว)
-//     prisma.$queryRaw<any[]>`
-//       SELECT 
-//         p.id AS product_id, p.name_th, p.name_en, p.is_consignment,
-//         COALESCE(p.commission_pct, 0)::float AS commission_pct,
-//         SUM(o.amount)::float AS total_revenue,
-//         SUM(CASE 
-//           WHEN p.is_consignment = true THEN (o.amount * p.commission_pct / 100)
-//           ELSE o.amount 
-//         END)::float AS net_revenue,
-//         COUNT(o.id)::int AS order_count,
-//         AVG(o.amount)::float AS avg_order
-//       FROM orders o
-//       JOIN products p ON p.id = o.product_id
-//       WHERE o.status = 'paid'
-//       GROUP BY p.id, p.name_th, p.name_en, p.is_consignment, p.commission_pct
-//       ORDER BY total_revenue DESC LIMIT 8
-//     `,
-
-//     // 3. คำสั่งซื้อล่าสุด
-//     prisma.orders.findMany({
-//       take: 10,
-//       orderBy: { created_at: "desc" },
-//       include: {
-//         users: { select: { username: true, avatar: true } },
-//         products: { select: { name_en: true, name_th: true } },
-//       }
-//     }),
-
-//     // 4. สรุปสถานะ Order ทั้งหมด
-//     prisma.$queryRaw<{ status: string; count: number }[]>`
-//       SELECT status, COUNT(*)::int AS count FROM orders GROUP BY status
-//     `,
-
-//     // 5. รายได้แยกตามวิธีชำระเงิน
-//     prisma.$queryRaw<{ payment_method: string; total: number }[]>`
-//       SELECT COALESCE(payment_method, 'stripe') as payment_method, SUM(amount)::float as total
-//       FROM orders WHERE status = 'paid' GROUP BY payment_method
-//     `,
-
-//     // 6. รายได้รายวัน (30 วันล่าสุด)
-//     prisma.$queryRaw<{ day: Date; total: number; count: number }[]>`
-//       SELECT DATE_TRUNC('day', paid_at) AS day, SUM(amount)::float AS total, COUNT(*)::int AS count
-//       FROM orders WHERE status = 'paid' AND paid_at >= NOW() - INTERVAL '30 days'
-//       GROUP BY 1 ORDER BY 1
-//     `,
-
-//     // 7. สถิติรวมพื้นฐาน
-//     prisma.$queryRaw<any[]>`
-//       SELECT 
-//         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END)::float AS total_revenue,
-//         COUNT(*)::int AS total_orders,
-//         COUNT(DISTINCT user_id)::int AS unique_customers
-//       FROM orders
-//     `,
-
-//     // 8. คำนวณรายได้สุทธิ vs ยอดจ่ายเจ้าของ (Consignment)
-//     prisma.$queryRaw<any[]>`
-//       SELECT 
-//         SUM(o.amount)::float AS total_gross,
-//         SUM(CASE WHEN p.is_consignment = true THEN o.amount * p.commission_pct / 100 ELSE o.amount END)::float AS total_net,
-//         SUM(CASE WHEN p.is_consignment = true THEN o.amount * (100 - p.commission_pct) / 100 ELSE 0 END)::float AS total_payout
-//       FROM orders o
-//       JOIN products p ON p.id = o.product_id
-//       WHERE o.status = 'paid'
-//     `
-//   ])
-
-//   return (
-//     <AnalyticsClient 
-//       data={{
-//         monthlyRevenue: monthlyRevenue.map(m => ({ ...m, month: m.month.toISOString() })),
-//         topProducts,
-//         recentOrders: recentOrders.map(o => ({ ...o, amount: Number(o.amount), created_at: o.created_at?.toISOString() })),
-//         ordersByStatus,
-//         ordersByPayment,
-//         dailyRevenue30: dailyRevenue30.map(d => ({ ...d, day: d.day.toISOString() })),
-//         totalStats: totalStats[0],
-//         netRevenue: netRevenue[0]
-//       }} 
-//     />
-//   )
-// }

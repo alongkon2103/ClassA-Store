@@ -230,9 +230,15 @@ export default function AnalyticsClient({ data }: { data: any }) {
     ? ((totalPaid / data.totalStats.total_orders) * 100).toFixed(1)
     : "0"
 
-  const stripeRevenue    = data.ordersByPayment?.find((p: any) => p.payment_method === "stripe")?.total    ?? 0
+  const stripeRevenue = data.ordersByPayment
+  ?.filter((p: any) => ["stripe", "card"].includes(p.payment_method))
+  ?.reduce((sum: number, p: any) => sum + (p.total ?? 0), 0) ?? 0
+
   const promptpayRevenue = data.ordersByPayment?.find((p: any) => p.payment_method === "promptpay")?.total ?? 0
 
+const stripeCount = data.ordersByPayment
+  ?.filter((p: any) => ["stripe", "card"].includes(p.payment_method))
+  ?.reduce((sum: number, p: any) => sum + (p.count ?? 0), 0) ?? 0
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -341,7 +347,7 @@ export default function AnalyticsClient({ data }: { data: any }) {
                     }} />
                 </div>
                 <p className="text-[11px] text-text-muted">
-                  {t("orders_count", { count: data.ordersByPayment?.find((p: any) => p.payment_method === key)?.count ?? 0 })}
+                  {t("orders_count", { count: stripeCount })}
                 </p>
               </div>
             ))}

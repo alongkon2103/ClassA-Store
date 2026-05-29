@@ -157,7 +157,7 @@ export default function ProductsClient({ products }: { products: any[] }) {
 
                   {/* Orders */}
                   <td className="px-4 py-4 text-text-muted">
-                    {p._count.orders}
+                    {p.orders_new_count}
                   </td>
 
                   {/* Status */}

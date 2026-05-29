@@ -26,16 +26,17 @@ export async function GET(req: NextRequest) {
                 in: ["paid", "Admin Buy"],
             },
             OR: [
-                { expires_at: null },                          // ไม่มีวันหมดอายุ = ตลอดชีพ
-                { expires_at: { gt: new Date() } },            // ยังไม่หมดอายุ
+                { expires_at: null },
+                { expires_at: { gt: new Date() } },
             ],
         },
         orderBy: [
-            { is_premium_order: "desc" },                      // premium ก่อน
-            { expires_at: "desc" },                            // หมดอายุช้าที่สุดก่อน
+            { is_premium_order: "desc" },
+            { expires_at: "desc" },
         ],
         include: {
             user_function_gifts: {
+                where: { is_enabled: true },
                 include: {
                     product_functions: true,
                     gifts: true,
@@ -48,14 +49,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ whitelisted: false }, { status: 404 })
     }
 
-    // ── 🔥 NEW: premium vs default ───────────────────────────────
     let functions
 
     if (order.is_premium_order) {
-        // premium → ใช้ของ order
         functions = order.user_function_gifts
     } else {
-        // default → ดึงจากระบบ default จริง
         const defaultFunctions = await prisma.product_functions.findMany({
             where: {
                 product_id: productId,
@@ -68,12 +66,11 @@ export async function GET(req: NextRequest) {
             },
         })
 
-        // map ให้ structure เหมือน user_function_gifts
         functions = defaultFunctions.map((fn) => ({
             product_functions: fn,
             gifts: fn.default_gift,
             gift_id: fn.default_gift?.id ?? null,
-            trigger_threshold: fn.default_trigger_threshold, // ✅ ใช้จากค่าเริ่มต้นของระบบ
+            trigger_threshold: fn.default_trigger_threshold,
         }))
     }
 
@@ -91,8 +88,8 @@ export async function GET(req: NextRequest) {
             gift_name: ufg.gifts?.name ?? null,
             gift_image_url: ufg.gifts?.image_url ?? null,
             gift_diamonds: ufg.gifts?.diamonds ?? 0,
-            trigger_type: ufg.gifts?.trigger_type ?? null, 
-            trigger_threshold: ufg.trigger_threshold ?? null, 
+            trigger_type: ufg.gifts?.trigger_type ?? null,
+            trigger_threshold: ufg.trigger_threshold ?? null,
         })),
     })
 }

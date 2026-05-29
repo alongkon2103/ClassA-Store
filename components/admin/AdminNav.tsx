@@ -38,6 +38,14 @@ const groups = [
     ]
   },
   {
+    title: "desktop_program",
+    items: [
+      { href: "/admin/desktop", key: "desktop_dashboard", roles: ["admin"] },
+      { href: "/admin/desktop/users", key: "user_monitor", roles: ["admin"] },
+      { href: "/admin/desktop/announcements", key: "announcements", roles: ["admin"] },
+    ]
+  },
+  {
     title: "tools",
     items: [
       { href: "/admin/tiktok-simulator", key: "tiktok_simulator", roles: ["admin"] },
@@ -72,8 +80,8 @@ export default function AdminNav() {
               {t(group.title) || group.title.replace("_", " ")}
             </p>
             {group.items.map(({ href, key }) => {
-              const active = href === "/admin"
-                ? pathname === "/admin"
+              const active = (href === "/admin" || href === "/admin/desktop")
+                ? pathname === href
                 : pathname.startsWith(href)
 
               return (

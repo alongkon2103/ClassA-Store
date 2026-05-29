@@ -10,6 +10,7 @@ export default async function Page({
   const { locale } = await params
   setRequestLocale(locale)
 
+  // 1. fetch products (lightweight)
   const products = await prisma.products.findMany({
     orderBy: { created_at: "desc" },
     include: {
@@ -17,10 +18,9 @@ export default async function Page({
         orderBy: { sort_order: "asc" },
         take: 1,
       },
+
       product_variants: {
-        where: {
-          is_active: true,
-        },
+        where: { is_active: true },
         include: {
           _count: {
             select: {
@@ -33,21 +33,36 @@ export default async function Page({
           },
         },
       },
-      _count: {
-        select: {
-          orders: true,
-        },
-      },
     },
   })
 
-  // ใช้ JSON stringify/parse เพื่อตัด Prisma Decimal ออกทั้งหมด
+  // 2. fetch ONLY NEW orders count (correct way)
+  const newOrders = await prisma.orders.groupBy({
+    by: ["product_id"],
+    where: {
+      order_type: "NEW",
+      status : "paid"
+    },
+    _count: {
+      _all: true,
+    },
+  })
+
+  // 3. map product_id -> count
+  const orderMap = new Map(
+    newOrders.map((o) => [o.product_id, o._count._all])
+  )
+
+  // 4. transform safe data
   const safeProducts = JSON.parse(
     JSON.stringify(
       products.map((p) => ({
         ...p,
         price: Number(p.price),
         commission_pct: Number(p.commission_pct ?? 0),
+
+        // ✅ REAL NEW ORDER COUNT
+        orders_new_count: orderMap.get(p.id) ?? 0,
 
         product_variants: p.product_variants.map((v) => ({
           id: v.id,
@@ -63,6 +78,8 @@ export default async function Page({
           updated_at: v.updated_at,
           variant_type: v.variant_type,
           premium_addon_price: Number(v.premium_addon_price ?? 0),
+
+          // stock available keys
           stock: v._count.game_keys,
         })),
       }))

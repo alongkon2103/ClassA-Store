@@ -250,7 +250,7 @@ export default function FunctionManager({ productId, functions: initial, allGift
                 </div>
 
                 {/* Default Threshold */}
-                {getGift(newForm.default_gift_id)?.trigger_type === 'Like' && (
+                {getGift(newForm.default_gift_id)?.trigger_type === 'like' && (
                   <div>
                     <FieldLabel>{t("defaultThreshold")}</FieldLabel>
                     <input
@@ -368,7 +368,7 @@ export default function FunctionManager({ productId, functions: initial, allGift
                     </div>
 
                     {/* Default Threshold */}
-                    {getGift(editForm.default_gift_id)?.trigger_type === 'Like' && (
+                    {getGift(editForm.default_gift_id)?.trigger_type === 'like' && (
                       <div className="space-y-1.5">
                         <FieldLabel small>{t("defaultThreshold")}</FieldLabel>
                         <input

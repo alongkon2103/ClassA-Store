@@ -3,7 +3,7 @@ import type { AuthOptions, Session } from "next-auth"
 import type { JWT } from "next-auth/jwt"
 import DiscordProvider from "next-auth/providers/discord"
 import GoogleProvider from "next-auth/providers/google"
-import CredentialsProvider from "next-auth/providers/credentials" // เพิ่ม
+import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 
 export const authOptions: AuthOptions = {
@@ -17,12 +17,13 @@ export const authOptions: AuthOptions = {
                     credentials: {},
                     async authorize() {
                         return {
-                            id: "e4ce8ce4-740c-42f3-9cf1-a1b16a30baba", // ← UUID จริงๆ
+                            id: "e4ce8ce4-740c-42f3-9cf1-a1b16a30baba",
                             name: "Dev Admin",
                             email: "admin@dev.local",
                             image: null,
                             role: "admin",
-                            }                    },
+                        }
+                    },
                 }),
             ]
             : []),
@@ -39,7 +40,10 @@ export const authOptions: AuthOptions = {
         }),
     ],
 
-    session: { strategy: "jwt" },
+    session: {
+        strategy: "jwt",
+        maxAge: 60 * 60 * 24 * 7, // 7 วัน
+    },
 
     pages: {
         signIn: "/login",
@@ -48,9 +52,7 @@ export const authOptions: AuthOptions = {
 
     callbacks: {
         async signIn({ user, account, profile }: any) {
-            // ── skip DB upsert for dev mock ──
             if (account?.provider === "dev-admin") return true
-
             if (!account) return false
 
             try {
@@ -111,25 +113,37 @@ export const authOptions: AuthOptions = {
         },
 
         async jwt({ token, user, account }: any) {
+            // ── ตอน sign in ครั้งแรก: เซต id และ provider ──
             if (user) {
                 token.id = user.id
-
-                // ── dev mock: skip DB lookup, inject role directly ──
-                if (account?.provider === "dev-admin") {
-                    token.role = "admin"
-                } else {
-                    const dbUser = await prisma.users.findUnique({
-                        where: { id: user.id },
-                        select: { role: true },
-                    })
-                    token.role = dbUser?.role ?? "user"
-                }
             }
 
             if (account) {
                 token.provider = account.provider
                 token.providerAccountId = account.providerAccountId
             }
+
+            // ── dev mock: ไม่ต้อง query DB ──
+            if (token.provider === "dev-admin") {
+                token.role = "admin"
+                return token
+            }
+
+            // ── ดึง role จาก DB ทุก 5 นาที ──
+            if (token.id) {
+                const now = Math.floor(Date.now() / 1000)
+                const lastFetched = (token.roleLastFetched as number) ?? 0
+
+                if (now - lastFetched > 60 * 5) {
+                    const dbUser = await prisma.users.findUnique({
+                        where: { id: token.id as string },
+                        select: { role: true },
+                    })
+                    token.role = dbUser?.role ?? "user"
+                    token.roleLastFetched = now
+                }
+            }
+
             return token
         },
 

@@ -2,11 +2,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createGiftIfNotExists } from '@/lib/gifts'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
+}
+
+// รองรับ preflight (สำคัญมาก)
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders })
+}
+
 export async function POST(req: NextRequest) {
-  // ── Auth ──────────────────────────────────────────────────
   const apiKey = req.headers.get('x-api-key')
   if (!apiKey || apiKey !== process.env.INTERNAL_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401, headers: corsHeaders }
+    )
   }
 
   try {
@@ -15,7 +28,7 @@ export async function POST(req: NextRequest) {
     if (!giftId || !giftName) {
       return NextResponse.json(
         { error: 'giftId and giftName are required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -25,17 +38,23 @@ export async function POST(req: NextRequest) {
       diamond ?? 0
     )
 
-    return NextResponse.json({ success: true, gift, created })
+    return NextResponse.json(
+      { success: true, gift, created },
+      { headers: corsHeaders }
+    )
 
   } catch (error: any) {
     if (error.code === 'P2002') {
       return NextResponse.json(
         { error: 'Gift name already exists', detail: error.meta },
-        { status: 409 }
+        { status: 409, headers: corsHeaders }
       )
     }
 
     console.error('[gift-sync] error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500, headers: corsHeaders }
+    )
   }
 }

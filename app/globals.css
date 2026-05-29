@@ -1,4 +1,13 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Prose Overrides for Tiptap */
+.prose table { border-collapse: collapse; margin: 1rem 0; width: 100%; }
+.prose table td, .prose table th { border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem; }
+.prose table th { background: rgba(255,255,255,0.05); text-align: left; }
+.prose .text-left { text-align: left; }
+.prose .text-center { text-align: center; }
+.prose .text-right { text-align: right; }
 
 :root {
   --color-accent: #427ab5;

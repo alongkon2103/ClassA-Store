@@ -97,7 +97,7 @@ export async function POST(req: Request, { params }: RouteContext) {
             await prisma.$transaction(
                 Object.entries(mapping).map(([functionId, giftId]) => {
                     const gift = gifts.find(g => g.id === Number(giftId))
-                    const threshold = gift?.trigger_type === 'Like' ? thresholds[functionId] : null
+                    const threshold = gift?.trigger_type === 'like' ? thresholds[functionId] : null
                     
                     return prisma.user_function_gifts.upsert({
                         where: {

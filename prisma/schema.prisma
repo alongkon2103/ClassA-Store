@@ -59,11 +59,11 @@ model gifts {
   name                  String                @unique
   image_url             String?
   diamonds              Int                   @default(0)
-  trigger_type          String?               @db.VarChar
   is_active             Boolean               @default(true)
   sort_order            Int                   @default(0)
-  user_function_gifts   user_function_gifts[]
+  trigger_type          String?               @db.VarChar
   default_for_functions product_functions[]   @relation("DefaultGift")
+  user_function_gifts   user_function_gifts[]
 }
 
 model key_access_logs {
@@ -74,55 +74,54 @@ model key_access_logs {
 }
 
 model orders {
-  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id               String    @db.Uuid
-  product_id            String    @db.Uuid
-  stripe_session_id     String?   @unique @db.VarChar
-  stripe_payment_intent String?   @unique @db.VarChar
-  amount                Decimal   @db.Decimal(10, 2)
-  status                String    @default("pending") @db.VarChar
-  paid_at               DateTime? @db.Timestamptz(6)
-  fulfilled_at          DateTime? @db.Timestamptz(6)
-  created_at            DateTime? @default(now()) @db.Timestamptz(6)
-  variant_id            String?   @db.Uuid
-  payment_method        String?   @default("stripe") @db.VarChar
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String                @db.Uuid
+  product_id            String                @db.Uuid
+  stripe_session_id     String?               @unique @db.VarChar
+  stripe_payment_intent String?               @unique @db.VarChar
+  amount                Decimal               @db.Decimal(10, 2)
+  status                String                @default("pending") @db.VarChar
+  paid_at               DateTime?             @db.Timestamptz(6)
+  fulfilled_at          DateTime?             @db.Timestamptz(6)
+  created_at            DateTime?             @default(now()) @db.Timestamptz(6)
+  variant_id            String?               @db.Uuid
+  payment_method        String?               @default("stripe") @db.VarChar
   slip_image_url        String?
-  slip_verified         Boolean?  @default(false)
-  trans_ref             String?   @unique @db.VarChar
-  updated_at            DateTime? @default(now()) @db.Timestamptz(6)
-  whitelisted_username  String?   @db.VarChar
-  whitelist_status      String?   @default("pending") @db.VarChar
-  tiktok_username       String?   @db.VarChar
+  slip_verified         Boolean?              @default(false)
+  trans_ref             String?               @unique @db.VarChar
+  updated_at            DateTime?             @default(now()) @db.Timestamptz(6)
+  whitelisted_username  String?               @db.VarChar
+  whitelist_status      String?               @default("pending") @db.VarChar
+  tiktok_username       String?               @db.VarChar
   activated_device_id   String?
   activated_at          DateTime?
   expires_at            DateTime?
-  is_premium_order      Boolean?  @default(false)
-  order_type            String    @default("NEW") @db.VarChar
-
-  game_keys           game_keys?
-  products            products              @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users               users                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  product_variants    product_variants?     @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user_function_gifts user_function_gifts[]
-  premium_upgrades    premium_upgrades[]
+  is_premium_order      Boolean?              @default(false)
+  order_type            String                @default("NEW") @db.VarChar
+  game_keys             game_keys?
+  products              products              @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                 users                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_variants      product_variants?     @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  premium_upgrades      premium_upgrades[]
+  user_function_gifts   user_function_gifts[]
 
   @@index([user_id], map: "idx_orders_user")
 }
 
 model product_functions {
-  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  product_id          String                @db.Uuid
-  name                String                @db.VarChar
-  label_th            String?               @db.VarChar
-  label_en            String?               @db.VarChar
-  image_url           String?
-  sort_order          Int                   @default(0)
-  default_gift_id     Int?
+  id                        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id                String                @db.Uuid
+  name                      String                @db.VarChar
+  label_th                  String?               @db.VarChar
+  label_en                  String?               @db.VarChar
+  image_url                 String?
+  sort_order                Int                   @default(0)
+  default_gift_id           Int?
+  created_at                DateTime?             @default(now()) @db.Timestamptz(6)
   default_trigger_threshold Int?
-  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
-  products            products              @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  user_function_gifts user_function_gifts[]
-  default_gift        gifts?                @relation("DefaultGift", fields: [default_gift_id], references: [id])
+  default_gift              gifts?                @relation("DefaultGift", fields: [default_gift_id], references: [id])
+  products                  products              @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_function_gifts       user_function_gifts[]
 
   @@index([product_id], map: "idx_product_functions_product")
 }
@@ -165,63 +164,61 @@ model product_presets {
 }
 
 model product_variants {
-  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  product_id          String    @db.Uuid
-  duration_type       String    @db.VarChar
+  id                  String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id          String      @db.Uuid
+  duration_type       String      @db.VarChar
   duration_days       Int?
-  label_th            String    @db.VarChar
-  label_en            String    @db.VarChar
-  price               Decimal   @db.Decimal(10, 2)
-  is_active           Boolean?  @default(true)
-  sort_order          Int?      @default(0)
-  created_at          DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at          DateTime? @default(now()) @db.Timestamptz(6)
-  variant_type        String?   @default("normal") @db.VarChar
-  premium_addon_price Decimal?  @default(0) @db.Decimal(10, 2)
-
-  game_keys game_keys[]
-  orders    orders[]
-  products  products    @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  label_th            String      @db.VarChar
+  label_en            String      @db.VarChar
+  price               Decimal     @db.Decimal(10, 2)
+  is_active           Boolean?    @default(true)
+  sort_order          Int?        @default(0)
+  created_at          DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?   @default(now()) @db.Timestamptz(6)
+  variant_type        String?     @default("normal") @db.VarChar
+  premium_addon_price Decimal?    @default(0) @db.Decimal(10, 2)
+  game_keys           game_keys[]
+  orders              orders[]
+  products            products    @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([product_id], map: "idx_product_variants_product")
 }
 
 model products {
-  id               String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug             String  @unique @db.VarChar
-  name_th          String  @db.VarChar
-  name_en          String  @db.VarChar
-  description_th   String?
-  description_en   String?
-  price            Decimal @db.Decimal(10, 2)
-  is_active        Boolean?  @default(true)
-  is_featured      Boolean?  @default(false)
-  created_at       DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime? @default(now()) @db.Timestamptz(6)
-  isLower          Boolean?  @default(false)
-  owner_name       String?   @db.VarChar
-  owner_contact    String?   @db.VarChar
-  commission_pct   Decimal?  @default(0) @db.Decimal(5, 2)
-  is_consignment   Boolean?  @default(false)
-  info_page_url    String?
-  discord_role_id  String?   @db.VarChar
-  discord_guild_id String?   @db.VarChar
-  youtube_url      String?
-  tutorial_video_url String?
-  created_by_id    String?   @db.Uuid
-
-  created_by            users?                @relation("ProductCreator", fields: [created_by_id], references: [id])
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                  String                  @unique @db.VarChar
+  name_th               String                  @db.VarChar
+  name_en               String                  @db.VarChar
+  description_th        String?
+  description_en        String?
+  price                 Decimal                 @db.Decimal(10, 2)
+  is_active             Boolean?                @default(true)
+  is_featured           Boolean?                @default(false)
+  created_at            DateTime?               @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?               @default(now()) @db.Timestamptz(6)
+  isLower               Boolean?                @default(false)
+  owner_name            String?                 @db.VarChar
+  owner_contact         String?                 @db.VarChar
+  commission_pct        Decimal?                @default(0) @db.Decimal(5, 2)
+  is_consignment        Boolean?                @default(false)
+  info_page_url         String?
+  discord_role_id       String?                 @db.VarChar
+  discord_guild_id      String?                 @db.VarChar
+  youtube_url           String?
+  tutorial_video_url    String?
+  created_by_id         String?                 @db.Uuid
   game_keys             game_keys[]
   orders                orders[]
+  premium_upgrades      premium_upgrades[]
+  product_consignments  product_consignments[]
   product_functions     product_functions[]
   product_gifts         product_gifts[]
   product_images        product_images[]
   product_presets       product_presets[]
-  product_variants      product_variants[]
-  product_consignments  product_consignments[]
   product_shares        product_shares[]
+  product_variants      product_variants[]
+  created_by            users?                  @relation("ProductCreator", fields: [created_by_id], references: [id])
   user_whitelist_access user_whitelist_access[]
-  premium_upgrades      premium_upgrades[]
 
   @@index([is_consignment], map: "idx_products_consignment")
   @@index([created_by_id], map: "idx_products_creator")
@@ -239,14 +236,13 @@ model partners {
 }
 
 model product_shares {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  product_id String   @db.Uuid
-  partner_id String   @db.Uuid
-  share_pct  Decimal  @db.Decimal(5, 2)
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id String    @db.Uuid
+  partner_id String    @db.Uuid
+  share_pct  Decimal   @db.Decimal(5, 2)
   created_at DateTime? @default(now()) @db.Timestamptz(6)
-
-  products products @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  partners partners @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  partners   partners  @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  products   products  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
   @@index([product_id])
   @@index([partner_id])
@@ -271,10 +267,9 @@ model user_whitelist_access {
   is_premium Boolean  @default(false)
   expires_at DateTime @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
+  products   products @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
-  products products @relation(fields: [product_id], references: [id], onDelete: Cascade)
-
-  @@unique([ign, product_id]) // This generates 'ign_product_id'
+  @@unique([ign, product_id])
   @@index([ign], map: "idx_uwa_ign")
 }
 
@@ -288,12 +283,12 @@ model premium_upgrades {
   stripe_session_id String?  @db.VarChar
   upgraded_at       DateTime @default(now()) @db.Timestamptz(6)
   status            String   @default("paid") @db.VarChar
-  orders   orders   @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  users    users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  products products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  orders            orders   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  products          products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  users             users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@index([user_id],     map: "idx_pu_user")
-  @@index([product_id],  map: "idx_pu_product")
+  @@index([user_id], map: "idx_pu_user")
+  @@index([product_id], map: "idx_pu_product")
   @@index([upgraded_at], map: "idx_pu_date")
 }
 
@@ -303,8 +298,9 @@ model user_function_gifts {
   order_id          String            @db.Uuid
   function_id       String            @db.Uuid
   gift_id           Int
-  trigger_threshold Int?             
   updated_at        DateTime          @default(now()) @db.Timestamptz(6)
+  trigger_threshold Int?
+  is_enabled        Boolean           @default(true)
   product_functions product_functions @relation(fields: [function_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   gifts             gifts             @relation(fields: [gift_id], references: [id], onUpdate: NoAction)
   orders            orders            @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -312,24 +308,177 @@ model user_function_gifts {
 
   @@unique([user_id, order_id, function_id])
   @@index([order_id], map: "idx_ufg_order")
-  @@index([user_id],  map: "idx_ufg_user")
+  @@index([user_id], map: "idx_ufg_user")
 }
 
 model users {
-  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  username              String                  @db.VarChar
-  email                 String?                 @unique @db.VarChar
-  role                  String                  @default("user") @db.VarChar
-  created_at            DateTime?               @default(now()) @db.Timestamptz(6)
-  avatar                String?                 @db.VarChar
-  accounts              accounts[]
-  orders                orders[]
-  user_function_gifts   user_function_gifts[]
-  premium_upgrades      premium_upgrades[]
-  created_products      products[]              @relation("ProductCreator")
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username            String                @db.VarChar
+  email               String?               @unique @db.VarChar
+  role                Role                  @default(user)
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  avatar              String?               @db.VarChar
+  hwid                String?               @unique @db.VarChar
+  lastSeen            DateTime?             @db.Timestamptz(6)
+  nativeStatus        String                @default("ACTIVE") @db.VarChar
+  nativeExpiry        DateTime?             @db.Timestamptz(6)
+  isOnlineDesktop     Boolean               @default(false)
+  accounts            accounts[]
+  announcements       announcements[]
+  games               games[]
+  orders              orders[]
+  premium_upgrades    premium_upgrades[]
+  presets             presets[]
+  created_products    products[]            @relation("ProductCreator")
+  user_function_gifts user_function_gifts[]
+  user_presets        user_presets[]
 }
 
 model system_configs {
   key   String @id
   value String
+}
+
+model announcements {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String   @db.VarChar
+  content     String
+  isActive    Boolean  @default(true)
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @db.Timestamptz(6)
+  imageUrl    String?  @db.VarChar
+  users       users?   @relation(fields: [createdById], references: [id])
+}
+
+model app_rules {
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  presetId  String     @db.Uuid
+  event     RuleEvent
+  condition Json?
+  action    RuleAction
+  key       String?    @db.VarChar
+  sound     String?    @db.VarChar
+  volume    Float?     @default(1.0)
+  duration  String?    @db.VarChar
+  createdAt DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime   @db.Timestamptz(6)
+  presets   presets    @relation(fields: [presetId], references: [id], onDelete: Cascade)
+}
+
+model games {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String    @unique @db.VarChar
+  description String?
+  createdById String?   @db.Uuid
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @db.Timestamptz(6)
+  users       users?    @relation(fields: [createdById], references: [id])
+  presets     presets[]
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model gifts_backup_20260524 {
+  id           Int?
+  name         String?
+  image_url    String?
+  diamonds     Int?
+  is_active    Boolean?
+  sort_order   Int?
+  trigger_type String?  @db.VarChar
+
+  @@ignore
+}
+
+model presets {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String         @db.VarChar
+  description  String?
+  isDefault    Boolean        @default(false)
+  gameId       String         @db.Uuid
+  createdById  String?        @db.Uuid
+  createdAt    DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime       @default(now()) @db.Timestamptz(6)
+  app_rules    app_rules[]
+  users        users?         @relation(fields: [createdById], references: [id])
+  games        games          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user_presets user_presets[]
+
+  @@unique([createdById, gameId, name])
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model product_functions_backup_20260524 {
+  id                        String?   @db.Uuid
+  product_id                String?   @db.Uuid
+  name                      String?   @db.VarChar
+  label_th                  String?   @db.VarChar
+  label_en                  String?   @db.VarChar
+  image_url                 String?
+  sort_order                Int?
+  default_gift_id           Int?
+  created_at                DateTime? @db.Timestamptz(6)
+  default_trigger_threshold Int?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model user_function_gifts_backup_20260524 {
+  id                String?   @db.Uuid
+  user_id           String?   @db.Uuid
+  order_id          String?   @db.Uuid
+  function_id       String?   @db.Uuid
+  gift_id           Int?
+  updated_at        DateTime? @db.Timestamptz(6)
+  trigger_threshold Int?
+
+  @@ignore
+}
+
+model user_presets {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @db.Uuid
+  presetId       String   @db.Uuid
+  isActive       Boolean  @default(false)
+  sourcePresetId String?  @db.Uuid
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  presets        presets  @relation(fields: [presetId], references: [id], onDelete: Cascade)
+  users          users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, presetId])
+}
+
+enum Role {
+  user
+  admin
+  partnership
+}
+
+enum RuleAction {
+  KEY_PRESS
+  RCON_COMMAND
+  SOUND_PLAY
+  WIN_COUNTER
+  SPIN_WHEEL
+}
+
+enum RuleEvent {
+  GIFT
+  LIKE
+  FOLLOW
+  SHARE
+  COMMENT
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  SUSPENDED
 }
