@@ -107,51 +107,6 @@ export default async function AdminDesktopOverviewPage({
           </div>
         </div>
 
-        {/* System Health */}
-        <div className="bg-bg-card border border-accent/10 rounded-3xl p-6 flex flex-col gap-6">
-          <h3 className="font-bold text-[15px] flex items-center gap-2">
-            <ShieldCheck size={18} className="text-accent" />
-            System Health
-          </h3>
-          
-          <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-[12px] font-bold text-text-muted">Database Connection</span>
-                <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-bold">STABLE</span>
-              </div>
-              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-green-500 h-full w-[100%]" />
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-[12px] font-bold text-text-muted">API Latency</span>
-                <span className="text-[10px] bg-accent/20 text-accent-light px-2 py-0.5 rounded-full font-bold">42ms</span>
-              </div>
-              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-accent h-full w-[15%]" />
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-[12px] font-bold text-text-muted">Online Session Sync</span>
-                <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-bold">SYNCED</span>
-              </div>
-              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-blue-500 h-full w-[100%]" />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-auto pt-6 border-t border-white/5">
-            <p className="text-[11px] text-text-muted leading-relaxed italic">
-              * Statistics are updated in real-time through the desktop heartbeat system.
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   )
