@@ -35,14 +35,31 @@ export async function POST(req: Request) {
     const variant = product.product_variants.find(v => v.id === variantId)
     let basePrice = variant ? Number(variant.price) : Number(product.price)
     
-    // --- Discount Logic ---
-    const hasDiscount = !!(
-      product.has_limited_discount && 
-      variant && 
-      Number(variant.discount_pct) > 0 && 
-      (variant.discount_used ?? 0) < (variant.discount_limit ?? 0)
-    )
-    if (hasDiscount) {
+    // --- Discount Logic (Robust Check) ---
+    let hasDiscount = false
+    if (product.has_limited_discount && variant && Number(variant.discount_pct) > 0) {
+      const discountLimit = Number(variant.discount_limit ?? 0)
+      
+      // Count existing paid orders AND active pending orders
+      const usedCount = await prisma.orders.count({
+        where: {
+          variant_id: variant.id,
+          OR: [
+            { status: "paid" },
+            { 
+              status: "pending",
+              expires_at: { gt: new Date() } // Only count pending orders that haven't expired
+            }
+          ]
+        }
+      })
+
+      if (usedCount < discountLimit) {
+        hasDiscount = true
+      }
+    }
+
+    if (hasDiscount && variant) {
       const discountPct = Number(variant.discount_pct)
       basePrice = basePrice - (basePrice * (discountPct / 100))
     }
@@ -64,6 +81,9 @@ export async function POST(req: Request) {
     // 4. ✅ คำนวณราคารวมค่าธรรมเนียมก่อน เพื่อให้ order ในฐานข้อมูลได้ราคาที่ถูกต้อง
     const cardFee = paymentMethod === "card" ? currentSubtotal * 0.06 : 0
     const totalPrice = currentSubtotal + cardFee
+
+    const sessionExpiryMinutes = 10 // Shorten expiry to 10 minutes to free up locked discounts
+    const expiresAt = new Date(Date.now() + sessionExpiryMinutes * 60 * 1000)
 
     // 5. เช็ค pending order เดิม
     let order = await prisma.orders.findFirst({
@@ -88,6 +108,7 @@ export async function POST(req: Request) {
           whitelisted_username: whitelistUsername.trim(),
           whitelist_status: "pending",
           is_premium_order: !!isPremium,
+          expires_at: expiresAt,
         },
       })
     } else {
@@ -98,6 +119,7 @@ export async function POST(req: Request) {
           amount: totalPrice, 
           payment_method: paymentMethod,
           is_premium_order: !!isPremium,
+          expires_at: expiresAt,
         },
       })
     }
@@ -109,7 +131,7 @@ export async function POST(req: Request) {
     const stripeSession = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: paymentMethod === "card" ? ["card"] : ["promptpay"],
-      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+      expires_at: Math.floor(expiresAt.getTime() / 1000),
 
       line_items: [
         {
