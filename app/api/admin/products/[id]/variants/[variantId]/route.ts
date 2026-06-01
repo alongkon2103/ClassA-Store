@@ -13,7 +13,12 @@ export async function PATCH(
     data: { ...body, updated_at: new Date() },
   })
 
-  return NextResponse.json({ ...variant, price: Number(variant.price) })
+  return NextResponse.json({ 
+    ...variant, 
+    price: Number(variant.price),
+    premium_addon_price: Number(variant.premium_addon_price ?? 0),
+    discount_pct: Number(variant.discount_pct ?? 0)
+  })
 }
 
 export async function DELETE(

@@ -17,13 +17,31 @@ export default function VariantManager({ productId, variants }: { productId: str
   const router = useRouter()
   const [list, setList]     = useState(variants)
   const [adding, setAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm]     = useState({ ...blankVariant })
   const [saving, setSaving] = useState(false)
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
 
+  const handleEditClick = (v: any) => {
+    setForm({
+      label_en: v.label_en || "",
+      label_th: v.label_th || "",
+      duration_type: v.duration_type || "permanent",
+      duration_days: v.duration_days?.toString() || "",
+      price: v.price?.toString() || "",
+      sort_order: v.sort_order?.toString() || "",
+      is_active: v.is_active,
+      variant_type: v.variant_type || "normal",
+      premium_addon_price: v.premium_addon_price?.toString() || "",
+      discount_pct: v.discount_pct?.toString() || "",
+      discount_limit: v.discount_limit?.toString() || "",
+    } as any)
+    setEditingId(v.id)
+  }
+
   // --- Logic การตรวจสอบข้อมูล ---
-  const handleAdd = async () => {
+  const handleSave = async () => {
     // ถ้าเป็น Premium Add-on บังคับใส่ราคา addon
     if (form.variant_type === "premium") {
       if (!form.label_en || !form.premium_addon_price) {
@@ -42,12 +60,15 @@ export default function VariantManager({ productId, variants }: { productId: str
     }
 
     setSaving(true)
-    const res = await fetch(`/api/admin/products/${productId}/variants`, {
-      method: "POST",
+    const url = editingId 
+      ? `/api/admin/products/${productId}/variants/${editingId}`
+      : `/api/admin/products/${productId}/variants`
+    
+    const res = await fetch(url, {
+      method: editingId ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
-        // ถ้าเป็น premium ให้ราคาหลักเป็น 0 เสมอเพื่อป้องกัน logic ผิดพลาด
         price: form.variant_type === "premium" ? 0 : Number(form.price),
         premium_addon_price: Number(form.premium_addon_price),
         duration_days: form.duration_type === "days" ? Number(form.duration_days) : null,
@@ -58,10 +79,17 @@ export default function VariantManager({ productId, variants }: { productId: str
     })
     const data = await res.json()
     setSaving(false)
-    if (!res.ok) { alert(data.error || "Failed to add variant"); return }
-    setList((l) => [...l, { ...data, price: Number(data.price), premium_addon_price: Number(data.premium_addon_price) }])
+    if (!res.ok) { alert(data.error || "Failed to save variant"); return }
+    
+    if (editingId) {
+      setList((l) => l.map((v) => v.id === editingId ? { ...data, price: Number(data.price), premium_addon_price: Number(data.premium_addon_price) } : v))
+    } else {
+      setList((l) => [...l, { ...data, price: Number(data.price), premium_addon_price: Number(data.premium_addon_price) }])
+    }
+    
     setForm({ ...blankVariant })
     setAdding(false)
+    setEditingId(null)
   }
 
   const handleDelete = async (id: string) => {
@@ -86,7 +114,7 @@ export default function VariantManager({ productId, variants }: { productId: str
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-[13px] text-text-muted">{list.length} variant(s)</p>
-        <button onClick={() => setAdding(true)}
+        <button onClick={() => { setAdding(true); setEditingId(null); setForm({...blankVariant}); }}
           className="text-[13px] px-4 py-2 rounded-xl bg-accent/15 text-accent-light hover:bg-accent/25 transition font-medium">
           + Add New Variant / Add-on
         </button>
@@ -110,8 +138,8 @@ export default function VariantManager({ productId, variants }: { productId: str
                   <>
                     <span className="bg-white/5 px-1.5 py-0.5 rounded text-[11px]">{v.duration_type === "permanent" ? "Lifetime" : `${v.duration_days} Days`}</span>
                     <span className="text-accent-light font-bold">฿{v.price}</span>
-                    {v.discount_pct > 0 && (
-                      <span className="text-green-400 font-bold ml-2">
+                    {Number(v.discount_pct) > 0 && (
+                      <span className={`font-bold ml-2 ${Number(v.discount_used) >= Number(v.discount_limit) ? 'text-red-400 line-through opacity-50' : 'text-green-400'}`}>
                         (-{v.discount_pct}% | {v.discount_used}/{v.discount_limit})
                       </span>
                     )}
@@ -123,6 +151,10 @@ export default function VariantManager({ productId, variants }: { productId: str
               </div>
             </div>
             <div className="flex gap-2">
+              <button onClick={() => handleEditClick(v)}
+                className="text-[12px] px-3 py-1.5 rounded-lg border border-accent/20 text-accent-light hover:bg-accent/5 transition">
+                Edit
+              </button>
               <button onClick={() => handleToggle(v.id, v.is_active)}
                 className="text-[12px] px-3 py-1.5 rounded-lg border border-white/10 text-text-muted hover:bg-white/5 transition">
                 {v.is_active ? "Disable" : "Enable"}
@@ -136,11 +168,11 @@ export default function VariantManager({ productId, variants }: { productId: str
         ))}
       </div>
 
-      {/* Add Form (ปรับปรุงใหม่เพื่อความไม่งง) */}
-      {adding && (
+      {/* Add/Edit Form */}
+      {(adding || editingId) && (
         <div className="bg-bg-card border-2 border-accent/30 rounded-3xl p-6 space-y-6 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
           <div className="flex justify-between items-center border-b border-white/5 pb-4">
-             <h3 className="text-base font-bold">Create New Option</h3>
+             <h3 className="text-base font-bold">{editingId ? 'Edit Option' : 'Create New Option'}</h3>
              <div className="flex bg-bg-base p-1 rounded-xl border border-white/5">
                 <button 
                   onClick={() => set("variant_type", "normal")}
@@ -243,13 +275,13 @@ export default function VariantManager({ productId, variants }: { productId: str
           </div>
 
           <div className="flex gap-3 justify-end pt-4 border-t border-white/5">
-            <button onClick={() => setAdding(false)}
+            <button onClick={() => { setAdding(false); setEditingId(null); }}
               className="text-[13px] px-6 py-2.5 rounded-xl border border-white/10 text-text-muted hover:text-text-base transition">
               Discard
             </button>
-            <button onClick={handleAdd} disabled={saving}
+            <button onClick={handleSave} disabled={saving}
               className={`text-[13px] px-8 py-2.5 rounded-xl font-bold shadow-lg transition disabled:opacity-50 ${form.variant_type === 'premium' ? 'bg-yellow-500 text-black hover:bg-yellow-400' : 'bg-accent text-white hover:opacity-90'}`}>
-              {saving ? "Creating..." : "Save Selection"}
+              {saving ? "Saving..." : editingId ? "Save Changes" : "Save Selection"}
             </button>
           </div>
         </div>
