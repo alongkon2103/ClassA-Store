@@ -161,16 +161,50 @@ export default function GameSettingsClient({
 
     const selectGift = (functionId: string, giftId: number) => {
         if (!isPremium) return
-        setMapping(prev => ({ ...prev, [functionId]: giftId }))
-        // Reset threshold if not 'Like'
         const gift = gifts.find(g => g.id === giftId)
-        if (gift?.trigger_type !== 'Like') {
+
+        // ถ้า gift ใหม่เป็น like → clear like ของ function อื่นออกก่อน
+        if (gift?.trigger_type === 'like') {
+            setMapping(prev => {
+                const n = { ...prev }
+                functions.forEach(fn => {
+                    if (fn.id !== functionId) {
+                        const existingGift = gifts.find(g => g.id === n[fn.id])
+                        if (existingGift?.trigger_type === 'like') {
+                            // reset กลับไป default หรือลบออก
+                            if (fn.default_gift_id) {
+                                n[fn.id] = fn.default_gift_id
+                            } else {
+                                delete n[fn.id]
+                            }
+                        }
+                    }
+                })
+                n[functionId] = giftId
+                return n
+            })
+            setThresholds(prev => {
+                const n = { ...prev }
+                // clear threshold ของ like เดิมออก
+                functions.forEach(fn => {
+                    if (fn.id !== functionId) {
+                        const existingGift = gifts.find(g => g.id === mapping[fn.id])
+                        if (existingGift?.trigger_type === 'like') {
+                            delete n[fn.id]
+                        }
+                    }
+                })
+                return n
+            })
+        } else {
+            setMapping(prev => ({ ...prev, [functionId]: giftId }))
             setThresholds(prev => {
                 const n = { ...prev }
                 delete n[functionId]
                 return n
             })
         }
+
         setOpenPicker(null)
         setSearchQuery("")
     }
@@ -280,6 +314,11 @@ export default function GameSettingsClient({
     }, [gifts, searchQuery])
 
     const maskedKey = "*".repeat(orderId.length)
+
+    const currentLikeFunctionId = functions.find(fn => {
+        const g = gifts.find(g => g.id === mapping[fn.id])
+        return g?.trigger_type?.toLowerCase() === 'like'
+    })?.id
 
     if (isExpired) {
         return (
@@ -649,16 +688,29 @@ export default function GameSettingsClient({
                                                     <SearchIcon className="absolute left-3 top-2.5 text-text-muted" size={16} />
                                                 </div>
                                                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[220px] overflow-y-auto pr-1">
-                                                    {filteredGifts.map(gift => (
-                                                        <button key={gift.id} onClick={() => selectGift(fn.id, gift.id)}
-                                                            className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition ${selectedGiftId === gift.id ? "border-accent bg-accent/10" : "border-white/5 bg-bg-card hover:border-accent/30"}`}>
-                                                            <div className="w-8 h-8 flex items-center justify-center">
-                                                                {gift.image_url ? <Image src={getImageUrl(gift.image_url)} alt="" width={32} height={32} className="rounded object-cover" unoptimized /> : <span className="text-[20px]"></span>}
-                                                            </div>
-                                                            <p className="text-[10px] font-medium leading-tight line-clamp-1 text-center">{gift.name}</p>
-                                                            <p className="text-[9px] text-text-muted">{gift.diamonds}</p>
-                                                        </button>
-                                                    ))}
+                                                    {
+
+                                                        filteredGifts.map(gift => (
+                                                            <button
+                                                                key={gift.id}
+                                                                onClick={() => selectGift(fn.id, gift.id)}
+                                                                disabled={
+                                                                    gift.trigger_type?.toLowerCase() === 'like' &&
+                                                                    currentLikeFunctionId !== undefined &&
+                                                                    currentLikeFunctionId !== fn.id
+                                                                }
+                                                                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition 
+        ${selectedGiftId === gift.id ? "border-accent bg-accent/10" : "border-white/5 bg-bg-card hover:border-accent/30"}
+        ${gift.trigger_type?.toLowerCase() === 'like' && currentLikeFunctionId !== undefined && currentLikeFunctionId !== fn.id
+                                                                        ? "opacity-30 cursor-not-allowed" : ""}
+    `}>
+                                                                <div className="w-8 h-8 flex items-center justify-center">
+                                                                    {gift.image_url ? <Image src={getImageUrl(gift.image_url)} alt="" width={32} height={32} className="rounded object-cover" unoptimized /> : <span className="text-[20px]"></span>}
+                                                                </div>
+                                                                <p className="text-[10px] font-medium leading-tight line-clamp-1 text-center">{gift.name}</p>
+                                                                <p className="text-[9px] text-text-muted">{gift.diamonds}</p>
+                                                            </button>
+                                                        ))}
                                                 </div>
                                             </div>
                                         )}

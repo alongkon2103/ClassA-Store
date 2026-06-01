@@ -65,7 +65,7 @@ export default async function AdminDesktopOverviewPage({
       </div>
 
       {/* Recent Activity & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1">
         {/* Recent Connections */}
         <div className="lg:col-span-2 bg-bg-card border border-accent/10 rounded-3xl overflow-hidden flex flex-col">
           <div className="px-6 py-5 border-b border-accent/10 flex items-center justify-between bg-white/[0.01]">

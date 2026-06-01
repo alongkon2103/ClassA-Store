@@ -1,7 +1,48 @@
+// import { NextRequest, NextResponse } from "next/server"
+// import { prisma } from "@/lib/prisma"
+// import { revalidatePath } from "next/cache"
+// import { validateAdmin } from "@/lib/adminAuth"
+
+// export async function GET() {
+//   const admin = await validateAdmin(["admin"])
+//   if (!admin.isValid) return admin.response
+
+//   const announcements = await prisma.announcements.findMany({
+//     orderBy: { createdAt: "desc" },
+//     include: { users: { select: { username: true } } }
+//   })
+
+//   return NextResponse.json(announcements)
+// }
+
+// export async function POST(req: NextRequest) {
+//   const admin = await validateAdmin(["admin"])
+
+//   if (!admin.isValid || !admin.session) {
+//     return admin.response
+//   }
+
+//   const body = await req.json()
+
+//   const announcement = await prisma.announcements.create({
+//     data: {
+//       title: body.title,
+//       content: body.content,
+//       imageUrl: body.imageUrl,
+//       isActive: body.isActive ?? true,
+//       createdById: admin.session.user.id,
+//       updatedAt: new Date(),
+//     },
+//   })
+
+//   revalidatePath("/admin/desktop/announcements")
+//   return NextResponse.json(announcement)
+// }
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { validateAdmin } from "@/lib/adminAuth"
+import { sendAnnouncementToDiscord } from "@/lib/discord" // ✅ import จาก lib
 
 export async function GET() {
   const admin = await validateAdmin(["admin"])
@@ -11,16 +52,12 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     include: { users: { select: { username: true } } }
   })
-
   return NextResponse.json(announcements)
 }
 
 export async function POST(req: NextRequest) {
   const admin = await validateAdmin(["admin"])
-
-  if (!admin.isValid || !admin.session) {
-    return admin.response
-  }
+  if (!admin.isValid || !admin.session) return admin.response
 
   const body = await req.json()
 
@@ -34,6 +71,15 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date(),
     },
   })
+
+  if (body.content && process.env.DISCORD_WEBHOOK_URL) {
+    sendAnnouncementToDiscord(body.content, body.title, body.imageUrl).catch(err => {
+      console.error('[Discord] Failed:', err)
+    })
+  }
+
+  revalidatePath("/admin/desktop/announcements")
+  return NextResponse.json(announcement)
 
   revalidatePath("/admin/desktop/announcements")
   return NextResponse.json(announcement)

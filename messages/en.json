@@ -786,5 +786,24 @@
     "usage_warning_gift_issue": "If this happens, your account may be unable to retrieve gift data and other live event information properly.",
     "usage_warning_system_effect": "This will affect the overall functionality of the system, including the display of gifts and event triggers within your Roblox map.",
     "usage_warning_disclaimer": "The seller shall not be held responsible for any issues or damages resulting from improper use that does not follow the above recommendations."
+  },
+  "PartnershipEarnings": {
+    "title": "Partnership Earnings",
+    "subtitle": "Summary of revenue and payouts for each partner",
+    "filter_all": "All Time",
+    "total_gross": "Total Revenue",
+    "total_payout": "Partner Payout",
+    "active_products": "Products with Partners",
+    "active_products_unit": "items",
+    "chart_title": "Payout Comparison by Partner",
+    "col_product": "Product",
+    "col_orders": "Orders",
+    "col_revenue": "Revenue",
+    "col_payout": "Partner Payout",
+    "col_detail": "Detail",
+    "hide": "▲ Hide",
+    "show": "▼ Show",
+    "loading": "Loading...",
+    "no_data": "No data found"
   }
 }
