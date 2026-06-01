@@ -43,6 +43,7 @@ export default async function Page({
             ...v,
             price: Number(v.price),
             premium_addon_price: Number(v.premium_addon_price ?? 0),
+            discount_pct: Number(v.discount_pct ?? 0),
             stock: v._count.game_keys, // stock per variant
         })),
     }))

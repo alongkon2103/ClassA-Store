@@ -34,6 +34,19 @@ export async function POST(req: Request) {
     // 2. ค้นหา Variant หลักที่เลือก
     const variant = product.product_variants.find(v => v.id === variantId)
     let basePrice = variant ? Number(variant.price) : Number(product.price)
+    
+    // --- Discount Logic ---
+    const hasDiscount = !!(
+      product.has_limited_discount && 
+      variant && 
+      Number(variant.discount_pct) > 0 && 
+      (variant.discount_used ?? 0) < (variant.discount_limit ?? 0)
+    )
+    if (hasDiscount) {
+      const discountPct = Number(variant.discount_pct)
+      basePrice = basePrice - (basePrice * (discountPct / 100))
+    }
+
     let title = variant ? `${product.name_en} (${variant.label_en})` : product.name_en
 
     // 3. จัดการเรื่อง Premium Add-on
@@ -74,7 +87,7 @@ export async function POST(req: Request) {
           payment_method: paymentMethod ?? "promptpay",
           whitelisted_username: whitelistUsername.trim(),
           whitelist_status: "pending",
-          // is_premium: isPremium,
+          is_premium_order: !!isPremium,
         },
       })
     } else {
@@ -84,6 +97,7 @@ export async function POST(req: Request) {
           whitelisted_username: whitelistUsername.trim(),
           amount: totalPrice, 
           payment_method: paymentMethod,
+          is_premium_order: !!isPremium,
         },
       })
     }

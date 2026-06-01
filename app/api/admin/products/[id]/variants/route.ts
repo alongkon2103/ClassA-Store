@@ -18,7 +18,9 @@ export async function POST(
     sort_order, 
     is_active,
     variant_type,
-    premium_addon_price 
+    premium_addon_price,
+    discount_pct,
+    discount_limit 
   } = body
 
   if (!label_en || !label_th || price === undefined) {
@@ -42,6 +44,9 @@ export async function POST(
         is_active:     is_active  ?? true,
         variant_type:  variant_type ?? "normal",
         premium_addon_price: premium_addon_price ? Number(premium_addon_price) : 0,
+        discount_pct:   discount_pct ? Number(discount_pct) : 0,
+        discount_limit: discount_limit ? Number(discount_limit) : 0,
+        discount_used:  0,
       },
     })
 

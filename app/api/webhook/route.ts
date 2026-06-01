@@ -122,6 +122,15 @@ export async function POST(req: NextRequest) {
 
     const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000)
 
+    // Check if we should increment discount_used
+    const shouldIncrementDiscount = !!(
+      order.variant_id && 
+      order.products.has_limited_discount && 
+      order.product_variants &&
+      Number(order.product_variants.discount_pct) > 0 &&
+      (order.product_variants.discount_used ?? 0) < (order.product_variants.discount_limit ?? 0)
+    )
+
     await prisma.$transaction([
       // 1. update order
       prisma.orders.update({
@@ -155,6 +164,14 @@ export async function POST(req: NextRequest) {
           updated_at: new Date(),
         },
       }),
+
+      // 3. Increment discount quota if applicable
+      ...(shouldIncrementDiscount ? [
+        prisma.product_variants.update({
+          where: { id: order.variant_id! },
+          data: { discount_used: { increment: 1 } }
+        })
+      ] : [])
     ])
 
     // ─────────────────────────────────────────────

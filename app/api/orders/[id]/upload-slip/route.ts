@@ -19,7 +19,7 @@ export async function POST(
 
   const order = await prisma.orders.findUnique({
     where: { id },
-    include: { product_variants: true },
+    include: { product_variants: true, products: true },
   })
 
   if (!order)
@@ -30,6 +30,15 @@ export async function POST(
 
   if (order.status !== "pending")
     return NextResponse.json({ error: "Order already processed" }, { status: 400 })
+
+  // Check if we should increment discount_used
+  const shouldIncrementDiscount = !!(
+    order.variant_id && 
+    order.products.has_limited_discount && 
+    order.product_variants &&
+    Number(order.product_variants.discount_pct) > 0 &&
+    (order.product_variants.discount_used ?? 0) < (order.product_variants.discount_limit ?? 0)
+  )
 
   // ─────────────────────────────
   // 1. Receive file
@@ -200,6 +209,14 @@ export async function POST(
         assigned_at: new Date(),
       },
     }),
+
+    // 3. Increment discount quota if applicable
+    ...(shouldIncrementDiscount ? [
+      prisma.product_variants.update({
+        where: { id: order.variant_id! },
+        data: { discount_used: { increment: 1 } }
+      })
+    ] : [])
   ])
 
   return NextResponse.json({ ok: true, orderId: id })

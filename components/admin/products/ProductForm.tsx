@@ -38,6 +38,7 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
         is_active: product?.is_active ?? true,
         is_featured: product?.is_featured ?? false,
         isLower: product?.isLower ?? false,
+        has_limited_discount: product?.has_limited_discount ?? false,
 
         is_consignment: product?.is_consignment ?? false,
         commission_pct: product?.commission_pct ?? "",
@@ -282,6 +283,7 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
                             { key: "is_active", label: t("label_active"), desc: t("desc_active") },
                             { key: "is_featured", label: t("label_featured"), desc: t("desc_featured") },
                             { key: "isLower", label: t("label_low_stock"), desc: t("desc_low_stock") },
+                            { key: "has_limited_discount", label: "Limited Discount", desc: "Enable limited quantity % discount" },
                         ] as const).map(({ key, label, desc }) => (
                             <button key={key} onClick={() => set(key, !form[key])}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition ${form[key]

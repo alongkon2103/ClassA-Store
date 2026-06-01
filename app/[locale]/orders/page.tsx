@@ -114,6 +114,7 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
       ...order.product_variants,
       price: Number(order.product_variants.price),
       premium_addon_price: Number(order.product_variants.premium_addon_price ?? 0),
+      discount_pct: Number(order.product_variants.discount_pct ?? 0),
       created_at: order.product_variants.created_at?.toISOString() || null,
       updated_at: order.product_variants.updated_at?.toISOString() || null,
     } : null

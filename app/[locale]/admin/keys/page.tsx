@@ -42,6 +42,7 @@ export default async function AdminKeysPage({
     const safeProducts = products.map((p) => ({
         ...p,
         price: Number(p.price),
+        commission_pct: Number(p.commission_pct ?? 0),
         product_variants: p.product_variants.map((v) => ({
             ...v,
             price: Number(v.price),

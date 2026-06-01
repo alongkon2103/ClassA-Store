@@ -52,7 +52,6 @@ export const authOptions: AuthOptions = {
 
     callbacks: {
         async signIn({ user, account, profile }: any) {
-            if (account?.provider === "dev-admin") return true
             if (!account) return false
 
             try {
@@ -65,43 +64,49 @@ export const authOptions: AuthOptions = {
                 if (!dbUser) {
                     dbUser = await prisma.users.create({
                         data: {
+                            id: account.provider === "dev-admin" ? user.id : undefined,
                             username: user.name ?? "Unknown",
                             email,
                             avatar: user.image ?? null,
-                            role: "user",
+                            role: (account.provider === "dev-admin" ? "admin" : "user") as any,
                         },
                     })
                 } else {
                     await prisma.users.update({
                         where: { id: dbUser.id },
-                        data: { avatar: user.image ?? undefined },
+                        data: { 
+                            avatar: user.image ?? undefined,
+                            role: account.provider === "dev-admin" ? "admin" : dbUser.role
+                        },
                     })
                 }
 
-                await prisma.accounts.upsert({
-                    where: {
-                        provider_provider_account_id: {
+                if (account.provider !== "dev-admin") {
+                    await prisma.accounts.upsert({
+                        where: {
+                            provider_provider_account_id: {
+                                provider: account.provider,
+                                provider_account_id: account.providerAccountId,
+                            },
+                        },
+                        create: {
+                            user_id: dbUser.id,
                             provider: account.provider,
                             provider_account_id: account.providerAccountId,
+                            access_token: account.access_token ?? null,
+                            refresh_token: account.refresh_token ?? null,
+                            expires_at: account.expires_at ?? null,
+                            token_type: account.token_type ?? null,
+                            scope: account.scope ?? null,
+                            id_token: account.id_token ?? null,
                         },
-                    },
-                    create: {
-                        user_id: dbUser.id,
-                        provider: account.provider,
-                        provider_account_id: account.providerAccountId,
-                        access_token: account.access_token ?? null,
-                        refresh_token: account.refresh_token ?? null,
-                        expires_at: account.expires_at ?? null,
-                        token_type: account.token_type ?? null,
-                        scope: account.scope ?? null,
-                        id_token: account.id_token ?? null,
-                    },
-                    update: {
-                        access_token: account.access_token ?? null,
-                        refresh_token: account.refresh_token ?? null,
-                        expires_at: account.expires_at ?? null,
-                    },
-                })
+                        update: {
+                            access_token: account.access_token ?? null,
+                            refresh_token: account.refresh_token ?? null,
+                            expires_at: account.expires_at ?? null,
+                        },
+                    })
+                }
 
                 user.id = dbUser.id
                 return true

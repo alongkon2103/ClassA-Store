@@ -286,7 +286,18 @@ export default function ProductModal({ product, onClose }: any) {
   const [selectedVariant, setSelectedVariant] = useState<any>(sortedVariants[0] || null)
 
   const variantBasePrice = Number(selectedVariant?.price ?? 0)
-  const currentSubtotal = variantBasePrice + (isPremiumSelected ? premiumAddonPrice : 0)
+  
+  // --- Discount Logic ---
+  const hasDiscount = !!(
+    product.has_limited_discount && 
+    selectedVariant?.discount_pct > 0 && 
+    (selectedVariant?.discount_used ?? 0) < (selectedVariant?.discount_limit ?? 0)
+  )
+  const discountPct = hasDiscount ? Number(selectedVariant.discount_pct) : 0
+  const variantDiscountAmount = hasDiscount ? (variantBasePrice * (discountPct / 100)) : 0
+  const currentBasePrice = variantBasePrice - variantDiscountAmount
+
+  const currentSubtotal = currentBasePrice + (isPremiumSelected ? premiumAddonPrice : 0)
   const cardFee = paymentMethod === "card" ? currentSubtotal * 0.06 : 0
   const totalPrice = currentSubtotal + cardFee
 
@@ -495,24 +506,51 @@ export default function ProductModal({ product, onClose }: any) {
             <div className="space-y-2">
               <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("select_option")}</p>
               <div className="grid grid-cols-2 gap-2">
-                {sortedVariants.map((v: any) => (
-                  <button key={v.id} onClick={() => setSelectedVariant(v)}
-                    className={`p-3 rounded-xl border text-left transition ${selectedVariant?.id === v.id ? "border-accent bg-accent/10" : "border-white/10 hover:border-accent/40"}`}>
-                    <div className="flex justify-between items-start gap-1">
-                      <p className="text-[13px] font-medium">{isTH ? v.label_th : v.label_en}</p>
-                      <div className="text-right">
-                        <p className="text-[13px] font-bold text-accent-light">
-                          {isTH ? `฿${Number(v.price).toLocaleString()}` : `$${toUSD(v.price) || '0.00'}`}
-                        </p>
-                        {usdRate && (
-                          <p className="text-[10px] text-text-muted mt-0.5 whitespace-nowrap">
-                            {isTH ? `≈ $${toUSD(v.price)}` : `฿${Number(v.price).toLocaleString()}`}
+                {sortedVariants.map((v: any) => {
+                  const vHasDiscount = !!(
+                    product.has_limited_discount && 
+                    v.discount_pct > 0 && 
+                    (v.discount_used ?? 0) < (v.discount_limit ?? 0)
+                  )
+                  const vDiscountPct = vHasDiscount ? Number(v.discount_pct) : 0
+                  const vPrice = Number(v.price)
+                  const vFinalPrice = vHasDiscount ? vPrice - (vPrice * (vDiscountPct / 100)) : vPrice
+
+                  return (
+                    <button key={v.id} onClick={() => setSelectedVariant(v)}
+                      className={`p-3 rounded-xl border text-left transition ${selectedVariant?.id === v.id ? "border-accent bg-accent/10" : "border-white/10 hover:border-accent/40"}`}>
+                      <div className="flex justify-between items-start gap-1">
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-medium truncate">{isTH ? v.label_th : v.label_en}</p>
+                          {vHasDiscount && (
+                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                               <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter">-{vDiscountPct}%</span>
+                               <span className="text-[9px] text-text-muted line-through opacity-70">฿{vPrice.toLocaleString()}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className={`text-[13px] font-bold ${vHasDiscount ? "text-green-400" : "text-accent-light"}`}>
+                            {isTH ? `฿${vFinalPrice.toLocaleString()}` : `$${toUSD(vFinalPrice) || '0.00'}`}
                           </p>
-                        )}
+                          {usdRate && (
+                            <p className="text-[10px] text-text-muted mt-0.5 whitespace-nowrap">
+                              {isTH ? `≈ $${toUSD(vFinalPrice)}` : `฿${vFinalPrice.toLocaleString()}`}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                      {vHasDiscount && (
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                           <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                              <div className="h-full bg-green-400/40 rounded-full transition-all" style={{ width: `${Math.min(100, (v.discount_used / v.discount_limit) * 100)}%` }} />
+                           </div>
+                           <p className="text-[9px] font-bold text-text-muted/60 whitespace-nowrap uppercase tracking-widest">{t("left") || "Left"}: {v.discount_limit - v.discount_used}</p>
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 

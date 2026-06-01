@@ -78,6 +78,9 @@ export default async function Page({
           updated_at: v.updated_at,
           variant_type: v.variant_type,
           premium_addon_price: Number(v.premium_addon_price ?? 0),
+          discount_pct: Number(v.discount_pct ?? 0),
+          discount_limit: v.discount_limit,
+          discount_used: v.discount_used,
 
           // stock available keys
           stock: v._count.game_keys,

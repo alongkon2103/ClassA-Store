@@ -9,6 +9,8 @@ const blankVariant = {
   price: "", sort_order: "", is_active: true,
   variant_type: "normal",
   premium_addon_price: "",
+  discount_pct: "",
+  discount_limit: "",
 }
 
 export default function VariantManager({ productId, variants }: { productId: string; variants: any[] }) {
@@ -50,6 +52,8 @@ export default function VariantManager({ productId, variants }: { productId: str
         premium_addon_price: Number(form.premium_addon_price),
         duration_days: form.duration_type === "days" ? Number(form.duration_days) : null,
         sort_order: Number(form.sort_order || 0),
+        discount_pct: Number(form.discount_pct || 0),
+        discount_limit: Number(form.discount_limit || 0),
       }),
     })
     const data = await res.json()
@@ -106,6 +110,11 @@ export default function VariantManager({ productId, variants }: { productId: str
                   <>
                     <span className="bg-white/5 px-1.5 py-0.5 rounded text-[11px]">{v.duration_type === "permanent" ? "Lifetime" : `${v.duration_days} Days`}</span>
                     <span className="text-accent-light font-bold">฿{v.price}</span>
+                    {v.discount_pct > 0 && (
+                      <span className="text-green-400 font-bold ml-2">
+                        (-{v.discount_pct}% | {v.discount_used}/{v.discount_limit})
+                      </span>
+                    )}
                   </>
                 ) : (
                   <span className="text-yellow-500 font-bold">Extra Charge: +฿{v.premium_addon_price}</span>
@@ -193,6 +202,20 @@ export default function VariantManager({ productId, variants }: { productId: str
                     <input type="number" value={form.price} 
                       onFocus={(e) => e.target.select()}
                       onChange={(e) => set("price", e.target.value)} className={`${inp} text-lg font-bold text-accent-light`} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={lbl}>Discount (%)</label>
+                      <input type="number" value={form.discount_pct} 
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => set("discount_pct", e.target.value)} placeholder="0" className={inp} />
+                    </div>
+                    <div>
+                      <label className={lbl}>Limit (Orders)</label>
+                      <input type="number" value={form.discount_limit} 
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => set("discount_limit", e.target.value)} placeholder="0" className={inp} />
+                    </div>
                   </div>
                 </div>
               ) : (
