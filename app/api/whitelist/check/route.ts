@@ -47,12 +47,10 @@ export async function POST(req: NextRequest) {
     // ──────────────────────────────────────────────────────────────
     // CHECK 1: user_whitelist_access (Directly added by Admin)
     // ──────────────────────────────────────────────────────────────
-    const directAccess = await prisma.user_whitelist_access.findUnique({
+    const directAccess = await prisma.user_whitelist_access.findFirst({
       where: {
-        ign_product_id: {
-          ign: username,
-          product_id: product_id
-        }
+        ign: { equals: username, mode: "insensitive" },
+        product_id: product_id
       },
       include: {
         products: true
@@ -62,7 +60,7 @@ export async function POST(req: NextRequest) {
     if (directAccess) {
       const expiresAt = new Date(directAccess.expires_at)
       const isExpired = now > expiresAt
-      
+
       if (!isExpired) {
         const diffMs = expiresAt.getTime() - now.getTime()
         const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
@@ -120,32 +118,32 @@ export async function POST(req: NextRequest) {
 
     // ── Case A: Order with explicit expires_at (e.g., TRIAL) ──────
     if (order.expires_at) {
-        const expiresAt = new Date(order.expires_at)
-        const isExpired = now > expiresAt
-        if (isExpired) {
-            return NextResponse.json({
-                allowed: false,
-                reason: "expired",
-                expires_at: order.expires_at,
-            })
-        }
-
-        const diffMs = expiresAt.getTime() - now.getTime()
-        const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
-        const hoursLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60)))
-
+      const expiresAt = new Date(order.expires_at)
+      const isExpired = now > expiresAt
+      if (isExpired) {
         return NextResponse.json({
-            allowed: true,
-            variant: variant?.label_en ?? "Trial",
-            duration_type: "days",
-            duration_days: null,
-            paid_at: order.paid_at,
-            expires_at: order.expires_at,
-            days_left: daysLeft,
-            hours_left: hoursLeft,
-            is_premium: !!order.is_premium_order,
-            source: "order"
+          allowed: false,
+          reason: "expired",
+          expires_at: order.expires_at,
         })
+      }
+
+      const diffMs = expiresAt.getTime() - now.getTime()
+      const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+      const hoursLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60)))
+
+      return NextResponse.json({
+        allowed: true,
+        variant: variant?.label_en ?? "Trial",
+        duration_type: "days",
+        duration_days: null,
+        paid_at: order.paid_at,
+        expires_at: order.expires_at,
+        days_left: daysLeft,
+        hours_left: hoursLeft,
+        is_premium: !!order.is_premium_order,
+        source: "order"
+      })
     }
 
     // ── Case B: Order with Variant-based duration ────────────────

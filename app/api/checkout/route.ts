@@ -1,3 +1,175 @@
+// // app/api/checkout/route.ts
+
+// import { NextResponse } from "next/server"
+// import { getServerSession } from "next-auth"
+// import { authOptions } from "@/lib/auth"
+// import { prisma } from "@/lib/prisma"
+// import Stripe from "stripe"
+
+// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+
+// export async function POST(req: Request) {
+//   try {
+//     const session = await getServerSession(authOptions)
+//     if (!session?.user?.id) {
+//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+//     }
+
+//     // 1. รับค่า isPremium เพิ่มเข้ามา
+//     const { productId, variantId, paymentMethod, locale = "en", whitelistUsername, isPremium } = await req.json()
+
+//     if (!whitelistUsername?.trim()) {
+//       return NextResponse.json({ error: "In-game username is required" }, { status: 400 })
+//     }
+
+//     const product = await prisma.products.findUnique({
+//       where: { id: productId },
+//       include: { product_variants: true },
+//     })
+
+//     if (!product) {
+//       return NextResponse.json({ error: "Product not found" }, { status: 404 })
+//     }
+
+//     // 2. ค้นหา Variant หลักที่เลือก
+//     const variant = product.product_variants.find(v => v.id === variantId)
+//     let basePrice = variant ? Number(variant.price) : Number(product.price)
+    
+//     // --- Discount Logic (Robust Check) ---
+//     let hasDiscount = false
+//     if (product.has_limited_discount && variant && Number(variant.discount_pct) > 0) {
+//       const discountLimit = Number(variant.discount_limit ?? 0)
+      
+//       // Count existing paid orders AND active pending orders
+//       const usedCount = await prisma.orders.count({
+//         where: {
+//           variant_id: variant.id,
+//           OR: [
+//             { status: "paid" },
+//             { 
+//               status: "pending",
+//               expires_at: { gt: new Date() } // Only count pending orders that haven't expired
+//             }
+//           ]
+//         }
+//       })
+
+//       if (usedCount < discountLimit) {
+//         hasDiscount = true
+//       }
+//     }
+
+//     if (hasDiscount && variant) {
+//       const discountPct = Number(variant.discount_pct)
+//       basePrice = basePrice - (basePrice * (discountPct / 100))
+//     }
+
+//     let title = variant ? `${product.name_en} (${variant.label_en})` : product.name_en
+
+//     // 3. จัดการเรื่อง Premium Add-on
+//     let premiumPrice = 0
+//     if (isPremium) {
+//       const premiumVar = product.product_variants.find(v => v.variant_type === "premium")
+//       if (premiumVar) {
+//         premiumPrice = Number(premiumVar.premium_addon_price || 0)
+//         title += " + PREMIUM"
+//       }
+//     }
+
+//     const currentSubtotal = basePrice + premiumPrice
+
+//     // 4. ✅ คำนวณราคารวมค่าธรรมเนียมก่อน เพื่อให้ order ในฐานข้อมูลได้ราคาที่ถูกต้อง
+//     const cardFee = paymentMethod === "card" ? currentSubtotal * 0.06 : 0
+//     const totalPrice = currentSubtotal + cardFee
+
+//     const sessionExpiryMinutes = 10 // Shorten expiry to 10 minutes to free up locked discounts
+//     const expiresAt = new Date(Date.now() + sessionExpiryMinutes * 60 * 1000)
+
+//     // 5. เช็ค pending order เดิม
+//     let order = await prisma.orders.findFirst({
+//       where: {
+//         user_id: session.user.id,
+//         product_id: product.id,
+//         variant_id: variant?.id || null,
+//         status: "pending",
+//         payment_method: paymentMethod,
+//       },
+//     })
+
+//     if (!order) {
+//       order = await prisma.orders.create({
+//         data: {
+//           user_id: session.user.id,
+//           product_id: product.id,
+//           variant_id: variant?.id,
+//           amount: totalPrice, 
+//           status: "pending",
+//           payment_method: paymentMethod ?? "promptpay",
+//           whitelisted_username: whitelistUsername.trim(),
+//           whitelist_status: "pending",
+//           is_premium_order: !!isPremium,
+//           expires_at: expiresAt,
+//         },
+//       })
+//     } else {
+//       order = await prisma.orders.update({
+//         where: { id: order.id },
+//         data: {
+//           whitelisted_username: whitelistUsername.trim(),
+//           amount: totalPrice, 
+//           payment_method: paymentMethod,
+//           is_premium_order: !!isPremium,
+//           expires_at: expiresAt,
+//         },
+//       })
+//     }
+
+//     const protocol = req.headers.get("x-forwarded-proto") || "http"
+//     const host = req.headers.get("host")
+//     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`
+
+//     const stripeSession = await stripe.checkout.sessions.create({
+//       mode: "payment",
+//       payment_method_types: paymentMethod === "card" ? ["card"] : ["promptpay"],
+//       expires_at: Math.floor(expiresAt.getTime() / 1000),
+
+//       line_items: [
+//         {
+//           price_data: {
+//             currency: "thb",
+//             product_data: {
+//               name: title,
+//               description: isPremium ? "Included Premium Add-on" : undefined
+//             },
+//             unit_amount: Math.round(totalPrice * 100),
+//           },
+//           quantity: 1,
+//         },
+//       ],
+
+//       success_url: `${baseUrl}/${locale}/orders/${order.id}`,
+//       cancel_url: `${baseUrl}/${locale}/products`,
+
+//       metadata: {
+//         orderId: order.id,
+//         productId: product.id,
+//         variantId: variant?.id || "",
+//         whitelistUsername: whitelistUsername.trim(),
+//         isPremium: isPremium ? "true" : "false",
+//       },
+//     })
+
+//     await prisma.orders.update({
+//       where: { id: order.id },
+//       data: { stripe_session_id: stripeSession.id },
+//     })
+
+//     return NextResponse.json({ url: stripeSession.url })
+//   } catch (err) {
+//     console.error(err)
+//     return NextResponse.json({ error: "Checkout failed" }, { status: 500 })
+//   }
+// }
 // app/api/checkout/route.ts
 
 import { NextResponse } from "next/server"
@@ -34,24 +206,24 @@ export async function POST(req: Request) {
     // 2. ค้นหา Variant หลักที่เลือก
     const variant = product.product_variants.find(v => v.id === variantId)
     let basePrice = variant ? Number(variant.price) : Number(product.price)
-    
+
     // --- Discount Logic (Robust Check) ---
     let hasDiscount = false
     if (product.has_limited_discount && variant && Number(variant.discount_pct) > 0) {
       const discountLimit = Number(variant.discount_limit ?? 0)
-      
+
       // Count existing paid orders AND active pending orders
       const usedCount = await prisma.orders.count({
         where: {
           variant_id: variant.id,
           OR: [
             { status: "paid" },
-            { 
+            {
               status: "pending",
-              expires_at: { gt: new Date() } // Only count pending orders that haven't expired
-            }
-          ]
-        }
+              expires_at: { gt: new Date() }, // Only count pending orders that haven't expired
+            },
+          ],
+        },
       })
 
       if (usedCount < discountLimit) {
@@ -61,7 +233,7 @@ export async function POST(req: Request) {
 
     if (hasDiscount && variant) {
       const discountPct = Number(variant.discount_pct)
-      basePrice = basePrice - (basePrice * (discountPct / 100))
+      basePrice = basePrice - basePrice * (discountPct / 100)
     }
 
     let title = variant ? `${product.name_en} (${variant.label_en})` : product.name_en
@@ -82,7 +254,10 @@ export async function POST(req: Request) {
     const cardFee = paymentMethod === "card" ? currentSubtotal * 0.06 : 0
     const totalPrice = currentSubtotal + cardFee
 
-    const sessionExpiryMinutes = 10 // Shorten expiry to 10 minutes to free up locked discounts
+    // ✅ FIX: PromptPay requires at least 10 minutes, but give more runway to avoid
+    // race conditions between order creation and Stripe receiving the request.
+    // Card sessions can be shorter; PromptPay sessions must be 10–1440 minutes.
+    const sessionExpiryMinutes = paymentMethod === "promptpay" ? 60 : 30
     const expiresAt = new Date(Date.now() + sessionExpiryMinutes * 60 * 1000)
 
     // 5. เช็ค pending order เดิม
@@ -102,7 +277,7 @@ export async function POST(req: Request) {
           user_id: session.user.id,
           product_id: product.id,
           variant_id: variant?.id,
-          amount: totalPrice, 
+          amount: totalPrice,
           status: "pending",
           payment_method: paymentMethod ?? "promptpay",
           whitelisted_username: whitelistUsername.trim(),
@@ -116,7 +291,7 @@ export async function POST(req: Request) {
         where: { id: order.id },
         data: {
           whitelisted_username: whitelistUsername.trim(),
-          amount: totalPrice, 
+          amount: totalPrice,
           payment_method: paymentMethod,
           is_premium_order: !!isPremium,
           expires_at: expiresAt,
@@ -128,20 +303,30 @@ export async function POST(req: Request) {
     const host = req.headers.get("host")
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`
 
+    // ✅ FIX: Validate totalPrice before sending to Stripe
+    const unitAmount = Math.round(totalPrice * 100)
+    if (!unitAmount || unitAmount <= 0 || isNaN(unitAmount)) {
+      console.error("Invalid unit_amount:", unitAmount, "totalPrice:", totalPrice)
+      return NextResponse.json({ error: "Invalid price calculation" }, { status: 400 })
+    }
+
+    const stripeExpiresAt = Math.floor(expiresAt.getTime() / 1000)
+
     const stripeSession = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: paymentMethod === "card" ? ["card"] : ["promptpay"],
-      expires_at: Math.floor(expiresAt.getTime() / 1000),
+      expires_at: stripeExpiresAt,
 
       line_items: [
         {
           price_data: {
             currency: "thb",
             product_data: {
+              // ✅ FIX: Removed optional `description: undefined` — passing undefined
+              // fields can cause Stripe 400 errors in some SDK versions
               name: title,
-              description: isPremium ? "Included Premium Add-on" : undefined
             },
-            unit_amount: Math.round(totalPrice * 100),
+            unit_amount: unitAmount,
           },
           quantity: 1,
         },
@@ -165,8 +350,13 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({ url: stripeSession.url })
-  } catch (err) {
-    console.error(err)
-    return NextResponse.json({ error: "Checkout failed" }, { status: 500 })
+  } catch (err: any) {
+    console.error("Checkout Error Detail:", {
+      message: err.message,
+      type: err.type,
+      raw: err.raw,
+      stack: err.stack,
+    })
+    return NextResponse.json({ error: "Checkout failed", details: err.message }, { status: 500 })
   }
 }
