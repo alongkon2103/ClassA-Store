@@ -154,7 +154,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                     className="text-[9px] md:text-[10px] font-bold border border-accent/20 text-accent-light/70 hover:text-accent-light hover:border-accent/40 px-2 py-1 rounded-lg transition flex items-center gap-1"
                   >
                     <SettingsIcon size={10} />
-                    Settings
+                    {t("settings_short")}
                   </button>
                 )}
               </div>
@@ -264,8 +264,8 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                         <SettingsIcon size={16} className="text-accent-light" />
                       </div>
                       <div className="text-left">
-                        <p className="text-[13px] font-semibold text-text-base">Game Settings</p>
-                        <p className="text-[11px] text-text-muted">ตั้งค่า function → gift</p>
+                        <p className="text-[13px] font-semibold text-text-base">{t("game_settings_title")}</p>
+                        <p className="text-[11px] text-text-muted">{t("game_settings_subtitle")}</p>
                       </div>
                     </div>
                     <ChevronRightIcon size={16} className="text-text-muted group-hover:text-accent-light transition" />

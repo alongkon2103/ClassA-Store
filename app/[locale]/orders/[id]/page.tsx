@@ -145,8 +145,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                         <SettingsIcon size={16} className="text-accent-light" />
                                     </div>
                                     <div className="text-left">
-                                        <p className="text-[13px] font-semibold text-text-base">Game Settings</p>
-                                        <p className="text-[11px] text-text-muted">ตั้งค่า function → gift</p>
+                                        <p className="text-[13px] font-semibold text-text-base">{t("game_settings_title")}</p>
+                                        <p className="text-[11px] text-text-muted">{t("game_settings_subtitle")}</p>
                                     </div>
                                 </div>
                                 <ChevronRightIcon size={16} className="text-text-muted group-hover:text-accent-light transition" />

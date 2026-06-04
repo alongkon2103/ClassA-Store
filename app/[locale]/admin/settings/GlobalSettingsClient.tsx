@@ -11,6 +11,7 @@ export default function GlobalSettingsClient({ initialConfigs = {} }: Props) {
   const t = useTranslations("Admin")
   const [resetting, setResetting] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string>(initialConfigs.app_download_url ?? "")
+  const [downloadName, setDownloadName] = useState<string>(initialConfigs.app_download_name ?? "")
   const [trialDuration, setTrialDuration] = useState<string>(initialConfigs.free_trial_duration ?? "1")
   const [isTrialEnabled, setIsTrialEnabled] = useState<boolean>(initialConfigs.free_trial_enabled !== "false")
   const [isTrialPremium, setIsTrialPremium] = useState<boolean>(initialConfigs.free_trial_is_premium === "true")
@@ -26,6 +27,7 @@ export default function GlobalSettingsClient({ initialConfigs = {} }: Props) {
         "free_trial_enabled": String(isTrialEnabled),
         "free_trial_is_premium": String(isTrialPremium),
         "app_download_url": downloadUrl,   // ✅ เพิ่มตรงนี้
+        "app_download_name": downloadName,
       }
     }
 
@@ -137,6 +139,21 @@ export default function GlobalSettingsClient({ initialConfigs = {} }: Props) {
                 </div>
               </div>
             </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[13px] text-text-muted font-medium">Program Name</label>
+                <span className="text-[11px] text-accent-light bg-accent/5 px-2 py-0.5 rounded-md border border-accent/10">Display</span>
+              </div>
+              <input
+                type="text"
+                value={downloadName}
+                onChange={e => setDownloadName(e.target.value)}
+                className="w-full bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-accent/40 transition"
+                placeholder="e.g. AclassStore Live"
+              />
+              <p className="text-[11px] text-text-muted italic">* ชื่อโปรแกรมที่แสดงในการ์ด Download ในหน้า Settings ของ user</p>
+            </div>
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-[13px] text-text-muted font-medium">Download URL</label>

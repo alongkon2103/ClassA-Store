@@ -56,18 +56,20 @@ type Props = {
     premiumAddonPrice: number
     tutorialVideoUrl?: string | null
     downloadUrl?: string | null
+    downloadName?: string | null
 }
 
 export default function GameSettingsClient({
     orderId, orderType, expiresAt, productName, productSlug, whitelistedUsername, functions, gifts,
     savedMappings, savedTiktokUsername, locale, isPremium, premiumAddonPrice, tutorialVideoUrl,
-    downloadUrl,
+    downloadUrl, downloadName,
 }: Props) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const t = useTranslations("Setting")
     const tModal = useTranslations("ProductModal")
-    const tD = useTranslations("DownloadModal") // 
+    const tD = useTranslations("DownloadModal") //
+    const programName = downloadName || "AclassStore Live"
 
     const [timeLeft, setTimeLeft] = useState<number | null>(null)
     const [isExpired, setIsExpired] = useState(false)
@@ -604,7 +606,7 @@ export default function GameSettingsClient({
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <p className="text-[13px] font-bold">AclassStore Live</p>
+                                            <p className="text-[13px] font-bold">{downloadName || "AclassStore Live"}</p>
                                             <span className="text-[9px] font-bold bg-accent/15 text-accent-light px-1.5 py-0.5 rounded border border-accent/20">v3.0</span>
                                         </div>
                                         <p className="text-[10px] text-text-muted mt-0.5 line-clamp-1">{t("downloadDesc") || "  TikTok Live"}</p>
@@ -972,7 +974,7 @@ export default function GameSettingsClient({
 
                                 <div className="space-y-3">
                                     <h3 className="text-[16px] font-bold flex items-center gap-2 border-l-4 border-green-500 pl-3 text-white">{tD("safety_title")}</h3>
-                                    <p className="text-text-muted italic">{tD("safety_body")}</p>
+                                    <p className="text-text-muted italic">{tD("safety_body", { name: programName })}</p>
                                     <p className="text-[12px] text-text-muted bg-white/5 p-3 rounded-xl border border-white/5">{tD("safety_note")}</p>
                                 </div>
 
@@ -989,7 +991,7 @@ export default function GameSettingsClient({
                                     <h3 className="text-[16px] font-bold flex items-center gap-2 border-l-4 border-purple-500 pl-3 text-white">{tD("how_to_setup_title")}</h3>
                                     <ol className="list-decimal list-inside space-y-1 ml-2 text-text-muted">
                                         <li>{tD("setup_step1")}</li>
-                                        <li>{tD("setup_step2")}</li>
+                                        <li>{tD("setup_step2", { name: programName })}</li>
                                         <li>{tD("setup_step3")}</li>
                                         <li>{tD("setup_step4")}</li>
                                         <li>{tD("setup_step5")}</li>
@@ -1011,7 +1013,7 @@ export default function GameSettingsClient({
                                 </div>
 
                                 <div className="border-t border-white/5 pt-6 text-center">
-                                    <p className="text-[12px] text-text-muted italic underline underline-offset-4">{tD("footer_contact")}</p>
+                                    <p className="text-[12px] text-text-muted italic underline underline-offset-4">{tD("footer_contact", { name: programName })}</p>
                                 </div>
                             </div>
 
@@ -1025,7 +1027,7 @@ export default function GameSettingsClient({
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
                                     </svg>
-                                    {tD("download_btn")}
+                                    {tD("download_btn", { name: programName })}
                                 </a>
                             </div>
                         </motion.div>

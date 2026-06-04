@@ -73,9 +73,10 @@ export default async function GameSettingsPage({ params }: Props) {
         gifts: ufg.gifts,
     }))
 
-    const downloadConfig = await prisma.system_configs.findUnique({
-        where: { key: "app_download_url" }
+    const downloadConfigs = await prisma.system_configs.findMany({
+        where: { key: { in: ["app_download_url", "app_download_name"] } },
     })
+    const downloadConfigMap = Object.fromEntries(downloadConfigs.map(c => [c.key, c.value]))
 
     const productName = locale === "th" ? order.products.name_th : order.products.name_en
 
@@ -97,7 +98,8 @@ export default async function GameSettingsPage({ params }: Props) {
                 locale={locale}
                 isPremium={!!order.is_premium_order}
                 premiumAddonPrice={premiumAddonPrice}
-                downloadUrl={downloadConfig?.value ?? null}
+                downloadUrl={downloadConfigMap["app_download_url"] ?? null}
+                downloadName={downloadConfigMap["app_download_name"] ?? null}
 
             />
             <Footer />
