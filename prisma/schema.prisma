@@ -316,9 +316,10 @@ model user_function_gifts {
   orders            orders            @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users             users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([user_id, order_id, function_id])
   @@index([order_id], map: "idx_ufg_order")
   @@index([user_id], map: "idx_ufg_user")
+  @@index([function_id], map: "idx_ufg_function")
+  @@index([gift_id], map: "idx_ufg_gift")
 }
 
 model users {

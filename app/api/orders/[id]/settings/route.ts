@@ -17,10 +17,10 @@ export async function GET(_req: Request, { params }: RouteContext) {
 
         const order = await prisma.orders.findUnique({
             where: { id },
-            include: { 
+            include: {
                 user_function_gifts: {
-                    include: { gifts: true }
-                } 
+                    include: { gifts: true },
+                },
             },
         })
 
@@ -28,18 +28,19 @@ export async function GET(_req: Request, { params }: RouteContext) {
             return NextResponse.json({ error: "Not found" }, { status: 404 })
         }
 
-        const mapping: Record<string, number> = {}
-        const thresholds: Record<string, number> = {}
-        for (const row of order.user_function_gifts) {
-            mapping[row.function_id] = row.gift_id
-            if (row.trigger_threshold) {
-                thresholds[row.function_id] = row.trigger_threshold
-            }
-        }
+        // Return the raw rows so clients can do active/standby and multi-gift
+        // per function, matching the Electron InteractiveMapping flow.
+        const mappings = order.user_function_gifts.map((row) => ({
+            id: row.id,
+            function_id: row.function_id,
+            gift_id: row.gift_id,
+            is_enabled: row.is_enabled,
+            trigger_threshold: row.trigger_threshold,
+            gifts: row.gifts,
+        }))
 
         return NextResponse.json({
-            mapping,
-            thresholds,
+            mappings,
             tiktok_username: order.tiktok_username ?? null,
         })
     } catch (error) {
@@ -78,8 +79,15 @@ export async function POST(req: Request, { params }: RouteContext) {
         }
 
         const body = await req.json()
-        const mapping: Record<string, number> = body.mapping || {}
-        const thresholds: Record<string, number> = body.thresholds || {}
+        // New array shape: [{functionId, giftId, isEnabled, triggerThreshold}, ...]
+        // Multiple rows per function are allowed (active/standby pool).
+        type IncomingMapping = {
+            functionId: string
+            giftId: number | string
+            isEnabled?: boolean
+            triggerThreshold?: number | string | null
+        }
+        const mappings: IncomingMapping[] = Array.isArray(body.mappings) ? body.mappings : []
         const isPremium = !!order.is_premium_order
 
         await prisma.orders.update({
@@ -87,48 +95,30 @@ export async function POST(req: Request, { params }: RouteContext) {
             data: { tiktok_username: body.tiktok_username ?? null },
         })
 
-        if (isPremium && Object.keys(mapping).length > 0) {
-            // Get gifts to validate trigger types
-            const giftIds = Object.values(mapping).map(id => Number(id))
-            const gifts = await prisma.gifts.findMany({
-                where: { id: { in: giftIds } }
-            })
-
-            await prisma.$transaction(
-                Object.entries(mapping).map(([functionId, giftId]) => {
-                    const gift = gifts.find(g => g.id === Number(giftId))
-                    const threshold = gift?.trigger_type === 'like' ? thresholds[functionId] : null
-                    
-                    return prisma.user_function_gifts.upsert({
-                        where: {
-                            user_id_order_id_function_id: {
-                                user_id: userId, // ← ใช้ userId ที่ assert แล้ว
-                                order_id: id,
-                                function_id: functionId,
-                            },
-                        },
-                        create: {
-                            user_id: userId,
-                            order_id: id,
-                            function_id: functionId,
-                            gift_id: Number(giftId),
-                            trigger_threshold: threshold ? Number(threshold) : null,
-                        },
-                        update: {
-                            gift_id: Number(giftId),
-                            trigger_threshold: threshold ? Number(threshold) : null,
-                        },
-                    })
-                })
-            )
-
-            await prisma.user_function_gifts.deleteMany({
-                where: {
+        if (isPremium) {
+            // Replace the whole pool for this order in one transaction.
+            // deleteMany + createMany matches the Electron API's updateMapping
+            // pattern and avoids the composite-unique constraint that no longer
+            // exists on user_function_gifts.
+            const rowsToInsert = mappings
+                .filter((m) => m.functionId && m.giftId !== undefined && m.giftId !== null)
+                .map((m) => ({
                     user_id: userId,
                     order_id: id,
-                    function_id: { notIn: Object.keys(mapping) },
-                },
-            })
+                    function_id: m.functionId,
+                    gift_id: Number(m.giftId),
+                    is_enabled: m.isEnabled !== false,
+                    trigger_threshold: m.triggerThreshold ? Number(m.triggerThreshold) : null,
+                }))
+
+            await prisma.$transaction([
+                prisma.user_function_gifts.deleteMany({
+                    where: { user_id: userId, order_id: id },
+                }),
+                ...(rowsToInsert.length > 0
+                    ? [prisma.user_function_gifts.createMany({ data: rowsToInsert })]
+                    : []),
+            ])
         }
 
         return NextResponse.json({ ok: true })

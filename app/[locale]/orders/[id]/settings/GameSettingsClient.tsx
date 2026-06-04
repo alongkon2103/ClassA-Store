@@ -26,6 +26,20 @@ type ProductFunction = {
     image_url?: string | null
 }
 
+// One row in the user's gift pool for an order. Multiple rows can exist for
+// the same function_id — active rows trigger, standby rows wait to be swapped.
+type UserFunctionGift = {
+    id: string // real DB uuid, or "tmp_…" for unsaved rows added locally
+    function_id: string
+    gift_id: number
+    is_enabled: boolean
+    trigger_threshold: number | null
+    gifts: Gift
+}
+
+const newTempId = () =>
+    `tmp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
+
 type Props = {
     orderId: string
     orderType?: string | null
@@ -35,8 +49,7 @@ type Props = {
     whitelistedUsername: string | null
     functions: ProductFunction[]
     gifts: Gift[]
-    savedMapping: Record<string, number>
-    savedThresholds?: Record<string, number>
+    savedMappings: UserFunctionGift[]
     savedTiktokUsername?: string | null
     locale: string
     isPremium: boolean
@@ -47,7 +60,7 @@ type Props = {
 
 export default function GameSettingsClient({
     orderId, orderType, expiresAt, productName, productSlug, whitelistedUsername, functions, gifts,
-    savedMapping, savedThresholds = {}, savedTiktokUsername, locale, isPremium, premiumAddonPrice, tutorialVideoUrl,
+    savedMappings, savedTiktokUsername, locale, isPremium, premiumAddonPrice, tutorialVideoUrl,
     downloadUrl,
 }: Props) {
     const router = useRouter()
@@ -125,32 +138,36 @@ export default function GameSettingsClient({
     const [showKey, setShowKey] = useState(false)
     const [copied, setCopied] = useState(false)
     const [saving, setSaving] = useState(false)
-    const [openPicker, setOpenPicker] = useState<string | null>(null)
+    // openPicker holds the row we're editing OR { mappingId: null } when adding
+    // a brand-new row to a function's pool.
+    const [openPicker, setOpenPicker] = useState<{ functionId: string; mappingId: string | null } | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
     const [tiktokUsername, setTiktokUsername] = useState(savedTiktokUsername ?? "")
 
-    const getDefaultMapping = () => {
-        const dm: Record<string, number> = {}
-        functions.forEach(fn => { if (fn.default_gift_id) dm[fn.id] = fn.default_gift_id })
-        return dm
+    // Build a default pool from product_functions.default_gift_id — used when
+    // the user has no saved settings yet, or hits "Reset to default".
+    const getDefaultMappings = (): UserFunctionGift[] => {
+        const rows: UserFunctionGift[] = []
+        functions.forEach(fn => {
+            if (!fn.default_gift_id) return
+            const gift = gifts.find(g => g.id === fn.default_gift_id)
+            if (!gift) return
+            rows.push({
+                id: newTempId(),
+                function_id: fn.id,
+                gift_id: gift.id,
+                is_enabled: true,
+                trigger_threshold: fn.default_trigger_threshold ?? (gift.trigger_type === "like" ? 1 : null),
+                gifts: gift,
+            })
+        })
+        return rows
     }
 
-    const getDefaultThresholds = () => {
-        const dt: Record<string, number> = {}
-        functions.forEach(fn => { if (fn.default_trigger_threshold) dt[fn.id] = fn.default_trigger_threshold })
-        return dt
-    }
-
-    const [mapping, setMapping] = useState<Record<string, number>>(() => {
-        if (!isPremium) return getDefaultMapping()
-        if (Object.keys(savedMapping).length > 0) return savedMapping
-        return getDefaultMapping()
-    })
-
-    const [thresholds, setThresholds] = useState<Record<string, number>>(() => {
-        if (!isPremium) return getDefaultThresholds()
-        if (savedThresholds && Object.keys(savedThresholds).length > 0) return savedThresholds
-        return getDefaultThresholds()
+    const [mappings, setMappings] = useState<UserFunctionGift[]>(() => {
+        if (!isPremium) return getDefaultMappings()
+        if (savedMappings.length > 0) return savedMappings
+        return getDefaultMappings()
     })
 
     const handleCopy = () => {
@@ -159,89 +176,104 @@ export default function GameSettingsClient({
         setTimeout(() => setCopied(false), 2000)
     }
 
-    const selectGift = (functionId: string, giftId: number) => {
+    // Picker selected a gift — either replace the gift on an existing row OR
+    // push a brand-new row to this function's pool. Like-type gifts are limited
+    // to one per function: the old like row is silently dropped if a new one is
+    // picked in the same function.
+    const handleUpdateGift = (functionId: string, mappingId: string | null, gift: Gift) => {
         if (!isPremium) return
-        const gift = gifts.find(g => g.id === giftId)
+        setMappings(prev => {
+            let next = [...prev]
 
-        // ถ้า gift ใหม่เป็น like → clear like ของ function อื่นออกก่อน
-        if (gift?.trigger_type === 'like') {
-            setMapping(prev => {
-                const n = { ...prev }
-                functions.forEach(fn => {
-                    if (fn.id !== functionId) {
-                        const existingGift = gifts.find(g => g.id === n[fn.id])
-                        if (existingGift?.trigger_type === 'like') {
-                            // reset กลับไป default หรือลบออก
-                            if (fn.default_gift_id) {
-                                n[fn.id] = fn.default_gift_id
-                            } else {
-                                delete n[fn.id]
-                            }
-                        }
+            if (gift.trigger_type === "like") {
+                next = next.filter(m => {
+                    const isThisRow = m.id === mappingId
+                    if (
+                        !isThisRow &&
+                        m.function_id === functionId &&
+                        m.gifts?.trigger_type === "like"
+                    ) {
+                        return false // drop the previous like row in this function
                     }
+                    return true
                 })
-                n[functionId] = giftId
-                return n
-            })
-            setThresholds(prev => {
-                const n = { ...prev }
-                // clear threshold ของ like เดิมออก
-                functions.forEach(fn => {
-                    if (fn.id !== functionId) {
-                        const existingGift = gifts.find(g => g.id === mapping[fn.id])
-                        if (existingGift?.trigger_type === 'like') {
-                            delete n[fn.id]
-                        }
-                    }
-                })
-                return n
-            })
-        } else {
-            setMapping(prev => ({ ...prev, [functionId]: giftId }))
-            setThresholds(prev => {
-                const n = { ...prev }
-                delete n[functionId]
-                return n
-            })
-        }
+            }
 
+            if (mappingId === null) {
+                next.push({
+                    id: newTempId(),
+                    function_id: functionId,
+                    gift_id: gift.id,
+                    is_enabled: true,
+                    trigger_threshold: gift.trigger_type === "like" ? 1 : null,
+                    gifts: gift,
+                })
+            } else {
+                next = next.map(m =>
+                    m.id === mappingId
+                        ? {
+                            ...m,
+                            gift_id: gift.id,
+                            gifts: gift,
+                            trigger_threshold:
+                                gift.trigger_type === "like"
+                                    ? (m.trigger_threshold ?? 1)
+                                    : null,
+                        }
+                        : m,
+                )
+            }
+
+            return next
+        })
         setOpenPicker(null)
         setSearchQuery("")
     }
 
-    const togglePicker = (functionId: string) => {
+    const handleAddMapping = (functionId: string) => {
         if (!isPremium) return
-        setOpenPicker(prev => prev === functionId ? null : functionId)
+        setOpenPicker({ functionId, mappingId: null })
         setSearchQuery("")
     }
 
-    const clearGift = (functionId: string) => {
+    const handleRemoveMapping = (mappingId: string) => {
         if (!isPremium) return
-        const fn = functions.find(f => f.id === functionId)
-        setMapping(prev => {
-            const n = { ...prev }
-            if (fn?.default_gift_id) {
-                n[functionId] = fn.default_gift_id
-            } else {
-                delete n[functionId]
-            }
-            return n
-        })
-        setThresholds(prev => {
-            const n = { ...prev }
-            if (fn?.default_trigger_threshold) {
-                n[functionId] = fn.default_trigger_threshold
-            } else {
-                delete n[functionId]
-            }
-            return n
-        })
+        if (!confirm(t("confirm_remove_mapping"))) return
+        setMappings(prev => prev.filter(m => m.id !== mappingId))
+    }
+
+    // Independent per-row toggle: any number of rows can be active inside one
+    // function. Every active row triggers its function when its gift arrives.
+    const handleSetActive = (mappingId: string) => {
+        if (!isPremium) return
+        setMappings(prev =>
+            prev.map(m => (m.id === mappingId ? { ...m, is_enabled: !m.is_enabled } : m)),
+        )
+    }
+
+    const handleUpdateThreshold = (mappingId: string, threshold: number) => {
+        if (!isPremium) return
+        setMappings(prev =>
+            prev.map(m => (m.id === mappingId ? { ...m, trigger_threshold: threshold } : m)),
+        )
+    }
+
+    const togglePicker = (functionId: string, mappingId: string | null) => {
+        if (!isPremium) return
+        if (
+            openPicker?.functionId === functionId &&
+            openPicker?.mappingId === mappingId
+        ) {
+            setOpenPicker(null)
+        } else {
+            setOpenPicker({ functionId, mappingId })
+        }
+        setSearchQuery("")
     }
 
     const handleClearAll = () => {
         if (confirm(t("confirm_clear_all") || "Clear all and reset to default?")) {
-            setMapping(getDefaultMapping())
-            setThresholds(getDefaultThresholds())
+            setMappings(getDefaultMappings())
         }
     }
     const handleUpgrade = async () => {
@@ -281,9 +313,13 @@ export default function GameSettingsClient({
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    mapping,
-                    thresholds,
-                    tiktok_username: tiktokUsername.trim() || null
+                    mappings: mappings.map(m => ({
+                        functionId: m.function_id,
+                        giftId: m.gift_id,
+                        isEnabled: m.is_enabled,
+                        triggerThreshold: m.trigger_threshold,
+                    })),
+                    tiktok_username: tiktokUsername.trim() || null,
                 }),
             })
 
@@ -305,8 +341,6 @@ export default function GameSettingsClient({
             setSaving(false)
         }
     }
-    const getGift = (giftId: number) => gifts.find(g => g.id === giftId)
-
     const filteredGifts = useMemo(() => {
         const q = searchQuery.toLowerCase().trim()
         if (!q) return gifts
@@ -314,11 +348,6 @@ export default function GameSettingsClient({
     }, [gifts, searchQuery])
 
     const maskedKey = "*".repeat(orderId.length)
-
-    const currentLikeFunctionId = functions.find(fn => {
-        const g = gifts.find(g => g.id === mapping[fn.id])
-        return g?.trigger_type?.toLowerCase() === 'like'
-    })?.id
 
     if (isExpired) {
         return (
@@ -621,13 +650,16 @@ export default function GameSettingsClient({
                             </div>
                         ) : (
                             functions.map(fn => {
-                                const selectedGiftId = mapping[fn.id]
-                                const selectedGift = selectedGiftId ? getGift(selectedGiftId) : null
-                                const isOpen = openPicker === fn.id
-                                const isDefault = selectedGiftId === fn.default_gift_id
+                                // Pool of rows for this function (multiple gifts allowed,
+                                // each can be active/standby independently).
+                                const fnMappings = mappings.filter(m => m.function_id === fn.id)
+                                const activeCount = fnMappings.filter(m => m.is_enabled).length
+                                const isPickerForThisFn = openPicker?.functionId === fn.id
+                                const pickerMappingId = openPicker?.mappingId ?? null
 
                                 return (
                                     <div key={fn.id} className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden transition-all">
+                                        {/* Function header */}
                                         <div className="flex items-center gap-3 p-4">
                                             <div className="flex-1 flex items-center gap-3 min-w-0">
                                                 {fn.image_url && (
@@ -637,80 +669,173 @@ export default function GameSettingsClient({
                                                 )}
                                                 <div className="min-w-0">
                                                     <p className="text-[13px] font-bold text-text-base truncate">{locale === "th" ? fn.label_th : fn.label_en}</p>
-                                                    <p className="font-mono text-[10px] text-accent-light/70 tracking-wider uppercase">{fn.name}</p>
+                                                    <p className="font-mono text-[10px] text-accent-light/70 tracking-wider uppercase">
+                                                        {fn.name} · {fnMappings.length} {fnMappings.length === 1 ? "gift" : "gifts"}
+                                                        {fnMappings.length > 0 && activeCount === 0 && (
+                                                            <span className="ml-2 text-amber-400 normal-case">· {t("no_active_warn")}</span>
+                                                        )}
+                                                    </p>
                                                 </div>
                                             </div>
 
-                                            <button onClick={() => togglePicker(fn.id)} disabled={!isPremium}
-                                                className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition min-w-[140px] justify-between flex-shrink-0 ${selectedGift ? "border-accent/40 bg-accent/5 text-accent-light" : "border-white/10 bg-bg-base text-text-muted"} ${!isPremium ? "cursor-default opacity-80" : ""}`}>
-                                                <div className="flex items-center gap-2 overflow-hidden">
-                                                    {!isPremium && !selectedGift && <span className="text-[10px] font-bold bg-white/5 px-1.5 py-0.5 rounded text-text-muted">LOCKED</span>}
-                                                    {selectedGift ? (
-                                                        <>
-                                                            {selectedGift.image_url ? <Image src={getImageUrl(selectedGift.image_url)} alt="" width={16} height={16} className="rounded object-cover flex-shrink-0" unoptimized /> : <span className="text-accent-light mt-1"></span>}
-                                                            <span className="text-[12px] font-medium truncate">{selectedGift.name}</span>
-                                                            {isDefault && <span className="text-[9px] bg-accent/10 px-1 rounded flex-shrink-0">DEFAULT</span>}
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-[12px]">{t("selectGift")}</span>
-                                                    )}
-                                                </div>
-                                                {isPremium && <ChevronIcon size={13} className={isOpen ? "rotate-180" : ""} />}
+                                            <button
+                                                onClick={() => handleAddMapping(fn.id)}
+                                                disabled={!isPremium}
+                                                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border border-accent/20 bg-accent/5 text-accent-light text-[12px] font-bold flex-shrink-0 hover:bg-accent/10 transition ${!isPremium ? "opacity-50 cursor-not-allowed" : ""}`}
+                                            >
+                                                <PlusIcon size={13} />
+                                                <span className="hidden sm:inline">{t("add_gift")}</span>
                                             </button>
-
-                                            {/* Threshold Selector for 'Like' */}
-                                            {selectedGift?.trigger_type === 'like' && (
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        disabled={!isPremium}
-                                                        value={thresholds[fn.id] || ""}
-                                                        onChange={(e) => setThresholds(prev => ({ ...prev, [fn.id]: parseInt(e.target.value) }))}
-                                                        placeholder="Like"
-                                                        className="bg-bg-base border border-accent/15 rounded-xl px-3 py-2 text-[12px] text-accent-light focus:border-accent/40 outline-none transition disabled:opacity-50 w-20"
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {selectedGift && isPremium && !isDefault && (
-                                                <button onClick={() => clearGift(fn.id)} className="text-text-muted hover:text-red-400 p-1 transition flex-shrink-0" title="Reset to default">
-                                                    <CloseIcon size={16} />
-                                                </button>
-                                            )}
                                         </div>
 
-                                        {isOpen && (
+                                        {/* Pool rows */}
+                                        {fnMappings.length === 0 ? (
+                                            <div className="mx-4 mb-4 px-3 py-3 rounded-xl border border-dashed border-white/10 text-[11px] text-text-muted italic">
+                                                {t("no_gifts_mapped_hint")}
+                                            </div>
+                                        ) : (
+                                            <div className="px-4 pb-4 flex flex-col gap-2">
+                                                {fnMappings.map(row => {
+                                                    const gift = row.gifts
+                                                    const isEnabled = row.is_enabled
+                                                    const isLike = gift?.trigger_type === "like"
+                                                    const isEditingThisRow =
+                                                        isPickerForThisFn && pickerMappingId === row.id
+
+                                                    return (
+                                                        <div
+                                                            key={row.id}
+                                                            className={`flex items-center gap-2 p-2 rounded-xl border transition-all ${
+                                                                isEnabled
+                                                                    ? "border-accent/40 bg-accent/5"
+                                                                    : "border-white/[0.08] bg-bg-base/40 opacity-60"
+                                                            }`}
+                                                        >
+                                                            <span
+                                                                className={`font-mono text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded shrink-0 ${
+                                                                    isEnabled
+                                                                        ? "bg-accent/30 text-accent-light"
+                                                                        : "bg-white/[0.05] text-text-muted"
+                                                                }`}
+                                                            >
+                                                                {isEnabled ? t("active_badge") : t("standby_badge")}
+                                                            </span>
+
+                                                            <button
+                                                                onClick={() => togglePicker(fn.id, row.id)}
+                                                                disabled={!isPremium}
+                                                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border flex-1 min-w-0 transition ${
+                                                                    isEditingThisRow
+                                                                        ? "border-accent bg-accent/10"
+                                                                        : "border-white/10 bg-bg-base hover:border-accent/40"
+                                                                } ${!isPremium ? "cursor-not-allowed opacity-60" : ""}`}
+                                                            >
+                                                                {gift?.image_url ? (
+                                                                    <Image
+                                                                        src={getImageUrl(gift.image_url)}
+                                                                        alt=""
+                                                                        width={20}
+                                                                        height={20}
+                                                                        className="rounded object-cover shrink-0"
+                                                                        unoptimized
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-5 h-5 rounded bg-white/5 shrink-0" />
+                                                                )}
+                                                                <div className="text-left min-w-0 flex-1">
+                                                                    <p className="text-[12px] font-semibold text-text-base truncate">{gift?.name}</p>
+                                                                    <p className="text-[9px] text-text-muted">{gift?.diamonds} coins</p>
+                                                                </div>
+                                                                <ChevronIcon size={11} className={isEditingThisRow ? "rotate-180" : ""} />
+                                                            </button>
+
+                                                            {isLike && isEnabled && (
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    disabled={!isPremium}
+                                                                    value={row.trigger_threshold ?? 1}
+                                                                    onChange={e =>
+                                                                        handleUpdateThreshold(
+                                                                            row.id,
+                                                                            parseInt(e.target.value) || 1,
+                                                                        )
+                                                                    }
+                                                                    placeholder="Like"
+                                                                    className="w-16 bg-bg-base border border-accent/15 rounded-lg px-2 py-1 text-[11px] text-accent-light text-center focus:border-accent/40 outline-none disabled:opacity-50"
+                                                                />
+                                                            )}
+
+                                                            <button
+                                                                onClick={() => handleSetActive(row.id)}
+                                                                disabled={!isPremium}
+                                                                title={isEnabled ? t("deactivate_tooltip") : t("set_active_tooltip")}
+                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition ${
+                                                                    isEnabled
+                                                                        ? "bg-accent/15 text-accent-light border border-accent/30"
+                                                                        : "bg-white/5 text-text-muted border border-white/10"
+                                                                } ${!isPremium ? "opacity-30 cursor-not-allowed" : ""}`}
+                                                            >
+                                                                <PowerIcon size={13} />
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => handleRemoveMapping(row.id)}
+                                                                disabled={!isPremium}
+                                                                title={t("remove_mapping")}
+                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-white/5 text-text-muted hover:text-red-400 hover:bg-red-500/10 transition ${
+                                                                    !isPremium ? "opacity-30 cursor-not-allowed" : ""
+                                                                }`}
+                                                            >
+                                                                <TrashIcon size={12} />
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {/* Single picker at the bottom of the card.
+                                            mappingId === null → adding a new row.
+                                            mappingId === string → replacing the gift on that row. */}
+                                        {isPickerForThisFn && (
                                             <div className="border-t border-accent/10 bg-bg-base/40 p-3 space-y-3">
                                                 <div className="relative">
-                                                    <input autoFocus type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t("searchPlaceholder")}
-                                                        className="w-full bg-bg-card border border-accent/20 rounded-xl pl-9 pr-4 py-2 text-[13px] outline-none focus:border-accent/50 transition" />
+                                                    <input
+                                                        autoFocus
+                                                        type="text"
+                                                        value={searchQuery}
+                                                        onChange={e => setSearchQuery(e.target.value)}
+                                                        placeholder={t("searchPlaceholder")}
+                                                        className="w-full bg-bg-card border border-accent/20 rounded-xl pl-9 pr-4 py-2 text-[13px] outline-none focus:border-accent/50 transition"
+                                                    />
                                                     <SearchIcon className="absolute left-3 top-2.5 text-text-muted" size={16} />
                                                 </div>
                                                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[220px] overflow-y-auto pr-1">
-                                                    {
-
-                                                        filteredGifts.map(gift => (
-                                                            <button
-                                                                key={gift.id}
-                                                                onClick={() => selectGift(fn.id, gift.id)}
-                                                                disabled={
-                                                                    gift.trigger_type?.toLowerCase() === 'like' &&
-                                                                    currentLikeFunctionId !== undefined &&
-                                                                    currentLikeFunctionId !== fn.id
-                                                                }
-                                                                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition 
-        ${selectedGiftId === gift.id ? "border-accent bg-accent/10" : "border-white/5 bg-bg-card hover:border-accent/30"}
-        ${gift.trigger_type?.toLowerCase() === 'like' && currentLikeFunctionId !== undefined && currentLikeFunctionId !== fn.id
-                                                                        ? "opacity-30 cursor-not-allowed" : ""}
-    `}>
-                                                                <div className="w-8 h-8 flex items-center justify-center">
-                                                                    {gift.image_url ? <Image src={getImageUrl(gift.image_url)} alt="" width={32} height={32} className="rounded object-cover" unoptimized /> : <span className="text-[20px]"></span>}
-                                                                </div>
-                                                                <p className="text-[10px] font-medium leading-tight line-clamp-1 text-center">{gift.name}</p>
-                                                                <p className="text-[9px] text-text-muted">{gift.diamonds}</p>
-                                                            </button>
-                                                        ))}
+                                                    {filteredGifts.map(gift => (
+                                                        <button
+                                                            key={gift.id}
+                                                            onClick={() => handleUpdateGift(fn.id, pickerMappingId, gift)}
+                                                            className="flex flex-col items-center gap-1.5 p-2 rounded-xl border border-white/5 bg-bg-card hover:border-accent/30 transition"
+                                                        >
+                                                            <div className="w-8 h-8 flex items-center justify-center">
+                                                                {gift.image_url ? (
+                                                                    <Image
+                                                                        src={getImageUrl(gift.image_url)}
+                                                                        alt=""
+                                                                        width={32}
+                                                                        height={32}
+                                                                        className="rounded object-cover"
+                                                                        unoptimized
+                                                                    />
+                                                                ) : (
+                                                                    <span className="text-[20px]"></span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-[10px] font-medium leading-tight line-clamp-1 text-center">{gift.name}</p>
+                                                            <p className="text-[9px] text-text-muted">{gift.diamonds}</p>
+                                                        </button>
+                                                    ))}
                                                 </div>
                                             </div>
                                         )}
@@ -926,4 +1051,13 @@ function SearchIcon({ size = 16, className = "" }: { size?: number; className?: 
 }
 function CloseIcon({ size = 16 }: { size?: number }) {
     return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+}
+function PowerIcon({ size = 16 }: { size?: number }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0" /><line x1="12" y1="2" x2="12" y2="12" /></svg>
+}
+function TrashIcon({ size = 16 }: { size?: number }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
+}
+function PlusIcon({ size = 16 }: { size?: number }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
 }

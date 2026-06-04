@@ -62,14 +62,16 @@ export default async function GameSettingsPage({ params }: Props) {
         orderBy: { diamonds: "asc" },
     })
 
-    const savedMapping: Record<string, number> = {}
-    const savedThresholds: Record<string, number> = {}
-    for (const ufg of order.user_function_gifts) {
-        savedMapping[ufg.function_id] = ufg.gift_id
-        if (ufg.trigger_threshold) {
-            savedThresholds[ufg.function_id] = ufg.trigger_threshold
-        }
-    }
+    // Pass the raw UFG rows so the client can render active/standby pools
+    // with multiple gifts per function (matches Electron InteractiveMapping).
+    const savedMappings = order.user_function_gifts.map((ufg) => ({
+        id: ufg.id,
+        function_id: ufg.function_id,
+        gift_id: ufg.gift_id,
+        is_enabled: ufg.is_enabled,
+        trigger_threshold: ufg.trigger_threshold,
+        gifts: ufg.gifts,
+    }))
 
     const downloadConfig = await prisma.system_configs.findUnique({
         where: { key: "app_download_url" }
@@ -90,8 +92,7 @@ export default async function GameSettingsPage({ params }: Props) {
                 tutorialVideoUrl={order.products.tutorial_video_url}
                 functions={order.products.product_functions}
                 gifts={gifts}
-                savedMapping={savedMapping}
-                savedThresholds={savedThresholds}
+                savedMappings={savedMappings}
                 savedTiktokUsername={order.tiktok_username}
                 locale={locale}
                 isPremium={!!order.is_premium_order}
