@@ -535,7 +535,7 @@ export default function GameSettingsClient({
                                 <p className="text-[10px] text-text-muted">{t("tiktok_username_hint")}</p>
                             </div>
 
-                            <div className="border-t border-accent/5" />
+                            {/* <div className="border-t border-accent/5" />
 
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
@@ -577,7 +577,7 @@ export default function GameSettingsClient({
                                     </button>
                                 </div>
                                 <p className="text-[10px] text-text-muted">{t("key_label")}</p>
-                            </div>
+                            </div> */}
                         </div>
 
                         {/* Download App (Hidden during Trial) */}

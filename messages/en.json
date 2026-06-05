@@ -84,7 +84,9 @@
     "free_trial_btn": "Start {duration}-Day Free Trial",
     "free_trial_limit": "*Limited to once per day, resets at midnight",
     "trial_limit_reached": "Daily trial limit reached",
-    "login_to_trial": "Please Login to Start Free Trial"
+    "login_to_trial": "Please Login to Start Free Trial",
+    "try_demo_btn": "Try Demo (10 min)",
+    "try_demo_desc": "Open the in-game preview in a new tab"
   },
   "Admin": {
     "top_selling_products": "Top Selling Products",
