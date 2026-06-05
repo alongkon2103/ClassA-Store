@@ -1,5 +1,6 @@
 import "../globals.css"
 import Providers from "@/components/home/Providers"
+import PageTracker from "@/components/PageTracker"
 import { Rajdhani, DM_Sans } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages, setRequestLocale } from "next-intl/server"
@@ -75,7 +76,10 @@ export default async function RootLayout({
     >
       <body suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
-          <Providers>{children}</Providers>
+          <Providers>
+            <PageTracker />
+            {children}
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>
