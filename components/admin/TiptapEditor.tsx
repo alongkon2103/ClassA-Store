@@ -6,8 +6,9 @@ import StarterKit from "@tiptap/starter-kit"
 import Underline from "@tiptap/extension-underline"
 import Link from "@tiptap/extension-link"
 import Image from "@tiptap/extension-image"
-import Color from "@tiptap/extension-color"
-import { TextStyle } from "@tiptap/extension-text-style"
+// Color + TextStyle removed on purpose — text color must follow site theme,
+// admins shouldn't be able to override it (the saved color would render the
+// same in both light and dark, breaking one of them).
 import Highlight from "@tiptap/extension-highlight"
 import TextAlign from "@tiptap/extension-text-align"
 import Youtube from "@tiptap/extension-youtube"
@@ -20,7 +21,7 @@ import {
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, 
   Quote, Undo, Redo, Code, Link as LinkIcon, Image as ImageIcon,
   Heading1, Heading2, Heading3, AlignLeft, AlignCenter, AlignRight,
-  Highlighter, Palette, Play as YoutubeIcon, Table as TableIcon,
+  Highlighter, Play as YoutubeIcon, Table as TableIcon,
   Eraser
 } from "lucide-react"
 
@@ -60,18 +61,10 @@ const MenuBar = ({ editor }: { editor: any }) => {
       <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`p-2 rounded-lg hover:bg-accent/10 transition ${editor.isActive("italic") ? "text-accent-light bg-accent/10" : "text-text-muted"}`} title="Italic"><Italic size={16} /></button>
       <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className={`p-2 rounded-lg hover:bg-accent/10 transition ${editor.isActive("underline") ? "text-accent-light bg-accent/10" : "text-text-muted"}`} title="Underline"><UnderlineIcon size={16} /></button>
       
-      {/* Colors & Highlight */}
+      {/* Highlight — background tint only. Text color picker intentionally
+          omitted: text colors must follow the site theme. */}
       <div className="flex gap-1 pl-1 border-l border-accent/10 ml-1">
         <button type="button" onClick={() => editor.chain().focus().toggleHighlight().run()} className={`p-2 rounded-lg hover:bg-accent/10 transition ${editor.isActive("highlight") ? "text-yellow-400 bg-yellow-400/10" : "text-text-muted"}`} title="Highlight"><Highlighter size={16} /></button>
-        <div className="relative flex items-center px-1" title="Text Color">
-          <Palette size={14} className="absolute left-2 text-text-muted pointer-events-none" />
-          <input 
-              type="color" 
-              onInput={e => editor.chain().focus().setColor((e.target as HTMLInputElement).value).run()} 
-              value={editor.getAttributes('textStyle').color || '#ffffff'}
-              className="w-10 h-8 p-1 pl-6 bg-transparent border-0 cursor-pointer"
-          />
-        </div>
       </div>
 
       {/* Headings */}
@@ -114,8 +107,6 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
     extensions: [
       StarterKit,
       Underline,
-      TextStyle,
-      Color,
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Link.configure({
