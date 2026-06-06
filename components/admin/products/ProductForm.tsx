@@ -10,6 +10,7 @@ import PresetManager from "./PresetManager"
 import FunctionManager from "./FunctionManager"
 import ConsignmentManager from "./ConsignmentManager"
 import PartnershipManager from "./PartnershipManager"
+import TiptapEditor from "../TiptapEditor"
 
 import { useTranslations, useLocale } from "next-intl"
 
@@ -215,13 +216,17 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
                     </Field>
 
                     <Field label={t("label_desc_en")} className="lg:col-span-2">
-                        <textarea value={form.description_en} onChange={(e) => set("description_en", e.target.value)}
-                            rows={3} placeholder="English description..." className={`${input} resize-none`} />
+                        <TiptapEditor
+                            content={form.description_en}
+                            onChange={(html) => set("description_en", html)}
+                        />
                     </Field>
 
                     <Field label={t("label_desc_th")} className="lg:col-span-2">
-                        <textarea value={form.description_th} onChange={(e) => set("description_th", e.target.value)}
-                            rows={3} placeholder="Thai description..." className={`${input} resize-none`} />
+                        <TiptapEditor
+                            content={form.description_th}
+                            onChange={(html) => set("description_th", html)}
+                        />
                     </Field>
 
                     {/* Revenue Model Selection */}

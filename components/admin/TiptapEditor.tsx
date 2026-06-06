@@ -134,7 +134,9 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
     content,
     editorProps: {
       attributes: {
-        class: "prose prose-invert max-w-none focus:outline-none min-h-[350px] px-5 py-4 text-[14px]",
+        // No prose-invert — colors come from theme vars in the global style
+        // block below so the editor reads correctly in both dark and light.
+        class: "prose max-w-none focus:outline-none min-h-[350px] px-5 py-4 text-[14px] text-text-base",
       },
     },
     onUpdate: ({ editor }) => {
@@ -154,19 +156,8 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
       <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
         <EditorContent editor={editor} />
       </div>
-      <style jsx global>{`
-        .prose ul { list-style-type: disc; padding-left: 1.5em; margin: 1em 0; }
-        .prose ol { list-style-type: decimal; padding-left: 1.5em; margin: 1em 0; }
-        .prose h1 { font-size: 1.8em; font-weight: 800; margin: 1.2em 0 0.6em; color: white; }
-        .prose h2 { font-size: 1.5em; font-weight: 700; margin: 1.1em 0 0.5em; color: white; }
-        .prose p { margin: 0.8em 0; line-height: 1.6; }
-        .prose table { border-collapse: collapse; table-layout: fixed; width: 100%; margin: 0; overflow: hidden; }
-        .prose table td, .prose table th { border: 2px solid rgba(255,255,255,0.1); box-sizing: border-box; min-width: 1em; padding: 3px 5px; position: relative; vertical-align: top; }
-        .prose table th { background-color: rgba(255,255,255,0.05); font-weight: bold; text-align: left; }
-        .prose .text-left { text-align: left; }
-        .prose .text-center { text-align: center; }
-        .prose .text-right { text-align: right; }
-      `}</style>
+      {/* .prose theme styles live in app/globals.css so the same rules apply to
+          rendered Tiptap output elsewhere (e.g. ProductModal description). */}
     </div>
   )
 }

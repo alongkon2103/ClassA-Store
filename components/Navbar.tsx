@@ -135,7 +135,7 @@ export default function Navbar() {
             {!session ? (
               <Link
                 href="/login"
-                className="flex items-center gap-2 text-white text-[13px] font-medium px-5 py-2 rounded-lg no-underline transition-all hover:opacity-90 hover:scale-105 active:scale-95"
+                className="flex items-center gap-2 text-white text-on-accent text-[13px] font-medium px-5 py-2 rounded-lg no-underline transition-all hover:opacity-90 hover:scale-105 active:scale-95"
                 style={{ background: "var(--color-accent)" }}
               >
                 <LoginIcon />
@@ -144,7 +144,7 @@ export default function Navbar() {
             ) : (
               <button
                 onClick={() => setLogoutOpen(true)}
-                className="flex items-center gap-2 text-white text-[13px] font-medium px-5 py-2 rounded-lg cursor-pointer hover:opacity-90 hover:scale-105 active:scale-95 transition-all"
+                className="flex items-center gap-2 text-white text-on-accent text-[13px] font-medium px-5 py-2 rounded-lg cursor-pointer hover:opacity-90 hover:scale-105 active:scale-95 transition-all"
                 style={{ background: providerColor(provider) }}
               >
                 <ProviderIcon provider={provider} />
@@ -254,7 +254,7 @@ export default function Navbar() {
                   <Link
                     href="/login"
                     onClick={() => setMenuOpen(false)}
-                    className="w-full flex items-center justify-center gap-2 text-white text-[13px] font-medium px-5 py-3 rounded-xl no-underline transition-all hover:opacity-90 active:scale-95"
+                    className="w-full flex items-center justify-center gap-2 text-white text-on-accent text-[13px] font-medium px-5 py-3 rounded-xl no-underline transition-all hover:opacity-90 active:scale-95"
                     style={{ background: "var(--color-accent)" }}
                   >
                     <LoginIcon />

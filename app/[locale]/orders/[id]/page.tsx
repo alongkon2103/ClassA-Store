@@ -6,6 +6,7 @@ import Image from "next/image"
 import { Link, useRouter } from "@/i18n/routing"
 import { setRequestLocale, getTranslations } from "next-intl/server"
 import OrderStatusPoller from "@/components/orders/OrderStatusPoller"
+import AssetThumbnailCard from "@/components/orders/AssetThumbnailCard"
 import { getImageUrl } from "@/lib/getImageUrl"
 
 
@@ -87,8 +88,19 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
                             <div className="relative bg-bg-card border border-accent/10 rounded-2xl md:rounded-3xl p-5 md:p-8 overflow-hidden">
                                 <h2 className="text-lg font-bold text-text-base mb-6 flex items-center gap-2">
-                                    <span className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-accent/20 flex items-center justify-center text-accent-light">
-                                        <ExternalIcon size={20} />
+                                    {/* Product cover thumbnail in place of the generic icon —
+                                        gives the section a visual anchor tied to the actual
+                                        product. Falls back to the icon when no image exists. */}
+                                    <span className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-accent/20 overflow-hidden flex items-center justify-center text-accent-light shrink-0">
+                                        {order.products.product_images[0]?.url ? (
+                                            <img
+                                                src={getImageUrl(order.products.product_images[0].url)}
+                                                alt=""
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <ExternalIcon size={20} />
+                                        )}
                                     </span>
 
                                     Access Information
@@ -162,7 +174,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                 </h2>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {/* Assets */}
+                                    {/* Image assets show thumbnail directly + a small
+                                        download button — no separate View, click the
+                                        thumbnail to open full size in a new tab. */}
                                     {order.products.product_gifts.map((gift) => {
                                         const assetUrl = gift.url.startsWith("http")
                                             ? gift.url
@@ -170,39 +184,12 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                                 ? gift.url
                                                 : `/uploads/${gift.url}`
                                         return (
-                                            <div key={gift.id} className="flex flex-col bg-bg-base/30 border border-accent/10 rounded-xl p-4 transition-colors hover:border-violet-500/30">
-                                                <div className="flex items-center gap-4 mb-4">
-                                                    <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center text-[18px]">
-                                                        <ImageIcon />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-[13px] font-bold text-text-base truncate">{gift.filename || t("media_asset")}</p>
-                                                        <p className="text-[10px] text-text-muted uppercase tracking-wider">{t("image_asset")}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-2 mt-auto">
-                                                    <a
-                                                        href={assetUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex-1 py-2 bg-accent/5 hover:bg-violet-600/20 text-text-base text-[12px] font-semibold rounded-lg text-center transition flex items-center justify-center gap-2 border border-accent/10"
-                                                    >
-                                                        <EyeIcon size={14} />
-                                                        View
-                                                    </a>
-
-                                                    <a
-                                                        href={assetUrl}
-                                                        download
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex-1 py-2 bg-accent hover:bg-accent-light text-white text-[12px] font-semibold rounded-lg text-center transition flex items-center justify-center gap-2"
-                                                    >
-                                                        <DownloadIcon size={14} />
-                                                        {t("download")}
-                                                    </a>
-                                                </div>
-                                            </div>
+                                            <AssetThumbnailCard
+                                                key={gift.id}
+                                                assetUrl={assetUrl}
+                                                filename={gift.filename || t("media_asset")}
+                                                downloadLabel={t("download")}
+                                            />
                                         )
                                     })}
 

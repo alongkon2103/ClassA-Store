@@ -54,7 +54,7 @@ export default function ProductCard({
         />
 
         {is_featured && (
-          <span className="absolute top-2 right-2 bg-gold text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+          <span className="absolute top-2 right-2 bg-gold text-gold-text text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
             {t("hot")}
           </span>
         )}

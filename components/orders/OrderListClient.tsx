@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { format } from "date-fns"
 import Image from "next/image"
 import { Link, useRouter } from "@/i18n/routing"
@@ -16,6 +17,12 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
   const router = useRouter()
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
   const [payingId, setPayingId] = useState<string | null>(null)
+  // Modal renders through a portal to document.body so it escapes the
+  // `relative z-10` wrapper in orders/page.tsx. Without the portal, the modal's
+  // z-[100] is capped by the parent's z-10 stacking context, which lets the
+  // sticky Navbar (z-50, but at root) draw on top of the modal.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const t = useTranslations("Orders")
   const locale = useLocale()
 
@@ -163,22 +170,24 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
         })}
       </div>
 
-      {/* ── Order Detail Modal ──────────────────────────────────────── */}
-      <AnimatePresence>
-        {selectedOrder && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 md:p-4">
+      {/* ── Order Detail Modal — portaled to body, see mounted state above ── */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {selectedOrder && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 md:p-4">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSelectedOrder(null)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              style={{ background: "var(--color-overlay)" }}
+              className="absolute inset-0 backdrop-blur-sm"
             />
 
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="relative bg-bg-card border border-accent/20 rounded-2xl md:rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl overflow-y-auto max-h-[95vh]"
+              className="relative bg-bg-card border border-accent/20 rounded-2xl md:rounded-[32px] w-full max-w-xl overflow-hidden shadow-2xl overflow-y-auto max-h-[95vh]"
             >
               {/* Modal Header */}
               <div className="relative h-24 md:h-40 flex items-end p-4 md:p-8">
@@ -206,7 +215,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
               </div>
 
               {/* Modal Body */}
-              <div className="p-4 md:p-8 space-y-4 md:space-y-6">
+              <div className="p-4 md:p-6 space-y-4 md:space-y-5">
 
                 {/* Whitelist Status */}
                 <div className="bg-bg-base/60 border border-accent/10 rounded-xl md:rounded-2xl p-4 md:p-5 space-y-3">
@@ -253,6 +262,41 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                   )}
                 </div>
 
+                {/* Try Demo — opens the in-game preview tab if product set info_page_url */}
+                {selectedOrder.products?.info_page_url && (
+                  <a
+                    href={
+                      selectedOrder.products.info_page_url.startsWith("http")
+                        ? selectedOrder.products.info_page_url
+                        : `https://${selectedOrder.products.info_page_url}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group w-full flex items-center justify-between gap-3 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-500/50 text-text-base px-4 py-3.5 rounded-xl transition active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 bg-emerald-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
+                          <line x1="6" y1="11" x2="10" y2="11" />
+                          <line x1="8" y1="9" x2="8" y2="13" />
+                          <line x1="15" y1="12" x2="15.01" y2="12" />
+                          <line x1="18" y1="10" x2="18.01" y2="10" />
+                          <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" />
+                        </svg>
+                      </div>
+                      <div className="text-left min-w-0">
+                        <p className="text-[13px] font-semibold text-emerald-400 truncate">{t("join_game_btn")}</p>
+                        <p className="text-[11px] text-text-muted truncate">{t("join_game_desc")}</p>
+                      </div>
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400 flex-shrink-0 group-hover:translate-x-0.5 transition-transform">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                  </a>
+                )}
+
                 {/* Game Settings Button — แสดงเมื่อ product มี functions */}
                 {(selectedOrder.products?.product_functions?.length ?? 0) > 0 && (
                   <button
@@ -279,27 +323,54 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                     <h4 className="text-[9px] md:text-[11px] font-bold text-text-muted uppercase tracking-widest flex items-center gap-2">
                       <ImageIcon size={12} /> {t("image_assets")}
                     </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 md:gap-2">
+                    {/* flex-wrap + fixed-width cards so a typical 2-asset order
+                        renders as two small thumbnails left-aligned, not two huge
+                        stretched columns of a 4-col grid. Cards retain their shape
+                        regardless of count. */}
+                    <div className="flex flex-wrap gap-2">
                       {selectedOrder.products.product_gifts.map((g: any, idx: number) => {
                         const assetUrl = g.url.startsWith("http") ? g.url : g.url.startsWith("/") ? g.url : `/${g.url}`
+                        const filename = g.filename || `Asset_${idx + 1}`
                         return (
-                          <div key={g.id} className="flex flex-col gap-1.5 p-2 md:p-3 bg-accent/5 border border-accent/10 rounded-xl">
-                            <div className="flex items-center gap-2 px-1">
-                              <DownloadIcon size={12} className="text-violet-400 shrink-0" />
-                              <span className="text-[11px] md:text-[12px] font-medium truncate flex-1">
-                                {g.filename || `Asset_${idx + 1}`}
+                          <div key={g.id} className="group relative flex flex-col w-32 md:w-36 bg-accent/5 border border-accent/10 hover:border-accent/30 rounded-xl overflow-hidden transition-colors">
+                            {/* Thumbnail = view action. aspect-[4/3] keeps cards low
+                                so a 4-up grid stays dense; onError swaps in a file
+                                icon instead of the browser's broken-image glyph. */}
+                            <a href={assetUrl} target="_blank" rel="noopener noreferrer"
+                              className="relative block aspect-[4/3] bg-white/5 overflow-hidden">
+                              <img
+                                src={assetUrl}
+                                alt=""
+                                loading="lazy"
+                                onError={(e) => {
+                                  const img = e.currentTarget;
+                                  img.style.display = "none";
+                                  const fallback = img.nextElementSibling as HTMLElement | null;
+                                  if (fallback) fallback.style.display = "flex";
+                                }}
+                                className="absolute inset-0 w-full h-full object-contain p-2"
+                              />
+                              <div
+                                style={{ display: "none" }}
+                                className="absolute inset-0 flex-col items-center justify-center gap-1 text-text-muted"
+                              >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                  <polyline points="14 2 14 8 20 8" />
+                                </svg>
+                              </div>
+                            </a>
+                            {/* Filename + download merged into one footer row to halve
+                                the card's vertical footprint vs. the previous stacked
+                                layout. Download is icon-only since the row is tight. */}
+                            <div className="flex items-center gap-1.5 px-2 py-1.5 border-t border-accent/10">
+                              <span className="text-[10px] md:text-[11px] font-medium truncate flex-1" title={filename}>
+                                {filename}
                               </span>
-                            </div>
-                            <div className="flex gap-1.5">
-                              <a href={assetUrl} target="_blank" rel="noopener noreferrer"
-                                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-white/5 hover:bg-white/10 text-text-base text-[10px] md:text-[11px] font-bold rounded-lg transition-all border border-white/5">
-                                <EyeIcon size={12} />
-                                View
-                              </a>
-                              <a href={assetUrl} download={g.filename || `Asset_${idx + 1}.png`}
-                                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-accent hover:bg-accent-light text-white text-[10px] md:text-[11px] font-bold rounded-lg transition-all">
-                                <DownloadIcon size={12} />
-                                {t("download")}
+                              <a href={assetUrl} download={filename}
+                                title={t("download")}
+                                className="shrink-0 w-6 h-6 flex items-center justify-center bg-accent hover:bg-accent-light text-white rounded-md transition-colors">
+                                <DownloadIcon size={11} />
                               </a>
                             </div>
                           </div>
@@ -316,14 +387,14 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                     <h4 className="text-[9px] md:text-[11px] font-bold text-text-muted uppercase tracking-widest flex items-center gap-2">
                       <PresetIcon size={12} /> {t("config_presets")}
                     </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 md:gap-2">
+                    <div className="flex flex-wrap gap-1.5 md:gap-2">
                       {selectedOrder.products.product_presets.map((p: any, idx: number) => {
                         const assetUrl = p.url.startsWith("http") ? p.url : p.url.startsWith("/") ? p.url : `/${p.url}`
                         return (
                           <a key={p.id} href={assetUrl} download={p.filename || `Preset_${idx + 1}`}
-                            className="flex items-center justify-center gap-2 bg-accent hover:bg-accent-light text-white p-2.5 rounded-lg md:rounded-xl transition-all">
+                            className="flex items-center justify-center gap-2 bg-accent hover:bg-accent-light text-white px-3 py-2 rounded-lg md:rounded-xl transition-all">
                             <DownloadIcon size={14} />
-                            <span className="text-[11px] md:text-[12px] font-bold truncate">
+                            <span className="text-[11px] md:text-[12px] font-bold truncate max-w-[160px]">
                               {p.filename || `Preset_${idx + 1}`}
                             </span>
                           </a>
@@ -347,10 +418,12 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                   </Link>
                 </div>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   )
 }

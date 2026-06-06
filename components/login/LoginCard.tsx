@@ -35,7 +35,7 @@ export default function LoginCard({ callbackUrl = "/" }: LoginCardProps) {
         {/* Discord */}
         <button
           onClick={() => signIn("discord", { callbackUrl: "https://aclassstore.com/th" })}
-          className="btn-provider w-full flex items-center justify-center gap-3 text-white font-medium text-[15px] px-6 py-3.5 rounded-xl transition-all"
+          className="btn-provider w-full flex items-center justify-center gap-3 text-white text-on-accent font-medium text-[15px] px-6 py-3.5 rounded-xl transition-all"
           style={{
             background: "var(--color-discord)",
             boxShadow: "0 4px 24px rgba(88,101,242,0.25)",

@@ -1,10 +1,25 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-/* Prose Overrides for Tiptap */
-.prose table { border-collapse: collapse; margin: 1rem 0; width: 100%; }
-.prose table td, .prose table th { border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem; }
-.prose table th { background: rgba(255,255,255,0.05); text-align: left; }
+/* Prose styles for Tiptap-generated HTML — used both by the editor (admin) and
+   by ProductModal/order pages where description HTML is rendered. Colors come
+   from theme vars so dark/light work without prose-invert toggling. */
+.prose ul { list-style-type: disc; padding-left: 1.5em; margin: 1em 0; }
+.prose ol { list-style-type: decimal; padding-left: 1.5em; margin: 1em 0; }
+.prose h1 { font-size: 1.8em; font-weight: 800; margin: 1.2em 0 0.6em; color: var(--color-text-base); }
+.prose h2 { font-size: 1.5em; font-weight: 700; margin: 1.1em 0 0.5em; color: var(--color-text-base); }
+.prose h3 { font-size: 1.25em; font-weight: 700; margin: 1em 0 0.5em; color: var(--color-text-base); }
+.prose p, .prose li { margin: 0.8em 0; line-height: 1.6; color: var(--color-text-base); }
+.prose a { color: var(--color-accent-light); text-decoration: underline; text-underline-offset: 4px; }
+.prose strong { color: var(--color-text-base); font-weight: 700; }
+.prose blockquote { border-left: 3px solid var(--color-accent); padding-left: 1em; color: var(--color-text-muted); margin: 1em 0; }
+.prose code { background: var(--color-surface-tint); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.9em; color: var(--color-text-base); }
+.prose pre { background: var(--color-surface-tint-strong); padding: 1em; border-radius: 8px; overflow-x: auto; }
+.prose hr { border-color: var(--color-border-soft); margin: 1.5em 0; }
+.prose img { max-width: 100%; height: auto; border-radius: 10px; margin: 1em 0; }
+.prose table { border-collapse: collapse; margin: 1em 0; width: 100%; }
+.prose table td, .prose table th { border: 1px solid var(--color-border-soft); padding: 0.5em 0.75em; color: var(--color-text-base); }
+.prose table th { background: var(--color-surface-tint); text-align: left; font-weight: bold; }
 .prose .text-left { text-align: left; }
 .prose .text-center { text-align: center; }
 .prose .text-right { text-align: right; }
@@ -29,6 +44,15 @@
   --color-shadow: rgba(0, 0, 0, 0.6);
   --color-navbar-bg: rgba(7, 16, 26, 0.9);
   --color-bg-input: #07101a;
+
+  /* Theme-aware tints used in place of hardcoded rgba(255,255,255,N).
+     In dark mode these are subtle white overlays; in light mode they become
+     subtle black overlays so the same component code reads correctly in both. */
+  --color-surface-tint: rgba(255, 255, 255, 0.05);   /* faint surface (bg-white/5) */
+  --color-surface-tint-strong: rgba(255, 255, 255, 0.10); /* hover surfaces (bg-white/10) */
+  --color-border-tint: rgba(255, 255, 255, 0.10);    /* faint border (border-white/10) */
+  --color-border-tint-soft: rgba(255, 255, 255, 0.05); /* very faint border (border-white/5) */
+  --color-chart-grid: rgba(255, 255, 255, 0.05);     /* Recharts CartesianGrid stroke */
 }
 
 [data-theme="light"] {
@@ -36,15 +60,101 @@
   --color-bg-surface: #ffffff;
   --color-bg-card: #ffffff;
   --color-bg-input: #ffffff;
-  --color-text-base: #0f172a;
-  --color-text-muted: #475569;
+  /* Neutral grays instead of slate (#0f172a / #475569). The slate variants
+     have a blue undertone that reads as "washed" on white surfaces; pure
+     grays give sharper contrast and a more standard document feel. */
+  --color-text-base: #333333;
+  --color-text-muted: #4a4a4a;
   --color-gold: #b45309;
-  --color-border-soft: rgba(0, 0, 0, 0.1);
+  --color-border-soft: rgba(0, 0, 0, 0.12);
   --color-border-hover: rgba(66, 122, 181, 0.4);
-  --color-overlay: rgba(255, 255, 255, 0.85);
-  --color-shadow: rgba(0, 0, 0, 0.05);
-  --color-navbar-bg: rgba(241, 245, 249, 0.9);
+  /* Modal/backdrop must stay dark in light mode too — a white backdrop would
+     vanish into the page and the modal would look unanchored. */
+  --color-overlay: rgba(15, 23, 42, 0.55);
+  --color-shadow: rgba(15, 23, 42, 0.12);
+  --color-navbar-bg: rgba(255, 255, 255, 0.92);
+
+  /* Brand accent stays at the original blue in both themes — primary buttons,
+     gradients, and icons read the same way in dark and light. Only accent-light
+     gets a darker variant for text use on white. */
+  --color-accent-light: #2c5d94;
+  --color-success: #047857;
+  --color-success-bg: rgba(4, 120, 87, 0.10);
+  --color-stock-low: #b45309;
+  --color-discord: #4752c4;
+  --color-gold-text: #ffffff;
+
+  /* Flip the white tints to black so bg-white/5, border-white/10, etc. that
+     are hardcoded all over the component tree still render visible surfaces.
+     See the [data-theme="light"] .bg-white\/N rules below for the utility-class
+     overrides that consume these. */
+  --color-surface-tint: rgba(15, 23, 42, 0.04);
+  --color-surface-tint-strong: rgba(15, 23, 42, 0.07);
+  --color-border-tint: rgba(15, 23, 42, 0.10);
+  --color-border-tint-soft: rgba(15, 23, 42, 0.05);
+  --color-chart-grid: rgba(15, 23, 42, 0.08);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Tailwind utility-class overrides for light mode.
+   ~48 component files hardcode bg-white/N, border-white/N, text-white,
+   text-gray-N. Rewriting each isn't realistic, so for light mode we
+   intercept the generated classes and remap them to theme-aware values.
+   Specificity ([data-theme="light"] + class) reliably beats Tailwind's
+   single-class output. Components that *intentionally* want pure white
+   (e.g. an icon overlay on top of a product image) should switch to a
+   semantic class — those are the exception, not the rule.
+   ───────────────────────────────────────────────────────────────────── */
+[data-theme="light"] .bg-white\/5 { background-color: var(--color-surface-tint) !important; }
+[data-theme="light"] .bg-white\/10 { background-color: var(--color-surface-tint-strong) !important; }
+[data-theme="light"] .bg-white\/\[0\.02\] { background-color: rgba(51, 51, 51, 0.02) !important; }
+[data-theme="light"] .bg-white\/\[0\.03\] { background-color: rgba(51, 51, 51, 0.03) !important; }
+[data-theme="light"] .bg-white\/\[0\.04\] { background-color: rgba(51, 51, 51, 0.04) !important; }
+[data-theme="light"] .bg-white\/\[0\.05\] { background-color: rgba(51, 51, 51, 0.05) !important; }
+[data-theme="light"] .bg-white\/\[0\.06\] { background-color: rgba(51, 51, 51, 0.06) !important; }
+[data-theme="light"] .bg-white\/\[0\.08\] { background-color: rgba(51, 51, 51, 0.08) !important; }
+
+[data-theme="light"] .border-white\/5 { border-color: var(--color-border-tint-soft) !important; }
+[data-theme="light"] .border-white\/10 { border-color: var(--color-border-tint) !important; }
+[data-theme="light"] .border-white\/20 { border-color: rgba(51, 51, 51, 0.18) !important; }
+[data-theme="light"] .border-white\/\[0\.05\] { border-color: rgba(51, 51, 51, 0.05) !important; }
+[data-theme="light"] .border-white\/\[0\.06\] { border-color: rgba(51, 51, 51, 0.06) !important; }
+[data-theme="light"] .border-white\/\[0\.08\] { border-color: rgba(51, 51, 51, 0.08) !important; }
+[data-theme="light"] .border-white\/\[0\.1\] { border-color: rgba(51, 51, 51, 0.10) !important; }
+
+/* text-white remap — but ONLY when the element is NOT a colored-bg surface.
+   The :not() chain is wrapped in :where() so the rule's specificity stays at
+   0,2,0 (data-theme attribute + .text-white class) instead of exploding to
+   0,17,0 from 15 chained :not() calls. With low specificity, escape hatches
+   like .text-on-accent (also 0,2,0 with [data-theme="light"] prefix) can win
+   on cascade order. Also covers inline `style={{background:...}}` cases via
+   the .bg-inline-color helper added below. */
+[data-theme="light"] .text-white:where(:not([class*="bg-accent"]):not([class*="bg-brand"]):not([class*="bg-black"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]):not([class*="bg-orange"]):not([class*="bg-green"]):not([class*="bg-rose"]):not([class*="bg-discord"]):not([class*="bg-gradient"]):not([class*="from-"]):not([class*="bg-["])) { color: var(--color-text-base) !important; }
+[data-theme="light"] .text-white\/80:where(:not([class*="bg-accent"]):not([class*="bg-brand"]):not([class*="bg-black"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]):not([class*="bg-orange"]):not([class*="bg-green"]):not([class*="bg-rose"]):not([class*="bg-discord"]):not([class*="bg-gradient"]):not([class*="from-"]):not([class*="bg-["])) { color: rgba(51, 51, 51, 0.85) !important; }
+[data-theme="light"] .text-white\/70:where(:not([class*="bg-accent"]):not([class*="bg-brand"]):not([class*="bg-black"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]):not([class*="bg-orange"]):not([class*="bg-green"]):not([class*="bg-rose"]):not([class*="bg-discord"]):not([class*="bg-gradient"]):not([class*="from-"]):not([class*="bg-["])) { color: rgba(51, 51, 51, 0.75) !important; }
+[data-theme="light"] .text-white\/60:where(:not([class*="bg-accent"]):not([class*="bg-brand"]):not([class*="bg-black"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]):not([class*="bg-orange"]):not([class*="bg-green"]):not([class*="bg-rose"]):not([class*="bg-discord"]):not([class*="bg-gradient"]):not([class*="from-"]):not([class*="bg-["])) { color: rgba(51, 51, 51, 0.65) !important; }
+[data-theme="light"] .text-white\/50:where(:not([class*="bg-accent"]):not([class*="bg-brand"]):not([class*="bg-black"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]):not([class*="bg-orange"]):not([class*="bg-green"]):not([class*="bg-rose"]):not([class*="bg-discord"]):not([class*="bg-gradient"]):not([class*="from-"]):not([class*="bg-["])) { color: rgba(51, 51, 51, 0.55) !important; }
+[data-theme="light"] .text-white\/40:where(:not([class*="bg-accent"]):not([class*="bg-brand"]):not([class*="bg-black"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]):not([class*="bg-orange"]):not([class*="bg-green"]):not([class*="bg-rose"]):not([class*="bg-discord"]):not([class*="bg-gradient"]):not([class*="from-"]):not([class*="bg-["])) { color: rgba(51, 51, 51, 0.45) !important; }
+[data-theme="light"] .text-white\/30:where(:not([class*="bg-accent"]):not([class*="bg-brand"]):not([class*="bg-black"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]):not([class*="bg-orange"]):not([class*="bg-green"]):not([class*="bg-rose"]):not([class*="bg-discord"]):not([class*="bg-gradient"]):not([class*="from-"]):not([class*="bg-["])) { color: rgba(51, 51, 51, 0.35) !important; }
+[data-theme="light"] .text-white\/25:where(:not([class*="bg-accent"]):not([class*="bg-brand"]):not([class*="bg-black"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]):not([class*="bg-orange"]):not([class*="bg-green"]):not([class*="bg-rose"]):not([class*="bg-discord"]):not([class*="bg-gradient"]):not([class*="from-"]):not([class*="bg-["])) { color: rgba(51, 51, 51, 0.30) !important; }
+[data-theme="light"] .text-white\/20:where(:not([class*="bg-accent"]):not([class*="bg-brand"]):not([class*="bg-black"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-purple"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]):not([class*="bg-orange"]):not([class*="bg-green"]):not([class*="bg-rose"]):not([class*="bg-discord"]):not([class*="bg-gradient"]):not([class*="from-"]):not([class*="bg-["])) { color: rgba(51, 51, 51, 0.25) !important; }
+
+/* Gray scale: most files use Tailwind's text-gray-300/400/500 for muted text
+   on dark backgrounds. In light mode these read fine against white only if
+   shifted darker — Tailwind's gray-300 (#d1d5db) is invisible on white. */
+[data-theme="light"] .text-gray-300 { color: #475569 !important; }
+[data-theme="light"] .text-gray-400 { color: #64748b !important; }
+[data-theme="light"] .text-gray-500 { color: #64748b !important; }
+
+/* Escape hatch for any component that genuinely needs pure white text/border
+   (e.g. text sitting on the accent button, or on a media overlay). Apply
+   .text-on-accent or .border-on-image alongside the original utility.
+   The light-theme rule is duplicated so it matches the same specificity as
+   `[data-theme="light"] .text-white:not(...)` above and comes later in the
+   cascade — otherwise that rule wins and Discord/Login button text goes dark. */
+.text-on-accent { color: #fff !important; }
+[data-theme="light"] .text-on-accent { color: #fff !important; }
+.border-on-image { border-color: rgba(255, 255, 255, 0.20) !important; }
 
 @theme {
   /* Colors */
@@ -57,6 +167,7 @@
   --color-text-base: var(--color-text-base);
   --color-text-muted: var(--color-text-muted);
   --color-gold: var(--color-gold);
+  --color-gold-text: var(--color-gold-text);
   --color-discord: var(--color-discord);
 
   /* Fonts - using variables from next/font */
@@ -179,7 +290,7 @@ body {
 
 .btn-close:hover {
   color: var(--color-text-base);
-  background: rgba(255, 255, 255, .06);
+  background: var(--color-surface-tint-strong);
 }
 
 .empty-icon {
