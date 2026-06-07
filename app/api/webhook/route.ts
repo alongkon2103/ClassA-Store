@@ -138,6 +138,10 @@ export async function POST(req: NextRequest) {
         data: {
           status:           "paid",
           paid_at:          new Date(),
+          // Overwrite the Stripe-session expiry (set at checkout, ~30–60 min)
+          // with the actual subscription expiry. Without this, paid orders look
+          // expired within an hour and disappear from the active orders list.
+          expires_at:       expiresAt,
           whitelist_status: "whitelisted",
           is_premium_order: isPremium,
         },
