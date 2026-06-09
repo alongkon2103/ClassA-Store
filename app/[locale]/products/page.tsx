@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import ProductsClient from "./ProductsClient"
 import { prisma } from "@/lib/prisma"
 import { setRequestLocale } from "next-intl/server";
@@ -50,5 +51,12 @@ export default async function Page({
         })),
     }))
 
-    return <ProductsClient initialProducts={safeProducts} />
+    // Suspense is required because ProductsClient reads useSearchParams() for
+    // the ?slug=… deep link. Without it, prerendering (ISR) bails with an
+    // unhandled CSR-bailout error.
+    return (
+        <Suspense fallback={null}>
+            <ProductsClient initialProducts={safeProducts} />
+        </Suspense>
+    )
 }
