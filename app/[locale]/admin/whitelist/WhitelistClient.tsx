@@ -7,6 +7,7 @@ import { useTranslations, useLocale } from "next-intl"
 import { useSession } from "next-auth/react"
 import { th, enUS } from "date-fns/locale"
 import { motion, AnimatePresence } from "framer-motion"
+import { isPermanentExpiry } from "@/lib/formatExpiresAt"
 
 export default function WhitelistClient({ 
     initialWhitelist, 
@@ -204,12 +205,18 @@ export default function WhitelistClient({
                                         </span>
                                     </td>
                                     <td className="px-5 py-4 text-text-muted">
-                                        <div className="flex flex-col">
-                                            <span>{format(new Date(item.expires_at), "dd MMM yyyy", { locale: dateLocale })}</span>
-                                            <span className="text-[10px] opacity-60">
-                                                {format(new Date(item.expires_at), "HH:mm")}
+                                        {isPermanentExpiry(item.expires_at) ? (
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/20 text-accent-light text-[11px] font-bold uppercase tracking-wider">
+                                                ∞ {t("permanent")}
                                             </span>
-                                        </div>
+                                        ) : (
+                                            <div className="flex flex-col">
+                                                <span>{format(new Date(item.expires_at), "dd MMM yyyy", { locale: dateLocale })}</span>
+                                                <span className="text-[10px] opacity-60">
+                                                    {format(new Date(item.expires_at), "HH:mm")}
+                                                </span>
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-5 py-4 text-right">
                                         {session?.user?.role === "admin" && (

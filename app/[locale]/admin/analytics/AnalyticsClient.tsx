@@ -1,14 +1,15 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useTransition } from "react"
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, PieChart, Pie, Cell,
 } from "recharts"
-import { format, parseISO, eachDayOfInterval, subDays } from "date-fns"
+import { format, parseISO } from "date-fns"
 import { useTranslations, useLocale } from "next-intl"
 import { th, enUS } from "date-fns/locale"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 
 function fmt(n: number) {
   return `฿${Number(n ?? 0).toLocaleString()}`
@@ -190,38 +191,291 @@ function TopProductsTable({ products, locale, t }: { products: any[]; locale: st
   )
 }
 
+// ── Date Range Picker ──────────────────────────────────────────────────────
+// Updates ?from=YYYY-MM-DD&to=YYYY-MM-DD on the URL. Server reads those and
+// refetches all analytics queries.
+function DateRangePicker({
+  fromParam, toParam, pending, onApply, t, dateLocale,
+}: {
+  fromParam: string | null
+  toParam: string | null
+  pending: boolean
+  onApply: (from: string | null, to: string | null) => void
+  t: any
+  dateLocale: any
+}) {
+  const [customFrom, setCustomFrom] = useState(fromParam ?? "")
+  const [customTo, setCustomTo] = useState(toParam ?? "")
+
+  const ymd = (d: Date) => format(d, "yyyy-MM-dd")
+  const today = new Date()
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
+  const last7Start = new Date(today); last7Start.setDate(last7Start.getDate() - 6)
+  const last30Start = new Date(today); last30Start.setDate(last30Start.getDate() - 29)
+
+  const presets = [
+    { key: "all",       label: t("range_all"),       from: null,                to: null },
+    { key: "today",     label: t("range_today"),     from: ymd(today),          to: ymd(today) },
+    { key: "yesterday", label: t("range_yesterday"), from: ymd(yesterday),      to: ymd(yesterday) },
+    { key: "7d",        label: t("range_7d"),        from: ymd(last7Start),     to: ymd(today) },
+    { key: "30d",       label: t("range_30d"),       from: ymd(last30Start),    to: ymd(today) },
+  ]
+
+  const activePreset = presets.find(p => p.from === fromParam && p.to === toParam)?.key ?? "custom"
+
+  const summary = !fromParam && !toParam
+    ? t("range_all")
+    : fromParam && toParam && fromParam === toParam
+      ? format(parseISO(fromParam), "d MMM yyyy", { locale: dateLocale })
+      : fromParam && toParam
+        ? `${format(parseISO(fromParam), "d MMM yyyy", { locale: dateLocale })} → ${format(parseISO(toParam), "d MMM yyyy", { locale: dateLocale })}`
+        : fromParam
+          ? `${t("range_from")} ${format(parseISO(fromParam), "d MMM yyyy", { locale: dateLocale })}`
+          : `${t("range_until")} ${format(parseISO(toParam!), "d MMM yyyy", { locale: dateLocale })}`
+
+  return (
+    <div className="bg-bg-card border border-accent/10 rounded-2xl p-4 space-y-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <p className="text-[11px] uppercase tracking-widest text-text-muted">{t("range_label")}</p>
+          <p className="text-[15px] font-semibold text-accent-light mt-0.5">{summary}</p>
+        </div>
+        {pending && (
+          <div className="flex items-center gap-2 text-[12px] text-text-muted">
+            <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            {t("range_loading")}
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {presets.map(p => (
+          <button
+            key={p.key}
+            disabled={pending}
+            onClick={() => {
+              setCustomFrom(p.from ?? "")
+              setCustomTo(p.to ?? "")
+              onApply(p.from, p.to)
+            }}
+            className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition disabled:opacity-50 ${
+              activePreset === p.key
+                ? "bg-accent/20 text-accent-light border border-accent/30"
+                : "bg-white/[0.03] border border-white/5 text-text-muted hover:text-text-base hover:border-accent/20"
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+
+        <div className="ml-auto flex items-center gap-2">
+          <input
+            type="date"
+            value={customFrom}
+            disabled={pending}
+            max={customTo || undefined}
+            onChange={(e) => setCustomFrom(e.target.value)}
+            className="bg-white/[0.03] border border-accent/15 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-accent/40 transition disabled:opacity-50"
+          />
+          <span className="text-text-muted text-[12px]">→</span>
+          <input
+            type="date"
+            value={customTo}
+            disabled={pending}
+            min={customFrom || undefined}
+            onChange={(e) => setCustomTo(e.target.value)}
+            className="bg-white/[0.03] border border-accent/15 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-accent/40 transition disabled:opacity-50"
+          />
+          <button
+            disabled={pending || (customFrom === (fromParam ?? "") && customTo === (toParam ?? ""))}
+            onClick={() => onApply(customFrom || null, customTo || null)}
+            className="px-4 py-1.5 rounded-lg bg-accent hover:bg-accent-light text-white text-[12px] font-semibold transition disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            {t("range_apply")}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Product × Variant Breakdown ────────────────────────────────────────────
+// Groups the flat per-variant rows by product. Each product card shows total
+// order count + per-variant share with bar + %. Variants with 0 orders still
+// appear so admins can see which variants aren't selling.
+function ProductVariantBreakdown({
+  rows, locale, t,
+}: { rows: any[]; locale: string; t: any }) {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const [hideEmpty, setHideEmpty] = useState(false)
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, {
+      product_id: string
+      name: string
+      total_orders: number
+      total_revenue: number
+      variants: any[]
+    }>()
+    for (const r of rows) {
+      const name = locale === "th" ? r.product_name_th : r.product_name_en
+      const existing = map.get(r.product_id) ?? {
+        product_id: r.product_id,
+        name,
+        total_orders: 0,
+        total_revenue: 0,
+        variants: [] as any[],
+      }
+      existing.total_orders += r.order_count
+      existing.total_revenue += r.revenue
+      if (r.variant_id) existing.variants.push(r)
+      map.set(r.product_id, existing)
+    }
+    return Array.from(map.values()).sort((a, b) => b.total_orders - a.total_orders)
+  }, [rows, locale])
+
+  const visible = hideEmpty ? grouped.filter(g => g.total_orders > 0) : grouped
+
+  return (
+    <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+        <div>
+          <p className="text-[13px] font-semibold">{t("product_variant_breakdown")}</p>
+          <p className="text-[11px] text-text-muted mt-0.5">{t("product_variant_breakdown_sub")}</p>
+        </div>
+        <label className="flex items-center gap-2 text-[11px] text-text-muted cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={hideEmpty}
+            onChange={(e) => setHideEmpty(e.target.checked)}
+            className="accent-accent w-3.5 h-3.5"
+          />
+          {t("hide_empty")}
+        </label>
+      </div>
+      <div className="divide-y divide-white/5">
+        {visible.length === 0 && (
+          <p className="text-center text-text-muted italic py-10 text-[13px]">{t("no_data")}</p>
+        )}
+        {visible.map((g, gi) => {
+          const isCollapsed = !!collapsed[g.product_id]
+          const sortedVariants = [...g.variants].sort((a, b) => b.order_count - a.order_count)
+          return (
+            <div key={g.product_id ?? `product-${gi}`} className="px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setCollapsed(prev => ({ ...prev, [g.product_id]: !isCollapsed }))}
+                className="w-full flex items-center justify-between gap-4 text-left group"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{g.name}</p>
+                  <p className="text-[11px] text-text-muted mt-0.5">
+                    {t("orders_count", { count: g.total_orders })} · {fmt(g.total_revenue)}
+                  </p>
+                </div>
+                <svg
+                  className={`text-text-muted transition-transform flex-shrink-0 ${isCollapsed ? "" : "rotate-180"}`}
+                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              {!isCollapsed && (
+                <div className="mt-3 space-y-1.5">
+                  {sortedVariants.length === 0 && (
+                    <p className="text-[11px] text-text-muted italic">{t("no_variants")}</p>
+                  )}
+                  {sortedVariants.map((v, vi) => {
+                    const pct = g.total_orders > 0 ? (v.order_count / g.total_orders) * 100 : 0
+                    const label = locale === "th" ? v.label_th : v.label_en
+                    const durationBadge =
+                      v.duration_type === "permanent"
+                        ? t("permanent")
+                        : v.duration_type === "days" && v.duration_days
+                          ? `${v.duration_days}d`
+                          : null
+                    return (
+                      <div key={v.variant_id ?? `variant-${g.product_id}-${vi}`} className="grid grid-cols-[1fr_auto] gap-3 items-center py-1.5">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[12px] truncate">{label ?? "—"}</span>
+                            {durationBadge && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-text-muted uppercase tracking-wider flex-shrink-0">
+                                {durationBadge}
+                              </span>
+                            )}
+                          </div>
+                          <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-accent/60 transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="text-right text-[12px] whitespace-nowrap min-w-[110px]">
+                          <span className="font-semibold">{v.order_count}</span>
+                          <span className="text-text-muted ml-2">{pct.toFixed(1)}%</span>
+                          <p className="text-[10px] text-text-muted leading-tight">{fmt(v.revenue)}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 export default function AnalyticsClient({ data }: { data: any }) {
   const t = useTranslations("Analytics")
   const locale = useLocale()
   const dateLocale = locale === "th" ? th : enUS
-  const [revenueView, setRevenueView] = useState<"30d" | "6m">("30d")
 
-  const daily30 = useMemo(() => {
-    const days = eachDayOfInterval({ start: subDays(new Date(), 29), end: new Date() })
-    return days.map((d) => {
-      const key   = format(d, "yyyy-MM-dd")
-      const found = data.dailyRevenue30.find((r: any) =>
-        format(parseISO(r.day), "yyyy-MM-dd") === key
-      )
-      return {
-        day:   format(d, "dd MMM", { locale: dateLocale }),
-        total: found?.total ?? 0,
-        count: found?.count ?? 0,
-      }
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [pending, startTransition] = useTransition()
+
+  const fromParam = data.range?.fromParam ?? null
+  const toParam = data.range?.toParam ?? null
+  const granularity: "hour" | "day" | "month" = data.range?.granularity ?? "month"
+
+  function applyRange(from: string | null, to: string | null) {
+    const params = new URLSearchParams(searchParams?.toString() ?? "")
+    if (from) params.set("from", from); else params.delete("from")
+    if (to) params.set("to", to); else params.delete("to")
+    const qs = params.toString()
+    startTransition(() => {
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
     })
-  }, [data.dailyRevenue30, dateLocale])
+  }
 
-  const monthly6 = useMemo(() => {
-    return data.monthlyRevenue.map((m: any) => ({
-      month: format(parseISO(m.month), "MMM yyyy", { locale: dateLocale }),
-      total: m.total,
-      count: m.count,
+  // Format bucket label based on granularity. Server pre-bucketed the data, so
+  // we just format each bucket timestamp using the unit picked server-side.
+  const chartData = useMemo(() => {
+    const fmtBucket = (iso: string) => {
+      const d = parseISO(iso)
+      if (granularity === "hour")  return format(d, "HH:mm", { locale: dateLocale })
+      if (granularity === "day")   return format(d, "dd MMM", { locale: dateLocale })
+      return format(d, "MMM yyyy", { locale: dateLocale })
+    }
+    return (data.revenueOverTime ?? []).map((r: any) => ({
+      bucket: fmtBucket(r.bucket),
+      total: r.total,
+      count: r.count,
     }))
-  }, [data.monthlyRevenue, dateLocale])
+  }, [data.revenueOverTime, granularity, dateLocale])
 
-  const chartData = revenueView === "30d" ? daily30 : monthly6
-  const xKey      = revenueView === "30d" ? "day" : "month"
+  const granularityLabel =
+    granularity === "hour"  ? t("granularity_hourly")
+    : granularity === "day" ? t("granularity_daily")
+    : t("granularity_monthly")
 
   const totalPaid    = data.ordersByStatus?.find((s: any) => s.status === "paid")?.count    ?? 0
   const totalPending = data.ordersByStatus?.find((s: any) => s.status === "pending")?.count ?? 0
@@ -240,7 +494,7 @@ const stripeCount = data.ordersByPayment
   ?.filter((p: any) => ["stripe", "card"].includes(p.payment_method))
   ?.reduce((sum: number, p: any) => sum + (p.count ?? 0), 0) ?? 0
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 transition-opacity ${pending ? "opacity-60" : ""}`}>
       {/* Header */}
       <div>
         <h1 className="text-[24px] font-bold">{t("title")}</h1>
@@ -248,6 +502,16 @@ const stripeCount = data.ordersByPayment
           {format(new Date(), "EEEE, d MMMM yyyy", { locale: dateLocale })}
         </p>
       </div>
+
+      {/* ── Date Range Picker (global filter) ── */}
+      <DateRangePicker
+        fromParam={fromParam}
+        toParam={toParam}
+        pending={pending}
+        onApply={applyRange}
+        t={t}
+        dateLocale={dateLocale}
+      />
 
       {/* ── Row 1: Core Stats ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -287,20 +551,18 @@ const stripeCount = data.ordersByPayment
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
           <div>
             <p className="text-[13px] font-semibold">{t("revenue_over_time")}</p>
-            <p className="text-[11px] text-text-muted mt-0.5">{t("paid_orders_only")}</p>
+            <p className="text-[11px] text-text-muted mt-0.5">
+              {t("paid_orders_only")} · {granularityLabel}
+            </p>
           </div>
-          <div className="flex gap-1 bg-bg-base border border-accent/10 rounded-xl p-1">
-            {(["30d", "6m"] as const).map((v) => (
-              <button key={v} onClick={() => setRevenueView(v)}
-                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition ${
-                  revenueView === v ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
-                }`}>
-                {t(`view_${v}`)}
-              </button>
-            ))}
-          </div>
+          <span className="text-[10px] px-2.5 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent-light uppercase tracking-wider font-bold">
+            {granularity}
+          </span>
         </div>
         <div className="p-5">
+          {chartData.length === 0 ? (
+            <p className="text-center text-text-muted italic py-14 text-[13px]">{t("no_data_range")}</p>
+          ) : (
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={chartData}>
               <defs>
@@ -310,13 +572,14 @@ const stripeCount = data.ordersByPayment
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.05)" />
-              <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: "#7a9bb8" }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "#7a9bb8" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: "#7a9bb8" }} axisLine={false} tickLine={false}
                 tickFormatter={(v) => `฿${(v / 1000).toFixed(0)}k`} />
               <Tooltip content={<ChartTooltip />} />
               <Area type="monotone" dataKey="total" name="total" stroke="#427ab5" strokeWidth={2} fill="url(#grad)" />
             </AreaChart>
           </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -436,6 +699,15 @@ const stripeCount = data.ordersByPayment
           </div>
         </div>
       </div>
+
+      {/* ── Row 6.5: Product × Variant Breakdown ── */}
+      {data.productVariantBreakdown && (
+        <ProductVariantBreakdown
+          rows={data.productVariantBreakdown}
+          locale={locale}
+          t={t}
+        />
+      )}
 
       {/* ── Row 7: Recent Orders ── */}
       <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">

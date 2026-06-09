@@ -1,3 +1,6 @@
+"use client"
+
+import { useRef, useState } from "react"
 import { useTranslations, useLocale } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
 
@@ -15,6 +18,7 @@ type Props = {
   name: string
   price: number
   image: string
+  previewVideo?: string | null
   badge?: string
   is_low?: boolean
   product_variants?: Variant[]
@@ -25,6 +29,7 @@ export default function ProductCard({
   name,
   price,
   image,
+  previewVideo,
   badge,
   is_low,
   product_variants,
@@ -33,20 +38,42 @@ export default function ProductCard({
   const t = useTranslations("Common")
   const locale = useLocale()
 
-  // กรองเฉพาะ variant ที่ active และไม่ใช่ premium
   const variants = (product_variants ?? []).filter(
     (v) => v.is_active === true && v.variant_type !== "premium"
   )
 
-  // คำนวณ stock รวมเฉพาะ variant ที่แสดงจริง
-  const totalStock =
-    variants.reduce((sum, v) => sum + (v.stock ?? 0), 0)
-
   const hasVariants = variants.length > 0
+
+  // Lazy hover video — src attached only on first hover so card list stays light.
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const [videoActive, setVideoActive] = useState(false)
+
+  const handleEnter = () => {
+    if (!previewVideo) return
+    setVideoActive(true)
+    const v = videoRef.current
+    if (v) {
+      if (!v.src) v.src = getImageUrl(previewVideo)
+      v.currentTime = 0
+      v.play().catch(() => { /* autoplay blocked — ignore */ })
+    }
+  }
+
+  const handleLeave = () => {
+    if (!previewVideo) return
+    const v = videoRef.current
+    if (v) {
+      v.pause()
+      v.currentTime = 0
+    }
+    setVideoActive(false)
+  }
 
   return (
     <div
       onClick={onClick}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
       className="group bg-bg-card border border-accent/20 rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg"
     >
       {/* Image */}
@@ -54,11 +81,29 @@ export default function ProductCard({
         <img
           src={getImageUrl(image)}
           alt={name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className={`w-full h-full object-cover transition-all duration-300 ${
+            videoActive
+              ? "opacity-0 scale-100"
+              : "opacity-100 group-hover:scale-105"
+          }`}
         />
 
+        {previewVideo && (
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            loop
+            preload="none"
+            poster={getImageUrl(image)}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${
+              videoActive ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+          />
+        )}
+
         {badge && (
-          <span className="absolute top-2 right-2 bg-gold text-gold-text text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+          <span className="absolute top-2 right-2 bg-gold text-gold-text text-[10px] font-bold px-2 py-0.5 rounded-full uppercase z-10">
             {badge === "Hot" ? t("hot") : badge}
           </span>
         )}
@@ -70,7 +115,6 @@ export default function ProductCard({
           {name}
         </p>
 
-        {/* แสดงเฉพาะ variants ที่ไม่ใช่ premium */}
         {hasVariants ? (
           <div className="space-y-1">
             {variants.slice(0, 3).map((v) => (

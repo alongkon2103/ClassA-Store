@@ -10,6 +10,21 @@ export const runtime = "nodejs"
 const stripe         = new Stripe(process.env.STRIPE_SECRET_KEY!)
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
+// Sentinel for "permanent" variants — column is NOT NULL so we can't use null.
+// The whitelist check uses (expires_at.getFullYear() > now+50) to detect permanent.
+const PERMANENT_EXPIRES_AT = new Date("9999-12-31T00:00:00.000Z")
+
+function computeExpiresAt(variant: { duration_type?: string | null; duration_days?: number | null } | null | undefined): Date {
+  if (!variant?.duration_type || variant.duration_type === "permanent") {
+    return PERMANENT_EXPIRES_AT
+  }
+  if (variant.duration_type === "days" && variant.duration_days) {
+    return new Date(Date.now() + variant.duration_days * 24 * 60 * 60 * 1000)
+  }
+  // Unknown duration_type (e.g. premium add-on variants without duration) → permanent
+  return PERMANENT_EXPIRES_AT
+}
+
 export async function POST(req: NextRequest) {
   const body        = await req.text()
   const headersList = await headers()
@@ -51,7 +66,6 @@ export async function POST(req: NextRequest) {
 
     const isUpgrade     = session.metadata?.isUpgrade === "true"
     const isPremium     = session.metadata?.isPremium === "true"
-    const durationDays  = order.product_variants?.duration_days ?? 30
     const paidAmount    = session.amount_total ? session.amount_total / 100 : 0
     const paymentMethod = session.payment_method_types?.[0] ?? "unknown"
 
@@ -69,8 +83,8 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      const expiresAt = existing?.expires_at
-        ?? new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000)
+      // Preserve existing expiry on upgrade; if no prior record (edge case), derive from variant.
+      const expiresAt = existing?.expires_at ?? computeExpiresAt(order.product_variants)
 
       await prisma.$transaction([
         // 1. mark order เป็น premium
@@ -120,7 +134,8 @@ export async function POST(req: NextRequest) {
     // ─────────────────────────────────────────────
     if (order.status === "paid") return new Response("ok")
 
-    const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000)
+    // Permanent variants → year 9999; otherwise paid_at + duration_days.
+    const expiresAt = computeExpiresAt(order.product_variants)
 
     // Check if we should increment discount_used
     const shouldIncrementDiscount = !!(

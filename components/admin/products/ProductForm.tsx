@@ -27,6 +27,8 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
     const router = useRouter()
     const [saving, setSaving] = useState(false)
     const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys" | "consignment" | "functions" | "partnership"> ("info")
+    const [videoUploading, setVideoUploading] = useState(false)
+    const [videoError, setVideoError] = useState<string | null>(null)
 
     const [form, setForm] = useState({
         name_en: product?.name_en ?? "",
@@ -49,6 +51,7 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
         info_page_url: product?.info_page_url ?? "",
         youtube_url: product?.youtube_url ?? "",
         tutorial_video_url: product?.tutorial_video_url ?? "",
+        preview_video_url: product?.preview_video_url ?? "",
         discord_role_id: product?.discord_role_id ?? "",
         discord_guild_id: product?.discord_guild_id ?? "",
         consignments: product?.product_consignments ?? [],
@@ -56,6 +59,60 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
     })
 
     const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
+
+    // Read video duration client-side BEFORE uploading. Rejects > 10s
+    // to avoid wasting bandwidth on files that won't be accepted.
+    const probeVideoDuration = (file: File): Promise<number> =>
+        new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(file)
+            const v = document.createElement("video")
+            v.preload = "metadata"
+            v.onloadedmetadata = () => {
+                URL.revokeObjectURL(url)
+                resolve(v.duration)
+            }
+            v.onerror = () => {
+                URL.revokeObjectURL(url)
+                reject(new Error("Cannot read video metadata"))
+            }
+            v.src = url
+        })
+
+    const handlePreviewVideoUpload = async (file: File) => {
+        setVideoError(null)
+        if (file.size > 20 * 1024 * 1024) {
+            setVideoError(t("video_too_large"))
+            return
+        }
+        try {
+            const duration = await probeVideoDuration(file)
+            if (duration > 10.5) {
+                setVideoError(t("video_too_long", { seconds: Math.round(duration) }))
+                return
+            }
+        } catch {
+            setVideoError(t("video_unreadable"))
+            return
+        }
+
+        setVideoUploading(true)
+        try {
+            const fd = new FormData()
+            fd.append("file", file)
+            fd.append("type", "video")
+            const res = await fetch("/api/admin/upload", { method: "POST", body: fd })
+            const data = await res.json()
+            if (!res.ok) {
+                setVideoError(data.error ?? "Upload failed")
+                return
+            }
+            set("preview_video_url", data.url)
+        } catch (e: any) {
+            setVideoError(e?.message ?? "Upload failed")
+        } finally {
+            setVideoUploading(false)
+        }
+    }
 
     const handleNameEn = (v: string) => {
         set("name_en", v)
@@ -195,6 +252,64 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
                             placeholder="https://www.youtube.com/watch?v=..."
                             className={input}
                         />
+                    </Field>
+
+                    {/* Preview video — shown on card hover. Max 10s / 20MB. */}
+                    <Field label={t("label_preview_video")} className="lg:col-span-2">
+                        <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <label
+                                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-accent/20 bg-white/[0.03] text-[13px] cursor-pointer hover:border-accent/40 transition ${videoUploading ? "opacity-50 pointer-events-none" : ""}`}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <polygon points="23 7 16 12 23 17 23 7"/>
+                                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                                    </svg>
+                                    {videoUploading ? t("uploading") : t("choose_video")}
+                                    <input
+                                        type="file"
+                                        accept="video/mp4,video/webm,video/quicktime"
+                                        onChange={(e) => {
+                                            const f = e.target.files?.[0]
+                                            if (f) handlePreviewVideoUpload(f)
+                                            e.target.value = ""
+                                        }}
+                                        className="hidden"
+                                    />
+                                </label>
+                                {form.preview_video_url && (
+                                    <button
+                                        type="button"
+                                        onClick={() => { set("preview_video_url", ""); setVideoError(null) }}
+                                        className="text-[12px] text-red-400 hover:underline"
+                                    >
+                                        {t("remove_video")}
+                                    </button>
+                                )}
+                                <span className="text-[11px] text-text-muted">
+                                    {t("preview_video_hint")}
+                                </span>
+                            </div>
+
+                            {videoError && (
+                                <p className="text-[12px] text-red-400">{videoError}</p>
+                            )}
+
+                            {form.preview_video_url && (
+                                <div className="mt-2 max-w-sm rounded-xl overflow-hidden border border-accent/15 bg-black">
+                                    <video
+                                        src={form.preview_video_url}
+                                        controls
+                                        muted
+                                        preload="metadata"
+                                        className="w-full aspect-video object-cover"
+                                    />
+                                    <p className="text-[10px] text-text-muted px-3 py-1.5 font-mono break-all">
+                                        {form.preview_video_url}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </Field>
 
                     <Field label={t("label_discord_role")}>

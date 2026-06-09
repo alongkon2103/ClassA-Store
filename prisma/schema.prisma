@@ -216,6 +216,7 @@ model products {
   discord_guild_id      String?                 @db.VarChar
   youtube_url           String?
   tutorial_video_url    String?
+  preview_video_url     String?
   created_by_id         String?                 @db.Uuid
   game_keys             game_keys[]
   orders                orders[]

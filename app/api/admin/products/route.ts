@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   if (!admin.isValid) return admin.response
 
   const body = await req.json()
-  const { name_en, name_th, slug, description_en, description_th, price, is_active, is_featured, isLower, youtube_url, tutorial_video_url } = body
+  const { name_en, name_th, slug, description_en, description_th, price, is_active, is_featured, isLower, youtube_url, tutorial_video_url, preview_video_url } = body
 
   if (!name_en || !name_th || !slug || !price) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       isLower:     isLower     ?? false,
       youtube_url: youtube_url ?? null,
       tutorial_video_url: tutorial_video_url ?? null,
+      preview_video_url: preview_video_url ?? null,
       created_by_id: admin?.session?.user.id,
     },
   })

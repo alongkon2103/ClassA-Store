@@ -76,6 +76,7 @@ export default function BestSeller({ products, onSelect }: Props) {
                   name={locale === "th" ? product.name_th : product.name_en}
                   price={Number(product.price)}
                   image={product.product_images?.[0]?.url || "/placeholder.png"}
+                  previewVideo={product.preview_video_url}
                   is_low={product.isLower ?? false}
                   badge={product.is_featured ? "Hot" : undefined}
                   product_variants={product.product_variants.map((v: any) => ({

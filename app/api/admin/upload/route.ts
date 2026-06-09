@@ -18,6 +18,12 @@ const imageTypes = [
   "image/gif",
 ]
 
+const videoTypes = [
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+]
+
 const presetTypes = [
   "application/zip",
   "application/x-zip-compressed",
@@ -33,6 +39,9 @@ const extToMime: Record<string, string> = {
   png: "image/png",
   webp: "image/webp",
   gif: "image/gif",
+  mp4: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
 }
 
 export async function POST(req: NextRequest) {
@@ -54,16 +63,20 @@ export async function POST(req: NextRequest) {
     // ตรวจสอบ MIME โดยใช้ extension เป็น fallback
     const fileExt = file.name.split(".").pop()?.toLowerCase() ?? ""
 
-    const resolvedMime = imageTypes.includes(file.type)
-      ? file.type
-      : (extToMime[fileExt] ?? file.type)
+    const resolvedMime =
+      imageTypes.includes(file.type) || videoTypes.includes(file.type)
+        ? file.type
+        : (extToMime[fileExt] ?? file.type)
 
     // image และ gift รับเฉพาะรูป
+    // video รับเฉพาะวิดีโอ
     // preset รับทั้งรูปและไฟล์ preset
     const allowedTypes =
       type === "image" || type === "gift"
         ? imageTypes
-        : [...imageTypes, ...presetTypes]
+        : type === "video"
+          ? videoTypes
+          : [...imageTypes, ...presetTypes]
 
     if (!allowedTypes.includes(resolvedMime)) {
       console.warn(
@@ -80,15 +93,15 @@ export async function POST(req: NextRequest) {
     const maxSize =
       type === "preset"
         ? 100 * 1024 * 1024 // 100 MB
-        : 5 * 1024 * 1024   // 5 MB
+        : type === "video"
+          ? 20 * 1024 * 1024 // 20 MB
+          : 5 * 1024 * 1024  // 5 MB (image/gift)
 
     if (file.size > maxSize) {
+      const limitLabel =
+        type === "preset" ? "100MB" : type === "video" ? "20MB" : "5MB"
       return NextResponse.json(
-        {
-          error: `File too large (max ${
-            type === "preset" ? "100MB" : "5MB"
-          })`,
-        },
+        { error: `File too large (max ${limitLabel})` },
         { status: 400 }
       )
     }
