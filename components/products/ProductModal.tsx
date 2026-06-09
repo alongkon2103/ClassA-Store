@@ -245,6 +245,9 @@ export default function ProductModal({ product, onClose }: any) {
   const [loading, setLoading] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<"card" | "promptpay">("card")
   const [whitelistUsername, setWhitelistUsername] = useState("")
+  const [robloxVerify, setRobloxVerify] = useState<"idle" | "loading" | "valid" | "invalid">("idle")
+  const [robloxAvatarUrl, setRobloxAvatarUrl] = useState<string | null>(null)
+  const [robloxDisplayName, setRobloxDisplayName] = useState<string | null>(null)
   const [usdRate, setUsdRate] = useState<number | null>(null)
   const [isPremiumSelected, setIsPremiumSelected] = useState(true)
   const [hasUsedTrial, setHasUsedTrial] = useState(false)
@@ -268,6 +271,46 @@ export default function ProductModal({ product, onClose }: any) {
     fetch("https://open.er-api.com/v6/latest/THB")
       .then(r => r.json()).then(data => { if (data?.rates?.USD) setUsdRate(data.rates.USD) }).catch(() => { })
   }, [])
+
+  useEffect(() => {
+    const name = whitelistUsername.trim()
+    if (!name) {
+      setRobloxVerify("idle")
+      setRobloxAvatarUrl(null)
+      setRobloxDisplayName(null)
+      return
+    }
+
+    setRobloxVerify("loading")
+    const ctrl  = new AbortController()
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/roblox/verify?username=${encodeURIComponent(name)}`, {
+          signal: ctrl.signal,
+        })
+        const data = await res.json()
+        if (data?.ok && data.user) {
+          setRobloxAvatarUrl(data.user.avatarUrl ?? null)
+          setRobloxDisplayName(data.user.displayName ?? data.user.username ?? null)
+          setRobloxVerify("valid")
+        } else {
+          setRobloxVerify("invalid")
+          setRobloxAvatarUrl(null)
+          setRobloxDisplayName(null)
+        }
+      } catch (err: any) {
+        if (err?.name === "AbortError") return
+        setRobloxVerify("invalid")
+        setRobloxAvatarUrl(null)
+        setRobloxDisplayName(null)
+      }
+    }, 500)
+
+    return () => {
+      ctrl.abort()
+      clearTimeout(timer)
+    }
+  }, [whitelistUsername])
 
   const sortedVariants = [...(product.product_variants ?? [])]
     .filter((v: any) => v.is_active === true && v.variant_type !== "premium")
@@ -645,7 +688,49 @@ export default function ProductModal({ product, onClose }: any) {
                 </div>
                 <input ref={inputRef} value={whitelistUsername} onChange={(e) => setWhitelistUsername(e.target.value)}
                   onFocus={() => { if (!hasShownUsernameHelp.current) { hasShownUsernameHelp.current = true; setShowUsernameHelp(true) } }}
-                  placeholder={t("ingame_username_placeholder")} className="w-full bg-bg-base border border-accent/15 rounded-xl px-4 py-3 text-[13px] outline-none focus:border-accent/40 transition" />
+                  placeholder={t("ingame_username_placeholder")}
+                  className={`w-full bg-bg-base border rounded-xl px-4 py-3 text-[13px] outline-none transition ${
+                    robloxVerify === "valid"   ? "border-green-500/50 focus:border-green-500/70" :
+                    robloxVerify === "invalid" ? "border-red-500/50 focus:border-red-500/70" :
+                                                 "border-accent/15 focus:border-accent/40"
+                  }`} />
+
+                {robloxVerify !== "idle" && (
+                  <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/5 border border-white/5">
+                    {robloxVerify === "loading" && (
+                      <>
+                        <div className="w-7 h-7 rounded-full bg-white/10 animate-pulse" />
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                          <span className="text-[12px] text-text-muted">{isTH ? "กำลังตรวจสอบ..." : "Verifying..."}</span>
+                        </div>
+                      </>
+                    )}
+                    {robloxVerify === "valid" && (
+                      <>
+                        {robloxAvatarUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={robloxAvatarUrl} alt={robloxDisplayName ?? "avatar"} className="w-7 h-7 rounded-full bg-white/10 object-cover" />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-white/10" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] text-white font-medium truncate">{robloxDisplayName ?? whitelistUsername}</p>
+                          <p className="text-[10px] text-green-400">{isTH ? "พบบัญชี Roblox" : "Roblox account found"}</p>
+                        </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      </>
+                    )}
+                    {robloxVerify === "invalid" && (
+                      <>
+                        <div className="w-7 h-7 rounded-full bg-red-500/10 flex items-center justify-center">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        </div>
+                        <span className="text-[12px] text-red-400">{isTH ? "ไม่พบ username นี้" : "Username not found"}</span>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             ) : null}
 
