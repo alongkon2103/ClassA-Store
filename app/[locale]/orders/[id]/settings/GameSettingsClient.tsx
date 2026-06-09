@@ -7,6 +7,10 @@ import { useTranslations, useLocale } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { motion, AnimatePresence } from "framer-motion"
 
+// ⚠️ Flip to false to re-open the settings page. When true: the entire page
+// is replaced by a maintenance notice so customers can't open game settings.
+const MAINTENANCE_MODE = true
+
 type Gift = {
     id: number
     name: string
@@ -427,6 +431,67 @@ export default function GameSettingsClient({
                         </div>
                     )}
                 </AnimatePresence>
+            </div>
+        )
+    }
+
+    if (MAINTENANCE_MODE) {
+        return (
+            <div className="min-h-screen bg-bg-base text-text-base flex items-center justify-center p-4">
+                <div
+                    className="w-full max-w-lg rounded-2xl p-8 md:p-10 shadow-2xl text-center relative overflow-hidden"
+                    style={{
+                        background: "var(--color-bg-card)",
+                        border:     "1px solid var(--color-border-soft)",
+                    }}
+                >
+                    <div className="absolute -top-24 -right-24 w-48 h-48 bg-accent/10 rounded-full blur-3xl" />
+                    <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-accent/10 rounded-full blur-3xl" />
+
+                    <div className="relative">
+                        <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-accent/10 border border-accent/30 flex items-center justify-center">
+                            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent animate-pulse">
+                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                            </svg>
+                        </div>
+
+                        <div className="inline-block px-3 py-1 mb-4 rounded-full bg-accent/15 border border-accent/30">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-accent">
+                                {t("maintenance_badge")}
+                            </span>
+                        </div>
+
+                        <h2 className="text-3xl md:text-4xl font-bold text-text-base mb-3 tracking-tight">
+                            {t("maintenance_title")}
+                        </h2>
+                        <p className="text-accent font-semibold text-sm mb-6">
+                            {t("maintenance_subtitle")}
+                        </p>
+
+                        <div className="space-y-3 mb-6">
+                            <p className="text-text-muted text-sm md:text-base leading-relaxed">
+                                {t("maintenance_desc")}
+                            </p>
+                            <div className="h-px w-16 bg-accent/30 mx-auto" />
+                            <p className="text-text-muted/70 text-xs md:text-sm leading-relaxed">
+                                {t("maintenance_note")}
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => router.push(`/${locale}/orders`)}
+                            className="px-6 py-3 rounded-xl bg-accent hover:opacity-90 text-sm font-semibold text-white transition active:scale-95"
+                        >
+                            {t("maintenance_back_button")}
+                        </button>
+
+                        <div className="mt-6 pt-4 border-t" style={{ borderColor: "var(--color-border-soft)" }}>
+                            <p className="text-[10px] text-text-muted/50 font-mono uppercase tracking-widest">
+                                {t("maintenance_footer")}
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         )
     }

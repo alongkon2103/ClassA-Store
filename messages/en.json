@@ -636,7 +636,14 @@
     "trial_expired_desc": "Your free trial has ended. We hope you enjoyed testing the system! Upgrade to Premium to unlock all features permanently.",
     "order_to_continue": "Order this product to Continue",
     "upgrade_to_premium": "Upgrade to Premium to Continue",
-    "back_to_home": "Back to Home"
+    "back_to_home": "Back to Home",
+    "maintenance_badge": "Maintenance",
+    "maintenance_title": "Under Maintenance",
+    "maintenance_subtitle": "We'll be back shortly",
+    "maintenance_desc": "Game settings are temporarily unavailable while we perform scheduled maintenance. We apologize for the inconvenience and appreciate your patience.",
+    "maintenance_note": "Your existing orders and whitelist access are not affected.",
+    "maintenance_back_button": "← Back to Orders",
+    "maintenance_footer": "Game settings disabled"
   },
   "AdminGifts": {
     "title": "Gift Management",

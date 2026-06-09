@@ -128,7 +128,7 @@ function PremiumWarningModal({ onConfirm, onCancel }: {
               onClick={(e) => e.stopPropagation()}
             >
               <img src="/uploads/premiumWorning.png" alt="Full Preview" className="w-full h-full object-contain" />
-              <button 
+              <button
                 onClick={() => setIsExpanded(false)}
                 className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-all"
               >
@@ -171,21 +171,21 @@ function PremiumWarningModal({ onConfirm, onCancel }: {
           </div>
 
           {/* Premium Preview Image */}
-          <div 
+          <div
             onClick={() => setIsExpanded(true)}
             className="w-full group relative aspect-video rounded-2xl overflow-hidden border border-yellow-500/20 bg-black/40 cursor-zoom-in"
           >
-            <img 
-              src="/uploads/premiumWorning.png" 
-              alt="Premium Settings Preview" 
+            <img
+              src="/uploads/premiumWorning.png"
+              alt="Premium Settings Preview"
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-125"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
+
             {/* Hover UI Overlay */}
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
               <div className="bg-yellow-500/90 text-black px-4 py-2 rounded-full text-[11px] font-bold flex items-center gap-2 shadow-2xl">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /><line x1="11" y1="8" x2="11" y2="14" /><line x1="8" y1="11" x2="14" y2="11" /></svg>
                 CLICK TO PREVIEW
               </div>
             </div>
@@ -282,7 +282,7 @@ export default function ProductModal({ product, onClose }: any) {
     }
 
     setRobloxVerify("loading")
-    const ctrl  = new AbortController()
+    const ctrl = new AbortController()
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/roblox/verify?username=${encodeURIComponent(name)}`, {
@@ -329,11 +329,11 @@ export default function ProductModal({ product, onClose }: any) {
   const [selectedVariant, setSelectedVariant] = useState<any>(sortedVariants[0] || null)
 
   const variantBasePrice = Number(selectedVariant?.price ?? 0)
-  
+
   // --- Discount Logic ---
   const hasDiscount = !!(
-    product.has_limited_discount && 
-    selectedVariant?.discount_pct > 0 && 
+    product.has_limited_discount &&
+    selectedVariant?.discount_pct > 0 &&
     (selectedVariant?.discount_used ?? 0) < (selectedVariant?.discount_limit ?? 0)
   )
   const discountPct = hasDiscount ? Number(selectedVariant.discount_pct) : 0
@@ -596,8 +596,8 @@ export default function ProductModal({ product, onClose }: any) {
               <div className="grid grid-cols-2 gap-2">
                 {sortedVariants.map((v: any) => {
                   const vHasDiscount = !!(
-                    product.has_limited_discount && 
-                    v.discount_pct > 0 && 
+                    product.has_limited_discount &&
+                    v.discount_pct > 0 &&
                     (v.discount_used ?? 0) < (v.discount_limit ?? 0)
                   )
                   const vDiscountPct = vHasDiscount ? Number(v.discount_pct) : 0
@@ -612,8 +612,8 @@ export default function ProductModal({ product, onClose }: any) {
                           <p className="text-[13px] font-medium truncate">{isTH ? v.label_th : v.label_en}</p>
                           {vHasDiscount && (
                             <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                               <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter">-{vDiscountPct}%</span>
-                               <span className="text-[9px] text-text-muted line-through opacity-70">฿{vPrice.toLocaleString()}</span>
+                              <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter">-{vDiscountPct}%</span>
+                              <span className="text-[9px] text-text-muted line-through opacity-70">฿{vPrice.toLocaleString()}</span>
                             </div>
                           )}
                         </div>
@@ -630,10 +630,10 @@ export default function ProductModal({ product, onClose }: any) {
                       </div>
                       {vHasDiscount && (
                         <div className="mt-2 flex items-center justify-between gap-2">
-                           <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
-                              <div className="h-full bg-green-400/40 rounded-full transition-all" style={{ width: `${Math.min(100, (v.discount_used / v.discount_limit) * 100)}%` }} />
-                           </div>
-                           <p className="text-[9px] font-bold text-text-muted/60 whitespace-nowrap uppercase tracking-widest">{t("left") || "Left"}: {v.discount_limit - v.discount_used}</p>
+                          <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-green-400/40 rounded-full transition-all" style={{ width: `${Math.min(100, (v.discount_used / v.discount_limit) * 100)}%` }} />
+                          </div>
+                          <p className="text-[9px] font-bold text-text-muted/60 whitespace-nowrap uppercase tracking-widest">{t("left") || "Left"}: {v.discount_limit - v.discount_used}</p>
                         </div>
                       )}
                     </button>
@@ -689,11 +689,10 @@ export default function ProductModal({ product, onClose }: any) {
                 <input ref={inputRef} value={whitelistUsername} onChange={(e) => setWhitelistUsername(e.target.value)}
                   onFocus={() => { if (!hasShownUsernameHelp.current) { hasShownUsernameHelp.current = true; setShowUsernameHelp(true) } }}
                   placeholder={t("ingame_username_placeholder")}
-                  className={`w-full bg-bg-base border rounded-xl px-4 py-3 text-[13px] outline-none transition ${
-                    robloxVerify === "valid"   ? "border-green-500/50 focus:border-green-500/70" :
-                    robloxVerify === "invalid" ? "border-red-500/50 focus:border-red-500/70" :
-                                                 "border-accent/15 focus:border-accent/40"
-                  }`} />
+                  className={`w-full bg-bg-base border rounded-xl px-4 py-3 text-[13px] outline-none transition ${robloxVerify === "valid" ? "border-green-500/50 focus:border-green-500/70" :
+                      robloxVerify === "invalid" ? "border-red-500/50 focus:border-red-500/70" :
+                        "border-accent/15 focus:border-accent/40"
+                    }`} />
 
                 {robloxVerify !== "idle" && (
                   <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/5 border border-white/5">
@@ -735,6 +734,7 @@ export default function ProductModal({ product, onClose }: any) {
             ) : null}
 
             {/* FREE TRIAL OPTION */}
+            {/*             
             {isTrialEnabled && (
               <div className="pt-2">
                 <button
@@ -764,7 +764,9 @@ export default function ProductModal({ product, onClose }: any) {
                   </p>
                 )}
               </div>
-            )}
+            )} */}
+
+
 
             <hr className="border-white/5 my-4" />
 
