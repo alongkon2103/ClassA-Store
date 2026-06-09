@@ -2,7 +2,9 @@ import ProductsClient from "./ProductsClient"
 import { prisma } from "@/lib/prisma"
 import { setRequestLocale } from "next-intl/server";
 
-export const dynamic = "force-dynamic"
+// ISR cache the catalog page for 60s. Stock counts may be slightly stale, but
+// per-variant stock is re-checked on the ProductModal/checkout step.
+export const revalidate = 60
 
 export default async function Page({
     params

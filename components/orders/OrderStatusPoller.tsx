@@ -21,7 +21,12 @@ export default function OrderStatusPoller({
     if (isCompleted && hasKey) return
     if (currentStatus === "expired") return
 
-    const interval = setInterval(async () => {
+    let interval: ReturnType<typeof setInterval> | null = null
+
+    // PromptPay flow: user opens bank app and the browser tab goes hidden.
+    // Pausing the poll while hidden saves ~20 reqs/min/tab without any UX cost —
+    // the visibilitychange handler immediately re-checks status when they return.
+    const tick = async () => {
       try {
         const res = await fetch(`/api/orders/${orderId}/status`)
         const data = await res.json()
@@ -30,15 +35,42 @@ export default function OrderStatusPoller({
           data.status === "paid" || data.status === "Admin Buy"
 
         if (isPaid && (!isCompleted || data.isFulfilled)) {
-          clearInterval(interval)
+          if (interval) clearInterval(interval)
           router.refresh()
         }
       } catch (err) {
         console.error("Polling error:", err)
       }
-    }, 3000)
+    }
 
-    return () => clearInterval(interval)
+    const start = () => {
+      if (interval) return
+      interval = setInterval(tick, 3000)
+    }
+
+    const stop = () => {
+      if (interval) {
+        clearInterval(interval)
+        interval = null
+      }
+    }
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        tick() // immediate refresh when user returns to the tab
+        start()
+      } else {
+        stop()
+      }
+    }
+
+    if (document.visibilityState === "visible") start()
+    document.addEventListener("visibilitychange", onVisibilityChange)
+
+    return () => {
+      stop()
+      document.removeEventListener("visibilitychange", onVisibilityChange)
+    }
   }, [orderId, currentStatus, hasKey, router])
 
   return null

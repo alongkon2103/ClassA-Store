@@ -1,4 +1,7 @@
-export const dynamic = "force-dynamic";
+// ISR: re-render at most every 60s. Drop-in replacement for `force-dynamic`
+// that lets Next.js cache the homepage HTML between requests. Admins adding
+// products see them within 60 seconds (acceptable for a marketing homepage).
+export const revalidate = 60;
 
 import HomeClient from "./HomeClient"
 import { prisma } from "@/lib/prisma"
