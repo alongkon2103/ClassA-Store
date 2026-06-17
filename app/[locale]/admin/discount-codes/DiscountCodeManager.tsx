@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslations, useLocale } from "next-intl"
 
 type DiscountCode = {
   id: string
@@ -80,6 +81,10 @@ export default function DiscountCodeManager({
   initialCodes: DiscountCode[]
   products: Product[]
 }) {
+  const t = useTranslations("AdminDiscountCodes")
+  const locale = useLocale()
+  const dateLocale = locale === "th" ? "th-TH" : "en-GB"
+
   const [codes, setCodes] = useState<DiscountCode[]>(initialCodes)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -110,7 +115,7 @@ export default function DiscountCodeManager({
   const handleSave = async () => {
     setError(null)
     if (!form.value || Number(form.value) <= 0) {
-      setError("Please enter a discount value")
+      setError(t("error_value_required"))
       return
     }
     setSaving(true)
@@ -137,7 +142,7 @@ export default function DiscountCodeManager({
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || "Failed to save")
+        setError(data.error || t("error_save_failed"))
         setSaving(false)
         return
       }
@@ -173,7 +178,7 @@ export default function DiscountCodeManager({
       )
       closeForm()
     } catch {
-      setError("Network error")
+      setError(t("error_network"))
     } finally {
       setSaving(false)
     }
@@ -191,40 +196,40 @@ export default function DiscountCodeManager({
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this code?")) return
+    if (!confirm(t("delete_confirm"))) return
     const res = await fetch(`/api/admin/discount-codes/${id}`, { method: "DELETE" })
     if (res.ok) setCodes(codes.filter((c) => c.id !== id))
   }
 
   const fmt = (s: string | null) =>
-    s ? new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"
+    s ? new Date(s).toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" }) : "—"
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-[22px] sm:text-[26px] font-bold">Discount Codes</h1>
+          <h1 className="text-[22px] sm:text-[26px] font-bold">{t("title")}</h1>
           <p className="text-text-muted text-[12px] sm:text-[13px] mt-1">
-            Create and manage promotional codes for customers.
+            {t("subtitle")}
           </p>
         </div>
         <button
           onClick={() => (showForm ? closeForm() : startCreate())}
           className="px-4 py-2 rounded-xl bg-accent text-white text-[13px] font-medium hover:bg-accent/90 self-start sm:self-auto"
         >
-          {showForm ? "Cancel" : "+ New Code"}
+          {showForm ? t("cancel") : t("new_code")}
         </button>
       </div>
 
       {showForm && (
         <div className="bg-bg-card border border-accent/15 rounded-2xl p-5 space-y-4">
           <p className="text-[13px] font-semibold">
-            {editingId ? `Edit Code` : "New Code"}
+            {editingId ? t("edit_code") : t("new_code_heading")}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
-                Code {!editingId && "(leave empty to auto-generate)"}
+                {t("field_code")} {!editingId && t("field_code_hint")}
               </label>
               <input
                 value={form.code}
@@ -236,21 +241,21 @@ export default function DiscountCodeManager({
 
             <div>
               <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
-                Type
+                {t("field_type")}
               </label>
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as "fixed" | "percent" })}
                 className="w-full bg-bg-base border border-accent/15 rounded-xl px-3 py-2 text-[14px]"
               >
-                <option value="fixed">Fixed amount (฿)</option>
-                <option value="percent">Percent (%)</option>
+                <option value="fixed">{t("type_fixed")}</option>
+                <option value="percent">{t("type_percent")}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
-                Value {form.type === "fixed" ? "(฿)" : "(%)"}
+                {t("field_value")} {form.type === "fixed" ? t("field_value_unit_baht") : t("field_value_unit_percent")}
               </label>
               <input
                 type="number"
@@ -263,7 +268,7 @@ export default function DiscountCodeManager({
 
             <div>
               <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
-                Max total uses (empty = unlimited)
+                {t("field_max_uses")}
               </label>
               <input
                 type="number"
@@ -276,7 +281,7 @@ export default function DiscountCodeManager({
 
             <div>
               <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
-                Per-user limit (1 = once per person, empty = unlimited)
+                {t("field_per_user_limit")}
               </label>
               <input
                 type="number"
@@ -289,7 +294,7 @@ export default function DiscountCodeManager({
 
             <div>
               <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
-                Min order (฿, optional)
+                {t("field_min_amount")}
               </label>
               <input
                 type="number"
@@ -302,14 +307,14 @@ export default function DiscountCodeManager({
 
             <div>
               <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
-                Product (empty = all)
+                {t("field_product")}
               </label>
               <select
                 value={form.product_id}
                 onChange={(e) => setForm({ ...form, product_id: e.target.value })}
                 className="w-full bg-bg-base border border-accent/15 rounded-xl px-3 py-2 text-[14px]"
               >
-                <option value="">All products</option>
+                <option value="">{t("option_all_products")}</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -320,7 +325,7 @@ export default function DiscountCodeManager({
 
             <div>
               <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
-                Starts at (optional)
+                {t("field_starts_at")}
               </label>
               <input
                 type="datetime-local"
@@ -332,7 +337,7 @@ export default function DiscountCodeManager({
 
             <div>
               <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
-                Expires at (optional)
+                {t("field_expires_at")}
               </label>
               <input
                 type="datetime-local"
@@ -344,12 +349,12 @@ export default function DiscountCodeManager({
 
             <div className="md:col-span-2">
               <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
-                Note (internal)
+                {t("field_note")}
               </label>
               <input
                 value={form.note}
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
-                placeholder="Summer 2026 campaign"
+                placeholder={t("note_placeholder")}
                 className="w-full bg-bg-base border border-accent/15 rounded-xl px-3 py-2 text-[14px]"
               />
             </div>
@@ -362,14 +367,14 @@ export default function DiscountCodeManager({
               onClick={closeForm}
               className="px-4 py-2 rounded-xl text-text-muted text-[13px] hover:bg-white/5"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
               className="px-4 py-2 rounded-xl bg-accent text-white text-[13px] font-medium hover:bg-accent/90 disabled:opacity-50"
             >
-              {saving ? "Saving..." : editingId ? "Save Changes" : "Create"}
+              {saving ? t("saving") : editingId ? t("save_changes") : t("create")}
             </button>
           </div>
         </div>
@@ -378,24 +383,24 @@ export default function DiscountCodeManager({
       {/* Table */}
       <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[13px] min-w-[900px]">
             <thead>
               <tr className="text-left text-[11px] text-text-muted border-b border-white/5">
-                <th className="px-4 py-3 font-medium">Code</th>
-                <th className="px-4 py-3 font-medium">Discount</th>
-                <th className="px-4 py-3 font-medium">Used</th>
-                <th className="px-4 py-3 font-medium">Per User</th>
-                <th className="px-4 py-3 font-medium">Product</th>
-                <th className="px-4 py-3 font-medium">Expires</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
+                <th className="px-4 py-3 font-medium">{t("col_code")}</th>
+                <th className="px-4 py-3 font-medium">{t("col_discount")}</th>
+                <th className="px-4 py-3 font-medium">{t("col_used")}</th>
+                <th className="px-4 py-3 font-medium">{t("col_per_user")}</th>
+                <th className="px-4 py-3 font-medium">{t("col_product")}</th>
+                <th className="px-4 py-3 font-medium">{t("col_expires")}</th>
+                <th className="px-4 py-3 font-medium">{t("col_status")}</th>
+                <th className="px-4 py-3 font-medium">{t("col_actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {codes.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-text-muted">
-                    No discount codes yet.
+                    {t("empty_state")}
                   </td>
                 </tr>
               ) : (
@@ -412,7 +417,7 @@ export default function DiscountCodeManager({
                     <td className="px-4 py-3 text-text-muted">
                       {c.per_user_limit === null ? "∞" : c.per_user_limit}
                     </td>
-                    <td className="px-4 py-3 text-text-muted">{c.product_name ?? "All"}</td>
+                    <td className="px-4 py-3 text-text-muted">{c.product_name ?? t("cell_all")}</td>
                     <td className="px-4 py-3 text-text-muted">{fmt(c.expires_at)}</td>
                     <td className="px-4 py-3">
                       <span
@@ -421,7 +426,7 @@ export default function DiscountCodeManager({
                           : "bg-white/10 text-text-muted"
                           }`}
                       >
-                        {c.is_active ? "Active" : "Disabled"}
+                        {c.is_active ? t("cell_active") : t("cell_disabled")}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -430,19 +435,19 @@ export default function DiscountCodeManager({
                           onClick={() => startEdit(c)}
                           className="text-[12px] text-accent-light hover:underline"
                         >
-                          Edit
+                          {t("action_edit")}
                         </button>
                         <button
                           onClick={() => handleToggle(c.id, c.is_active)}
                           className="text-[12px] text-text-muted hover:underline"
                         >
-                          {c.is_active ? "Disable" : "Enable"}
+                          {c.is_active ? t("action_disable") : t("action_enable")}
                         </button>
                         <button
                           onClick={() => handleDelete(c.id)}
                           className="text-[12px] text-red-400 hover:underline"
                         >
-                          Delete
+                          {t("action_delete")}
                         </button>
                       </div>
                     </td>
