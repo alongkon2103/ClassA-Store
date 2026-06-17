@@ -20,9 +20,10 @@ export default async function AdminOrdersPage() {
     <AdminOrdersClient
       orders={orders.map((o) => ({
         ...o,
-        amount:     Number(o.amount),
-        created_at: o.created_at?.toISOString() ?? null,
-        paid_at:    o.paid_at?.toISOString()    ?? null,
+        amount:          Number(o.amount),
+        discount_amount: o.discount_amount === null ? null : Number(o.discount_amount),
+        created_at:      o.created_at?.toISOString() ?? null,
+        paid_at:         o.paid_at?.toISOString()    ?? null,
       }))}
     />
   )

@@ -155,6 +155,7 @@ export default async function AdminDashboard({
     recentOrders: recentOrders.map((o) => ({
       ...o,
       amount: Number(o.amount),
+      discount_amount: o.discount_amount === null ? null : Number(o.discount_amount),
     })),
 
     dailyRevenue: dailyRevenue.map((d) => ({

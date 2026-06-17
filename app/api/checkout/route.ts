@@ -176,6 +176,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { evaluateDiscount, countUserRedemptions, releaseOrderDiscount } from "@/lib/discountCodes"
 import Stripe from "stripe"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
@@ -188,7 +189,7 @@ export async function POST(req: Request) {
     }
 
     // 1. รับค่า isPremium เพิ่มเข้ามา
-    const { productId, variantId, paymentMethod, locale = "en", whitelistUsername, isPremium } = await req.json()
+    const { productId, variantId, paymentMethod, locale = "en", whitelistUsername, isPremium, discountCode } = await req.json()
 
     if (!whitelistUsername?.trim()) {
       return NextResponse.json({ error: "In-game username is required" }, { status: 400 })
@@ -248,7 +249,31 @@ export async function POST(req: Request) {
       }
     }
 
-    const currentSubtotal = basePrice + premiumPrice
+    const preDiscountSubtotal = basePrice + premiumPrice
+
+    // 3.5 ตรวจ discount code (ถ้ามี) — เช็คอย่างเดียว ยังไม่ increment ใน DB
+    // การ increment จะทำใน transaction ตอนสร้าง order เพื่อกัน race
+    let discountCodeRow: any = null
+    let discountAmount = 0
+    if (typeof discountCode === "string" && discountCode.trim()) {
+      const codeUpper = discountCode.trim().toUpperCase()
+      discountCodeRow = await prisma.discount_codes.findUnique({ where: { code: codeUpper } })
+      // นับ redemption ของ user ที่ยังไม่ expired/cancelled — abandoned order ที่ expire
+      // จะไม่นับ ทำให้ user กลับมาใช้โค้ดใหม่ได้
+      const userUsed = discountCodeRow
+        ? await countUserRedemptions(prisma, discountCodeRow.id, session.user.id)
+        : 0
+      const evalResult = evaluateDiscount(discountCodeRow, preDiscountSubtotal, product.id, userUsed)
+      if (!evalResult.ok) {
+        return NextResponse.json(
+          { error: "Discount invalid", errorCode: evalResult.errorCode, params: evalResult.params },
+          { status: 400 },
+        )
+      }
+      discountAmount = evalResult.amountOff
+    }
+
+    const currentSubtotal = Math.max(0, preDiscountSubtotal - discountAmount)
 
     // 4. ✅ คำนวณราคารวมค่าธรรมเนียมก่อน เพื่อให้ order ในฐานข้อมูลได้ราคาที่ถูกต้อง
     const cardFee = paymentMethod === "card" ? currentSubtotal * 0.06 : 0
@@ -260,43 +285,98 @@ export async function POST(req: Request) {
     const sessionExpiryMinutes = paymentMethod === "promptpay" ? 60 : 30
     const expiresAt = new Date(Date.now() + sessionExpiryMinutes * 60 * 1000)
 
-    // 5. เช็ค pending order เดิม
-    let order = await prisma.orders.findFirst({
-      where: {
-        user_id: session.user.id,
-        product_id: product.id,
-        variant_id: variant?.id || null,
-        status: "pending",
-        payment_method: paymentMethod,
-      },
-    })
+    // 5. เช็ค pending order เดิม + reserve discount slot ใน transaction
+    // ใช้ atomic update กัน race condition: ถ้าคนกดพร้อมกัน 100 คน โค้ดที่ used_count
+    // ถึง limit จะ updateMany คืน count = 0 และเรา throw → rollback ทั้ง txn
+    let order
+    try {
+      order = await prisma.$transaction(
+        async (tx) => {
+        const existing = await tx.orders.findFirst({
+          where: {
+            user_id: session.user.id,
+            product_id: product.id,
+            variant_id: variant?.id || null,
+            status: "pending",
+            payment_method: paymentMethod,
+          },
+        })
 
-    if (!order) {
-      order = await prisma.orders.create({
-        data: {
-          user_id: session.user.id,
-          product_id: product.id,
-          variant_id: variant?.id,
-          amount: totalPrice,
-          status: "pending",
-          payment_method: paymentMethod ?? "promptpay",
-          whitelisted_username: whitelistUsername.trim(),
-          whitelist_status: "pending",
-          is_premium_order: !!isPremium,
-          expires_at: expiresAt,
-        },
-      })
-    } else {
-      order = await prisma.orders.update({
-        where: { id: order.id },
-        data: {
-          whitelisted_username: whitelistUsername.trim(),
+        // ถ้ามี order เก่าและเคยใช้ code ไว้ → คืน slot ก่อน (จะใส่ใหม่ทีหลัง)
+        if (existing?.discount_code_id) {
+          await releaseOrderDiscount(tx, existing.id)
+        }
+
+        // ถ้ามี code ใหม่ → reserve slot (atomic, กัน race)
+        if (discountCodeRow && discountAmount > 0) {
+          const reserved = await tx.discount_codes.updateMany({
+            where: {
+              id: discountCodeRow.id,
+              is_active: true,
+              OR: [
+                { max_uses: null },
+                { used_count: { lt: discountCodeRow.max_uses ?? Number.MAX_SAFE_INTEGER } },
+              ],
+            },
+            data: { used_count: { increment: 1 } },
+          })
+          if (reserved.count === 0) {
+            throw new Error("DISCOUNT_LIMIT_REACHED")
+          }
+        }
+
+        const orderData = {
           amount: totalPrice,
           payment_method: paymentMethod,
+          whitelisted_username: whitelistUsername.trim(),
           is_premium_order: !!isPremium,
           expires_at: expiresAt,
+          discount_code_id: discountCodeRow && discountAmount > 0 ? discountCodeRow.id : null,
+          discount_amount: discountAmount > 0 ? discountAmount : null,
+        }
+
+        const saved = existing
+          ? await tx.orders.update({ where: { id: existing.id }, data: orderData })
+          : await tx.orders.create({
+            data: {
+              ...orderData,
+              user_id: session.user.id,
+              product_id: product.id,
+              variant_id: variant?.id,
+              status: "pending",
+              payment_method: paymentMethod ?? "promptpay",
+              whitelist_status: "pending",
+            },
+          })
+
+        if (discountCodeRow && discountAmount > 0) {
+          await tx.discount_redemptions.create({
+            data: {
+              discount_code_id: discountCodeRow.id,
+              order_id: saved.id,
+              user_id: session.user.id,
+              amount_off: discountAmount,
+            },
+          })
+        }
+
+        return saved
+      },
+        {
+          // maxWait: รอ slot ใน connection pool ก่อนเริ่ม txn (default 2s — สั้นไป ถ้า pool ตึง)
+          // timeout: max time ของตัว txn body
+          maxWait: 10_000,
+          timeout: 15_000,
         },
-      })
+      )
+    } catch (err: any) {
+      if (err?.message === "DISCOUNT_LIMIT_REACHED") {
+        return NextResponse.json(
+          { error: "Discount invalid", errorCode: "LIMIT_REACHED" },
+          { status: 409 },
+        )
+      }
+      throw err
     }
 
     const protocol = req.headers.get("x-forwarded-proto") || "http"

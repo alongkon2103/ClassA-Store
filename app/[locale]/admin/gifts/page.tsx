@@ -23,9 +23,5 @@ export default async function GiftsAdminPage() {
     sort_order: gift.sort_order,
   }))
 
-  return (
-    <div className="p-6">
-      <GiftManagerAdmin initialGifts={initialGifts} />
-    </div>
-  )
+  return <GiftManagerAdmin initialGifts={initialGifts} />
 }

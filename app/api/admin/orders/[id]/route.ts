@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
+import { releaseOrderDiscount } from "@/lib/discountCodes"
+
+const RELEASE_DISCOUNT_STATUSES = new Set(["expired", "cancelled"])
 
 export async function PATCH(
   req: NextRequest,
@@ -22,14 +25,26 @@ export async function PATCH(
 
   const becomingPaid = body.status === "paid" && order.status !== "paid"
   const shouldIncrementDiscount = becomingPaid && !!(
-    order.variant_id && 
-    order.products.has_limited_discount && 
+    order.variant_id &&
+    order.products.has_limited_discount &&
     order.product_variants &&
     Number(order.product_variants.discount_pct) > 0 &&
     (order.product_variants.discount_used ?? 0) < (order.product_variants.discount_limit ?? 0)
   )
 
+  // ถ้า admin เปลี่ยน order เป็น expired/cancelled และ order ใช้ discount code อยู่
+  // → คืน slot ของ code นั้น (เหมือนกรณี Stripe expired webhook)
+  const shouldReleaseCode =
+    body.status &&
+    RELEASE_DISCOUNT_STATUSES.has(body.status) &&
+    !RELEASE_DISCOUNT_STATUSES.has(order.status) &&
+    !!order.discount_code_id
+
   const result = await prisma.$transaction(async (tx) => {
+    if (shouldReleaseCode) {
+      await releaseOrderDiscount(tx, id)
+    }
+
     const updatedOrder = await tx.orders.update({
       where: { id },
       data: {
@@ -45,7 +60,7 @@ export async function PATCH(
         data: { discount_used: { increment: 1 } }
       })
     }
-    
+
     return updatedOrder
   })
 

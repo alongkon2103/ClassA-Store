@@ -90,7 +90,24 @@
     "trial_limit_reached": "Daily trial limit reached",
     "login_to_trial": "Please Login to Start Free Trial",
     "try_demo_btn": "Try Demo (10 min)",
-    "try_demo_desc": "Open the in-game preview in a new tab"
+    "try_demo_desc": "Open the in-game preview in a new tab",
+    "discount_label": "Discount Code",
+    "discount_placeholder": "Enter code",
+    "discount_apply": "Apply",
+    "discount_remove": "Remove",
+    "discount_error_NOT_FOUND": "This discount code was not found",
+    "discount_error_DISABLED": "This discount code has been disabled",
+    "discount_error_NOT_YET_ACTIVE": "This discount code is not yet active",
+    "discount_error_EXPIRED": "This discount code has expired",
+    "discount_error_LIMIT_REACHED": "This discount code has reached its usage limit",
+    "discount_error_ALREADY_USED": "You have already used this discount code",
+    "discount_error_WRONG_PRODUCT": "This discount code cannot be applied to this product",
+    "discount_error_BELOW_MIN_AMOUNT": "Minimum order amount required: ฿{minAmount}",
+    "discount_error_NO_EFFECT": "This discount code does not apply to your order",
+    "discount_error_UNAUTHORIZED": "Please sign in to use a discount code",
+    "discount_error_INVALID_INPUT": "Invalid discount code data",
+    "discount_error_SERVER_ERROR": "Service unavailable, please try again",
+    "discount_error_NETWORK": "Connection failed, please try again"
   },
   "Visitors": {
     "title": "Website Visitors",
@@ -237,6 +254,7 @@
     "trial_premium_label": "Enable Premium for Free Trial",
     "save_config_success": "Settings saved successfully",
     "gifts": "Gifts",
+    "discount_codes": "Discount Codes",
     "days": "Days",
     "year": "Year"
   },

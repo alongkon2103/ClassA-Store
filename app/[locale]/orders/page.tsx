@@ -75,6 +75,7 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
   const orders = rawOrders.map(order => ({
     ...order,
     amount: Number(order.amount),
+    discount_amount: order.discount_amount === null ? null : Number(order.discount_amount),
 
     created_at: order.created_at?.toISOString() || null,
     paid_at: order.paid_at?.toISOString() || null,

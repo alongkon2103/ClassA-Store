@@ -40,6 +40,7 @@ export default async function CheckoutPage({
       order={{
         ...order,
         amount: Number(order.amount),
+        discount_amount: order.discount_amount === null ? null : Number(order.discount_amount),
         products: order.products ? {
           ...order.products,
           price: Number(order.products.price), 

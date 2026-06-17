@@ -80,6 +80,7 @@ export default async function AnalyticsPage({
       FROM orders o
       WHERE status = 'paid'
         AND order_type = 'NEW'
+        AND paid_at IS NOT NULL
         ${paidAtFilter}
       GROUP BY 1
       ORDER BY 1
@@ -293,15 +294,20 @@ export default async function AnalyticsPage({
           toParam: sp.to ?? null,
           granularity,
         },
-        revenueOverTime: revenueOverTime.map((r) => ({
-          bucket: r.bucket.toISOString(),
-          total: r.total,
-          count: r.count,
-        })),
+        // Filter rows where bucket is null — happens when a paid order is
+        // missing paid_at (legacy data); DATE_TRUNC(null) returns null.
+        revenueOverTime: revenueOverTime
+          .filter((r) => r.bucket !== null)
+          .map((r) => ({
+            bucket: r.bucket.toISOString(),
+            total: r.total,
+            count: r.count,
+          })),
         topProducts,
         recentOrders: recentOrders.map((o) => ({
           ...o,
           amount: Number(o.amount),
+          discount_amount: o.discount_amount === null ? null : Number(o.discount_amount),
           created_at: o.created_at?.toISOString() ?? null,
           paid_at: o.paid_at?.toISOString() ?? null,
         })),

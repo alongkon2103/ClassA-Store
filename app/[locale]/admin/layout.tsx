@@ -14,7 +14,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-screen bg-bg-base flex">
       <AdminNav />
-      <main className="flex-1 ml-56 p-8">
+      {/* Mobile: full-width, less padding, top padding accounts for the
+          fixed mobile header (56px). Desktop: margin-left matches the
+          fixed 224px sidebar. */}
+      <main className="flex-1 min-w-0 w-full pt-16 px-3 pb-6 sm:px-5 lg:ml-56 lg:p-8 lg:pt-8">
         {children}
       </main>
     </div>

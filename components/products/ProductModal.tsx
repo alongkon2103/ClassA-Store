@@ -255,6 +255,10 @@ export default function ProductModal({ product, onClose }: any) {
   const [trialDuration, setTrialDuration] = useState<number | null>(null)
   const [isTrialEnabled, setIsTrialEnabled] = useState(true)
   const [showPremiumWarning, setShowPremiumWarning] = useState(false)
+  const [discountInput, setDiscountInput] = useState("")
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amountOff: number } | null>(null)
+  const [discountChecking, setDiscountChecking] = useState(false)
+  const [discountError, setDiscountError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch("/api/checkout/trial")
@@ -328,6 +332,73 @@ export default function ProductModal({ product, onClose }: any) {
 
   const [selectedVariant, setSelectedVariant] = useState<any>(sortedVariants[0] || null)
 
+  // Clear applied discount when the order shape changes (different variant, premium toggle).
+  // The user will have to re-apply since the new subtotal may not meet min_amount, etc.
+  useEffect(() => {
+    if (appliedDiscount) {
+      setAppliedDiscount(null)
+      setDiscountInput("")
+      setDiscountError(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVariant?.id, isPremiumSelected])
+
+  const handleApplyDiscount = async () => {
+    const codeRaw = discountInput.trim().toUpperCase()
+    if (!codeRaw) return
+    setDiscountChecking(true)
+    setDiscountError(null)
+    try {
+      const res = await fetch("/api/discount-codes/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: codeRaw,
+          productId: product.id,
+          subtotal: currentSubtotal,
+        }),
+      })
+      const data = await res.json()
+      if (data.valid) {
+        setAppliedDiscount({ code: data.code, amountOff: Number(data.amountOff) })
+      } else {
+        setDiscountError(translateDiscountError(data.errorCode, data.params))
+        setAppliedDiscount(null)
+      }
+    } catch {
+      setDiscountError(t("discount_error_NETWORK"))
+    } finally {
+      setDiscountChecking(false)
+    }
+  }
+
+  // Translate a server-returned errorCode (+ optional params) into the
+  // user's language. Falls back gracefully if a new code arrives that the
+  // client doesn't have a translation for yet.
+  const translateDiscountError = (errorCode: string | undefined, params?: Record<string, any>) => {
+    if (!errorCode) return t("discount_error_INVALID_INPUT")
+    const key = `discount_error_${errorCode}`
+    try {
+      if (errorCode === "BELOW_MIN_AMOUNT") {
+        const minThb = Number(params?.minAmount ?? 0)
+        // Show in user's currency (THB for Thai users, USD otherwise)
+        const minDisplay = isTH
+          ? `฿${minThb.toLocaleString()}`
+          : `$${toUSD(minThb) ?? minThb.toFixed(2)}`
+        return t("discount_error_BELOW_MIN_AMOUNT", { minAmount: minDisplay })
+      }
+      return t(key as any)
+    } catch {
+      return errorCode
+    }
+  }
+
+  const handleRemoveDiscount = () => {
+    setAppliedDiscount(null)
+    setDiscountInput("")
+    setDiscountError(null)
+  }
+
   const variantBasePrice = Number(selectedVariant?.price ?? 0)
 
   // --- Discount Logic ---
@@ -341,8 +412,10 @@ export default function ProductModal({ product, onClose }: any) {
   const currentBasePrice = variantBasePrice - variantDiscountAmount
 
   const currentSubtotal = currentBasePrice + (isPremiumSelected ? premiumAddonPrice : 0)
-  const cardFee = paymentMethod === "card" ? currentSubtotal * 0.06 : 0
-  const totalPrice = currentSubtotal + cardFee
+  const discountAmount = appliedDiscount?.amountOff ?? 0
+  const subtotalAfterDiscount = Math.max(0, currentSubtotal - discountAmount)
+  const cardFee = paymentMethod === "card" ? subtotalAfterDiscount * 0.06 : 0
+  const totalPrice = subtotalAfterDiscount + cardFee
 
   const toUSD = (thbPrice: number) => usdRate ? (Number(thbPrice) * usdRate).toFixed(2) : null
   const totalPriceUSD = toUSD(totalPrice)
@@ -402,11 +475,17 @@ export default function ProductModal({ product, onClose }: any) {
           locale,
           whitelistUsername: whitelistUsername.trim(),
           isPremium: isPremiumSelected,
+          discountCode: appliedDiscount?.code || undefined,
         }),
       })
       const data = await res.json()
       if (data.url) window.location.href = data.url
-      else { alert(data.error); setLoading(false) }
+      else {
+        // Translate discount-related errors that the server tagged with errorCode;
+        // fall back to the raw error string for any other failure path.
+        alert(data.errorCode ? translateDiscountError(data.errorCode, data.params) : data.error)
+        setLoading(false)
+      }
     } catch (err) { setLoading(false) }
   }
 
@@ -828,6 +907,62 @@ export default function ProductModal({ product, onClose }: any) {
                   )
                 })()}
               </div>
+            </div>
+
+            {/* DISCOUNT CODE */}
+            <div className="pt-4 border-t border-white/10">
+              <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
+                {t("discount_label")}
+              </label>
+              {appliedDiscount ? (
+                <div className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-xl px-3 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-400 font-mono font-semibold text-[13px]">
+                      {appliedDiscount.code}
+                    </span>
+                    <span className="text-[12px] text-text-muted">
+                      {isTH
+                        ? `−฿${appliedDiscount.amountOff.toLocaleString()}`
+                        : `−$${toUSD(appliedDiscount.amountOff) ?? appliedDiscount.amountOff.toFixed(2)}`}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveDiscount}
+                    className="text-[12px] text-text-muted hover:text-red-400 transition"
+                  >
+                    {t("discount_remove")}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex gap-2">
+                    <input
+                      value={discountInput}
+                      onChange={(e) => setDiscountInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault()
+                          handleApplyDiscount()
+                        }
+                      }}
+                      placeholder={t("discount_placeholder")}
+                      className="flex-1 bg-bg-base border border-white/10 rounded-xl px-3 py-2.5 text-[14px] uppercase placeholder:text-text-muted/50 focus:border-accent/40 outline-none transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyDiscount}
+                      disabled={discountChecking || !discountInput.trim()}
+                      className="px-4 py-2.5 rounded-xl bg-accent/15 text-accent-light text-[13px] font-medium hover:bg-accent/25 disabled:opacity-40 transition"
+                    >
+                      {discountChecking ? "..." : t("discount_apply")}
+                    </button>
+                  </div>
+                  {discountError && (
+                    <p className="text-[12px] text-red-400 mt-1.5">{discountError}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* TOTAL & BUY */}

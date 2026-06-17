@@ -108,7 +108,8 @@ export default function DesktopUsersClient({ users }: { users: any[] }) {
 
       {/* Table */}
       <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
-        <table className="w-full text-[13px]">
+        <div className="overflow-x-auto">
+        <table className="w-full text-[13px] min-w-[700px]">
           <thead>
             <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-white/[0.02]">
               <th className="px-5 py-3.5 font-medium">{t("user")}</th>
@@ -209,6 +210,7 @@ export default function DesktopUsersClient({ users }: { users: any[] }) {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )

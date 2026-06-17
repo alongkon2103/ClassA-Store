@@ -90,7 +90,24 @@
     "trial_limit_reached": "ใช้สิทธิ์ของวันนี้ครบแล้ว",
     "login_to_trial": "กรุณาเข้าสู่ระบบเพื่อรับสิทธิ์ทดลองใช้",
     "try_demo_btn": "ทดลองเล่น 10 นาที",
-    "try_demo_desc": "เปิดหน้าทดลองเล่นในแท็บใหม่"
+    "try_demo_desc": "เปิดหน้าทดลองเล่นในแท็บใหม่",
+    "discount_label": "โค้ดส่วนลด",
+    "discount_placeholder": "กรอกโค้ด",
+    "discount_apply": "ใช้",
+    "discount_remove": "ลบ",
+    "discount_error_NOT_FOUND": "ไม่พบโค้ดส่วนลดนี้ในระบบ",
+    "discount_error_DISABLED": "โค้ดส่วนลดนี้ถูกระงับการใช้งาน",
+    "discount_error_NOT_YET_ACTIVE": "โค้ดส่วนลดนี้ยังไม่ถึงเวลาเริ่มใช้งาน",
+    "discount_error_EXPIRED": "โค้ดส่วนลดนี้หมดอายุการใช้งานแล้ว",
+    "discount_error_LIMIT_REACHED": "โค้ดส่วนลดนี้ถูกใช้งานครบตามจำนวนที่กำหนดแล้ว",
+    "discount_error_ALREADY_USED": "คุณได้ใช้โค้ดส่วนลดนี้ไปแล้ว",
+    "discount_error_WRONG_PRODUCT": "โค้ดส่วนลดนี้ไม่สามารถใช้กับสินค้านี้ได้",
+    "discount_error_BELOW_MIN_AMOUNT": "ยอดสั่งซื้อขั้นต่ำต้องเริ่มต้นที่ ฿{minAmount}",
+    "discount_error_NO_EFFECT": "โค้ดส่วนลดนี้ไม่สามารถใช้กับคำสั่งซื้อนี้ได้",
+    "discount_error_UNAUTHORIZED": "กรุณาเข้าสู่ระบบก่อนใช้งานโค้ดส่วนลด",
+    "discount_error_INVALID_INPUT": "ข้อมูลโค้ดส่วนลดไม่ถูกต้อง",
+    "discount_error_SERVER_ERROR": "ระบบขัดข้อง กรุณาลองใหม่อีกครั้ง",
+    "discount_error_NETWORK": "การเชื่อมต่อขัดข้อง กรุณาลองใหม่อีกครั้ง"
   },
   "Visitors": {
     "title": "สถิติผู้เข้าชมเว็บไซต์",
@@ -240,6 +257,7 @@
     "trial_premium_label": "เปิดใช้งาน Premium สำหรับการทดลองใช้",
     "save_config_success": "บันทึกการตั้งค่าเรียบร้อยแล้ว",
     "gifts": "ของขวัญ",
+    "discount_codes": "โค้ดส่วนลด",
     "days": "วัน",
     "year": "ปี"
   },

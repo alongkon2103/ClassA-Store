@@ -103,7 +103,8 @@ export default function KeysPanel({ productId, variants }: { productId: string; 
         <p className="text-text-muted text-[13px] py-4">Loading...</p>
       ) : (
         <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
-          <table className="w-full text-[13px]">
+          <div className="overflow-x-auto">
+          <table className="w-full text-[13px] min-w-[600px]">
             <thead>
               <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-white/[0.02]">
                 <th className="px-4 py-3 font-medium">Key</th>
@@ -147,6 +148,7 @@ export default function KeysPanel({ productId, variants }: { productId: string; 
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

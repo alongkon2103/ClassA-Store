@@ -3,6 +3,7 @@
 import Stripe from "stripe"
 import { headers } from "next/headers"
 import { prisma } from "@/lib/prisma"
+import { releaseOrderDiscount } from "@/lib/discountCodes"
 import { NextRequest } from "next/server"
 
 export const runtime = "nodejs"
@@ -248,13 +249,20 @@ export async function POST(req: NextRequest) {
     if (orderId) {
       const order = await prisma.orders.findUnique({
         where:  { id: orderId },
-        select: { status: true },
+        select: { status: true, discount_code_id: true },
       })
 
       if (order?.status === "pending") {
-        await prisma.orders.update({
-          where: { id: orderId },
-          data:  { status: "expired" },
+        // ทำ 2 อย่างใน txn เดียว: mark expired + คืน slot ของ discount code (ถ้ามี)
+        // เพื่อไม่ให้ slot ค้างถาวรจาก order ที่ user ทิ้ง
+        await prisma.$transaction(async (tx) => {
+          if (order.discount_code_id) {
+            await releaseOrderDiscount(tx, orderId)
+          }
+          await tx.orders.update({
+            where: { id: orderId },
+            data: { status: "expired" },
+          })
         })
       }
     }

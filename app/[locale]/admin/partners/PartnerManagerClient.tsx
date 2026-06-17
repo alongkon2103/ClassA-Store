@@ -161,7 +161,8 @@ export default function PartnerManagerClient({ initialPartners }: Props) {
       )}
 
       <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden shadow-sm">
-        <table className="w-full text-[13px]">
+        <div className="overflow-x-auto">
+        <table className="w-full text-[13px] min-w-[700px]">
           <thead>
             <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-accent/5">
               <th className="px-5 py-3.5 font-medium">{t("col_name")}</th>
@@ -201,6 +202,7 @@ export default function PartnerManagerClient({ initialPartners }: Props) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )
