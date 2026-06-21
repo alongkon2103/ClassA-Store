@@ -125,7 +125,8 @@
     "discount_error_UNAUTHORIZED": "กรุณาเข้าสู่ระบบก่อนใช้งานโค้ดส่วนลด",
     "discount_error_INVALID_INPUT": "ข้อมูลโค้ดส่วนลดไม่ถูกต้อง",
     "discount_error_SERVER_ERROR": "ระบบขัดข้อง กรุณาลองใหม่อีกครั้ง",
-    "discount_error_NETWORK": "การเชื่อมต่อขัดข้อง กรุณาลองใหม่อีกครั้ง"
+    "discount_error_NETWORK": "การเชื่อมต่อขัดข้อง กรุณาลองใหม่อีกครั้ง",
+    "accept_rules": "การดำเนินการชำระเงินถือว่ายอมรับ<link>กฎและเงื่อนไข</link>ของเรา"
   },
   "Visitors": {
     "title": "สถิติผู้เข้าชมเว็บไซต์",
@@ -220,6 +221,7 @@
     "amount": "ยอดเงิน",
     "date": "วันที่",
     "this_month": "เดือนนี้",
+    "includes_manual": "รวม ฿{amount} จาก {count} รายการบันทึกด้วยตนเอง",
     "awaiting_fulfillment": "รอการตรวจสอบ",
     "latest_transactions": "รายการล่าสุด {count} รายการ",
     "delete_confirm": "คุณแน่ใจหรือไม่?",
@@ -261,6 +263,7 @@
     "no_orders": "ไม่พบออเดอร์",
     "remove": "เอาออก",
     "re_whitelist": "เพิ่มไวท์ลิสต์ใหม่",
+    "mark_whitelisted": "ทำ whitelist แล้ว",
     "promptpay": "พร้อมเพย์",
     "card": "บัตร",
     "tiktok_simulator": "TikTok Simulator",
@@ -283,7 +286,36 @@
     "rules_en_label": "เนื้อหากฎ (ภาษาอังกฤษ)",
     "rules_placeholder_th": "กรอกข้อความกฎที่จะแสดงในหน้า /th/rules",
     "rules_placeholder_en": "กรอกข้อความกฎที่จะแสดงในหน้า /en/rules",
-    "rules_hint": "ใช้แถบเครื่องมือด้านบนจัดรูปแบบหัวข้อ ลิสต์ ลิงก์ ตาราง และรูปภาพได้ เนื้อหานี้จะแสดงต่อสาธารณะที่หน้า /rules"
+    "rules_hint": "ใช้แถบเครื่องมือด้านบนจัดรูปแบบหัวข้อ ลิสต์ ลิงก์ ตาราง และรูปภาพได้ เนื้อหานี้จะแสดงต่อสาธารณะที่หน้า /rules",
+    "add_manual_order": "บันทึกออเดอร์",
+    "manual_order_title": "บันทึกออเดอร์ด้วยตนเอง",
+    "manual_order_subtitle": "สำหรับการขายที่ไม่ผ่าน Stripe (PayPal, พร้อมเพย์, โอน, เงินสด) จะนับเข้ายอดและแสดงผู้บันทึก",
+    "manual_pick_product": "เลือกสินค้า",
+    "manual_pick_variant": "เลือกตัวเลือก (ไม่บังคับ)",
+    "manual_save": "บันทึก",
+    "manual_badge": "บันทึกมือ",
+    "manual_err_product": "กรุณาเลือกสินค้า",
+    "manual_err_amount": "ยอดเงินต้องมากกว่า 0",
+    "manual_err_buyer": "กรุณากรอกชื่อผู้ซื้อ",
+    "field_product": "สินค้า",
+    "field_variant": "ตัวเลือก",
+    "field_amount": "ยอดเงิน",
+    "field_payment_channel": "ช่องทาง",
+    "field_buyer_label": "ผู้ซื้อ (Discord / ชื่อ)",
+    "field_buyer_placeholder": "เช่น @kamin หรือ คุณสมชาย",
+    "field_in_game_name_optional": "ชื่อในเกม (ไม่บังคับ)",
+    "field_in_game_name_placeholder": "Username ที่ใช้ในเกมหรือบนแพลตฟอร์ม",
+    "field_already_fulfilled": "ส่งมอบ / whitelist แล้ว",
+    "field_already_fulfilled_hint": "เลิกติ๊กเฉพาะกรณีต้องการกลับมา whitelist ทีหลัง ปกติติ๊กไว้เพื่อปิดออเดอร์ทันที",
+    "field_paid_at_optional": "วันที่ชำระ (ไม่บังคับ)",
+    "field_note_optional": "บันทึกเพิ่มเติม (ไม่บังคับ)",
+    "field_note_placeholder": "ข้อมูลเพิ่มเติมเกี่ยวกับการขายนี้",
+    "channel_discord": "Discord",
+    "channel_paypal": "PayPal",
+    "channel_promptpay": "พร้อมเพย์",
+    "channel_cash": "เงินสด",
+    "channel_transfer": "โอนเงิน",
+    "channel_other": "อื่น ๆ"
   },
   "AdminDiscountCodes": {
     "title": "โค้ดส่วนลด",
@@ -452,6 +484,10 @@
     "view_6m": "6 เดือนล่าสุด",
     "payment_methods": "ช่องทางการชำระเงิน",
     "revenue_by_channel": "รายได้แยกตามช่องทาง",
+    "source_stripe_label": "ผ่านเว็บ (Stripe)",
+    "source_stripe_sub": "ออเดอร์ที่ลูกค้าสั่งซื้อบนเว็บไซต์",
+    "source_manual_label": "บันทึกด้วยตนเอง",
+    "source_manual_sub": "แอดมินบันทึก (Discord, เงินสด, โอน ฯลฯ)",
     "card_stripe": "บัตรเครดิต/เดบิต",
     "promptpay": "พร้อมเพย์",
     "top_products": "สินค้าขายดี",
@@ -893,7 +929,10 @@
     "pay_owner": "จ่ายเจ้าของ",
     "of_pool": "จากยอดคงเหลือ",
     "no_partners": "ไม่ได้ระบุเจ้าของ",
-    "no_consignment": "ไม่พบรายการสินค้าฝากขายในขณะนี้"
+    "no_consignment": "ไม่พบรายการสินค้าฝากขายในขณะนี้",
+    "manual_included_label": "รวมการบันทึกด้วยตนเอง",
+    "manual_included_sub": "ยอด ฿{amount} จาก {count} ออเดอร์ที่บันทึกด้วยตนเองถูกนับรวมในตัวเลขด้านบนแล้ว",
+    "manual_short": "บันทึกเอง:"
   },
   "AdminUpgrade": {
     "title": "แดชบอร์ดอัปเกรดพรีเมียม",
@@ -981,6 +1020,9 @@
     "hide": "▲ ซ่อน",
     "show": "▼ ดู",
     "loading": "กำลังโหลด...",
-    "no_data": "ไม่มีข้อมูล"
+    "no_data": "ไม่มีข้อมูล",
+    "manual_included_label": "รวมการบันทึกด้วยตนเอง",
+    "manual_included_sub": "ยอด ฿{amount} จาก {count} ออเดอร์ที่บันทึกด้วยตนเองถูกนับรวมในตัวเลขด้านบนแล้ว",
+    "manual_short": "บันทึกเอง:"
   }
 }

@@ -64,6 +64,13 @@ export async function POST(req: NextRequest) {
     })
 
     if (!order) return new Response("ok")
+    // Stripe webhook always operates on real customer orders — user_id is always
+    // set (manual admin-recorded orders never enter Stripe). Narrow the type so
+    // downstream code can treat order.user_id and order.users as non-null.
+    if (!order.user_id || !order.users) {
+      console.error("Stripe webhook saw an order without a user — ignoring", order.id)
+      return new Response("ok")
+    }
 
     const isUpgrade     = session.metadata?.isUpgrade === "true"
     const isPremium     = session.metadata?.isPremium === "true"

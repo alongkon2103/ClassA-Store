@@ -131,7 +131,9 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 type Partner = { name: string; contact: string; share: number; payout: number }
 type ProductRow = {
   id: string; name_en: string; name_th: string;
-  total_orders: number; gross_revenue: number; partners: Partner[]
+  total_orders: number; gross_revenue: number;
+  manual_orders?: number; manual_revenue?: number;
+  partners: Partner[]
 }
 
 function getLast12Months() {
@@ -170,6 +172,8 @@ export default function PartnershipEarningsPage() {
   const totalGross = data.reduce((acc, r) => acc + r.gross_revenue, 0)
   const totalPayout = data.reduce((acc, r) =>
     acc + r.partners.reduce((s, p) => s + p.payout, 0), 0)
+  const totalManualRevenue = data.reduce((acc, r) => acc + (r.manual_revenue ?? 0), 0)
+  const totalManualOrders = data.reduce((acc, r) => acc + (r.manual_orders ?? 0), 0)
 
   // รวม payout ต่อพาร์ทเนอร์ข้ามทุกสินค้า
   const partnerMap: Record<string, number> = {}
@@ -221,6 +225,18 @@ export default function PartnershipEarningsPage() {
           <p className="text-[24px] font-bold text-accent-light">{data.length} {t("active_products_unit")}</p>
         </div>
       </div>
+
+      {totalManualRevenue > 0 && (
+        <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl px-5 py-3">
+          <p className="text-[12px] text-yellow-500/90 font-medium">{t("manual_included_label")}</p>
+          <p className="text-[11px] text-text-muted mt-0.5">
+            {t("manual_included_sub", {
+              amount: totalManualRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+              count: totalManualOrders,
+            })}
+          </p>
+        </div>
+      )}
 
       {/* Bar Chart */}
       {!loading && chartData.length > 0 && (
@@ -320,6 +336,11 @@ export default function PartnershipEarningsPage() {
                     <td className="px-4 py-4 text-right font-mono text-text-muted">{r.total_orders}</td>
                     <td className="px-4 py-4 text-right font-mono font-bold">
                       ฿{r.gross_revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      {r.manual_revenue && r.manual_revenue > 0 ? (
+                        <p className="text-[10px] text-yellow-500/80 mt-0.5 font-normal">
+                          {t("manual_short")} ฿{r.manual_revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </p>
+                      ) : null}
                     </td>
                     <td className="px-4 py-4 text-right font-mono font-bold text-red-400">
                       ฿{r.partners.reduce((s, p) => s + p.payout, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}

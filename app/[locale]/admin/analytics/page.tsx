@@ -1,20 +1,9 @@
 import { prisma } from "@/lib/prisma"
 import { Prisma } from "@prisma/client"
 import AnalyticsClient from "./AnalyticsClient"
+import { parseBangkokDay, bangkokBucketSql, type BangkokGranularity } from "@/lib/bangkokTz"
 
-type Granularity = "hour" | "day" | "month"
-
-// Treat YYYY-MM-DD as a Bangkok day boundary regardless of server TZ.
-// `from` → start of that day (00:00:00.000 +07:00)
-// `to`   → end of that day   (23:59:59.999 +07:00)
-function parseBangkokDay(s: string | undefined, end: boolean): Date | null {
-  if (!s) return null
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null
-  const iso = end ? `${s}T23:59:59.999+07:00` : `${s}T00:00:00.000+07:00`
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d
-}
+type Granularity = BangkokGranularity
 
 function pickGranularity(from: Date | null, to: Date | null): Granularity {
   if (!from || !to) return from || to ? "day" : "month"
@@ -56,8 +45,10 @@ export default async function AnalyticsPage({
     to          ? Prisma.sql`AND created_at <= ${to}` :
     Prisma.empty
 
-  // DATE_TRUNC unit driven by granularity — server-derived only, safe to inline.
-  const bucketExpr = Prisma.raw(`DATE_TRUNC('${granularity}', paid_at)`)
+  // Bucket on Bangkok local time so a 02:00 Bangkok sale lands in the right
+  // calendar day — see lib/bangkokTz.ts. Returns timestamptz; client formats
+  // the Date using browser TZ (Bangkok for store admins).
+  const bucketExpr = bangkokBucketSql(granularity)
 
   const [
     revenueOverTime,
@@ -69,6 +60,7 @@ export default async function AnalyticsPage({
     totalStats,
     netRevenue,
     productVariantBreakdown,
+    revenueBySource,
   ] = await Promise.all([
 
     // ── Revenue Over Time (single unified series) ──
@@ -154,6 +146,7 @@ export default async function AnalyticsPage({
         products: { select: { name_en: true, name_th: true } },
         product_variants: { select: { label_en: true, label_th: true } },
         game_keys: { select: { key_value: true } },
+        recorded_by: { select: { username: true, avatar: true } },
       },
     }),
 
@@ -282,6 +275,20 @@ export default async function AnalyticsPage({
                pv.duration_type, pv.duration_days, pv.price, pv.sort_order
       ORDER BY p.name_en, COALESCE(pv.sort_order, 999), pv.label_en
     `,
+
+    // ── Revenue by Source (Manual admin entry vs Stripe checkout) ──
+    // `recorded_by_id IS NULL` means the row was created by the checkout flow
+    // (Stripe webhook). Any row with `recorded_by_id` was entered by an admin.
+    prisma.$queryRaw<{ source: "manual" | "stripe"; count: number; total: number }[]>`
+      SELECT
+        CASE WHEN recorded_by_id IS NULL THEN 'stripe' ELSE 'manual' END AS source,
+        COUNT(*)::int                                                     AS count,
+        SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END)::float      AS total
+      FROM orders
+      WHERE order_type = 'NEW'
+        ${createdAtFilter}
+      GROUP BY source
+    `,
   ])
 
   return (
@@ -304,6 +311,7 @@ export default async function AnalyticsPage({
             count: r.count,
           })),
         topProducts,
+        revenueBySource,
         recentOrders: recentOrders.map((o) => ({
           ...o,
           amount: Number(o.amount),

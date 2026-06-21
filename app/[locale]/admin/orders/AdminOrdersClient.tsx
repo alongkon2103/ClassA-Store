@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from "next-intl"
 import { th, enUS } from "date-fns/locale"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { useSession } from "next-auth/react"
+import ManualOrderModal from "./ManualOrderModal"
 
 export default function AdminOrdersClient({ orders }: { orders: any[] }) {
   const { data: session } = useSession()
@@ -17,6 +18,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
   const [statusFilter, setStatusFilter] = useState("all")
   const [wlFilter, setWlFilter] = useState("all")
   const [updating, setUpdating] = useState<string | null>(null)
+  const [manualOpen, setManualOpen] = useState(false)
 
   const filtered = useMemo(() => {
     return orders
@@ -28,6 +30,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
         return (
           (o.whitelisted_username ?? "").toLowerCase().includes(q) ||
           (o.users?.username ?? "").toLowerCase().includes(q) ||
+          (o.buyer_label ?? "").toLowerCase().includes(q) ||
           productName.toLowerCase().includes(q)
         )
       })
@@ -51,20 +54,40 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-[24px] font-bold">{t("orders")}</h1>
           <p className="text-text-muted text-[13px] mt-0.5">{orders.length} {t("total")}</p>
         </div>
-        {pendingWl > 0 && (
-          <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-2.5">
-            <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
-            <span className="text-[13px] text-orange-400 font-medium">
-              {t("pending_whitelist", { count: pendingWl })}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-3 flex-wrap">
+          {pendingWl > 0 && (
+            <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-2.5">
+              <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+              <span className="text-[13px] text-orange-400 font-medium">
+                {t("pending_whitelist", { count: pendingWl })}
+              </span>
+            </div>
+          )}
+          {session?.user?.role === "admin" && (
+            <button
+              onClick={() => setManualOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-accent text-white text-[13px] font-medium hover:opacity-90 active:scale-95 transition"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              {t("add_manual_order")}
+            </button>
+          )}
+        </div>
       </div>
+
+      <ManualOrderModal
+        open={manualOpen}
+        onClose={() => setManualOpen(false)}
+        onCreated={() => window.location.reload()}
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
@@ -123,19 +146,33 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                 <tr key={o.id} className="hover:bg-white/[0.02] transition">
                   {/* User */}
                   <td className="px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      {o.users?.avatar ? (
-                        <img src={o.users.avatar} className="w-6 h-6 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[10px]">
-                          {o.users?.username?.[0]?.toUpperCase()}
+                    {o.recorded_by_id ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center text-[10px] font-bold text-yellow-500">
+                          M
                         </div>
-                      )}
-                      <div>
-                        <p>{o.users?.username ?? "—"}</p>
-                        <p className="text-[11px] text-text-muted">{o.users?.email ?? ""}</p>
+                        <div>
+                          <p className="text-text-base">{o.buyer_label ?? "—"}</p>
+                          <p className="text-[11px] text-yellow-500/80 font-medium">
+                            {t("manual_badge")} · {o.recorded_by?.username ?? "—"}
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {o.users?.avatar ? (
+                          <img src={o.users.avatar} className="w-6 h-6 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[10px]">
+                            {o.users?.username?.[0]?.toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <p>{o.users?.username ?? "—"}</p>
+                          <p className="text-[11px] text-text-muted">{o.users?.email ?? ""}</p>
+                        </div>
+                      </div>
+                    )}
                   </td>
 
                   {/* Product */}
@@ -162,13 +199,24 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
 
                   {/* Payment Method */}
                   <td className="px-4 py-4">
-                    <span className="text-[11px] px-2 py-0.5 rounded-full capitalize"
-                      style={{
-                        background: o.payment_method === "promptpay" ? "rgba(27,167,225,.15)" : "rgba(103,114,229,.15)",
-                        color: o.payment_method === "promptpay" ? "#1ba7e1" : "#6772e5",
-                      }}>
-                      {o.payment_method === "promptpay" ? t("promptpay") : t("card")}
-                    </span>
+                    {(() => {
+                      const pm = o.payment_method || "stripe"
+                      const palette: Record<string, { bg: string; color: string; label: string }> = {
+                        promptpay: { bg: "rgba(27,167,225,.15)",  color: "#1ba7e1", label: t("channel_promptpay") },
+                        paypal:    { bg: "rgba(0,156,222,.15)",   color: "#009cde", label: t("channel_paypal") },
+                        discord:   { bg: "rgba(88,101,242,.15)",  color: "#5865f2", label: t("channel_discord") },
+                        cash:      { bg: "rgba(62,207,142,.15)",  color: "#3ecf8e", label: t("channel_cash") },
+                        transfer:  { bg: "rgba(240,192,96,.15)",  color: "#f0c060", label: t("channel_transfer") },
+                        other:     { bg: "rgba(122,155,184,.15)", color: "#7a9bb8", label: t("channel_other") },
+                      }
+                      const v = palette[pm] || { bg: "rgba(103,114,229,.15)", color: "#6772e5", label: t("card") }
+                      return (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full capitalize"
+                          style={{ background: v.bg, color: v.color }}>
+                          {v.label}
+                        </span>
+                      )
+                    })()}
                   </td>
 
                   {/* Order Status */}
@@ -205,15 +253,15 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
                   <td className="px-4 py-4">
                     {o.status === "paid" && (
                       <div className="flex flex-col gap-1.5">
-                        {/* {o.whitelist_status !== "whitelisted" && (
+                        {(!o.whitelist_status || o.whitelist_status === "pending") && session?.user?.role === "admin" && (
                           <button
                             onClick={() => handleWhitelistStatus(o.id, "whitelisted")}
                             disabled={updating === o.id}
                             className="text-[11px] px-3 py-1.5 rounded-lg bg-green-500/15 text-green-400 hover:bg-green-500/25 transition disabled:opacity-40 whitespace-nowrap"
                           >
-                            {updating === o.id ? "..." : t("whitelist")}
+                            {updating === o.id ? "..." : t("mark_whitelisted")}
                           </button>
-                        )} */}
+                        )}
                         {o.whitelist_status === "whitelisted" && session?.user?.role === "admin" && (
                           <button
                             onClick={() => handleWhitelistStatus(o.id, "removed")}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "@/i18n/routing"
+import { Link, useRouter } from "@/i18n/routing"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslations, useLocale } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
@@ -983,6 +983,21 @@ export default function ProductModal({ product, onClose }: any) {
                 {loading ? "Processing..." : "Checkout"}
               </button>
             </div>
+
+            <p className="text-[11px] text-text-muted text-center leading-relaxed">
+              {t.rich("accept_rules", {
+                link: (chunks) => (
+                  <Link
+                    href="/rules"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent-light hover:underline underline-offset-2"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </p>
           </div>
         </motion.div>
       </motion.div>

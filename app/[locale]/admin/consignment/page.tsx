@@ -12,7 +12,7 @@ export default async function ConsignmentPage({ params }: any) {
       product_consignments: { orderBy: { payout_share: "desc" } },
       orders: {
         where: { status: "paid" },
-        select: { amount: true }
+        select: { amount: true, recorded_by_id: true }
       }
     }
   })
@@ -20,6 +20,8 @@ export default async function ConsignmentPage({ params }: any) {
   const processed = report.map((p) => {
     const totalOrders = p.orders.length
     const grossRevenue = p.orders.reduce((sum, o) => sum + Number(o.amount), 0)
+    const manualOrders = p.orders.filter((o) => o.recorded_by_id !== null)
+    const manualRevenue = manualOrders.reduce((sum, o) => sum + Number(o.amount), 0)
     const commissionPct = Number(p.commission_pct ?? 0)
     const ourCommission = (grossRevenue * commissionPct) / 100
     const ownerPayoutTotal = grossRevenue - ourCommission
@@ -31,6 +33,8 @@ export default async function ConsignmentPage({ params }: any) {
       commission_pct: commissionPct,
       total_orders: totalOrders,
       gross_revenue: grossRevenue,
+      manual_orders: manualOrders.length,
+      manual_revenue: manualRevenue,
       our_commission: ourCommission,
       owner_payout: ownerPayoutTotal,
       partners: p.product_consignments.map(c => ({
@@ -43,10 +47,12 @@ export default async function ConsignmentPage({ params }: any) {
   }).sort((a, b) => b.gross_revenue - a.gross_revenue)
 
   const totals = processed.reduce((acc, r) => ({
-    gross:      acc.gross      + r.gross_revenue,
-    commission: acc.commission + r.our_commission,
-    payout:     acc.payout     + r.owner_payout,
-  }), { gross: 0, commission: 0, payout: 0 })
+    gross:          acc.gross          + r.gross_revenue,
+    commission:     acc.commission     + r.our_commission,
+    payout:         acc.payout         + r.owner_payout,
+    manual_revenue: acc.manual_revenue + r.manual_revenue,
+    manual_orders:  acc.manual_orders  + r.manual_orders,
+  }), { gross: 0, commission: 0, payout: 0, manual_revenue: 0, manual_orders: 0 })
 
   return (
     <div className="space-y-6">
@@ -71,6 +77,20 @@ export default async function ConsignmentPage({ params }: any) {
           </div>
         ))}
       </div>
+
+      {totals.manual_revenue > 0 && (
+        <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl px-5 py-3">
+          <p className="text-[12px] text-yellow-500/90 font-medium">
+            {t("manual_included_label")}
+          </p>
+          <p className="text-[11px] text-text-muted mt-0.5">
+            {t("manual_included_sub", {
+              amount: totals.manual_revenue.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+              count: totals.manual_orders,
+            })}
+          </p>
+        </div>
+      )}
 
       {/* Per Product Table */}
       <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
@@ -127,7 +147,14 @@ export default async function ConsignmentPage({ params }: any) {
                       {r.commission_pct}%
                     </td>
                     <td className="px-4 py-4 text-right text-text-muted font-mono">{r.total_orders}</td>
-                    <td className="px-4 py-4 text-right font-mono">฿{r.gross_revenue.toLocaleString()}</td>
+                    <td className="px-4 py-4 text-right font-mono">
+                      ฿{r.gross_revenue.toLocaleString()}
+                      {r.manual_revenue > 0 && (
+                        <p className="text-[10px] text-yellow-500/80 mt-0.5">
+                          {t("manual_short")} ฿{r.manual_revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </p>
+                      )}
+                    </td>
                     <td className="px-4 py-4 text-right font-bold text-green-400 font-mono">
                       ฿{r.our_commission.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </td>

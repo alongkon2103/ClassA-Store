@@ -34,6 +34,40 @@ function ChartTooltip({ active, payload, label }: any) {
   )
 }
 
+function SourceCard({
+  color, label, sub, revenue, count, percent, fmt, t,
+}: {
+  color: string; label: string; sub: string
+  revenue: number; count: number; percent: number
+  fmt: (n: number) => string; t: any
+}) {
+  return (
+    <div
+      className="bg-bg-card border rounded-2xl p-5"
+      style={{ borderColor: `${color}40` }}
+    >
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <p className="text-[11px] tracking-widest text-text-muted uppercase mb-1">{label}</p>
+          <p className="text-[11px] text-text-muted">{sub}</p>
+        </div>
+        <span
+          className="text-[11px] font-bold px-2 py-0.5 rounded-md"
+          style={{ background: `${color}20`, color }}
+        >
+          {percent.toFixed(1)}%
+        </span>
+      </div>
+      <p className="text-[26px] font-bold" style={{ color }}>{fmt(revenue)}</p>
+      <p className="text-[11px] text-text-muted mt-1">{t("orders_count", { count })}</p>
+      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mt-3">
+        <div className="h-full rounded-full transition-all"
+          style={{ background: color, width: `${percent}%` }} />
+      </div>
+    </div>
+  )
+}
+
 function StatCard({ label, value, sub, color = "text-text-base" }: any) {
   return (
     <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
@@ -64,8 +98,14 @@ const statusColors: Record<string, string> = {
 
 const methodColors: Record<string, string> = {
   stripe:    "#6772e5",
-  promptpay: "#1ba7e1",
   card:      "#6772e5",
+  promptpay: "#1ba7e1",
+  paypal:    "#009cde",
+  discord:   "#5865f2",
+  transfer:  "#f0c060",
+  cash:      "#3ecf8e",
+  other:     "#7a9bb8",
+  manual:    "#f0c060",
 }
 
 // ── Top Products Table ──────────────────────────────────────────────────────
@@ -434,6 +474,8 @@ function ProductVariantBreakdown({
 // ───────────────────────────────────────────────────────────────────────────
 export default function AnalyticsClient({ data }: { data: any }) {
   const t = useTranslations("Analytics")
+  // Channel labels live in the Admin namespace (shared with /admin/orders).
+  const tAdmin = useTranslations("Admin")
   const locale = useLocale()
   const dateLocale = locale === "th" ? th : enUS
 
@@ -484,15 +526,39 @@ export default function AnalyticsClient({ data }: { data: any }) {
     ? ((totalPaid / data.totalStats.total_orders) * 100).toFixed(1)
     : "0"
 
-  const stripeRevenue = data.ordersByPayment
-  ?.filter((p: any) => ["stripe", "card"].includes(p.payment_method))
-  ?.reduce((sum: number, p: any) => sum + (p.total ?? 0), 0) ?? 0
+  // Per-channel rows from server: stripe+card already collapsed to 'stripe'.
+  // Order by revenue desc so the biggest channel shows first.
+  const channelLabel = (m: string): string => {
+    if (m === "stripe" || m === "card") return t("card_stripe")
+    if (m === "promptpay") return tAdmin("channel_promptpay")
+    if (m === "paypal")    return tAdmin("channel_paypal")
+    if (m === "discord")   return tAdmin("channel_discord")
+    if (m === "transfer")  return tAdmin("channel_transfer")
+    if (m === "cash")      return tAdmin("channel_cash")
+    if (m === "other")     return tAdmin("channel_other")
+    return m
+  }
+  const paymentChannels = ((data.ordersByPayment as any[]) ?? [])
+    .map((p) => ({
+      method:  p.payment_method,
+      revenue: p.total ?? 0,
+      count:   p.count ?? 0,
+      label:   channelLabel(p.payment_method),
+      color:   methodColors[p.payment_method] ?? "#7a9bb8",
+    }))
+    .sort((a, b) => b.revenue - a.revenue)
 
-  const promptpayRevenue = data.ordersByPayment?.find((p: any) => p.payment_method === "promptpay")?.total ?? 0
+  const totalChannelRevenue = paymentChannels.reduce((sum, p) => sum + p.revenue, 0)
 
-const stripeCount = data.ordersByPayment
-  ?.filter((p: any) => ["stripe", "card"].includes(p.payment_method))
-  ?.reduce((sum: number, p: any) => sum + (p.count ?? 0), 0) ?? 0
+  // Source split: stripe (recorded_by_id IS NULL) vs manual admin entry.
+  const sourceRows = ((data.revenueBySource as any[]) ?? [])
+  const stripeSource = sourceRows.find((r) => r.source === "stripe")
+  const manualSource = sourceRows.find((r) => r.source === "manual")
+  const stripeSourceRevenue = stripeSource?.total ?? 0
+  const manualSourceRevenue = manualSource?.total ?? 0
+  const stripeSourceCount   = stripeSource?.count ?? 0
+  const manualSourceCount   = manualSource?.count ?? 0
+  const totalSourceRevenue  = stripeSourceRevenue + manualSourceRevenue
   return (
     <div className={`space-y-6 transition-opacity ${pending ? "opacity-60" : ""}`}>
       {/* Header */}
@@ -583,58 +649,81 @@ const stripeCount = data.ordersByPayment
         </div>
       </div>
 
-      {/* ── Row 5: Payment Methods ── */}
+      {/* ── Row 5a: Sales Source (Stripe vs Manual admin entry) ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <SourceCard
+          color="#6772e5"
+          label={t("source_stripe_label")}
+          sub={t("source_stripe_sub")}
+          revenue={stripeSourceRevenue}
+          count={stripeSourceCount}
+          percent={totalSourceRevenue ? (stripeSourceRevenue / totalSourceRevenue) * 100 : 0}
+          fmt={fmt}
+          t={t}
+        />
+        <SourceCard
+          color="#f0c060"
+          label={t("source_manual_label")}
+          sub={t("source_manual_sub")}
+          revenue={manualSourceRevenue}
+          count={manualSourceCount}
+          percent={totalSourceRevenue ? (manualSourceRevenue / totalSourceRevenue) * 100 : 0}
+          fmt={fmt}
+          t={t}
+        />
+      </div>
+
+      {/* ── Row 5b: Payment Methods (per-channel, dynamic) + Top Products ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
           <SectionTitle title={t("payment_methods")} sub={t("revenue_by_channel")} />
           <div className="p-5 space-y-4">
-            {[
-              { key: "stripe",    label: t("card_stripe"), color: "#6772e5", revenue: stripeRevenue    },
-              { key: "promptpay", label: t("promptpay"),   color: "#1ba7e1", revenue: promptpayRevenue },
-            ].map(({ key, label, color, revenue }) => (
-              <div key={key} className="space-y-1.5">
-                <div className="flex items-center justify-between text-[13px]">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-                    <span className="font-medium">{label}</span>
+            {paymentChannels.length === 0 ? (
+              <p className="text-center text-text-muted italic py-6 text-[13px]">{t("no_data_range")}</p>
+            ) : (
+              <>
+                {paymentChannels.map((c) => (
+                  <div key={c.method} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[13px]">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: c.color }} />
+                        <span className="font-medium">{c.label}</span>
+                      </div>
+                      <span className="font-semibold text-accent-light">{fmt(c.revenue)}</span>
+                    </div>
+                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all"
+                        style={{
+                          background: c.color,
+                          width: `${totalChannelRevenue ? (c.revenue / totalChannelRevenue) * 100 : 0}%`,
+                        }} />
+                    </div>
+                    <p className="text-[11px] text-text-muted">
+                      {t("orders_count", { count: c.count })}
+                    </p>
                   </div>
-                  <span className="font-semibold text-accent-light">{fmt(revenue)}</span>
-                </div>
-                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all"
-                    style={{
-                      background: color,
-                      width: `${stripeRevenue + promptpayRevenue
-                        ? (revenue / (stripeRevenue + promptpayRevenue)) * 100
-                        : 0}%`,
-                    }} />
-                </div>
-                <p className="text-[11px] text-text-muted">
-                  {t("orders_count", { count: stripeCount })}
-                </p>
-              </div>
-            ))}
+                ))}
 
-            <div className="h-px bg-white/5" />
+                <div className="h-px bg-white/5" />
 
-            <ResponsiveContainer width="100%" height={140}>
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: t("card_stripe"), value: stripeRevenue    },
-                    { name: t("promptpay"),   value: promptpayRevenue },
-                  ]}
-                  dataKey="value" nameKey="name"
-                  cx="50%" cy="50%"
-                  innerRadius={35} outerRadius={55}
-                  paddingAngle={4}
-                >
-                  <Cell fill="#6772e5" />
-                  <Cell fill="#1ba7e1" />
-                </Pie>
-                <Tooltip formatter={(v: any) => fmt(v)} />
-              </PieChart>
-            </ResponsiveContainer>
+                <ResponsiveContainer width="100%" height={160}>
+                  <PieChart>
+                    <Pie
+                      data={paymentChannels.map((c) => ({ name: c.label, value: c.revenue, color: c.color }))}
+                      dataKey="value" nameKey="name"
+                      cx="50%" cy="50%"
+                      innerRadius={38} outerRadius={60}
+                      paddingAngle={3}
+                    >
+                      {paymentChannels.map((c) => (
+                        <Cell key={c.method} fill={c.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v: any) => fmt(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </>
+            )}
           </div>
         </div>
 
@@ -734,19 +823,31 @@ const stripeCount = data.ordersByPayment
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {data.recentOrders.map((o: any) => (
+              {data.recentOrders.map((o: any) => {
+                const pm = o.payment_method || "stripe"
+                const pmColor = methodColors[pm] ?? "#6772e5"
+                return (
                 <tr key={o.id} className="hover:bg-white/[0.02] transition">
                   <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      {o.users?.avatar ? (
-                        <img src={o.users.avatar} className="w-6 h-6 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[10px]">
-                          {o.users?.username?.[0]?.toUpperCase()}
+                    {o.recorded_by_id ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center text-[10px] font-bold text-yellow-500">
+                          M
                         </div>
-                      )}
-                      <span>{o.users?.username ?? "—"}</span>
-                    </div>
+                        <span>{o.buyer_label ?? "—"}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {o.users?.avatar ? (
+                          <img src={o.users.avatar} className="w-6 h-6 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[10px]">
+                            {o.users?.username?.[0]?.toUpperCase()}
+                          </div>
+                        )}
+                        <span>{o.users?.username ?? "—"}</span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-text-muted max-w-[130px] truncate">
                     {locale === "th" ? o.products?.name_th : o.products?.name_en ?? "—"}
@@ -757,11 +858,8 @@ const stripeCount = data.ordersByPayment
                   <td className="px-4 py-3 font-semibold text-accent-light">{fmt(o.amount)}</td>
                   <td className="px-4 py-3">
                     <span className="text-[11px] px-2 py-0.5 rounded-full font-medium capitalize"
-                      style={{
-                        background: `${methodColors[o.payment_method ?? "stripe"]}20`,
-                        color: methodColors[o.payment_method ?? "stripe"],
-                      }}>
-                      {o.payment_method === "promptpay" ? t("promptpay") : t("card_stripe")}
+                      style={{ background: `${pmColor}20`, color: pmColor }}>
+                      {channelLabel(pm)}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -771,14 +869,14 @@ const stripeCount = data.ordersByPayment
                       o.status === "expired" ? "bg-red-500/15 text-red-400"       :
                       "bg-white/5 text-text-muted"
                     }`}>
-                      {o.status}
+                      {tAdmin(o.status)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-text-muted whitespace-nowrap text-[12px]">
                     {o.created_at ? format(new Date(o.created_at), "dd MMM HH:mm", { locale: dateLocale }) : "—"}
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>

@@ -125,7 +125,8 @@
     "discount_error_UNAUTHORIZED": "Please sign in to use a discount code",
     "discount_error_INVALID_INPUT": "Invalid discount code data",
     "discount_error_SERVER_ERROR": "Service unavailable, please try again",
-    "discount_error_NETWORK": "Connection failed, please try again"
+    "discount_error_NETWORK": "Connection failed, please try again",
+    "accept_rules": "By proceeding to checkout, you agree to our <link>Rules & Terms</link>."
   },
   "Visitors": {
     "title": "Website Visitors",
@@ -217,6 +218,7 @@
     "amount": "Amount",
     "date": "Date",
     "this_month": "This month",
+    "includes_manual": "Includes ฿{amount} from {count} manual entries",
     "awaiting_fulfillment": "Awaiting fulfillment",
     "latest_transactions": "Latest {count} transactions",
     "delete_confirm": "Are you sure?",
@@ -258,6 +260,7 @@
     "no_orders": "No orders found",
     "remove": "Remove",
     "re_whitelist": "Re-whitelist",
+    "mark_whitelisted": "Mark whitelisted",
     "promptpay": "PromptPay",
     "card": "Card",
     "tiktok_simulator": "TikTok Simulator",
@@ -280,7 +283,36 @@
     "rules_en_label": "Rules content (English)",
     "rules_placeholder_th": "Enter the rules text shown on /th/rules",
     "rules_placeholder_en": "Enter the rules text shown on /en/rules",
-    "rules_hint": "Use the rich-text toolbar to format headings, lists, links, tables, and images. Visible publicly at /rules."
+    "rules_hint": "Use the rich-text toolbar to format headings, lists, links, tables, and images. Visible publicly at /rules.",
+    "add_manual_order": "Record Order",
+    "manual_order_title": "Record a manual order",
+    "manual_order_subtitle": "For sales made outside Stripe (PayPal, PromptPay, transfer, cash). Adds to revenue and shows who recorded it.",
+    "manual_pick_product": "Select a product",
+    "manual_pick_variant": "Select a variant (optional)",
+    "manual_save": "Record",
+    "manual_badge": "Manual",
+    "manual_err_product": "Please select a product",
+    "manual_err_amount": "Amount must be greater than 0",
+    "manual_err_buyer": "Buyer name is required",
+    "field_product": "Product",
+    "field_variant": "Variant",
+    "field_amount": "Amount",
+    "field_payment_channel": "Channel",
+    "field_buyer_label": "Buyer (Discord / name)",
+    "field_buyer_placeholder": "e.g. @kamin or Khun Somchai",
+    "field_in_game_name_optional": "In-game username (optional)",
+    "field_in_game_name_placeholder": "Username inside the game / on the platform",
+    "field_already_fulfilled": "Already delivered / whitelisted",
+    "field_already_fulfilled_hint": "Uncheck only if you still need to process the whitelist later — leave on to mark the order complete now.",
+    "field_paid_at_optional": "Paid at (optional)",
+    "field_note_optional": "Note (optional)",
+    "field_note_placeholder": "Anything to remember about this sale",
+    "channel_discord": "Discord",
+    "channel_paypal": "PayPal",
+    "channel_promptpay": "PromptPay",
+    "channel_cash": "Cash",
+    "channel_transfer": "Bank transfer",
+    "channel_other": "Other"
   },
   "AdminDiscountCodes": {
     "title": "Discount Codes",
@@ -449,6 +481,10 @@
     "view_6m": "6 Months",
     "payment_methods": "Payment Methods",
     "revenue_by_channel": "Revenue by channel",
+    "source_stripe_label": "Web checkout (Stripe)",
+    "source_stripe_sub": "Orders placed by customers on the website",
+    "source_manual_label": "Manual entry",
+    "source_manual_sub": "Recorded by admin (Discord, cash, transfer, etc.)",
     "card_stripe": "Card (Stripe)",
     "promptpay": "PromptPay",
     "top_products": "Top Products",
@@ -889,7 +925,10 @@
     "pay_owner": "Pay Owner",
     "of_pool": "of pool",
     "no_partners": "No owners specified",
-    "no_consignment": "No consignment products found"
+    "no_consignment": "No consignment products found",
+    "manual_included_label": "Includes manual entries",
+    "manual_included_sub": "฿{amount} from {count} manually-recorded orders are counted in totals above",
+    "manual_short": "Manual:"
   },
   "AdminUpgrade": {
     "title": "Premium Upgrade Dashboard",
@@ -977,6 +1016,9 @@
     "hide": "▲ Hide",
     "show": "▼ Show",
     "loading": "Loading...",
-    "no_data": "No data found"
+    "no_data": "No data found",
+    "manual_included_label": "Includes manual entries",
+    "manual_included_sub": "฿{amount} from {count} manually-recorded orders are counted in totals above",
+    "manual_short": "Manual:"
   }
 }

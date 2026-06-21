@@ -98,12 +98,23 @@ export default function DashboardClient({ data }: { data: any }) {
                 <StatCard
                     label={t("today_revenue")}
                     value={`฿${data.todayRevenue.toLocaleString()}`}
+                    sub={data.todayManualRevenue > 0
+                      ? t("includes_manual", {
+                          amount: data.todayManualRevenue.toLocaleString(undefined, { minimumFractionDigits: 0 }),
+                          count: data.todayManualCount,
+                        })
+                      : undefined}
                     color="accent"
                 />
                 <StatCard
                     label={t("monthly_revenue")}
                     value={`฿${data.monthRevenue.toLocaleString()}`}
-                    sub={t("this_month")}
+                    sub={data.monthManualRevenue > 0
+                      ? t("includes_manual", {
+                          amount: data.monthManualRevenue.toLocaleString(undefined, { minimumFractionDigits: 0 }),
+                          count: data.monthManualCount,
+                        })
+                      : t("this_month")}
                     color="purple"
                 />
                 <StatCard
