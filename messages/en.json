@@ -11,11 +11,29 @@
     "cancel": "Cancel",
     "logged_in": "Logged in",
     "signed_in_google": "Signed in with Google",
-    "signed_in_discord": "Signed in with Discord"
+    "signed_in_discord": "Signed in with Discord",
+    "contact": "Contact",
+    "rules": "Rules"
+  },
+  "Contact": {
+    "eyebrow": "Get in touch",
+    "title": "Contact Us",
+    "subtitle": "Follow our channels for the latest updates, gameplay highlights, and product announcements.",
+    "tiktok_desc": "Live streams, product showcases, and gameplay clips.",
+    "youtube_desc": "Tutorials, full playthroughs, and behind-the-scenes content.",
+    "discord_desc": "Join the community for support, product updates, and exclusive deals."
+  },
+  "Rules": {
+    "eyebrow": "Store policy",
+    "title": "Rules & Terms",
+    "subtitle": "Please read the following rules before purchasing or using our services.",
+    "empty": "No rules have been published yet. Please check back later."
   },
   "Home": {
     "hero_title": "A Class Store",
     "hero_subtitle": "Your trusted Interactive games store — instant delivery, every time.",
+    "hero_stat_delivery": "Instant delivery",
+    "hero_stat_secure": "Secure payments via Stripe",
     "browse_shop": "Explore shop",
     "Join_disocrd_Hero": "Join Discord",
     "top_sellers": "Top Sellers",
@@ -256,7 +274,13 @@
     "gifts": "Gifts",
     "discount_codes": "Discount Codes",
     "days": "Days",
-    "year": "Year"
+    "year": "Year",
+    "rules_settings_title": "Rules & Terms Content",
+    "rules_th_label": "Rules content (Thai)",
+    "rules_en_label": "Rules content (English)",
+    "rules_placeholder_th": "Enter the rules text shown on /th/rules",
+    "rules_placeholder_en": "Enter the rules text shown on /en/rules",
+    "rules_hint": "Use the rich-text toolbar to format headings, lists, links, tables, and images. Visible publicly at /rules."
   },
   "AdminDiscountCodes": {
     "title": "Discount Codes",

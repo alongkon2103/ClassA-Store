@@ -12,7 +12,9 @@ const navItems = [
   { href: "/", labelKey: "home", auth: false },
   { href: "/products", labelKey: "shop", auth: false },
   { href: "/orders", labelKey: "orders", auth: true },
-  { href: "/admin", labelKey: "admin", auth: "admin_or_partnership" }, // แก้ตรงนี้
+  { href: "/contact", labelKey: "contact", auth: false },
+  { href: "/rules", labelKey: "rules", auth: false },
+  { href: "/admin", labelKey: "admin", auth: "admin_or_partnership" },
 ]
 
 export default function Navbar() {
@@ -64,7 +66,7 @@ export default function Navbar() {
         </Link>
 
         {/* NAV LINKS — desktop */}
-        <ul className="hidden md:flex gap-7 list-none m-0 p-0">
+        <ul className="hidden md:flex items-center gap-1 lg:gap-2 list-none m-0 p-0">
           {visibleItems.map((item) => (
             <li key={item.href}>
               <Link
@@ -73,9 +75,9 @@ export default function Navbar() {
                     ? "/admin/products"
                     : item.href
                 }
-                className={`text-sm transition-colors no-underline ${isActive(item.href)
-                  ? "font-medium text-accent-light"
-                  : "text-text-muted hover:text-text-base"
+                className={`text-[13.5px] px-3 py-1.5 rounded-lg transition-colors no-underline ${isActive(item.href)
+                  ? "font-medium text-accent-light bg-accent/5"
+                  : "text-text-muted hover:text-text-base hover:bg-white/[0.04]"
                   }`}
               >
                 {t(item.labelKey)}
