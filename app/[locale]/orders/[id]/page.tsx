@@ -147,7 +147,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                             </div>
                         </div>
 
-                        <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+                        {/* <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
                             <Link
                                 href={`/orders/${order.id}/settings`}
                                 className="w-full flex items-center justify-between gap-3 bg-bg-base/30 hover:bg-accent/10 border border-accent/10 hover:border-accent/20 text-text-base px-4 py-3.5 rounded-xl transition group"
@@ -163,7 +163,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                 </div>
                                 <ChevronRightIcon size={16} className="text-text-muted group-hover:text-accent-light transition" />
                             </Link>
-                        </div>
+                        </div> */}
                         {(order.status === "paid" || order.status === "Admin Buy" ) && (order.products.product_gifts.length > 0 || order.products.product_presets.length > 0) && (
                             <div className="bg-bg-card border border-accent/10 rounded-2xl md:rounded-3xl p-5 md:p-8">
                                 <h2 className="text-lg font-bold text-text-base mb-6 md:mb-8 flex items-center gap-2">

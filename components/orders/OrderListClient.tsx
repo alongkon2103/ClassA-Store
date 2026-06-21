@@ -298,7 +298,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                 )}
 
                 {/* Game Settings Button — แสดงเมื่อ product มี functions */}
-                {(selectedOrder.products?.product_functions?.length ?? 0) > 0 && (
+                {/* {(selectedOrder.products?.product_functions?.length ?? 0) > 0 && (
                   <button
                     onClick={() => router.push(`/orders/${selectedOrder.id}/settings`)}
                     className="w-full flex items-center justify-between gap-3 bg-accent/8 hover:bg-accent/15 border border-accent/20 hover:border-accent/40 text-text-base px-4 py-3.5 rounded-xl transition group"
@@ -314,7 +314,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                     </div>
                     <ChevronRightIcon size={16} className="text-text-muted group-hover:text-accent-light transition" />
                   </button>
-                )}
+                )} */}
 
                 {/* Assets & Presets */}
                 <div className="grid grid-cols-1 gap-4 md:gap-6">
