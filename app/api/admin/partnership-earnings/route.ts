@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
       },
       orders: {
         where: { status: "paid", ...dateFilter },
-        select: { amount: true, recorded_by_id: true, paid_at: true }
+        select: { amount: true, recorded_by_id: true, paid_at: true, payment_method: true }
       }
     }
   })
@@ -46,6 +46,11 @@ export async function GET(req: NextRequest) {
     const grossRevenue = p.orders.reduce((sum, o) => sum + Number(o.amount), 0)
     const manualOrders = p.orders.filter((o) => o.recorded_by_id !== null)
     const manualRevenue = manualOrders.reduce((sum, o) => sum + Number(o.amount), 0)
+    // PayPal-only slice — admin needs to see this separately because PayPal
+    // settles in USD and charges ~3.9% so the THB amount we recorded is NOT
+    // what actually lands in the bank account. The UI subtracts the fee.
+    const paypalOrders = p.orders.filter((o) => o.payment_method === "paypal")
+    const paypalRevenue = paypalOrders.reduce((sum, o) => sum + Number(o.amount), 0)
     return {
       id: p.id,
       name_en: p.name_en,
@@ -54,6 +59,8 @@ export async function GET(req: NextRequest) {
       gross_revenue: grossRevenue,
       manual_orders: manualOrders.length,
       manual_revenue: manualRevenue,
+      paypal_orders: paypalOrders.length,
+      paypal_revenue: paypalRevenue,
       partners: p.product_shares.map(s => ({
         name: s.partners.name,
         contact: s.partners.contact,

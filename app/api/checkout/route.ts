@@ -177,6 +177,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { evaluateDiscount, countUserRedemptions, releaseOrderDiscount } from "@/lib/discountCodes"
+import { getPaymentConfig, computeFeeAmount } from "@/lib/paymentConfig"
 import Stripe from "stripe"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
@@ -275,8 +276,17 @@ export async function POST(req: Request) {
 
     const currentSubtotal = Math.max(0, preDiscountSubtotal - discountAmount)
 
-    // 4. ✅ คำนวณราคารวมค่าธรรมเนียมก่อน เพื่อให้ order ในฐานข้อมูลได้ราคาที่ถูกต้อง
-    const cardFee = paymentMethod === "card" ? currentSubtotal * 0.06 : 0
+    // Pull per-method fee/enabled from system_configs (cached 30s). Admin can
+    // change %, toggle methods on/off in /admin/settings without redeploy.
+    const paymentConfig = await getPaymentConfig()
+    const methodKey: "card" | "promptpay" = paymentMethod === "promptpay" ? "promptpay" : "card"
+    if (!paymentConfig[methodKey].enabled) {
+      return NextResponse.json(
+        { error: "Payment method disabled", errorCode: "METHOD_DISABLED" },
+        { status: 400 },
+      )
+    }
+    const cardFee = computeFeeAmount(currentSubtotal, paymentConfig[methodKey].fee_pct)
     const totalPrice = currentSubtotal + cardFee
 
     // ✅ FIX: PromptPay requires at least 10 minutes, but give more runway to avoid

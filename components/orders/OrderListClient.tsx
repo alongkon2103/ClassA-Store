@@ -30,16 +30,27 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
     e.stopPropagation()
     setPayingId(order.id)
     try {
-      const res = await fetch("/api/checkout", {
+      // Resume the SAME provider the order was created with — a PayPal pending
+      // order must re-enter the PayPal flow (via /retry which reuses the row),
+      // a Stripe pending order goes back through /api/checkout. Without this
+      // split, all "Pay again" clicks fell through to Stripe and paypal-tagged
+      // orders silently created a Stripe Card session.
+      const isPaypal = order.payment_method === "paypal"
+      const endpoint = isPaypal ? "/api/checkout/paypal/retry" : "/api/checkout"
+      const body = isPaypal
+        ? { orderId: order.id, locale }
+        : {
+            productId: order.product_id,
+            variantId: order.variant_id,
+            paymentMethod: order.payment_method ?? "promptpay",
+            locale,
+            whitelistUsername: order.whitelisted_username ?? "",
+          }
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: order.product_id,
-          variantId: order.variant_id,
-          paymentMethod: order.payment_method ?? "promptpay",
-          locale,
-          whitelistUsername: order.whitelisted_username ?? "",
-        }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) throw new Error("Checkout failed")
       const data = await res.json()

@@ -7,11 +7,19 @@ import { Link, useRouter } from "@/i18n/routing"
 import { setRequestLocale, getTranslations } from "next-intl/server"
 import OrderStatusPoller from "@/components/orders/OrderStatusPoller"
 import AssetThumbnailCard from "@/components/orders/AssetThumbnailCard"
+import PayPalRetryBanner from "@/components/orders/PayPalRetryBanner"
 import { getImageUrl } from "@/lib/getImageUrl"
 
 
-export default async function OrderPage({ params }: { params: Promise<{ id: string, locale: string }> }) {
+export default async function OrderPage({
+    params,
+    searchParams,
+}: {
+    params: Promise<{ id: string, locale: string }>
+    searchParams: Promise<{ paypal?: string; status?: string }>
+}) {
     const { id, locale } = await params
+    const { paypal: paypalStatus } = await searchParams
     setRequestLocale(locale)
     const t = await getTranslations("Orders")
 
@@ -57,6 +65,13 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             <OrderStatusPoller orderId={order.id} currentStatus={order.status} hasKey={!!order.game_keys} />
 
             <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12">
+                {paypalStatus && order.status === "pending" && order.payment_method === "paypal" && (
+                    <PayPalRetryBanner
+                        orderId={order.id}
+                        status={paypalStatus}
+                        locale={locale}
+                    />
+                )}
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 md:mb-10">
                     <div>

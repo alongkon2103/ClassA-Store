@@ -133,8 +133,14 @@ type ProductRow = {
   id: string; name_en: string; name_th: string;
   total_orders: number; gross_revenue: number;
   manual_orders?: number; manual_revenue?: number;
+  paypal_orders?: number; paypal_revenue?: number;
   partners: Partner[]
 }
+
+// PayPal Merchant fee that lands on cross-border THB→USD receivers. Admin
+// asked for 3.9% specifically — the real number varies by country and tier
+// (typically 4.4% + fixed), so this is a conservative working estimate.
+const PAYPAL_FEE_PCT = 3.9
 
 function getLast12Months() {
   const months = []
@@ -174,6 +180,10 @@ export default function PartnershipEarningsPage() {
     acc + r.partners.reduce((s, p) => s + p.payout, 0), 0)
   const totalManualRevenue = data.reduce((acc, r) => acc + (r.manual_revenue ?? 0), 0)
   const totalManualOrders = data.reduce((acc, r) => acc + (r.manual_orders ?? 0), 0)
+  const totalPaypalRevenue = data.reduce((acc, r) => acc + (r.paypal_revenue ?? 0), 0)
+  const totalPaypalOrders = data.reduce((acc, r) => acc + (r.paypal_orders ?? 0), 0)
+  const paypalFee = totalPaypalRevenue * (PAYPAL_FEE_PCT / 100)
+  const paypalNet = totalPaypalRevenue - paypalFee
 
   // รวม payout ต่อพาร์ทเนอร์ข้ามทุกสินค้า
   const partnerMap: Record<string, number> = {}
@@ -235,6 +245,55 @@ export default function PartnershipEarningsPage() {
               count: totalManualOrders,
             })}
           </p>
+        </div>
+      )}
+
+      {/* PayPal Settlement card — only surfaces when there's PayPal revenue.
+          Shows gross THB recorded → minus PayPal's cross-border fee → net to
+          the bank. Useful because PayPal sales settle in USD with ~3.9% fee,
+          so the "gross_revenue" number in the main card overstates what
+          actually arrives in the merchant account. */}
+      {totalPaypalRevenue > 0 && (
+        <div className="bg-bg-card border border-blue-500/20 rounded-2xl p-5">
+          <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
+            <div>
+              <p className="text-[11px] tracking-widest text-blue-400/90 uppercase font-medium">
+                {t("paypal_settlement_title")}
+              </p>
+              <p className="text-[11px] text-text-muted mt-0.5">
+                {t("paypal_settlement_sub", { count: totalPaypalOrders })}
+              </p>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20">
+              {t("paypal_fee_badge", { pct: PAYPAL_FEE_PCT })}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("paypal_gross")}
+              </p>
+              <p className="text-[16px] font-bold text-text-base font-mono">
+                ฿{totalPaypalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("paypal_fee")}
+              </p>
+              <p className="text-[16px] font-bold text-red-400 font-mono">
+                −฿{paypalFee.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-blue-400/80 uppercase tracking-wider mb-1 font-medium">
+                {t("paypal_net")}
+              </p>
+              <p className="text-[18px] font-bold text-blue-300 font-mono">
+                ฿{paypalNet.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -349,28 +408,63 @@ export default function PartnershipEarningsPage() {
                       {expandedId === r.id ? t("hide") : t("show")}
                     </td>
                   </tr>
-                  {expandedId === r.id && (
-                    <tr key={`${r.id}-detail`} className="bg-white/[0.01]">
-                      <td colSpan={5} className="px-5 py-4">
-                        <div className="space-y-2">
-                          {r.partners.map((p, i) => (
-                            <div key={i} className="bg-white/[0.03] border border-white/5 rounded-xl p-3 flex justify-between items-center">
-                              <div>
-                                <p className="font-bold text-text-base">{p.name}</p>
-                                <p className="text-[11px] text-text-muted">{p.contact}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-[10px] bg-accent/10 text-accent-light px-1.5 py-0.5 rounded inline-block mb-1">{p.share}%</p>
-                                <p className="font-mono font-bold text-green-400 text-[14px]">
-                                  ฿{p.payout.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
+                  {expandedId === r.id && (() => {
+                    // Split a partner's payout into the two settlement channels:
+                    //   - Normal: Stripe + manual orders (lands as THB directly)
+                    //   - PayPal Net: PayPal share * (1 - 3.9% fee), since the
+                    //     bank only receives the post-fee USD amount.
+                    // Total = Normal + PayPal Net — equals p.payout MINUS the
+                    // partner's share of PayPal fees. Surfaces clearly what
+                    // each partner actually generated through each channel.
+                    const paypalRev = r.paypal_revenue ?? 0
+                    const normalRev = r.gross_revenue - paypalRev
+                    const paypalNetRev = paypalRev * (1 - PAYPAL_FEE_PCT / 100)
+                    return (
+                      <tr key={`${r.id}-detail`} className="bg-white/[0.01]">
+                        <td colSpan={5} className="px-5 py-4">
+                          <div className="space-y-2">
+                            {r.partners.map((p, i) => {
+                              const shareFrac = p.share / 100
+                              const payoutNormal = normalRev * shareFrac
+                              const payoutPaypal = paypalNetRev * shareFrac
+                              const hasPaypal = paypalRev > 0
+                              return (
+                                <div key={i} className="bg-white/[0.03] border border-white/5 rounded-xl p-3 flex justify-between items-center gap-4">
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-text-base truncate">{p.name}</p>
+                                    <p className="text-[11px] text-text-muted truncate">{p.contact}</p>
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <p className="text-[10px] bg-accent/10 text-accent-light px-1.5 py-0.5 rounded inline-block mb-1.5">{p.share}%</p>
+                                    {hasPaypal ? (
+                                      <div className="space-y-1">
+                                        <div className="flex items-baseline justify-end gap-2">
+                                          <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("payout_normal")}</span>
+                                          <span className="font-mono font-bold text-green-400 text-[13px]">
+                                            ฿{payoutNormal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-baseline justify-end gap-2">
+                                          <span className="text-[10px] text-blue-400/80 uppercase tracking-wider">{t("payout_paypal_net")}</span>
+                                          <span className="font-mono font-bold text-blue-300 text-[13px]">
+                                            ฿{payoutPaypal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className="font-mono font-bold text-green-400 text-[14px]">
+                                        ฿{p.payout.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })()}
                 </>
               ))}
             </tbody>

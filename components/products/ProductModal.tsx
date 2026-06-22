@@ -243,7 +243,7 @@ export default function ProductModal({ product, onClose }: any) {
   const hasShownUsernameHelp = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "promptpay">("card")
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "promptpay" | "paypal">("card")
   const [whitelistUsername, setWhitelistUsername] = useState("")
   const [robloxVerify, setRobloxVerify] = useState<"idle" | "loading" | "valid" | "invalid">("idle")
   const [robloxAvatarUrl, setRobloxAvatarUrl] = useState<string | null>(null)
@@ -259,6 +259,39 @@ export default function ProductModal({ product, onClose }: any) {
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amountOff: number } | null>(null)
   const [discountChecking, setDiscountChecking] = useState(false)
   const [discountError, setDiscountError] = useState<string | null>(null)
+
+  // Payment config (per-method enabled flag + fee_pct). Admin-controlled via
+  // /admin/settings; defaults applied here in case the fetch fails so the user
+  // can still check out with sensible values.
+  type PMConfig = { enabled: boolean; fee_pct: number }
+  type PMConfigMap = { card: PMConfig; promptpay: PMConfig; paypal: PMConfig }
+  const [paymentConfig, setPaymentConfig] = useState<PMConfigMap>({
+    card: { enabled: true, fee_pct: 6 },
+    promptpay: { enabled: true, fee_pct: 0 },
+    paypal: { enabled: true, fee_pct: 0 },
+  })
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/public/payment-config")
+      .then((r) => r.json())
+      .then((data: PMConfigMap) => {
+        if (cancelled || !data) return
+        setPaymentConfig(data)
+        // If the currently selected method got disabled, fall back to the first
+        // enabled one so the user is never stuck on a disabled choice.
+        const order: (keyof PMConfigMap)[] = ["card", "promptpay", "paypal"]
+        setPaymentMethod((current) => {
+          if (data[current]?.enabled) return current
+          const next = order.find((m) => data[m]?.enabled)
+          return next ?? current
+        })
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     fetch("/api/checkout/trial")
@@ -414,7 +447,8 @@ export default function ProductModal({ product, onClose }: any) {
   const currentSubtotal = currentBasePrice + (isPremiumSelected ? premiumAddonPrice : 0)
   const discountAmount = appliedDiscount?.amountOff ?? 0
   const subtotalAfterDiscount = Math.max(0, currentSubtotal - discountAmount)
-  const cardFee = paymentMethod === "card" ? subtotalAfterDiscount * 0.06 : 0
+  const activeFeePct = paymentConfig[paymentMethod]?.fee_pct ?? 0
+  const cardFee = subtotalAfterDiscount * (activeFeePct / 100)
   const totalPrice = subtotalAfterDiscount + cardFee
 
   const toUSD = (thbPrice: number) => usdRate ? (Number(thbPrice) * usdRate).toFixed(2) : null
@@ -465,7 +499,11 @@ export default function ProductModal({ product, onClose }: any) {
     if (!selectedVariant || !whitelistUsername.trim()) { alert("Please enter your in-game username"); return }
     setLoading(true)
     try {
-      const res = await fetch("/api/checkout", {
+      // PayPal uses a separate endpoint so the server can convert THB→USD,
+      // create a PayPal order, and return its approval URL. Stripe paths
+      // (card / promptpay) keep using /api/checkout unchanged.
+      const endpoint = paymentMethod === "paypal" ? "/api/checkout/paypal" : "/api/checkout"
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -849,37 +887,64 @@ export default function ProductModal({ product, onClose }: any) {
 
             <hr className="border-white/5 my-4" />
 
-            {/* PAYMENT METHOD — single display card showing the active method
-                plus a small icon-only swap button. Defaults to "card"; PromptPay
-                also surfaces the "for Thai customers" note when active. */}
+            {/* PAYMENT METHOD — card displays the active method, swap button
+                cycles through enabled methods only (admin can disable any
+                method in /admin/settings). Fee label is read from settings,
+                not hardcoded, so a "+6%" Stripe badge becomes "+3%" the moment
+                the admin changes the value. */}
             <div className="space-y-2">
               <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("payment_method")}</p>
               <div className="flex items-stretch gap-2">
                 <div className="flex-1 px-4 py-3 bg-accent/10 border border-accent/30 rounded-xl">
                   <p className="text-[14px] font-semibold leading-tight">
-                    {paymentMethod === "promptpay" ? t("promptpay_label") : t("stripe_label")}
+                    {paymentMethod === "promptpay"
+                      ? t("promptpay_label")
+                      : paymentMethod === "paypal"
+                        ? t("paypal_label")
+                        : t("stripe_label")}
                   </p>
                   <div className="flex items-center gap-1.5 mt-1 text-[11px]">
-                    <span className={`font-medium ${paymentMethod === "promptpay" ? "text-green-400" : "text-orange-400"}`}>
-                      {paymentMethod === "promptpay" ? t("promptpay_desc") : t("stripe_desc")}
+                    <span
+                      className={`font-medium ${
+                        paymentMethod === "promptpay"
+                          ? "text-green-400"
+                          : paymentMethod === "paypal"
+                            ? "text-blue-400"
+                            : "text-orange-400"
+                      }`}
+                    >
+                      {activeFeePct > 0
+                        ? t("fee_plus", { pct: activeFeePct })
+                        : t("fee_zero")}
                     </span>
                     {paymentMethod === "promptpay" && (
                       <span className="text-text-muted">· {t("promptpay_note")}</span>
                     )}
+                    {paymentMethod === "paypal" && (
+                      <span className="text-text-muted">· {t("paypal_note")}</span>
+                    )}
                   </div>
                 </div>
                 {(() => {
-                  // Tooltip describes the method the user will switch TO, with
-                  // its target audience — clarifies the trade-off at hover time.
-                  // Custom tooltip instead of native `title` attribute: native
-                  // tooltips have ~1s delay, OS-styled box, and can't be themed.
+                  // Cycle through ENABLED methods only, in card → promptpay → paypal
+                  // order. If only one method is enabled, the button is hidden
+                  // (no point swapping).
+                  const order: (typeof paymentMethod)[] = ["card", "promptpay", "paypal"]
+                  const enabled = order.filter((m) => paymentConfig[m]?.enabled)
+                  if (enabled.length <= 1) return null
+                  const idx = enabled.indexOf(paymentMethod)
+                  const nextMethod = enabled[(idx + 1) % enabled.length]
                   const swapTooltip =
-                    paymentMethod === "card" ? t("swap_to_promptpay") : t("swap_to_card")
+                    nextMethod === "promptpay"
+                      ? t("swap_to_promptpay")
+                      : nextMethod === "paypal"
+                        ? t("swap_to_paypal")
+                        : t("swap_to_card")
                   return (
                     <div className="relative group/swap shrink-0">
                       <button
                         type="button"
-                        onClick={() => setPaymentMethod(paymentMethod === "card" ? "promptpay" : "card")}
+                        onClick={() => setPaymentMethod(nextMethod)}
                         aria-label={swapTooltip}
                         className="w-11 h-full min-h-[64px] flex items-center justify-center bg-bg-base/60 hover:bg-accent/10 border border-white/10 hover:border-accent/30 text-text-muted hover:text-accent-light rounded-xl transition-colors"
                       >
@@ -890,9 +955,6 @@ export default function ProductModal({ product, onClose }: any) {
                           <path d="M21 13v2a4 4 0 0 1-4 4H3" />
                         </svg>
                       </button>
-                      {/* Tooltip — anchored above the swap button, right-aligned
-                          so it doesn't overflow the modal's right edge. The
-                          rotated-square below the bubble forms the arrow. */}
                       <div
                         role="tooltip"
                         className="pointer-events-none absolute bottom-full right-0 mb-2 z-50 w-max max-w-[260px] px-3 py-2 rounded-lg bg-bg-card border border-accent/40 shadow-xl text-[12px] leading-snug text-text-base opacity-0 group-hover/swap:opacity-100 transition-opacity duration-150"
