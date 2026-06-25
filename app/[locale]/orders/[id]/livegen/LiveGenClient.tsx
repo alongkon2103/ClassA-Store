@@ -706,20 +706,19 @@ export default function LiveGenClient({
                       <span className="text-[10px] text-text-muted ml-auto">{cols.length}</span>
                     </div>
                     <div className="flex flex-col" style={{ rowGap: `${Math.min(layout.row_gap, 40)}px` }}>
-                      {cols.map((f, idx) => (
-                        <div key={f.id} className="flex flex-col" style={{ rowGap: `${Math.min(layout.row_gap, 40)}px` }}>
-                          {dropIndicator?.side === side && dropIndicator.idx === idx && (
-                            <div
-                              className="rounded-2xl border-2 border-dashed border-accent bg-accent/10"
-                              style={{ aspectRatio: `1 / ${layout.tile_aspect}` }}
-                            />
-                          )}
+                      {cols.map((f) => {
+                        const isTarget =
+                          dropIndicator?.side === side &&
+                          cols[dropIndicator.idx]?.id === f.id
+                        return (
                           <DraggableTile
+                            key={f.id}
                             f={f}
                             tile={tiles[f.id]}
                             aspect={layout.tile_aspect}
                             gift={tiles[f.id].gift_id ? giftById.get(tiles[f.id].gift_id!) ?? null : null}
                             resolveColor={resolveLabelColor}
+                            isDropTarget={isTarget}
                             onOpen={() => openEditor(f.id)}
                             onDragStart={handleTileDragStart}
                             onDragMove={handleTileDrag}
@@ -727,17 +726,15 @@ export default function LiveGenClient({
                             editLabel={t("edit")}
                             noImageLabel={t("no_image")}
                           />
-                        </div>
-                      ))}
-                      {dropIndicator?.side === side && dropIndicator.idx >= cols.length && (
+                        )
+                      })}
+                      {cols.length === 0 && (
                         <div
-                          className="rounded-2xl border-2 border-dashed border-accent bg-accent/10"
-                          style={{ aspectRatio: `1 / ${layout.tile_aspect}` }}
-                        />
-                      )}
-                      {cols.length === 0 && !dropIndicator && (
-                        <div
-                          className="border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-[10px] text-text-muted p-4"
+                          className={`border border-dashed rounded-2xl flex items-center justify-center text-[10px] p-4 transition-colors ${
+                            dropIndicator?.side === side
+                              ? "border-accent bg-accent/10 text-accent-light"
+                              : "border-white/10 text-text-muted"
+                          }`}
                           style={{ aspectRatio: `1 / ${layout.tile_aspect}` }}
                         >
                           {t("empty_side")}
@@ -1054,6 +1051,7 @@ function DraggableTile({
   aspect,
   gift,
   resolveColor,
+  isDropTarget,
   onOpen,
   onDragStart,
   onDragMove,
@@ -1066,6 +1064,7 @@ function DraggableTile({
   aspect: number
   gift: Gift | null
   resolveColor: (t: TileState) => string
+  isDropTarget: boolean
   onOpen: () => void
   onDragStart: (id: string) => void
   onDragMove: (id: string, x: number, y: number) => void
@@ -1088,12 +1087,18 @@ function DraggableTile({
       dragControls={controls}
       dragMomentum={false}
       dragElastic={0.15}
+      dragSnapToOrigin
       onDragStart={() => onDragStart(f.id)}
       onDrag={(_, info) => onDragMove(f.id, info.point.x, info.point.y)}
       onDragEnd={() => onDragEnd(f.id)}
       whileDrag={{ scale: 1.05, zIndex: 50, boxShadow: "0 12px 32px rgba(0,0,0,0.5)" }}
-      transition={{ layout: { type: "spring", stiffness: 600, damping: 38 } }}
-      className="relative bg-bg-card border border-accent/15 rounded-2xl overflow-hidden hover:border-accent/40"
+      transition={{
+        layout: { type: "spring", stiffness: 500, damping: 38 },
+        default: { type: "spring", stiffness: 500, damping: 38 },
+      }}
+      className={`relative bg-bg-card border-2 rounded-2xl overflow-hidden transition-colors ${
+        isDropTarget ? "border-accent shadow-[0_0_0_3px_rgba(99,102,241,0.25)]" : "border-accent/20 hover:border-accent/40"
+      }`}
       style={{ aspectRatio: `1 / ${aspect}` }}
     >
       <button
