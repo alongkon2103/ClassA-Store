@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
-import { motion, useDragControls, LayoutGroup } from "framer-motion"
+import { motion, useDragControls, useMotionValue, LayoutGroup, type MotionValue } from "framer-motion"
 import { Link } from "@/i18n/routing"
 import { getImageUrl } from "@/lib/getImageUrl"
 
@@ -302,6 +302,29 @@ export default function LiveGenClient({
   const hoverTargetRef = useRef<string | null>(null)
   const [hoverTargetId, setHoverTargetId] = useState<string | null>(null)
 
+  // Registry of each tile's motion.y so we can compensate for page scroll
+  // mid-drag — without this, scrolling the page while a tile is held leaves
+  // the tile stuck at its document position instead of following the cursor.
+  const tileMotionRef = useRef<Map<string, MotionValue<number>>>(new Map())
+  const registerTileMotion = useCallback((id: string, y: MotionValue<number> | null) => {
+    if (y === null) tileMotionRef.current.delete(id)
+    else tileMotionRef.current.set(id, y)
+  }, [])
+
+  useEffect(() => {
+    let last = typeof window !== "undefined" ? window.scrollY : 0
+    const onScroll = () => {
+      const delta = window.scrollY - last
+      last = window.scrollY
+      const id = dragSourceRef.current
+      if (!id) return
+      const y = tileMotionRef.current.get(id)
+      if (y) y.set(y.get() + delta)
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
   const handleTileDragStart = (sourceId: string) => {
     dragSourceRef.current = sourceId
     hoverTargetRef.current = null
@@ -309,10 +332,11 @@ export default function LiveGenClient({
   }
 
   const handleTileDrag = (sourceId: string, x: number, y: number) => {
-    // Auto-scroll when the pointer hovers near the viewport edge so the user
-    // can reach tiles below the fold without releasing the drag.
-    const edge = 90
-    const speed = 14
+    // Auto-scroll when the pointer is close to a viewport edge. Safe now that
+    // the scroll listener compensates the dragged tile's y on every scroll
+    // event — the tile stays glued to the cursor.
+    const edge = 80
+    const speed = 12
     if (y < edge) window.scrollBy(0, -speed)
     else if (y > window.innerHeight - edge) window.scrollBy(0, speed)
 
@@ -704,6 +728,7 @@ export default function LiveGenClient({
                     gridRow={tt.order + 1}
                     isHoverTarget={hoverTargetId === f.id}
                     swapHere={t("swap_here")}
+                    registerMotion={registerTileMotion}
                     onOpen={() => openEditor(f.id)}
                     onDragStart={handleTileDragStart}
                     onDragMove={handleTileDrag}
@@ -1036,6 +1061,7 @@ function DraggableTile({
   gridRow,
   isHoverTarget,
   swapHere,
+  registerMotion,
   onOpen,
   onDragStart,
   onDragMove,
@@ -1052,6 +1078,7 @@ function DraggableTile({
   gridRow: number
   isHoverTarget: boolean
   swapHere: string
+  registerMotion: (id: string, y: MotionValue<number> | null) => void
   onOpen: () => void
   onDragStart: (id: string) => void
   onDragMove: (id: string, x: number, y: number) => void
@@ -1060,9 +1087,16 @@ function DraggableTile({
   noImageLabel: string
 }) {
   const controls = useDragControls()
+  const dragX = useMotionValue(0)
+  const dragY = useMotionValue(0)
   const charUrl = tile.character_image || f.image_url
   const fontOpt = FONT_OPTIONS.find((o) => o.key === tile.label_font)
   const fontFamily = fontOpt?.family ? `"${fontOpt.family}"` : undefined
+
+  useEffect(() => {
+    registerMotion(f.id, dragY)
+    return () => registerMotion(f.id, null)
+  }, [f.id, dragY, registerMotion])
 
   return (
     <motion.div
@@ -1083,7 +1117,7 @@ function DraggableTile({
       className={`relative bg-bg-card border-2 rounded-2xl overflow-hidden ${
         isHoverTarget ? "border-accent" : "border-accent/20 hover:border-accent/40"
       }`}
-      style={{ aspectRatio: `1 / ${aspect}`, gridColumn, gridRow }}
+      style={{ aspectRatio: `1 / ${aspect}`, gridColumn, gridRow, x: dragX, y: dragY }}
     >
       <button
         type="button"
