@@ -743,7 +743,21 @@ export default function LiveGenClient({
         )}
       </div>
 
-      <p className="text-[10px] text-text-muted text-center mb-3">{t("drag_tile_hint")}</p>
+      <div className="flex items-center justify-between gap-3 mb-3 px-1">
+        <p className="text-[10px] text-text-muted">{t("drag_tile_hint")}</p>
+        {functions.length > 0 && (
+          <button
+            onClick={() => setAddCardPickerOpen(true)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-[11px] font-bold hover:opacity-90 transition shrink-0"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            {t("add_card")}
+          </button>
+        )}
+      </div>
 
       {allFunctions.length === 0 ? (
         <div className="bg-bg-card border border-accent/10 rounded-2xl p-10 text-center">
@@ -832,22 +846,6 @@ export default function LiveGenClient({
               )}
             </div>
           </LayoutGroup>
-        </div>
-      )}
-
-      {/* Add card */}
-      {functions.length > 0 && (
-        <div className="flex justify-center mt-4">
-          <button
-            onClick={() => setAddCardPickerOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent/15 border border-accent/30 text-accent-light text-[12px] font-medium hover:bg-accent/25 transition"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            {t("add_card")}
-          </button>
         </div>
       )}
 
