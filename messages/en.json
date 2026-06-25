@@ -602,7 +602,19 @@
     "color_pink": "Pink",
     "color_custom": "Custom",
     "gift_size": "Gift size",
-    "gift_corner": "Gift corner"
+    "gift_corner": "Gift corner",
+    "layout_settings": "Layout settings",
+    "layout_settings_sub": "Adjust gaps, sizes, background of the whole image",
+    "column_gap": "Gap between sides",
+    "row_gap": "Gap between tiles",
+    "left_y_offset": "Shift positive side Y",
+    "right_y_offset": "Shift negative side Y",
+    "tile_width": "Tile width",
+    "tile_aspect": "Tile aspect ratio",
+    "outer_padding": "Outer padding",
+    "bg_color": "Background color",
+    "transparent": "Transparent",
+    "reset_layout": "Reset layout"
   },
   "Orders": {
     "title": "My Assets",

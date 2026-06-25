@@ -605,7 +605,19 @@
     "color_pink": "ชมพู",
     "color_custom": "เลือกสีเอง",
     "gift_size": "ขนาดของขวัญ",
-    "gift_corner": "ตำแหน่งของขวัญ"
+    "gift_corner": "ตำแหน่งของขวัญ",
+    "layout_settings": "ตั้งค่าการจัดวาง",
+    "layout_settings_sub": "ปรับช่องไฟ ขนาด พื้นหลัง ของภาพรวม",
+    "column_gap": "ช่องไฟระหว่างฝั่ง",
+    "row_gap": "ช่องไฟระหว่างช่อง",
+    "left_y_offset": "เลื่อนฝั่งบวก ขึ้น/ลง",
+    "right_y_offset": "เลื่อนฝั่งลบ ขึ้น/ลง",
+    "tile_width": "ความกว้างช่อง",
+    "tile_aspect": "อัตราส่วนช่อง",
+    "outer_padding": "ขอบรอบนอก",
+    "bg_color": "สีพื้นหลัง",
+    "transparent": "โปร่งใส",
+    "reset_layout": "รีเซ็ตการจัดวาง"
   },
   "Orders": {
     "title": "ประวัติการซื้อ",

@@ -128,7 +128,21 @@ export async function PUT(req: Request, { params }: RouteContext) {
       character_y: clamp(t.character_y, -200, 200, 0),
     }))
 
-  const config = { tiles }
+  const incomingLayout = (body?.layout ?? {}) as Record<string, unknown>
+  const layout = {
+    column_gap: clamp(incomingLayout.column_gap, 0, 400, 16),
+    row_gap: clamp(incomingLayout.row_gap, 0, 200, 16),
+    padding: clamp(incomingLayout.padding, 0, 200, 24),
+    left_y_offset: clamp(incomingLayout.left_y_offset, -400, 400, 0),
+    right_y_offset: clamp(incomingLayout.right_y_offset, -400, 400, 0),
+    tile_width: clamp(incomingLayout.tile_width, 120, 600, 280),
+    tile_aspect: clamp(incomingLayout.tile_aspect, 0.5, 2.5, 9 / 7),
+    bg_color: typeof incomingLayout.bg_color === "string"
+      ? incomingLayout.bg_color.slice(0, 24)
+      : "transparent",
+  }
+
+  const config = { tiles, layout }
 
   await prisma.user_livegen_configs.upsert({
     where: { order_id: id },

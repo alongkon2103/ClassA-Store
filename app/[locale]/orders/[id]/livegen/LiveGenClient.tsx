@@ -42,6 +42,29 @@ export type LiveGenConfig = {
     character_scale?: number
     character_y?: number
   }>
+  layout?: Partial<LayoutState>
+}
+
+type LayoutState = {
+  column_gap: number
+  row_gap: number
+  padding: number
+  left_y_offset: number
+  right_y_offset: number
+  tile_width: number
+  tile_aspect: number
+  bg_color: string
+}
+
+const DEFAULT_LAYOUT: LayoutState = {
+  column_gap: 16,
+  row_gap: 16,
+  padding: 24,
+  left_y_offset: 0,
+  right_y_offset: 0,
+  tile_width: 280,
+  tile_aspect: 9 / 7,
+  bg_color: "transparent",
 }
 
 type Props = {
@@ -68,10 +91,8 @@ type TileState = {
   order: number
 }
 
-const TILE_W = 280
-const TILE_H = 360
-const GAP = 16
-const PAD = 24
+// Defaults retained for first-time tile seed only; actual layout comes from
+// the LayoutState below so users can resize/respace the export interactively.
 
 const COLOR_PRESETS = [
   { key: "auto", hex: null },
@@ -144,12 +165,19 @@ export default function LiveGenClient({
   }, [functions, initialConfig, locale])
 
   const [tiles, setTiles] = useState<Record<string, TileState>>(initialTiles)
+  const [layout, setLayout] = useState<LayoutState>({
+    ...DEFAULT_LAYOUT,
+    ...(initialConfig?.layout ?? {}),
+  })
+  const [layoutOpen, setLayoutOpen] = useState(false)
   const [editingFunctionId, setEditingFunctionId] = useState<string | null>(null)
   const [giftSearch, setGiftSearch] = useState("")
   const [charPickerOpen, setCharPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [savedAt, setSavedAt] = useState<Date | null>(null)
+
+  const updateLayout = (patch: Partial<LayoutState>) => setLayout((prev) => ({ ...prev, ...patch }))
 
   const editing = editingFunctionId ? functions.find((f) => f.id === editingFunctionId) : null
   const editingTile = editingFunctionId ? tiles[editingFunctionId] : null
@@ -229,6 +257,7 @@ export default function LiveGenClient({
             character_y: tt?.character_y ?? 0,
           }
         }),
+        layout,
       }
       const res = await fetch(`/api/orders/${orderId}/livegen`, {
         method: "PUT",
@@ -245,12 +274,19 @@ export default function LiveGenClient({
     }
   }
 
-  const giftCornerCoords = (pos: GiftPos, tileX: number, tileY: number, size: number) => {
+  const giftCornerCoords = (
+    pos: GiftPos,
+    tileX: number,
+    tileY: number,
+    size: number,
+    tileW: number,
+    tileH: number,
+  ) => {
     const m = 10
     switch (pos) {
-      case "tr": return { x: tileX + TILE_W - size - m, y: tileY + m }
-      case "bl": return { x: tileX + m, y: tileY + TILE_H - size - m }
-      case "br": return { x: tileX + TILE_W - size - m, y: tileY + TILE_H - size - m }
+      case "tr": return { x: tileX + tileW - size - m, y: tileY + m }
+      case "bl": return { x: tileX + m, y: tileY + tileH - size - m }
+      case "br": return { x: tileX + tileW - size - m, y: tileY + tileH - size - m }
       default:   return { x: tileX + m, y: tileY + m }
     }
   }
@@ -259,9 +295,16 @@ export default function LiveGenClient({
     setDownloading(true)
     try {
       const dpr = 2
+      const tileW = layout.tile_width
+      const tileH = Math.round(tileW * layout.tile_aspect)
       const rows = Math.max(leftFns.length, rightFns.length)
-      const w = (TILE_W * 2 + GAP + PAD * 2) * dpr
-      const h = (TILE_H * rows + GAP * Math.max(0, rows - 1) + PAD * 2) * dpr
+      const w = (tileW * 2 + layout.column_gap + layout.padding * 2) * dpr
+      const colHeight = (cnt: number) => tileH * cnt + layout.row_gap * Math.max(0, cnt - 1)
+      const maxColH = Math.max(
+        colHeight(leftFns.length) + Math.abs(layout.left_y_offset),
+        colHeight(rightFns.length) + Math.abs(layout.right_y_offset),
+      )
+      const h = (maxColH + layout.padding * 2) * dpr
 
       const canvas = document.createElement("canvas")
       canvas.width = w
@@ -271,48 +314,51 @@ export default function LiveGenClient({
       ctx.scale(dpr, dpr)
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = "high"
-      ctx.clearRect(0, 0, w / dpr, h / dpr)
 
-      const drawColumn = async (cols: Func[], colIdx: 0 | 1) => {
+      if (layout.bg_color && layout.bg_color !== "transparent") {
+        ctx.fillStyle = layout.bg_color
+        ctx.fillRect(0, 0, w / dpr, h / dpr)
+      } else {
+        ctx.clearRect(0, 0, w / dpr, h / dpr)
+      }
+
+      const drawColumn = async (cols: Func[], colIdx: 0 | 1, yOffset: number) => {
         for (let i = 0; i < cols.length; i++) {
           const f = cols[i]
           const tile = tiles[f.id]
-          const x = PAD + colIdx * (TILE_W + GAP)
-          const y = PAD + i * (TILE_H + GAP)
+          const x = layout.padding + colIdx * (tileW + layout.column_gap)
+          const y = layout.padding + yOffset + i * (tileH + layout.row_gap)
 
-          // Character base
           const charUrl = tile.character_image || f.image_url
           if (charUrl) {
             try {
               const img = await loadImage(getImageUrl(charUrl))
               const ar = img.width / img.height
-              const tileAR = TILE_W / TILE_H
-              let baseDw = TILE_W
-              let baseDh = TILE_H
-              if (ar > tileAR) baseDh = TILE_W / ar
-              else baseDw = TILE_H * ar
+              const tileAR = tileW / tileH
+              let baseDw = tileW
+              let baseDh = tileH
+              if (ar > tileAR) baseDh = tileW / ar
+              else baseDw = tileH * ar
               const dw = baseDw * tile.character_scale
               const dh = baseDh * tile.character_scale
-              const dx = x + (TILE_W - dw) / 2
-              const dy = y + (TILE_H - dh) / 2 + tile.character_y
+              const dx = x + (tileW - dw) / 2
+              const dy = y + (tileH - dh) / 2 + tile.character_y
               ctx.drawImage(img, dx, dy, dw, dh)
             } catch { /* skip */ }
           }
 
-          // Gift overlay
           if (tile.gift_id) {
             const g = giftById.get(tile.gift_id)
             if (g?.image_url) {
               try {
                 const img = await loadImage(getImageUrl(g.image_url))
-                const size = Math.round(TILE_W * tile.gift_scale)
-                const { x: gx, y: gy } = giftCornerCoords(tile.gift_position, x, y, size)
+                const size = Math.round(tileW * tile.gift_scale)
+                const { x: gx, y: gy } = giftCornerCoords(tile.gift_position, x, y, size, tileW, tileH)
                 ctx.drawImage(img, gx, gy, size, size)
               } catch { /* skip */ }
             }
           }
 
-          // Label
           const label = tile.label?.trim()
           if (label) {
             ctx.font = `700 ${tile.label_size}px system-ui, -apple-system, "Segoe UI", sans-serif`
@@ -321,16 +367,16 @@ export default function LiveGenClient({
             ctx.lineWidth = Math.max(3, tile.label_size * 0.1)
             ctx.strokeStyle = "rgba(0,0,0,0.85)"
             ctx.fillStyle = resolveLabelColor(tile)
-            const lx = x + TILE_W - 12
-            const ly = y + TILE_H - 14
+            const lx = x + tileW - 12
+            const ly = y + tileH - 14
             ctx.strokeText(label, lx, ly)
             ctx.fillText(label, lx, ly)
           }
         }
       }
 
-      await drawColumn(leftFns, 0)
-      await drawColumn(rightFns, 1)
+      await drawColumn(leftFns, 0, layout.left_y_offset)
+      await drawColumn(rightFns, 1, layout.right_y_offset)
 
       canvas.toBlob((blob) => {
         if (!blob) return
@@ -372,7 +418,8 @@ export default function LiveGenClient({
           setCharPickerOpen(false)
           setEditingFunctionId(f.id)
         }}
-        className="relative aspect-[7/9] bg-bg-card border border-accent/15 rounded-2xl overflow-hidden text-left hover:border-accent/40 transition group"
+        className="relative block w-full bg-bg-card border border-accent/15 rounded-2xl overflow-hidden text-left hover:border-accent/40 transition group"
+        style={{ aspectRatio: `1 / ${layout.tile_aspect}` }}
       >
         {charUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -465,45 +512,167 @@ export default function LiveGenClient({
         </div>
       </div>
 
+      {/* Layout settings panel */}
+      <div className="bg-bg-card border border-accent/10 rounded-2xl mb-5 overflow-hidden">
+        <button
+          onClick={() => setLayoutOpen((v) => !v)}
+          className="w-full flex items-center justify-between gap-3 px-5 py-3.5 hover:bg-white/[0.02] transition"
+        >
+          <div className="flex items-center gap-3">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent-light">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+            <div className="text-left">
+              <p className="text-[13px] font-bold text-text-base">{t("layout_settings")}</p>
+              <p className="text-[11px] text-text-muted">{t("layout_settings_sub")}</p>
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`text-text-muted transition-transform ${layoutOpen ? "rotate-180" : ""}`}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        {layoutOpen && (
+          <div className="px-5 pb-5 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-3 border-t border-white/5">
+            <Slider
+              label={t("column_gap")}
+              value={layout.column_gap}
+              min={0} max={300} step={2}
+              format={(v) => `${v}px`}
+              onChange={(v) => updateLayout({ column_gap: v })}
+            />
+            <Slider
+              label={t("row_gap")}
+              value={layout.row_gap}
+              min={0} max={150} step={2}
+              format={(v) => `${v}px`}
+              onChange={(v) => updateLayout({ row_gap: v })}
+            />
+            <Slider
+              label={t("left_y_offset")}
+              value={layout.left_y_offset}
+              min={-300} max={300} step={4}
+              format={(v) => `${v}px`}
+              onChange={(v) => updateLayout({ left_y_offset: v })}
+            />
+            <Slider
+              label={t("right_y_offset")}
+              value={layout.right_y_offset}
+              min={-300} max={300} step={4}
+              format={(v) => `${v}px`}
+              onChange={(v) => updateLayout({ right_y_offset: v })}
+            />
+            <Slider
+              label={t("tile_width")}
+              value={layout.tile_width}
+              min={150} max={500} step={10}
+              format={(v) => `${v}px`}
+              onChange={(v) => updateLayout({ tile_width: v })}
+            />
+            <Slider
+              label={t("tile_aspect")}
+              value={layout.tile_aspect}
+              min={0.6} max={2} step={0.05}
+              format={(v) => v.toFixed(2)}
+              onChange={(v) => updateLayout({ tile_aspect: v })}
+            />
+            <Slider
+              label={t("outer_padding")}
+              value={layout.padding}
+              min={0} max={150} step={2}
+              format={(v) => `${v}px`}
+              onChange={(v) => updateLayout({ padding: v })}
+            />
+            <div>
+              <p className="text-[11px] text-text-muted mb-1.5">{t("bg_color")}</p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => updateLayout({ bg_color: "transparent" })}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] border ${layout.bg_color === "transparent" ? "border-accent text-accent-light bg-accent/10" : "border-white/10 text-text-muted"}`}
+                >
+                  {t("transparent")}
+                </button>
+                {["#000000", "#0a0a0f", "#ffffff", "#1f2937"].map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => updateLayout({ bg_color: c })}
+                    className={`w-7 h-7 rounded-lg border-2 ${layout.bg_color === c ? "border-accent ring-2 ring-accent/30" : "border-white/10"}`}
+                    style={{ background: c }}
+                  />
+                ))}
+                <input
+                  type="color"
+                  value={layout.bg_color.startsWith("#") ? layout.bg_color : "#000000"}
+                  onChange={(e) => updateLayout({ bg_color: e.target.value })}
+                  className="w-7 h-7 rounded-lg border-2 border-white/10 cursor-pointer bg-transparent"
+                  title={t("color_custom")}
+                />
+              </div>
+            </div>
+            <div className="sm:col-span-2 flex justify-end">
+              <button
+                onClick={() => setLayout(DEFAULT_LAYOUT)}
+                className="text-[11px] text-text-muted hover:text-text-base"
+              >
+                {t("reset_layout")}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {functions.length === 0 ? (
         <div className="bg-bg-card border border-accent/10 rounded-2xl p-10 text-center">
           <p className="text-text-muted">{t("no_functions")}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 md:gap-5">
-          <div>
-            <div className="flex items-center gap-2 mb-3 px-1">
-              <span className="w-2 h-2 rounded-full bg-green-400"></span>
-              <h2 className="text-[12px] font-bold uppercase tracking-wider text-green-400">
-                {t("side_left")}
-              </h2>
-              <span className="text-[11px] text-text-muted ml-auto">{leftFns.length}</span>
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: layout.bg_color === "transparent" ? undefined : layout.bg_color,
+            padding: `${Math.min(layout.padding, 40)}px`,
+          }}
+        >
+          <div
+            className="grid grid-cols-2"
+            style={{ columnGap: `${Math.min(layout.column_gap, 80)}px` }}
+          >
+            <div style={{ transform: `translateY(${Math.min(Math.max(layout.left_y_offset, -120), 120) / 4}px)` }}>
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <span className="w-2 h-2 rounded-full bg-green-400"></span>
+                <h2 className="text-[12px] font-bold uppercase tracking-wider text-green-400">
+                  {t("side_left")}
+                </h2>
+                <span className="text-[11px] text-text-muted ml-auto">{leftFns.length}</span>
+              </div>
+              <div className="flex flex-col" style={{ rowGap: `${Math.min(layout.row_gap, 60)}px` }}>
+                {leftFns.map((f) => renderTile(f))}
+                {leftFns.length === 0 && (
+                  <div className="aspect-[7/9] border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-[11px] text-text-muted">
+                    {t("empty_side")}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="space-y-3 md:space-y-4">
-              {leftFns.map((f) => renderTile(f))}
-              {leftFns.length === 0 && (
-                <div className="aspect-[7/9] border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-[11px] text-text-muted">
-                  {t("empty_side")}
-                </div>
-              )}
-            </div>
-          </div>
 
-          <div>
-            <div className="flex items-center gap-2 mb-3 px-1">
-              <span className="w-2 h-2 rounded-full bg-red-400"></span>
-              <h2 className="text-[12px] font-bold uppercase tracking-wider text-red-400">
-                {t("side_right")}
-              </h2>
-              <span className="text-[11px] text-text-muted ml-auto">{rightFns.length}</span>
-            </div>
-            <div className="space-y-3 md:space-y-4">
-              {rightFns.map((f) => renderTile(f))}
-              {rightFns.length === 0 && (
-                <div className="aspect-[7/9] border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-[11px] text-text-muted">
-                  {t("empty_side")}
-                </div>
-              )}
+            <div style={{ transform: `translateY(${Math.min(Math.max(layout.right_y_offset, -120), 120) / 4}px)` }}>
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <span className="w-2 h-2 rounded-full bg-red-400"></span>
+                <h2 className="text-[12px] font-bold uppercase tracking-wider text-red-400">
+                  {t("side_right")}
+                </h2>
+                <span className="text-[11px] text-text-muted ml-auto">{rightFns.length}</span>
+              </div>
+              <div className="flex flex-col" style={{ rowGap: `${Math.min(layout.row_gap, 60)}px` }}>
+                {rightFns.map((f) => renderTile(f))}
+                {rightFns.length === 0 && (
+                  <div className="aspect-[7/9] border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-[11px] text-text-muted">
+                    {t("empty_side")}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
