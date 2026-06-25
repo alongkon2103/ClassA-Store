@@ -11,9 +11,10 @@ import { getImageUrl } from "@/lib/getImageUrl"
 
 interface OrderListClientProps {
   orders: any[]
+  livegenEnabled?: boolean
 }
 
-export default function OrderListClient({ orders }: OrderListClientProps) {
+export default function OrderListClient({ orders, livegenEnabled = true }: OrderListClientProps) {
   const router = useRouter()
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
   const [payingId, setPayingId] = useState<string | null>(null)
@@ -309,8 +310,8 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                   </a>
                 )}
 
-                {/* LiveGen Button — แสดงเมื่อ paid + มี product_functions */}
-                {(selectedOrder.status === "paid" || selectedOrder.status === "Admin Buy") &&
+                {/* LiveGen Button — แสดงเมื่อ paid + มี product_functions + feature เปิด */}
+                {livegenEnabled && (selectedOrder.status === "paid" || selectedOrder.status === "Admin Buy") &&
                   (selectedOrder.products?.product_functions?.length ?? 0) > 0 && (
                   <Link
                     href={`/orders/${selectedOrder.id}/livegen`}

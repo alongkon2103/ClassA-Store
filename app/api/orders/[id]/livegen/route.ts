@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth"
 import { NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getFeatureFlags } from "@/lib/featureFlags"
 
 type RouteContext = {
   params: Promise<{ id: string }>
@@ -22,6 +23,8 @@ type Tile = {
   label_x?: number
   label_y?: number
   label_font?: string
+  label_stroke_color?: string
+  label_stroke_width?: number
   character_image?: string | null
   character_scale?: number
   character_y?: number
@@ -36,6 +39,9 @@ const clamp = (n: unknown, lo: number, hi: number, def: number) => {
 export async function GET(_req: Request, { params }: RouteContext) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const flags = await getFeatureFlags()
+  if (!flags.livegen_enabled) return NextResponse.json({ error: "Disabled" }, { status: 404 })
 
   const { id } = await params
   const order = await prisma.orders.findUnique({
@@ -82,6 +88,9 @@ export async function GET(_req: Request, { params }: RouteContext) {
 export async function PUT(req: Request, { params }: RouteContext) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const flags = await getFeatureFlags()
+  if (!flags.livegen_enabled) return NextResponse.json({ error: "Disabled" }, { status: 404 })
 
   const userId = session.user.id
   const { id } = await params
@@ -130,6 +139,8 @@ export async function PUT(req: Request, { params }: RouteContext) {
       label_x: clamp(t.label_x, 0, 1, 0.96),
       label_y: clamp(t.label_y, 0, 1, 0.94),
       label_font: typeof t.label_font === "string" ? t.label_font.slice(0, 48) : "default",
+      label_stroke_color: typeof t.label_stroke_color === "string" ? t.label_stroke_color.slice(0, 24) : "#000000",
+      label_stroke_width: clamp(t.label_stroke_width, 0, 0.4, 0.08),
       character_image:
         typeof t.character_image === "string" && t.character_image.length > 0
           ? t.character_image.slice(0, 500)

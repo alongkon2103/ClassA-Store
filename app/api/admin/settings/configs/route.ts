@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { invalidatePaymentConfigCache } from "@/lib/paymentConfig"
+import { invalidateFeatureFlagsCache } from "@/lib/featureFlags"
 
 export async function GET() {
     try {
@@ -67,6 +68,7 @@ export async function POST(req: Request) {
         }
 
         invalidatePaymentConfigCache()
+        invalidateFeatureFlagsCache()
         return NextResponse.json({ success: true })
     } catch (error) {
         console.error("Config save error:", error)

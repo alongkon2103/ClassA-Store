@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { getFeatureFlags } from "@/lib/featureFlags"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import { format } from "date-fns"
@@ -23,6 +24,7 @@ export default async function OrderPage({
     setRequestLocale(locale)
     const t = await getTranslations("Orders")
     const tLive = await getTranslations("LiveGen")
+    const featureFlags = await getFeatureFlags()
 
     const order = await prisma.orders.findUnique({
         where: { id },
@@ -163,7 +165,7 @@ export default async function OrderPage({
                             </div>
                         </div>
 
-                        {(order.status === "paid" || order.status === "Admin Buy") && order.products.product_functions.length > 0 && (
+                        {featureFlags.livegen_enabled && (order.status === "paid" || order.status === "Admin Buy") && order.products.product_functions.length > 0 && (
                             <Link
                                 href={`/orders/${order.id}/livegen`}
                                 className="w-full flex items-center justify-between gap-3 bg-bg-card hover:bg-accent/10 border border-accent/10 hover:border-accent/30 text-text-base px-4 py-3.5 rounded-2xl transition group"

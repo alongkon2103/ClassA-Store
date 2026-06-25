@@ -67,6 +67,8 @@ export type LiveGenConfig = {
     label_x?: number
     label_y?: number
     label_font?: string
+    label_stroke_color?: string
+    label_stroke_width?: number
     character_image?: string | null
     character_scale?: number
     character_y?: number
@@ -86,7 +88,7 @@ type LayoutState = {
 }
 
 const DEFAULT_LAYOUT: LayoutState = {
-  column_gap: 16,
+  column_gap: 150,
   row_gap: 16,
   padding: 24,
   left_y_offset: 0,
@@ -117,6 +119,8 @@ type TileState = {
   label_x: number
   label_y: number
   label_font: string
+  label_stroke_color: string
+  label_stroke_width: number
   character_image: string | null
   character_scale: number
   character_y: number
@@ -215,6 +219,8 @@ export default function LiveGenClient({
         label_x: s?.label_x ?? 0.96,
         label_y: s?.label_y ?? 0.94,
         label_font: s?.label_font ?? "default",
+        label_stroke_color: s?.label_stroke_color ?? "#000000",
+        label_stroke_width: s?.label_stroke_width ?? 0.08,
         character_image: s?.character_image ?? null,
         character_scale: s?.character_scale ?? 1,
         character_y: s?.character_y ?? 0,
@@ -391,6 +397,8 @@ export default function LiveGenClient({
             label_x: tt?.label_x ?? 0.96,
             label_y: tt?.label_y ?? 0.94,
             label_font: tt?.label_font ?? "default",
+            label_stroke_color: tt?.label_stroke_color ?? "#000000",
+            label_stroke_width: tt?.label_stroke_width ?? 0.08,
             character_image: tt?.character_image ?? null,
             character_scale: tt?.character_scale ?? 1,
             character_y: tt?.character_y ?? 0,
@@ -493,8 +501,11 @@ export default function LiveGenClient({
             ctx.font = `700 ${tile.label_size}px ${family}`
             ctx.textAlign = "right"
             ctx.textBaseline = "alphabetic"
-            ctx.lineWidth = Math.max(3, tile.label_size * 0.1)
-            ctx.strokeStyle = "rgba(0,0,0,0.85)"
+            // Match preview WebkitTextStroke proportionally so canvas output
+            // and on-screen rendering stay visually consistent.
+            ctx.lineWidth = Math.max(1, tile.label_size * tile.label_stroke_width * 2)
+            ctx.lineJoin = "round"
+            ctx.strokeStyle = tile.label_stroke_color || "#000000"
             ctx.fillStyle = resolveLabelColor(tile)
             const lx = x + tile.label_x * tileW
             const ly = y + tile.label_y * tileH
@@ -654,7 +665,7 @@ export default function LiveGenClient({
           style={{
             background: layout.bg_color === "transparent" ? undefined : layout.bg_color,
             padding: `${Math.min(layout.padding, 32)}px`,
-            width: `${layout.tile_width * 2 + Math.min(layout.column_gap, 80) + Math.min(layout.padding, 32) * 2}px`,
+            width: `${layout.tile_width * 2 + layout.column_gap + Math.min(layout.padding, 32) * 2}px`,
             maxWidth: "100%",
           }}
         >
@@ -663,7 +674,7 @@ export default function LiveGenClient({
             className="grid mb-2"
             style={{
               gridTemplateColumns: `${layout.tile_width}px ${layout.tile_width}px`,
-              columnGap: `${Math.min(layout.column_gap, 80)}px`,
+              columnGap: `${layout.column_gap}px`,
             }}
           >
             <div className="flex items-center gap-2 px-1">
@@ -686,7 +697,7 @@ export default function LiveGenClient({
               className="grid"
               style={{
                 gridTemplateColumns: `${layout.tile_width}px ${layout.tile_width}px`,
-                columnGap: `${Math.min(layout.column_gap, 80)}px`,
+                columnGap: `${layout.column_gap}px`,
                 rowGap: `${Math.min(layout.row_gap, 40)}px`,
               }}
             >
@@ -925,6 +936,39 @@ export default function LiveGenClient({
                             </button>
                           )
                         })}
+                      </div>
+                    </div>
+                    {/* Stroke controls */}
+                    <Slider
+                      label={t("stroke_width")}
+                      value={editingTile.label_stroke_width}
+                      min={0}
+                      max={0.3}
+                      step={0.01}
+                      format={(v) => `${Math.round(v * 100)}%`}
+                      onChange={(v) => updateTile(editing.id, { label_stroke_width: v })}
+                    />
+                    <div>
+                      <p className="text-[10px] text-text-muted mb-1">{t("stroke_color")}</p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {["#000000", "#ffffff", "#ef4444", "#3ecf8e", "#fbbf24", "#06b6d4", "#1f2937"].map((c) => {
+                          const active = (editingTile.label_stroke_color || "#000000").toLowerCase() === c.toLowerCase()
+                          return (
+                            <button
+                              key={c}
+                              onClick={() => updateTile(editing.id, { label_stroke_color: c })}
+                              className={`w-6 h-6 rounded-md border-2 ${active ? "border-accent ring-2 ring-accent/30" : "border-white/10"}`}
+                              style={{ background: c }}
+                              title={c}
+                            />
+                          )
+                        })}
+                        <input
+                          type="color"
+                          value={editingTile.label_stroke_color || "#000000"}
+                          onChange={(e) => updateTile(editing.id, { label_stroke_color: e.target.value })}
+                          className="w-6 h-6 rounded-md border-2 border-white/10 cursor-pointer bg-transparent"
+                        />
                       </div>
                     </div>
                     <div className="flex gap-1 flex-wrap mt-1.5">
@@ -1194,7 +1238,7 @@ function DraggableTile({
 
         {tile?.label && (() => {
           const fs = Math.round(tile.label_size * 0.6)
-          const strokeW = Math.max(1.5, fs * 0.08)
+          const strokeW = Math.max(0.5, fs * tile.label_stroke_width)
           return (
             <p
               className="absolute font-bold leading-none pointer-events-none whitespace-nowrap"
@@ -1205,7 +1249,7 @@ function DraggableTile({
                 right: `${(1 - tile.label_x) * 100}%`,
                 top: `${tile.label_y * 100}%`,
                 transform: "translateY(-100%)",
-                WebkitTextStroke: `${strokeW}px #000`,
+                WebkitTextStroke: `${strokeW}px ${tile.label_stroke_color || "#000"}`,
                 paintOrder: "stroke fill",
               }}
             >
@@ -1340,7 +1384,7 @@ function DraggablePreview({
       {tile.label && (() => {
         const fo = FONT_OPTIONS.find((o) => o.key === tile.label_font)
         const fs = Math.round(tile.label_size * 0.5)
-        const strokeW = Math.max(1.2, fs * 0.08)
+        const strokeW = Math.max(0.4, fs * tile.label_stroke_width)
         return (
           <p
             className="absolute font-bold leading-none whitespace-nowrap cursor-move px-1"
@@ -1351,7 +1395,7 @@ function DraggablePreview({
               right: `${(1 - tile.label_x) * 100}%`,
               top: `${tile.label_y * 100}%`,
               transform: "translateY(-100%)",
-              WebkitTextStroke: `${strokeW}px #000`,
+              WebkitTextStroke: `${strokeW}px ${tile.label_stroke_color || "#000"}`,
               paintOrder: "stroke fill",
             }}
             onPointerDown={handlePointerDown("label")}

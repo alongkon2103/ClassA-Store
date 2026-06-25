@@ -1,8 +1,9 @@
-import { redirect } from "next/navigation"
+import { redirect, notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { setRequestLocale, getTranslations } from "next-intl/server"
+import { getFeatureFlags } from "@/lib/featureFlags"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import LiveGenClient, { type LiveGenConfig } from "./LiveGenClient"
@@ -19,6 +20,11 @@ export default async function LiveGenPage({
 
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) redirect(`/${locale}/login`)
+
+  // Admin-controlled global kill switch — when off, the route 404s so users
+  // who guess the URL can't reach the builder.
+  const flags = await getFeatureFlags()
+  if (!flags.livegen_enabled) notFound()
 
   const t = await getTranslations("LiveGen")
 

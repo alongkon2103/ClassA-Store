@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { getFeatureFlags } from "@/lib/featureFlags"
 import { redirect } from "next/navigation"  // ✅ ใช้ next/navigation แทน i18n/routing
 import { Link } from "@/i18n/routing"        // ✅ Link ยังใช้ i18n ได้
 import Navbar from "@/components/Navbar"
@@ -18,6 +19,8 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
   if (!session?.user?.id) {
     redirect(`/${locale}/login`)
   }
+
+  const featureFlags = await getFeatureFlags()
 
   const rawOrders = await prisma.orders.findMany({
     where: {
@@ -170,7 +173,7 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
               </Link>
             </div>
           ) : (
-            <OrderListClient orders={orders} />
+            <OrderListClient orders={orders} livegenEnabled={featureFlags.livegen_enabled} />
           )}
         </div>
       </main>
