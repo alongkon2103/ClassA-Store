@@ -674,14 +674,23 @@ export default function LiveGenClient({
         </div>
       ) : (
         <div
-          className="rounded-2xl overflow-hidden"
+          className="rounded-2xl overflow-hidden mx-auto"
           style={{
             background: layout.bg_color === "transparent" ? undefined : layout.bg_color,
             padding: `${Math.min(layout.padding, 32)}px`,
+            width: `${layout.tile_width * 2 + Math.min(layout.column_gap, 80) + Math.min(layout.padding, 32) * 2}px`,
+            maxWidth: "100%",
           }}
         >
           <LayoutGroup id="livegen-tiles">
-            <div className="grid grid-cols-2" style={{ columnGap: `${Math.min(layout.column_gap, 60)}px` }}>
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: `${layout.tile_width}px ${layout.tile_width}px`,
+                columnGap: `${Math.min(layout.column_gap, 80)}px`,
+                justifyContent: "space-between",
+              }}
+            >
               {(["left", "right"] as Side[]).map((side) => {
                 const cols = side === "left" ? leftFns : rightFns
                 const yOff = side === "left" ? layout.left_y_offset : layout.right_y_offset
@@ -1185,21 +1194,36 @@ function DraggablePreview({
   onLabelMove: (x: number, y: number) => void
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const dragRef = useRef<{ kind: "gift" | "label" | null }>({ kind: null })
+  // Capture the offset from the item's anchor to where the pointer was first
+  // pressed; on move we subtract it so the item stays under the cursor instead
+  // of snapping its top-left to the pointer.
+  const dragRef = useRef<{
+    kind: "gift" | "label" | null
+    offsetX: number
+    offsetY: number
+  }>({ kind: null, offsetX: 0, offsetY: 0 })
 
   const handlePointerDown = (kind: "gift" | "label") => (e: React.PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
     ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
-    dragRef.current.kind = kind
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const mx = (e.clientX - rect.left) / rect.width
+    const my = (e.clientY - rect.top) / rect.height
+    const anchorX = kind === "gift" ? tile.gift_x : tile.label_x
+    const anchorY = kind === "gift" ? tile.gift_y : tile.label_y
+    dragRef.current = { kind, offsetX: mx - anchorX, offsetY: my - anchorY }
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!dragRef.current.kind) return
     const rect = containerRef.current?.getBoundingClientRect()
     if (!rect) return
-    const x = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
-    const y = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height))
+    const mx = (e.clientX - rect.left) / rect.width
+    const my = (e.clientY - rect.top) / rect.height
+    const x = Math.min(1, Math.max(0, mx - dragRef.current.offsetX))
+    const y = Math.min(1, Math.max(0, my - dragRef.current.offsetY))
     if (dragRef.current.kind === "gift") onGiftMove(x, y)
     else onLabelMove(x, y)
   }
