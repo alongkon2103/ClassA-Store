@@ -275,106 +275,57 @@ export default function LiveGenClient({
     })
   }
 
-  // Cross-side drag is committed ONLY on dragEnd — committing mid-drag tears the
-  // active gesture apart because the motion.div moves DOM parent and unmounts.
-  // During the drag we just track the target and paint a drop indicator.
-  const dragRectsRef = useRef<Array<{ id: string; side: Side; idx: number; rect: DOMRect }>>([])
-  const dragTargetRef = useRef<{ sourceId: string; side: Side; idx: number } | null>(null)
-  const [dropIndicator, setDropIndicator] = useState<{ side: Side; idx: number } | null>(null)
+  // Swap-on-hover drag — every time the cursor crosses INTO a different tile
+  // while dragging, swap (side, order) between the dragged tile and the one
+  // beneath it. Works because all tiles share one grid parent (no
+  // unmount/remount when changing side), and `layout` on each motion.div
+  // animates the resulting position shifts.
+  const lastSwapTargetRef = useRef<string | null>(null)
 
   const handleTileDragStart = (sourceId: string) => {
-    const rects: Array<{ id: string; side: Side; idx: number; rect: DOMRect }> = []
-    leftFns.forEach((f, idx) => {
-      const el = document.querySelector(`[data-tile-id="${f.id}"]`) as HTMLElement | null
-      if (el) rects.push({ id: f.id, side: "left", idx, rect: el.getBoundingClientRect() })
-    })
-    rightFns.forEach((f, idx) => {
-      const el = document.querySelector(`[data-tile-id="${f.id}"]`) as HTMLElement | null
-      if (el) rects.push({ id: f.id, side: "right", idx, rect: el.getBoundingClientRect() })
-    })
-    dragRectsRef.current = rects
-    dragTargetRef.current = null
-    setDropIndicator(null)
+    lastSwapTargetRef.current = null
     void sourceId
   }
 
   const handleTileDrag = (sourceId: string, x: number, y: number) => {
-    const rects = dragRectsRef.current
-    if (rects.length === 0) return
-
-    let targetSide: Side | null = null
-    let targetIdx: number | null = null
-
-    for (const r of rects) {
-      if (r.id === sourceId) continue
-      if (x >= r.rect.left && x <= r.rect.right && y >= r.rect.top && y <= r.rect.bottom) {
-        const midY = r.rect.top + r.rect.height / 2
-        targetSide = r.side
-        targetIdx = y < midY ? r.idx : r.idx + 1
+    // Walk through everything under the cursor and find the first tile that
+    // isn't the source. `elementsFromPoint` respects pointer-events, so the
+    // dragged tile (z-index 50) ends up first but we skip it.
+    const stack = document.elementsFromPoint(x, y)
+    let targetId: string | null = null
+    for (const el of stack) {
+      const tileEl = (el as HTMLElement).closest("[data-tile-id]") as HTMLElement | null
+      if (!tileEl) continue
+      const id = tileEl.getAttribute("data-tile-id")
+      if (id && id !== sourceId) {
+        targetId = id
         break
       }
     }
 
-    if (targetSide === null) {
-      const lefts = rects.filter((r) => r.side === "left")
-      const rights = rects.filter((r) => r.side === "right")
-      const inLeftCol = lefts.some((r) => x >= r.rect.left && x <= r.rect.right)
-      const inRightCol = rights.some((r) => x >= r.rect.left && x <= r.rect.right)
-      if (inLeftCol) {
-        targetSide = "left"
-        targetIdx = leftFns.filter((f) => f.id !== sourceId).length
-      } else if (inRightCol) {
-        targetSide = "right"
-        targetIdx = rightFns.filter((f) => f.id !== sourceId).length
-      } else if (lefts.length > 0 && rights.length > 0) {
-        const leftCenter = (lefts[0].rect.left + lefts[0].rect.right) / 2
-        const rightCenter = (rights[0].rect.left + rights[0].rect.right) / 2
-        targetSide = Math.abs(x - leftCenter) < Math.abs(x - rightCenter) ? "left" : "right"
-        const col = targetSide === "left" ? leftFns : rightFns
-        targetIdx = col.filter((f) => f.id !== sourceId).length
-      }
+    if (!targetId) {
+      lastSwapTargetRef.current = null
+      return
     }
+    // Only swap once per "entered new tile" — guards against rapid re-fires
+    // while the cursor sits over the same target.
+    if (lastSwapTargetRef.current === targetId) return
+    lastSwapTargetRef.current = targetId
 
-    if (targetSide == null || targetIdx == null) return
-    const last = dragTargetRef.current
-    if (last && last.side === targetSide && last.idx === targetIdx) return
-    dragTargetRef.current = { sourceId, side: targetSide, idx: targetIdx }
-    setDropIndicator({ side: targetSide, idx: targetIdx })
+    setTiles((prev) => {
+      const src = prev[sourceId]
+      const tgt = prev[targetId!]
+      if (!src || !tgt) return prev
+      return {
+        ...prev,
+        [sourceId]: { ...src, side: tgt.side, order: tgt.order },
+        [targetId!]: { ...tgt, side: src.side, order: src.order },
+      }
+    })
   }
 
   const handleTileDragEnd = () => {
-    const target = dragTargetRef.current
-    if (target) {
-      setTiles((prev) => {
-        const src = prev[target.sourceId]
-        if (!src) return prev
-
-        const groupBy = (side: Side) =>
-          Object.entries(prev)
-            .filter(([id, tt]) => id !== target.sourceId && tt.side === side)
-            .sort(([, a], [, b]) => a.order - b.order)
-            .map(([id]) => id)
-
-        const group = groupBy(target.side)
-        const clamped = Math.max(0, Math.min(target.idx, group.length))
-        group.splice(clamped, 0, target.sourceId)
-
-        const next = { ...prev }
-        group.forEach((id, i) => {
-          next[id] = { ...next[id], side: target.side, order: i }
-        })
-        if (src.side !== target.side) {
-          const oldGroup = groupBy(src.side)
-          oldGroup.forEach((id, i) => {
-            next[id] = { ...next[id], order: i }
-          })
-        }
-        return next
-      })
-    }
-    dragRectsRef.current = []
-    dragTargetRef.current = null
-    setDropIndicator(null)
+    lastSwapTargetRef.current = null
   }
 
   const moveTile = (fid: string, direction: -1 | 1) => {
@@ -682,68 +633,72 @@ export default function LiveGenClient({
             maxWidth: "100%",
           }}
         >
+          {/* Side headers, sitting above the tile grid in their own columns */}
+          <div
+            className="grid mb-2"
+            style={{
+              gridTemplateColumns: `${layout.tile_width}px ${layout.tile_width}px`,
+              columnGap: `${Math.min(layout.column_gap, 80)}px`,
+            }}
+          >
+            <div className="flex items-center gap-2 px-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+              <h2 className="text-[11px] font-bold uppercase tracking-wider text-green-400">{t("side_left")}</h2>
+              <span className="text-[10px] text-text-muted ml-auto">{leftFns.length}</span>
+            </div>
+            <div className="flex items-center gap-2 px-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+              <h2 className="text-[11px] font-bold uppercase tracking-wider text-red-400">{t("side_right")}</h2>
+              <span className="text-[10px] text-text-muted ml-auto">{rightFns.length}</span>
+            </div>
+          </div>
+
+          {/* Flat grid — every tile is a sibling positioned via gridColumn/Row.
+              Changing tile.side or tile.order never changes the React parent,
+              so motion.div instances survive cross-side swaps mid-drag. */}
           <LayoutGroup id="livegen-tiles">
             <div
               className="grid"
               style={{
                 gridTemplateColumns: `${layout.tile_width}px ${layout.tile_width}px`,
                 columnGap: `${Math.min(layout.column_gap, 80)}px`,
-                justifyContent: "space-between",
+                rowGap: `${Math.min(layout.row_gap, 40)}px`,
               }}
             >
-              {(["left", "right"] as Side[]).map((side) => {
-                const cols = side === "left" ? leftFns : rightFns
-                const yOff = side === "left" ? layout.left_y_offset : layout.right_y_offset
-                const dotColor = side === "left" ? "bg-green-400" : "bg-red-400"
-                const textColor = side === "left" ? "text-green-400" : "text-red-400"
+              {functions.map((f) => {
+                const tt = tiles[f.id]
+                if (!tt) return null
                 return (
-                  <div key={side} style={{ transform: `translateY(${Math.min(Math.max(yOff, -100), 100) / 4}px)` }}>
-                    <div className="flex items-center gap-2 mb-2 px-1">
-                      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
-                      <h2 className={`text-[11px] font-bold uppercase tracking-wider ${textColor}`}>
-                        {t(side === "left" ? "side_left" : "side_right")}
-                      </h2>
-                      <span className="text-[10px] text-text-muted ml-auto">{cols.length}</span>
-                    </div>
-                    <div className="flex flex-col" style={{ rowGap: `${Math.min(layout.row_gap, 40)}px` }}>
-                      {cols.map((f) => {
-                        const isTarget =
-                          dropIndicator?.side === side &&
-                          cols[dropIndicator.idx]?.id === f.id
-                        return (
-                          <DraggableTile
-                            key={f.id}
-                            f={f}
-                            tile={tiles[f.id]}
-                            aspect={layout.tile_aspect}
-                            gift={tiles[f.id].gift_id ? giftById.get(tiles[f.id].gift_id!) ?? null : null}
-                            resolveColor={resolveLabelColor}
-                            isDropTarget={isTarget}
-                            onOpen={() => openEditor(f.id)}
-                            onDragStart={handleTileDragStart}
-                            onDragMove={handleTileDrag}
-                            onDragEnd={handleTileDragEnd}
-                            editLabel={t("edit")}
-                            noImageLabel={t("no_image")}
-                          />
-                        )
-                      })}
-                      {cols.length === 0 && (
-                        <div
-                          className={`border border-dashed rounded-2xl flex items-center justify-center text-[10px] p-4 transition-colors ${
-                            dropIndicator?.side === side
-                              ? "border-accent bg-accent/10 text-accent-light"
-                              : "border-white/10 text-text-muted"
-                          }`}
-                          style={{ aspectRatio: `1 / ${layout.tile_aspect}` }}
-                        >
-                          {t("empty_side")}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <DraggableTile
+                    key={f.id}
+                    f={f}
+                    tile={tt}
+                    aspect={layout.tile_aspect}
+                    gift={tt.gift_id ? giftById.get(tt.gift_id) ?? null : null}
+                    resolveColor={resolveLabelColor}
+                    gridColumn={tt.side === "left" ? 1 : 2}
+                    gridRow={tt.order + 1}
+                    onOpen={() => openEditor(f.id)}
+                    onDragStart={handleTileDragStart}
+                    onDragMove={handleTileDrag}
+                    onDragEnd={handleTileDragEnd}
+                    editLabel={t("edit")}
+                    noImageLabel={t("no_image")}
+                  />
                 )
               })}
+              {(leftFns.length === 0 || rightFns.length === 0) && (
+                <div
+                  className="border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-[10px] text-text-muted p-4"
+                  style={{
+                    aspectRatio: `1 / ${layout.tile_aspect}`,
+                    gridColumn: leftFns.length === 0 ? 1 : 2,
+                    gridRow: 1,
+                  }}
+                >
+                  {t("empty_side")}
+                </div>
+              )}
             </div>
           </LayoutGroup>
         </div>
@@ -1051,7 +1006,8 @@ function DraggableTile({
   aspect,
   gift,
   resolveColor,
-  isDropTarget,
+  gridColumn,
+  gridRow,
   onOpen,
   onDragStart,
   onDragMove,
@@ -1064,7 +1020,8 @@ function DraggableTile({
   aspect: number
   gift: Gift | null
   resolveColor: (t: TileState) => string
-  isDropTarget: boolean
+  gridColumn: number
+  gridRow: number
   onOpen: () => void
   onDragStart: (id: string) => void
   onDragMove: (id: string, x: number, y: number) => void
@@ -1096,10 +1053,8 @@ function DraggableTile({
         layout: { type: "spring", stiffness: 500, damping: 38 },
         default: { type: "spring", stiffness: 500, damping: 38 },
       }}
-      className={`relative bg-bg-card border-2 rounded-2xl overflow-hidden transition-colors ${
-        isDropTarget ? "border-accent shadow-[0_0_0_3px_rgba(99,102,241,0.25)]" : "border-accent/20 hover:border-accent/40"
-      }`}
-      style={{ aspectRatio: `1 / ${aspect}` }}
+      className="relative bg-bg-card border-2 border-accent/20 hover:border-accent/40 rounded-2xl overflow-hidden transition-colors"
+      style={{ aspectRatio: `1 / ${aspect}`, gridColumn, gridRow }}
     >
       <button
         type="button"
