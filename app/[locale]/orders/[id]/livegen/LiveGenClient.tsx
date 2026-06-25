@@ -153,6 +153,18 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
+// Re-number both sides so every tile's `order` is consecutive 0..N-1. Keeps
+// gridRow values dense so columns line up — without this, swaps could leave
+// gaps that look like one column "drops" below the other.
+function normalizeOrders(map: Record<string, TileState>): Record<string, TileState> {
+  const left = Object.entries(map).filter(([, t]) => t.side === "left").sort((a, b) => a[1].order - b[1].order)
+  const right = Object.entries(map).filter(([, t]) => t.side === "right").sort((a, b) => a[1].order - b[1].order)
+  const out: Record<string, TileState> = { ...map }
+  left.forEach(([id, t], i) => { out[id] = { ...t, order: i } })
+  right.forEach(([id, t], i) => { out[id] = { ...t, order: i } })
+  return out
+}
+
 // Migrate the legacy 4-corner picker value to free-form percentages so older
 // saved configs keep working as the gift becomes draggable.
 function cornerToXY(pos: GiftPos | undefined): { x: number; y: number } {
@@ -185,10 +197,13 @@ export default function LiveGenClient({
     const saved = new Map<string, LiveGenConfig["tiles"][number]>()
     initialConfig?.tiles?.forEach((tt) => saved.set(tt.function_id, tt))
     const half = Math.ceil(functions.length / 2)
+    let leftCount = 0
+    let rightCount = 0
     const out: Record<string, TileState> = {}
     functions.forEach((f, i) => {
       const s = saved.get(f.id)
       const legacy = cornerToXY(s?.gift_position)
+      const side: Side = s?.side ?? (i < half ? "left" : "right")
       out[f.id] = {
         gift_id: s?.gift_id ?? f.default_gift_id ?? null,
         gift_scale: s?.gift_scale ?? 0.32,
@@ -203,11 +218,12 @@ export default function LiveGenClient({
         character_image: s?.character_image ?? null,
         character_scale: s?.character_scale ?? 1,
         character_y: s?.character_y ?? 0,
-        side: s?.side ?? (i < half ? "left" : "right"),
-        order: s?.order ?? i,
+        side,
+        // Per-side order so each side starts at 0 regardless of overall index.
+        order: s?.order ?? (side === "left" ? leftCount++ : rightCount++),
       }
     })
-    return out
+    return normalizeOrders(out)
   }, [functions, initialConfig, locale])
 
   const [tiles, setTiles] = useState<Record<string, TileState>>(initialTiles)
@@ -271,7 +287,10 @@ export default function LiveGenClient({
           .filter((tt) => tt.side === nextSide)
           .map((tt) => tt.order),
       )
-      return { ...prev, [fid]: { ...cur, side: nextSide, order: maxOrder + 1 } }
+      return normalizeOrders({
+        ...prev,
+        [fid]: { ...cur, side: nextSide, order: maxOrder + 1 },
+      })
     })
   }
 
@@ -314,11 +333,11 @@ export default function LiveGenClient({
         const src = prev[sourceId]
         const tgt = prev[targetId]
         if (!src || !tgt) return prev
-        return {
+        return normalizeOrders({
           ...prev,
           [sourceId]: { ...src, side: tgt.side, order: tgt.order },
           [targetId]: { ...tgt, side: src.side, order: src.order },
-        }
+        })
       })
     }
     dragSourceRef.current = null
@@ -1047,20 +1066,15 @@ function DraggableTile({
       dragListener={false}
       dragControls={controls}
       dragMomentum={false}
-      dragElastic={0.15}
+      dragElastic={0}
       dragSnapToOrigin
       onDragStart={() => onDragStart(f.id)}
       onDrag={(_, info) => onDragMove(f.id, info.point.x, info.point.y)}
       onDragEnd={() => onDragEnd(f.id)}
-      whileDrag={{ scale: 1.05, zIndex: 50, boxShadow: "0 12px 32px rgba(0,0,0,0.5)" }}
-      transition={{
-        layout: { type: "spring", stiffness: 500, damping: 38 },
-        default: { type: "spring", stiffness: 500, damping: 38 },
-      }}
-      className={`relative bg-bg-card border-2 rounded-2xl overflow-hidden transition-all ${
-        isHoverTarget
-          ? "border-accent shadow-[0_0_0_4px_rgba(99,102,241,0.45),0_8px_24px_rgba(99,102,241,0.35)] scale-[1.02]"
-          : "border-accent/20 hover:border-accent/40"
+      whileDrag={{ zIndex: 50, opacity: 0.85 }}
+      transition={{ layout: { duration: 0.18 } }}
+      className={`relative bg-bg-card border-2 rounded-2xl overflow-hidden ${
+        isHoverTarget ? "border-accent" : "border-accent/20 hover:border-accent/40"
       }`}
       style={{ aspectRatio: `1 / ${aspect}`, gridColumn, gridRow }}
     >
@@ -1121,16 +1135,11 @@ function DraggableTile({
         )}
       </button>
 
-      {/* Drop-here overlay — appears only when this card is the swap target */}
+      {/* Drop-here tag — just a small pill in the corner, no overlay tint or
+          blur. The accent border on the tile already says "I'm the target". */}
       {isHoverTarget && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-accent/25 backdrop-blur-[2px] pointer-events-none">
-          <div className="bg-accent text-white text-[12px] font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M7 17l5-5 5 5" />
-              <path d="M7 7l5 5 5-5" />
-            </svg>
-            {swapHere}
-          </div>
+        <div className="absolute top-1.5 right-1.5 z-20 bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-md pointer-events-none">
+          {swapHere}
         </div>
       )}
 
