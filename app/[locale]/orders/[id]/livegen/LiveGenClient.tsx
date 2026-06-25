@@ -309,6 +309,13 @@ export default function LiveGenClient({
   }
 
   const handleTileDrag = (sourceId: string, x: number, y: number) => {
+    // Auto-scroll when the pointer hovers near the viewport edge so the user
+    // can reach tiles below the fold without releasing the drag.
+    const edge = 90
+    const speed = 14
+    if (y < edge) window.scrollBy(0, -speed)
+    else if (y > window.innerHeight - edge) window.scrollBy(0, speed)
+
     const stack = document.elementsFromPoint(x, y)
     let targetId: string | null = null
     for (const el of stack) {
@@ -1118,21 +1125,27 @@ function DraggableTile({
           />
         )}
 
-        {tile?.label && (
-          <p
-            className="absolute font-bold leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] pointer-events-none whitespace-nowrap"
-            style={{
-              color: resolveColor(tile),
-              fontSize: `${Math.round(tile.label_size * 0.6)}px`,
-              fontFamily,
-              right: `${(1 - tile.label_x) * 100}%`,
-              top: `${tile.label_y * 100}%`,
-              transform: "translateY(-100%)",
-            }}
-          >
-            {tile.label}
-          </p>
-        )}
+        {tile?.label && (() => {
+          const fs = Math.round(tile.label_size * 0.6)
+          const strokeW = Math.max(1.5, fs * 0.08)
+          return (
+            <p
+              className="absolute font-bold leading-none pointer-events-none whitespace-nowrap"
+              style={{
+                color: resolveColor(tile),
+                fontSize: `${fs}px`,
+                fontFamily,
+                right: `${(1 - tile.label_x) * 100}%`,
+                top: `${tile.label_y * 100}%`,
+                transform: "translateY(-100%)",
+                WebkitTextStroke: `${strokeW}px #000`,
+                paintOrder: "stroke fill",
+              }}
+            >
+              {tile.label}
+            </p>
+          )
+        })()}
       </button>
 
       {/* Drop-here tag — just a small pill in the corner, no overlay tint or
@@ -1259,16 +1272,20 @@ function DraggablePreview({
       )}
       {tile.label && (() => {
         const fo = FONT_OPTIONS.find((o) => o.key === tile.label_font)
+        const fs = Math.round(tile.label_size * 0.5)
+        const strokeW = Math.max(1.2, fs * 0.08)
         return (
           <p
-            className="absolute font-bold leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] whitespace-nowrap cursor-move px-1"
+            className="absolute font-bold leading-none whitespace-nowrap cursor-move px-1"
             style={{
               color: resolveColor(tile),
-              fontSize: `${Math.round(tile.label_size * 0.5)}px`,
+              fontSize: `${fs}px`,
               fontFamily: fo?.family ? `"${fo.family}"` : undefined,
               right: `${(1 - tile.label_x) * 100}%`,
               top: `${tile.label_y * 100}%`,
               transform: "translateY(-100%)",
+              WebkitTextStroke: `${strokeW}px #000`,
+              paintOrder: "stroke fill",
             }}
             onPointerDown={handlePointerDown("label")}
           >
