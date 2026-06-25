@@ -7,6 +7,7 @@ export default async function AdminOrdersPage() {
   const orders = await prisma.orders.findMany({
     where: {
       NOT: { order_type: "TRIAL" },
+      status: "paid",
     },
     orderBy: { created_at: "desc" },
     include: {

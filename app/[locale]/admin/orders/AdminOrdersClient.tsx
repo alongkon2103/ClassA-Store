@@ -15,14 +15,30 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
   const dateLocale = locale === "th" ? th : enUS
 
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [productFilter, setProductFilter] = useState<string>("all")
   const [wlFilter, setWlFilter] = useState("all")
   const [updating, setUpdating] = useState<string | null>(null)
   const [manualOpen, setManualOpen] = useState(false)
 
+  const productOptions = useMemo(() => {
+    const seen = new Map<string, { id: string; name_en: string; name_th: string; count: number }>()
+    for (const o of orders) {
+      if (!o.product_id || !o.products) continue
+      const existing = seen.get(o.product_id)
+      if (existing) existing.count++
+      else seen.set(o.product_id, {
+        id: o.product_id,
+        name_en: o.products.name_en ?? "—",
+        name_th: o.products.name_th ?? "—",
+        count: 1,
+      })
+    }
+    return Array.from(seen.values()).sort((a, b) => b.count - a.count)
+  }, [orders])
+
   const filtered = useMemo(() => {
     return orders
-      .filter((o) => statusFilter === "all" || o.status === statusFilter)
+      .filter((o) => productFilter === "all" || o.product_id === productFilter)
       .filter((o) => wlFilter === "all" || o.whitelist_status === wlFilter)
       .filter((o) => {
         const q = search.toLowerCase()
@@ -34,7 +50,7 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
           productName.toLowerCase().includes(q)
         )
       })
-  }, [orders, search, statusFilter, wlFilter, locale])
+  }, [orders, search, productFilter, wlFilter, locale])
 
   const handleWhitelistStatus = async (id: string, whitelist_status: string) => {
     setUpdating(id)
@@ -98,15 +114,6 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
           className="flex-1 min-w-[200px] bg-bg-card border border-accent/15 rounded-xl px-4 py-2.5 text-[13px] placeholder:text-text-muted outline-none focus:border-accent/40"
         />
         <div className="flex gap-1 bg-bg-card border border-accent/15 rounded-xl p-1">
-          {["all", "paid", "pending", "expired"].map((f) => (
-            <button key={f} onClick={() => setStatusFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${statusFilter === f ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"
-                }`}>
-              {t(f)}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-1 bg-bg-card border border-accent/15 rounded-xl p-1">
           {["all", "pending", "whitelisted", "removed"].map((f) => (
             <button key={f} onClick={() => setWlFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition capitalize ${wlFilter === f ? "bg-orange-500/20 text-orange-400" : "text-text-muted hover:text-text-base"
@@ -116,6 +123,35 @@ export default function AdminOrdersClient({ orders }: { orders: any[] }) {
           ))}
         </div>
       </div>
+
+      {/* Game filter */}
+      {productOptions.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => setProductFilter("all")}
+            className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition ${
+              productFilter === "all"
+                ? "bg-accent/20 text-accent-light border border-accent/30"
+                : "bg-bg-card border border-accent/15 text-text-muted hover:text-text-base"
+            }`}
+          >
+            {t("all")} <span className="opacity-60">({orders.length})</span>
+          </button>
+          {productOptions.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setProductFilter(p.id)}
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition ${
+                productFilter === p.id
+                  ? "bg-accent/20 text-accent-light border border-accent/30"
+                  : "bg-bg-card border border-accent/15 text-text-muted hover:text-text-base"
+              }`}
+            >
+              {locale === "th" ? p.name_th : p.name_en} <span className="opacity-60">({p.count})</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
