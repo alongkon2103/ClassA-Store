@@ -1,10 +1,33 @@
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
-import { Reorder, useDragControls } from "framer-motion"
+import { motion, useDragControls, LayoutGroup } from "framer-motion"
 import { Link } from "@/i18n/routing"
 import { getImageUrl } from "@/lib/getImageUrl"
+
+// Curated font set — Thai-friendly fonts first, Latin-only display fonts after.
+// `family` is the literal name used both for fontFamily CSS and the Google
+// Fonts URL slug (spaces become `+`).
+const FONT_OPTIONS = [
+  { key: "default", family: null, label: "Default" },
+  { key: "kanit", family: "Kanit", label: "Kanit" },
+  { key: "mitr", family: "Mitr", label: "Mitr" },
+  { key: "prompt", family: "Prompt", label: "Prompt" },
+  { key: "bai", family: "Bai Jamjuree", label: "Bai Jamjuree" },
+  { key: "sarabun", family: "Sarabun", label: "Sarabun" },
+  { key: "anuphan", family: "Anuphan", label: "Anuphan" },
+  { key: "bungee", family: "Bungee", label: "Bungee" },
+  { key: "bebas", family: "Bebas Neue", label: "Bebas Neue" },
+  { key: "anton", family: "Anton", label: "Anton" },
+]
+
+// Pre-load all available fonts on mount via a single Google Fonts <link>. This
+// also lets `document.fonts.load(...)` resolve quickly inside the canvas render.
+const FONT_LINK_HREF = `https://fonts.googleapis.com/css2?${FONT_OPTIONS
+  .filter((f) => f.family)
+  .map((f) => `family=${encodeURIComponent(f.family!).replace(/%20/g, "+")}:wght@700`)
+  .join("&")}&display=swap`
 
 type Gift = {
   id: number
@@ -43,6 +66,7 @@ export type LiveGenConfig = {
     label_color?: string
     label_x?: number
     label_y?: number
+    label_font?: string
     character_image?: string | null
     character_scale?: number
     character_y?: number
@@ -92,6 +116,7 @@ type TileState = {
   label_color: string
   label_x: number
   label_y: number
+  label_font: string
   character_image: string | null
   character_scale: number
   character_y: number
@@ -174,6 +199,7 @@ export default function LiveGenClient({
         label_color: s?.label_color ?? "auto",
         label_x: s?.label_x ?? 0.96,
         label_y: s?.label_y ?? 0.94,
+        label_font: s?.label_font ?? "default",
         character_image: s?.character_image ?? null,
         character_scale: s?.character_scale ?? 1,
         character_y: s?.character_y ?? 0,
@@ -198,6 +224,17 @@ export default function LiveGenClient({
   const [savedAt, setSavedAt] = useState<Date | null>(null)
 
   const updateLayout = (patch: Partial<LayoutState>) => setLayout((prev) => ({ ...prev, ...patch }))
+
+  // Load Google Fonts once. The stylesheet is shared across the page so multiple
+  // tiles using the same family don't re-fetch.
+  useEffect(() => {
+    if (document.getElementById("livegen-fonts")) return
+    const l = document.createElement("link")
+    l.id = "livegen-fonts"
+    l.rel = "stylesheet"
+    l.href = FONT_LINK_HREF
+    document.head.appendChild(l)
+  }, [])
 
   const editing = editingFunctionId ? functions.find((f) => f.id === editingFunctionId) : null
   const editingTile = editingFunctionId ? tiles[editingFunctionId] : null
@@ -238,14 +275,106 @@ export default function LiveGenClient({
     })
   }
 
-  const handleReorder = (newOrder: Func[], side: Side) => {
-    setTiles((prev) => {
-      const next = { ...prev }
-      newOrder.forEach((f, i) => {
-        if (next[f.id]) next[f.id] = { ...next[f.id], side, order: i }
-      })
-      return next
+  // Cross-side drag is committed ONLY on dragEnd — committing mid-drag tears the
+  // active gesture apart because the motion.div moves DOM parent and unmounts.
+  // During the drag we just track the target and paint a drop indicator.
+  const dragRectsRef = useRef<Array<{ id: string; side: Side; idx: number; rect: DOMRect }>>([])
+  const dragTargetRef = useRef<{ sourceId: string; side: Side; idx: number } | null>(null)
+  const [dropIndicator, setDropIndicator] = useState<{ side: Side; idx: number } | null>(null)
+
+  const handleTileDragStart = (sourceId: string) => {
+    const rects: Array<{ id: string; side: Side; idx: number; rect: DOMRect }> = []
+    leftFns.forEach((f, idx) => {
+      const el = document.querySelector(`[data-tile-id="${f.id}"]`) as HTMLElement | null
+      if (el) rects.push({ id: f.id, side: "left", idx, rect: el.getBoundingClientRect() })
     })
+    rightFns.forEach((f, idx) => {
+      const el = document.querySelector(`[data-tile-id="${f.id}"]`) as HTMLElement | null
+      if (el) rects.push({ id: f.id, side: "right", idx, rect: el.getBoundingClientRect() })
+    })
+    dragRectsRef.current = rects
+    dragTargetRef.current = null
+    setDropIndicator(null)
+    void sourceId
+  }
+
+  const handleTileDrag = (sourceId: string, x: number, y: number) => {
+    const rects = dragRectsRef.current
+    if (rects.length === 0) return
+
+    let targetSide: Side | null = null
+    let targetIdx: number | null = null
+
+    for (const r of rects) {
+      if (r.id === sourceId) continue
+      if (x >= r.rect.left && x <= r.rect.right && y >= r.rect.top && y <= r.rect.bottom) {
+        const midY = r.rect.top + r.rect.height / 2
+        targetSide = r.side
+        targetIdx = y < midY ? r.idx : r.idx + 1
+        break
+      }
+    }
+
+    if (targetSide === null) {
+      const lefts = rects.filter((r) => r.side === "left")
+      const rights = rects.filter((r) => r.side === "right")
+      const inLeftCol = lefts.some((r) => x >= r.rect.left && x <= r.rect.right)
+      const inRightCol = rights.some((r) => x >= r.rect.left && x <= r.rect.right)
+      if (inLeftCol) {
+        targetSide = "left"
+        targetIdx = leftFns.filter((f) => f.id !== sourceId).length
+      } else if (inRightCol) {
+        targetSide = "right"
+        targetIdx = rightFns.filter((f) => f.id !== sourceId).length
+      } else if (lefts.length > 0 && rights.length > 0) {
+        const leftCenter = (lefts[0].rect.left + lefts[0].rect.right) / 2
+        const rightCenter = (rights[0].rect.left + rights[0].rect.right) / 2
+        targetSide = Math.abs(x - leftCenter) < Math.abs(x - rightCenter) ? "left" : "right"
+        const col = targetSide === "left" ? leftFns : rightFns
+        targetIdx = col.filter((f) => f.id !== sourceId).length
+      }
+    }
+
+    if (targetSide == null || targetIdx == null) return
+    const last = dragTargetRef.current
+    if (last && last.side === targetSide && last.idx === targetIdx) return
+    dragTargetRef.current = { sourceId, side: targetSide, idx: targetIdx }
+    setDropIndicator({ side: targetSide, idx: targetIdx })
+  }
+
+  const handleTileDragEnd = () => {
+    const target = dragTargetRef.current
+    if (target) {
+      setTiles((prev) => {
+        const src = prev[target.sourceId]
+        if (!src) return prev
+
+        const groupBy = (side: Side) =>
+          Object.entries(prev)
+            .filter(([id, tt]) => id !== target.sourceId && tt.side === side)
+            .sort(([, a], [, b]) => a.order - b.order)
+            .map(([id]) => id)
+
+        const group = groupBy(target.side)
+        const clamped = Math.max(0, Math.min(target.idx, group.length))
+        group.splice(clamped, 0, target.sourceId)
+
+        const next = { ...prev }
+        group.forEach((id, i) => {
+          next[id] = { ...next[id], side: target.side, order: i }
+        })
+        if (src.side !== target.side) {
+          const oldGroup = groupBy(src.side)
+          oldGroup.forEach((id, i) => {
+            next[id] = { ...next[id], order: i }
+          })
+        }
+        return next
+      })
+    }
+    dragRectsRef.current = []
+    dragTargetRef.current = null
+    setDropIndicator(null)
   }
 
   const moveTile = (fid: string, direction: -1 | 1) => {
@@ -285,6 +414,7 @@ export default function LiveGenClient({
             label_color: tt?.label_color ?? "auto",
             label_x: tt?.label_x ?? 0.96,
             label_y: tt?.label_y ?? 0.94,
+            label_font: tt?.label_font ?? "default",
             character_image: tt?.character_image ?? null,
             character_scale: tt?.character_scale ?? 1,
             character_y: tt?.character_y ?? 0,
@@ -377,7 +507,14 @@ export default function LiveGenClient({
 
           const label = tile.label?.trim()
           if (label) {
-            ctx.font = `700 ${tile.label_size}px system-ui, -apple-system, "Segoe UI", sans-serif`
+            const fontOpt = FONT_OPTIONS.find((o) => o.key === tile.label_font || o.family === tile.label_font)
+            const family = fontOpt?.family
+              ? `"${fontOpt.family}", system-ui, sans-serif`
+              : `system-ui, -apple-system, "Segoe UI", sans-serif`
+            if (fontOpt?.family) {
+              try { await document.fonts.load(`700 ${tile.label_size}px "${fontOpt.family}"`) } catch { /* ignore */ }
+            }
+            ctx.font = `700 ${tile.label_size}px ${family}`
             ctx.textAlign = "right"
             ctx.textBaseline = "alphabetic"
             ctx.lineWidth = Math.max(3, tile.label_size * 0.1)
@@ -543,55 +680,66 @@ export default function LiveGenClient({
             padding: `${Math.min(layout.padding, 32)}px`,
           }}
         >
-          <div className="grid grid-cols-2" style={{ columnGap: `${Math.min(layout.column_gap, 60)}px` }}>
-            {(["left", "right"] as Side[]).map((side) => {
-              const cols = side === "left" ? leftFns : rightFns
-              const yOff = side === "left" ? layout.left_y_offset : layout.right_y_offset
-              const dotColor = side === "left" ? "bg-green-400" : "bg-red-400"
-              const textColor = side === "left" ? "text-green-400" : "text-red-400"
-              return (
-                <div key={side} style={{ transform: `translateY(${Math.min(Math.max(yOff, -100), 100) / 4}px)` }}>
-                  <div className="flex items-center gap-2 mb-2 px-1">
-                    <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
-                    <h2 className={`text-[11px] font-bold uppercase tracking-wider ${textColor}`}>
-                      {t(side === "left" ? "side_left" : "side_right")}
-                    </h2>
-                    <span className="text-[10px] text-text-muted ml-auto">{cols.length}</span>
-                  </div>
-                  {cols.length === 0 ? (
-                    <div
-                      className="border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-[10px] text-text-muted p-4"
-                      style={{ aspectRatio: `1 / ${layout.tile_aspect}` }}
-                    >
-                      {t("empty_side")}
+          <LayoutGroup id="livegen-tiles">
+            <div className="grid grid-cols-2" style={{ columnGap: `${Math.min(layout.column_gap, 60)}px` }}>
+              {(["left", "right"] as Side[]).map((side) => {
+                const cols = side === "left" ? leftFns : rightFns
+                const yOff = side === "left" ? layout.left_y_offset : layout.right_y_offset
+                const dotColor = side === "left" ? "bg-green-400" : "bg-red-400"
+                const textColor = side === "left" ? "text-green-400" : "text-red-400"
+                return (
+                  <div key={side} style={{ transform: `translateY(${Math.min(Math.max(yOff, -100), 100) / 4}px)` }}>
+                    <div className="flex items-center gap-2 mb-2 px-1">
+                      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
+                      <h2 className={`text-[11px] font-bold uppercase tracking-wider ${textColor}`}>
+                        {t(side === "left" ? "side_left" : "side_right")}
+                      </h2>
+                      <span className="text-[10px] text-text-muted ml-auto">{cols.length}</span>
                     </div>
-                  ) : (
-                    <Reorder.Group
-                      axis="y"
-                      values={cols}
-                      onReorder={(newOrder) => handleReorder(newOrder, side)}
-                      className="flex flex-col list-none p-0 m-0"
-                      style={{ rowGap: `${Math.min(layout.row_gap, 40)}px` }}
-                    >
-                      {cols.map((f) => (
-                        <SortableTile
-                          key={f.id}
-                          f={f}
-                          tile={tiles[f.id]}
-                          aspect={layout.tile_aspect}
-                          gift={tiles[f.id].gift_id ? giftById.get(tiles[f.id].gift_id!) ?? null : null}
-                          resolveColor={resolveLabelColor}
-                          onOpen={() => openEditor(f.id)}
-                          editLabel={t("edit")}
-                          noImageLabel={t("no_image")}
-                        />
+                    <div className="flex flex-col" style={{ rowGap: `${Math.min(layout.row_gap, 40)}px` }}>
+                      {cols.map((f, idx) => (
+                        <div key={f.id} className="flex flex-col" style={{ rowGap: `${Math.min(layout.row_gap, 40)}px` }}>
+                          {dropIndicator?.side === side && dropIndicator.idx === idx && (
+                            <div
+                              className="rounded-2xl border-2 border-dashed border-accent bg-accent/10"
+                              style={{ aspectRatio: `1 / ${layout.tile_aspect}` }}
+                            />
+                          )}
+                          <DraggableTile
+                            f={f}
+                            tile={tiles[f.id]}
+                            aspect={layout.tile_aspect}
+                            gift={tiles[f.id].gift_id ? giftById.get(tiles[f.id].gift_id!) ?? null : null}
+                            resolveColor={resolveLabelColor}
+                            onOpen={() => openEditor(f.id)}
+                            onDragStart={handleTileDragStart}
+                            onDragMove={handleTileDrag}
+                            onDragEnd={handleTileDragEnd}
+                            editLabel={t("edit")}
+                            noImageLabel={t("no_image")}
+                          />
+                        </div>
                       ))}
-                    </Reorder.Group>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                      {dropIndicator?.side === side && dropIndicator.idx >= cols.length && (
+                        <div
+                          className="rounded-2xl border-2 border-dashed border-accent bg-accent/10"
+                          style={{ aspectRatio: `1 / ${layout.tile_aspect}` }}
+                        />
+                      )}
+                      {cols.length === 0 && !dropIndicator && (
+                        <div
+                          className="border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-[10px] text-text-muted p-4"
+                          style={{ aspectRatio: `1 / ${layout.tile_aspect}` }}
+                        >
+                          {t("empty_side")}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </LayoutGroup>
         </div>
       )}
 
@@ -769,6 +917,28 @@ export default function LiveGenClient({
                       className="w-full bg-bg-base border border-accent/15 rounded-md px-2.5 py-1.5 text-[13px] outline-none focus:border-accent/40"
                     />
                     <Slider label={t("font_size")} value={editingTile.label_size} min={14} max={80} step={1} format={(v) => `${v}px`} onChange={(v) => updateTile(editing.id, { label_size: v })} />
+                    <div>
+                      <p className="text-[10px] text-text-muted mb-1">{t("font_family")}</p>
+                      <div className="grid grid-cols-2 gap-1">
+                        {FONT_OPTIONS.map((fo) => {
+                          const active = editingTile.label_font === fo.key
+                          return (
+                            <button
+                              key={fo.key}
+                              onClick={() => updateTile(editing.id, { label_font: fo.key })}
+                              className={`px-2 py-1 rounded-md text-[11px] border transition text-left truncate ${
+                                active
+                                  ? "border-accent bg-accent/15 text-accent-light"
+                                  : "border-white/10 bg-bg-base text-text-base hover:border-accent/30"
+                              }`}
+                              style={{ fontFamily: fo.family ? `"${fo.family}"` : undefined, fontWeight: 700 }}
+                            >
+                              {fo.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                     <div className="flex gap-1 flex-wrap mt-1.5">
                       {COLOR_PRESETS.map((c) => {
                         const isAuto = c.key === "auto"
@@ -865,16 +1035,20 @@ export default function LiveGenClient({
   )
 }
 
-// One tile rendered as a sortable list item. Drag is gated to the handle so
-// clicking elsewhere on the tile still opens the editor — `dragListener={false}`
-// + manual `controls.start(e)` from the handle is the documented pattern.
-function SortableTile({
+// motion.div + custom drag — `layout` makes neighbours animate to their new
+// slots as state updates during drag; `drag` lets the user pull the tile in 2D
+// across columns. Click vs drag is split: handle starts drag, button area opens
+// the editor.
+function DraggableTile({
   f,
   tile,
   aspect,
   gift,
   resolveColor,
   onOpen,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
   editLabel,
   noImageLabel,
 }: {
@@ -884,20 +1058,33 @@ function SortableTile({
   gift: Gift | null
   resolveColor: (t: TileState) => string
   onOpen: () => void
+  onDragStart: (id: string) => void
+  onDragMove: (id: string, x: number, y: number) => void
+  onDragEnd: (id: string) => void
   editLabel: string
   noImageLabel: string
 }) {
   const controls = useDragControls()
   const charUrl = tile.character_image || f.image_url
+  const fontOpt = FONT_OPTIONS.find((o) => o.key === tile.label_font)
+  const fontFamily = fontOpt?.family ? `"${fontOpt.family}"` : undefined
 
   return (
-    <Reorder.Item
-      value={f}
+    <motion.div
+      layout
+      layoutId={f.id}
+      data-tile-id={f.id}
+      drag
       dragListener={false}
       dragControls={controls}
-      whileDrag={{ scale: 1.04, zIndex: 50, boxShadow: "0 10px 30px rgba(0,0,0,0.4)" }}
-      transition={{ type: "spring", stiffness: 600, damping: 40 }}
-      className="relative bg-bg-card border border-accent/15 rounded-2xl overflow-hidden hover:border-accent/40 list-none"
+      dragMomentum={false}
+      dragElastic={0.15}
+      onDragStart={() => onDragStart(f.id)}
+      onDrag={(_, info) => onDragMove(f.id, info.point.x, info.point.y)}
+      onDragEnd={() => onDragEnd(f.id)}
+      whileDrag={{ scale: 1.05, zIndex: 50, boxShadow: "0 12px 32px rgba(0,0,0,0.5)" }}
+      transition={{ layout: { type: "spring", stiffness: 600, damping: 38 } }}
+      className="relative bg-bg-card border border-accent/15 rounded-2xl overflow-hidden hover:border-accent/40"
       style={{ aspectRatio: `1 / ${aspect}` }}
     >
       <button
@@ -946,6 +1133,7 @@ function SortableTile({
             style={{
               color: resolveColor(tile),
               fontSize: `${Math.round(tile.label_size * 0.6)}px`,
+              fontFamily,
               right: `${(1 - tile.label_x) * 100}%`,
               top: `${tile.label_y * 100}%`,
               transform: "translateY(-100%)",
@@ -956,13 +1144,13 @@ function SortableTile({
         )}
       </button>
 
-      {/* Drag handle — sits above the click-target button */}
+      {/* Drag handle */}
       <div
         onPointerDown={(e) => {
           e.preventDefault()
           controls.start(e)
         }}
-        className="absolute top-1.5 left-1.5 z-10 bg-black/50 hover:bg-black/70 text-white/80 rounded-md p-1 cursor-grab active:cursor-grabbing touch-none"
+        className="absolute top-1.5 left-1.5 z-10 bg-black/55 hover:bg-black/75 text-white/85 rounded-md p-1 cursor-grab active:cursor-grabbing touch-none"
         title="drag"
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -970,7 +1158,7 @@ function SortableTile({
           <circle cx="15" cy="5" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="19" r="1" />
         </svg>
       </div>
-    </Reorder.Item>
+    </motion.div>
   )
 }
 
@@ -1055,21 +1243,25 @@ function DraggablePreview({
           onPointerDown={handlePointerDown("gift")}
         />
       )}
-      {tile.label && (
-        <p
-          className="absolute font-bold leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] whitespace-nowrap cursor-move px-1"
-          style={{
-            color: resolveColor(tile),
-            fontSize: `${Math.round(tile.label_size * 0.5)}px`,
-            right: `${(1 - tile.label_x) * 100}%`,
-            top: `${tile.label_y * 100}%`,
-            transform: "translateY(-100%)",
-          }}
-          onPointerDown={handlePointerDown("label")}
-        >
-          {tile.label}
-        </p>
-      )}
+      {tile.label && (() => {
+        const fo = FONT_OPTIONS.find((o) => o.key === tile.label_font)
+        return (
+          <p
+            className="absolute font-bold leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] whitespace-nowrap cursor-move px-1"
+            style={{
+              color: resolveColor(tile),
+              fontSize: `${Math.round(tile.label_size * 0.5)}px`,
+              fontFamily: fo?.family ? `"${fo.family}"` : undefined,
+              right: `${(1 - tile.label_x) * 100}%`,
+              top: `${tile.label_y * 100}%`,
+              transform: "translateY(-100%)",
+            }}
+            onPointerDown={handlePointerDown("label")}
+          >
+            {tile.label}
+          </p>
+        )
+      })()}
     </div>
   )
 }

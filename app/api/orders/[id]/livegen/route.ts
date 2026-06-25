@@ -21,6 +21,7 @@ type Tile = {
   label_color?: string
   label_x?: number
   label_y?: number
+  label_font?: string
   character_image?: string | null
   character_scale?: number
   character_y?: number
@@ -128,6 +129,7 @@ export async function PUT(req: Request, { params }: RouteContext) {
       label_color: typeof t.label_color === "string" ? t.label_color.slice(0, 24) : "auto",
       label_x: clamp(t.label_x, 0, 1, 0.96),
       label_y: clamp(t.label_y, 0, 1, 0.94),
+      label_font: typeof t.label_font === "string" ? t.label_font.slice(0, 48) : "default",
       character_image:
         typeof t.character_image === "string" && t.character_image.length > 0
           ? t.character_image.slice(0, 500)

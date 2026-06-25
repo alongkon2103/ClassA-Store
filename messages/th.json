@@ -595,6 +595,7 @@
     "scale": "ขนาด",
     "vertical_offset": "ตำแหน่งแนวตั้ง",
     "font_size": "ขนาดตัวอักษร",
+    "font_family": "ฟอนต์",
     "color_auto": "อัตโนมัติ",
     "color_green": "เขียว",
     "color_red": "แดง",

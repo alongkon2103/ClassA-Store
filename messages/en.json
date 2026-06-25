@@ -592,6 +592,7 @@
     "scale": "Scale",
     "vertical_offset": "Vertical offset",
     "font_size": "Font size",
+    "font_family": "Font family",
     "color_auto": "Auto",
     "color_green": "Green",
     "color_red": "Red",
