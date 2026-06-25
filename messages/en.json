@@ -607,6 +607,7 @@
     "drag_hint": "Drag gift and label in the preview to position",
     "drag_tile_hint": "Drag cards to reorder or move between sides",
     "reset_positions": "Reset positions",
+    "swap_here": "Swap here",
     "layout_settings": "Layout settings",
     "layout_settings_sub": "Adjust gaps, sizes, background of the whole image",
     "column_gap": "Gap between sides",

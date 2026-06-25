@@ -275,22 +275,21 @@ export default function LiveGenClient({
     })
   }
 
-  // Swap-on-hover drag — every time the cursor crosses INTO a different tile
-  // while dragging, swap (side, order) between the dragged tile and the one
-  // beneath it. Works because all tiles share one grid parent (no
-  // unmount/remount when changing side), and `layout` on each motion.div
-  // animates the resulting position shifts.
-  const lastSwapTargetRef = useRef<string | null>(null)
+  // Commit-on-drop approach. During drag we only track which tile sits under
+  // the cursor — paint a strong "drop here" ring on it. On release we swap the
+  // (side, order) of source ↔ target. State only changes once, so the active
+  // motion.div drag gesture is never disturbed mid-flight.
+  const dragSourceRef = useRef<string | null>(null)
+  const hoverTargetRef = useRef<string | null>(null)
+  const [hoverTargetId, setHoverTargetId] = useState<string | null>(null)
 
   const handleTileDragStart = (sourceId: string) => {
-    lastSwapTargetRef.current = null
-    void sourceId
+    dragSourceRef.current = sourceId
+    hoverTargetRef.current = null
+    setHoverTargetId(null)
   }
 
   const handleTileDrag = (sourceId: string, x: number, y: number) => {
-    // Walk through everything under the cursor and find the first tile that
-    // isn't the source. `elementsFromPoint` respects pointer-events, so the
-    // dragged tile (z-index 50) ends up first but we skip it.
     const stack = document.elementsFromPoint(x, y)
     let targetId: string | null = null
     for (const el of stack) {
@@ -302,30 +301,29 @@ export default function LiveGenClient({
         break
       }
     }
-
-    if (!targetId) {
-      lastSwapTargetRef.current = null
-      return
-    }
-    // Only swap once per "entered new tile" — guards against rapid re-fires
-    // while the cursor sits over the same target.
-    if (lastSwapTargetRef.current === targetId) return
-    lastSwapTargetRef.current = targetId
-
-    setTiles((prev) => {
-      const src = prev[sourceId]
-      const tgt = prev[targetId!]
-      if (!src || !tgt) return prev
-      return {
-        ...prev,
-        [sourceId]: { ...src, side: tgt.side, order: tgt.order },
-        [targetId!]: { ...tgt, side: src.side, order: src.order },
-      }
-    })
+    if (targetId === hoverTargetRef.current) return
+    hoverTargetRef.current = targetId
+    setHoverTargetId(targetId)
   }
 
   const handleTileDragEnd = () => {
-    lastSwapTargetRef.current = null
+    const sourceId = dragSourceRef.current
+    const targetId = hoverTargetRef.current
+    if (sourceId && targetId && sourceId !== targetId) {
+      setTiles((prev) => {
+        const src = prev[sourceId]
+        const tgt = prev[targetId]
+        if (!src || !tgt) return prev
+        return {
+          ...prev,
+          [sourceId]: { ...src, side: tgt.side, order: tgt.order },
+          [targetId]: { ...tgt, side: src.side, order: src.order },
+        }
+      })
+    }
+    dragSourceRef.current = null
+    hoverTargetRef.current = null
+    setHoverTargetId(null)
   }
 
   const moveTile = (fid: string, direction: -1 | 1) => {
@@ -678,6 +676,8 @@ export default function LiveGenClient({
                     resolveColor={resolveLabelColor}
                     gridColumn={tt.side === "left" ? 1 : 2}
                     gridRow={tt.order + 1}
+                    isHoverTarget={hoverTargetId === f.id}
+                    swapHere={t("swap_here")}
                     onOpen={() => openEditor(f.id)}
                     onDragStart={handleTileDragStart}
                     onDragMove={handleTileDrag}
@@ -1008,6 +1008,8 @@ function DraggableTile({
   resolveColor,
   gridColumn,
   gridRow,
+  isHoverTarget,
+  swapHere,
   onOpen,
   onDragStart,
   onDragMove,
@@ -1022,6 +1024,8 @@ function DraggableTile({
   resolveColor: (t: TileState) => string
   gridColumn: number
   gridRow: number
+  isHoverTarget: boolean
+  swapHere: string
   onOpen: () => void
   onDragStart: (id: string) => void
   onDragMove: (id: string, x: number, y: number) => void
@@ -1053,7 +1057,11 @@ function DraggableTile({
         layout: { type: "spring", stiffness: 500, damping: 38 },
         default: { type: "spring", stiffness: 500, damping: 38 },
       }}
-      className="relative bg-bg-card border-2 border-accent/20 hover:border-accent/40 rounded-2xl overflow-hidden transition-colors"
+      className={`relative bg-bg-card border-2 rounded-2xl overflow-hidden transition-all ${
+        isHoverTarget
+          ? "border-accent shadow-[0_0_0_4px_rgba(99,102,241,0.45),0_8px_24px_rgba(99,102,241,0.35)] scale-[1.02]"
+          : "border-accent/20 hover:border-accent/40"
+      }`}
       style={{ aspectRatio: `1 / ${aspect}`, gridColumn, gridRow }}
     >
       <button
@@ -1112,6 +1120,19 @@ function DraggableTile({
           </p>
         )}
       </button>
+
+      {/* Drop-here overlay — appears only when this card is the swap target */}
+      {isHoverTarget && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-accent/25 backdrop-blur-[2px] pointer-events-none">
+          <div className="bg-accent text-white text-[12px] font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M7 17l5-5 5 5" />
+              <path d="M7 7l5 5 5-5" />
+            </svg>
+            {swapHere}
+          </div>
+        </div>
+      )}
 
       {/* Drag handle */}
       <div
