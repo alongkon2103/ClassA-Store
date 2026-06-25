@@ -1,8 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
-import { motion, useDragControls, useMotionValue, LayoutGroup, type MotionValue } from "framer-motion"
+import { motion, useMotionValue, LayoutGroup, animate } from "framer-motion"
 import { Link } from "@/i18n/routing"
 import { getImageUrl } from "@/lib/getImageUrl"
 
@@ -301,29 +301,6 @@ export default function LiveGenClient({
   const dragSourceRef = useRef<string | null>(null)
   const hoverTargetRef = useRef<string | null>(null)
   const [hoverTargetId, setHoverTargetId] = useState<string | null>(null)
-
-  // Registry of each tile's motion.y so we can compensate for page scroll
-  // mid-drag — without this, scrolling the page while a tile is held leaves
-  // the tile stuck at its document position instead of following the cursor.
-  const tileMotionRef = useRef<Map<string, MotionValue<number>>>(new Map())
-  const registerTileMotion = useCallback((id: string, y: MotionValue<number> | null) => {
-    if (y === null) tileMotionRef.current.delete(id)
-    else tileMotionRef.current.set(id, y)
-  }, [])
-
-  useEffect(() => {
-    let last = typeof window !== "undefined" ? window.scrollY : 0
-    const onScroll = () => {
-      const delta = window.scrollY - last
-      last = window.scrollY
-      const id = dragSourceRef.current
-      if (!id) return
-      const y = tileMotionRef.current.get(id)
-      if (y) y.set(y.get() + delta)
-    }
-    window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
-  }, [])
 
   const handleTileDragStart = (sourceId: string) => {
     dragSourceRef.current = sourceId
@@ -728,7 +705,6 @@ export default function LiveGenClient({
                     gridRow={tt.order + 1}
                     isHoverTarget={hoverTargetId === f.id}
                     swapHere={t("swap_here")}
-                    registerMotion={registerTileMotion}
                     onOpen={() => openEditor(f.id)}
                     onDragStart={handleTileDragStart}
                     onDragMove={handleTileDrag}
@@ -1061,7 +1037,6 @@ function DraggableTile({
   gridRow,
   isHoverTarget,
   swapHere,
-  registerMotion,
   onOpen,
   onDragStart,
   onDragMove,
@@ -1078,7 +1053,6 @@ function DraggableTile({
   gridRow: number
   isHoverTarget: boolean
   swapHere: string
-  registerMotion: (id: string, y: MotionValue<number> | null) => void
   onOpen: () => void
   onDragStart: (id: string) => void
   onDragMove: (id: string, x: number, y: number) => void
@@ -1086,38 +1060,97 @@ function DraggableTile({
   editLabel: string
   noImageLabel: string
 }) {
-  const controls = useDragControls()
   const dragX = useMotionValue(0)
   const dragY = useMotionValue(0)
+  const [isDragging, setIsDragging] = useState(false)
   const charUrl = tile.character_image || f.image_url
   const fontOpt = FONT_OPTIONS.find((o) => o.key === tile.label_font)
   const fontFamily = fontOpt?.family ? `"${fontOpt.family}"` : undefined
 
+  // Drag state held in a ref so the scroll listener can recompute position
+  // from the most recent pointer coords without React re-renders.
+  const dragStateRef = useRef<{
+    pointerStartX: number
+    pointerStartY: number
+    scrollStart: number
+    lastClientX: number
+    lastClientY: number
+    pointerId: number
+  } | null>(null)
+
+  const recompute = () => {
+    const s = dragStateRef.current
+    if (!s) return
+    const dx = s.lastClientX - s.pointerStartX
+    // Crucial: bake the scroll delta into y so the tile keeps tracking the
+    // cursor even while the page scrolls underneath it (auto-scroll or wheel).
+    const dy = (s.lastClientY - s.pointerStartY) + (window.scrollY - s.scrollStart)
+    dragX.set(dx)
+    dragY.set(dy)
+  }
+
   useEffect(() => {
-    registerMotion(f.id, dragY)
-    return () => registerMotion(f.id, null)
-  }, [f.id, dragY, registerMotion])
+    const onScroll = () => recompute()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+    // recompute closes over dragX/dragY but those are stable refs from useMotionValue.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
+    dragStateRef.current = {
+      pointerStartX: e.clientX,
+      pointerStartY: e.clientY,
+      scrollStart: window.scrollY,
+      lastClientX: e.clientX,
+      lastClientY: e.clientY,
+      pointerId: e.pointerId,
+    }
+    setIsDragging(true)
+    onDragStart(f.id)
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const s = dragStateRef.current
+    if (!s || s.pointerId !== e.pointerId) return
+    s.lastClientX = e.clientX
+    s.lastClientY = e.clientY
+    recompute()
+    onDragMove(f.id, e.clientX, e.clientY)
+  }
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    const s = dragStateRef.current
+    if (!s || s.pointerId !== e.pointerId) return
+    dragStateRef.current = null
+    setIsDragging(false)
+    onDragEnd(f.id)
+    // Spring transform back to 0 so the tile lands in its grid slot.
+    animate(dragX, 0, { type: "spring", stiffness: 500, damping: 38 })
+    animate(dragY, 0, { type: "spring", stiffness: 500, damping: 38 })
+  }
 
   return (
     <motion.div
       layout
       layoutId={f.id}
       data-tile-id={f.id}
-      drag
-      dragListener={false}
-      dragControls={controls}
-      dragMomentum={false}
-      dragElastic={0}
-      dragSnapToOrigin
-      onDragStart={() => onDragStart(f.id)}
-      onDrag={(_, info) => onDragMove(f.id, info.point.x, info.point.y)}
-      onDragEnd={() => onDragEnd(f.id)}
-      whileDrag={{ zIndex: 50, opacity: 0.85 }}
       transition={{ layout: { duration: 0.18 } }}
       className={`relative bg-bg-card border-2 rounded-2xl overflow-hidden ${
         isHoverTarget ? "border-accent" : "border-accent/20 hover:border-accent/40"
       }`}
-      style={{ aspectRatio: `1 / ${aspect}`, gridColumn, gridRow, x: dragX, y: dragY }}
+      style={{
+        aspectRatio: `1 / ${aspect}`,
+        gridColumn,
+        gridRow,
+        x: dragX,
+        y: dragY,
+        zIndex: isDragging ? 50 : undefined,
+        opacity: isDragging ? 0.85 : 1,
+      }}
     >
       <button
         type="button"
@@ -1192,10 +1225,10 @@ function DraggableTile({
 
       {/* Drag handle */}
       <div
-        onPointerDown={(e) => {
-          e.preventDefault()
-          controls.start(e)
-        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         className="absolute top-1.5 left-1.5 z-10 bg-black/55 hover:bg-black/75 text-white/85 rounded-md p-1 cursor-grab active:cursor-grabbing touch-none"
         title="drag"
       >
