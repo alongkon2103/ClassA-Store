@@ -15,8 +15,12 @@ type Tile = {
   order?: number
   gift_scale?: number
   gift_position?: "tl" | "tr" | "bl" | "br"
+  gift_x?: number
+  gift_y?: number
   label_size?: number
   label_color?: string
+  label_x?: number
+  label_y?: number
   character_image?: string | null
   character_scale?: number
   character_y?: number
@@ -118,8 +122,12 @@ export async function PUT(req: Request, { params }: RouteContext) {
       gift_position: ["tl", "tr", "bl", "br"].includes(t.gift_position as string)
         ? t.gift_position
         : "tl",
+      gift_x: clamp(t.gift_x, 0, 1, 0.03),
+      gift_y: clamp(t.gift_y, 0, 1, 0.03),
       label_size: clamp(t.label_size, 12, 96, 36),
       label_color: typeof t.label_color === "string" ? t.label_color.slice(0, 24) : "auto",
+      label_x: clamp(t.label_x, 0, 1, 0.96),
+      label_y: clamp(t.label_y, 0, 1, 0.94),
       character_image:
         typeof t.character_image === "string" && t.character_image.length > 0
           ? t.character_image.slice(0, 500)
