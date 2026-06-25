@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
+import { Reorder, useDragControls } from "framer-motion"
 import { Link } from "@/i18n/routing"
 import { getImageUrl } from "@/lib/getImageUrl"
 
@@ -195,8 +196,6 @@ export default function LiveGenClient({
   const [saving, setSaving] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [savedAt, setSavedAt] = useState<Date | null>(null)
-  const [draggingTileId, setDraggingTileId] = useState<string | null>(null)
-  const [dropTarget, setDropTarget] = useState<{ side: Side; index: number } | null>(null)
 
   const updateLayout = (patch: Partial<LayoutState>) => setLayout((prev) => ({ ...prev, ...patch }))
 
@@ -225,6 +224,30 @@ export default function LiveGenClient({
     setTiles((prev) => ({ ...prev, [fid]: { ...prev[fid], ...patch } }))
   }
 
+  const toggleSide = (fid: string) => {
+    setTiles((prev) => {
+      const cur = prev[fid]
+      const nextSide: Side = cur.side === "left" ? "right" : "left"
+      const maxOrder = Math.max(
+        -1,
+        ...Object.values(prev)
+          .filter((tt) => tt.side === nextSide)
+          .map((tt) => tt.order),
+      )
+      return { ...prev, [fid]: { ...cur, side: nextSide, order: maxOrder + 1 } }
+    })
+  }
+
+  const handleReorder = (newOrder: Func[], side: Side) => {
+    setTiles((prev) => {
+      const next = { ...prev }
+      newOrder.forEach((f, i) => {
+        if (next[f.id]) next[f.id] = { ...next[f.id], side, order: i }
+      })
+      return next
+    })
+  }
+
   const moveTile = (fid: string, direction: -1 | 1) => {
     setTiles((prev) => {
       const cur = prev[fid]
@@ -240,39 +263,6 @@ export default function LiveGenClient({
         [fid]: { ...cur, order: swapTile.order },
         [swapId]: { ...swapTile, order: cur.order },
       }
-    })
-  }
-
-  // Move a tile to `targetSide` at slot `targetIndex` (insert before that slot).
-  // Reassigns orders for both source's old side and target side.
-  const reorderTile = (sourceId: string, targetSide: Side, targetIndex: number) => {
-    setTiles((prev) => {
-      const src = prev[sourceId]
-      if (!src) return prev
-
-      const groupBySide = (side: Side) =>
-        Object.entries(prev)
-          .filter(([id, tt]) => id !== sourceId && tt.side === side)
-          .sort(([, a], [, b]) => a.order - b.order)
-          .map(([id]) => id)
-
-      const targetGroup = groupBySide(targetSide)
-      const clamped = Math.max(0, Math.min(targetIndex, targetGroup.length))
-      targetGroup.splice(clamped, 0, sourceId)
-
-      const next = { ...prev }
-      // Re-number target side
-      targetGroup.forEach((id, i) => {
-        next[id] = { ...next[id], side: targetSide, order: i }
-      })
-      // Re-number source's old side (if different)
-      if (src.side !== targetSide) {
-        const oldGroup = groupBySide(src.side)
-        oldGroup.forEach((id, i) => {
-          next[id] = { ...next[id], order: i }
-        })
-      }
-      return next
     })
   }
 
@@ -423,133 +413,11 @@ export default function LiveGenClient({
     }
   }
 
-  const renderTile = (f: Func, sideIdx: number) => {
-    const tile = tiles[f.id]
-    const gift = tile?.gift_id ? giftById.get(tile.gift_id) : null
-    const charUrl = tile.character_image || f.image_url
-    const isDragging = draggingTileId === f.id
-
-    return (
-      <button
-        key={f.id}
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData("text/plain", f.id)
-          e.dataTransfer.effectAllowed = "move"
-          setDraggingTileId(f.id)
-        }}
-        onDragEnd={() => {
-          setDraggingTileId(null)
-          setDropTarget(null)
-        }}
-        onDragOver={(e) => {
-          e.preventDefault()
-          e.dataTransfer.dropEffect = "move"
-          const rect = e.currentTarget.getBoundingClientRect()
-          const before = (e.clientY - rect.top) < rect.height / 2
-          setDropTarget({ side: tile.side, index: before ? sideIdx : sideIdx + 1 })
-        }}
-        onDrop={(e) => {
-          e.preventDefault()
-          const sourceId = e.dataTransfer.getData("text/plain")
-          if (!sourceId || sourceId === f.id) return
-          const rect = e.currentTarget.getBoundingClientRect()
-          const before = (e.clientY - rect.top) < rect.height / 2
-          reorderTile(sourceId, tile.side, before ? sideIdx : sideIdx + 1)
-          setDropTarget(null)
-        }}
-        onClick={() => {
-          setGiftSearch("")
-          setCharPickerOpen(false)
-          setEditingFunctionId(f.id)
-        }}
-        className={`relative block w-full bg-bg-card border rounded-2xl overflow-hidden text-left transition group ${
-          isDragging ? "opacity-40 border-accent" : "border-accent/15 hover:border-accent/40"
-        }`}
-        style={{ aspectRatio: `1 / ${layout.tile_aspect}` }}
-      >
-        {charUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={getImageUrl(charUrl)}
-            alt={f.name}
-            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-            style={{
-              transform: `translateY(${tile.character_y / 4}px) scale(${tile.character_scale})`,
-              transformOrigin: "center",
-            }}
-            draggable={false}
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-text-muted text-[11px]">
-            {t("no_image")}
-          </div>
-        )}
-
-        {gift?.image_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={getImageUrl(gift.image_url)}
-            alt={gift.name}
-            className="absolute object-contain drop-shadow-md pointer-events-none"
-            style={{
-              left: `${tile.gift_x * 100}%`,
-              top: `${tile.gift_y * 100}%`,
-              width: `${tile.gift_scale * 100}%`,
-              height: `${tile.gift_scale * 100}%`,
-            }}
-            draggable={false}
-          />
-        )}
-
-        {tile?.label && (
-          <p
-            className="absolute font-bold leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] pointer-events-none whitespace-nowrap"
-            style={{
-              color: resolveLabelColor(tile),
-              fontSize: `${Math.round(tile.label_size * 0.6)}px`,
-              right: `${(1 - tile.label_x) * 100}%`,
-              top: `${tile.label_y * 100}%`,
-              transform: "translateY(-100%)",
-            }}
-          >
-            {tile.label}
-          </p>
-        )}
-
-        <div className="absolute top-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-full pointer-events-none flex items-center gap-1">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <circle cx="9" cy="5" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="9" cy="19" r="1" />
-            <circle cx="15" cy="5" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="19" r="1" />
-          </svg>
-        </div>
-      </button>
-    )
+  const openEditor = (fid: string) => {
+    setGiftSearch("")
+    setCharPickerOpen(false)
+    setEditingFunctionId(fid)
   }
-
-  // Drop zone at end of each column so users can drop on an empty side or
-  // append to the bottom — the per-tile onDrop only handles in-list inserts.
-  const renderColumnDrop = (side: Side, endIndex: number) => (
-    <div
-      onDragOver={(e) => {
-        e.preventDefault()
-        e.dataTransfer.dropEffect = "move"
-        setDropTarget({ side, index: endIndex })
-      }}
-      onDrop={(e) => {
-        e.preventDefault()
-        const sourceId = e.dataTransfer.getData("text/plain")
-        if (!sourceId) return
-        reorderTile(sourceId, side, endIndex)
-        setDropTarget(null)
-      }}
-      className={`h-8 rounded-xl border border-dashed transition ${
-        dropTarget?.side === side && dropTarget.index === endIndex
-          ? "border-accent bg-accent/10"
-          : "border-white/10"
-      }`}
-    />
-  )
 
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 md:py-10">
@@ -679,41 +547,47 @@ export default function LiveGenClient({
             {(["left", "right"] as Side[]).map((side) => {
               const cols = side === "left" ? leftFns : rightFns
               const yOff = side === "left" ? layout.left_y_offset : layout.right_y_offset
-              const headerColor = side === "left" ? "bg-green-400 text-green-400" : "bg-red-400 text-red-400"
+              const dotColor = side === "left" ? "bg-green-400" : "bg-red-400"
+              const textColor = side === "left" ? "text-green-400" : "text-red-400"
               return (
                 <div key={side} style={{ transform: `translateY(${Math.min(Math.max(yOff, -100), 100) / 4}px)` }}>
                   <div className="flex items-center gap-2 mb-2 px-1">
-                    <span className={`w-1.5 h-1.5 rounded-full ${headerColor.split(" ")[0]}`}></span>
-                    <h2 className={`text-[11px] font-bold uppercase tracking-wider ${headerColor.split(" ")[1]}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
+                    <h2 className={`text-[11px] font-bold uppercase tracking-wider ${textColor}`}>
                       {t(side === "left" ? "side_left" : "side_right")}
                     </h2>
                     <span className="text-[10px] text-text-muted ml-auto">{cols.length}</span>
                   </div>
-                  <div className="flex flex-col" style={{ rowGap: `${Math.min(layout.row_gap, 40)}px` }}>
-                    {cols.map((f, idx) => renderTile(f, idx))}
-                    {cols.length === 0 && (
-                      <div
-                        onDragOver={(e) => {
-                          e.preventDefault()
-                          setDropTarget({ side, index: 0 })
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault()
-                          const sourceId = e.dataTransfer.getData("text/plain")
-                          if (!sourceId) return
-                          reorderTile(sourceId, side, 0)
-                          setDropTarget(null)
-                        }}
-                        className={`border border-dashed rounded-2xl flex items-center justify-center text-[10px] text-text-muted p-4 transition ${
-                          dropTarget?.side === side ? "border-accent bg-accent/10" : "border-white/10"
-                        }`}
-                        style={{ aspectRatio: `1 / ${layout.tile_aspect}` }}
-                      >
-                        {t("empty_side")}
-                      </div>
-                    )}
-                    {cols.length > 0 && renderColumnDrop(side, cols.length)}
-                  </div>
+                  {cols.length === 0 ? (
+                    <div
+                      className="border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-[10px] text-text-muted p-4"
+                      style={{ aspectRatio: `1 / ${layout.tile_aspect}` }}
+                    >
+                      {t("empty_side")}
+                    </div>
+                  ) : (
+                    <Reorder.Group
+                      axis="y"
+                      values={cols}
+                      onReorder={(newOrder) => handleReorder(newOrder, side)}
+                      className="flex flex-col list-none p-0 m-0"
+                      style={{ rowGap: `${Math.min(layout.row_gap, 40)}px` }}
+                    >
+                      {cols.map((f) => (
+                        <SortableTile
+                          key={f.id}
+                          f={f}
+                          tile={tiles[f.id]}
+                          aspect={layout.tile_aspect}
+                          gift={tiles[f.id].gift_id ? giftById.get(tiles[f.id].gift_id!) ?? null : null}
+                          resolveColor={resolveLabelColor}
+                          onOpen={() => openEditor(f.id)}
+                          editLabel={t("edit")}
+                          noImageLabel={t("no_image")}
+                        />
+                      ))}
+                    </Reorder.Group>
+                  )}
                 </div>
               )
             })}
@@ -788,13 +662,16 @@ export default function LiveGenClient({
                   {/* Position */}
                   <Section title={t("position")}>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`px-2.5 py-1 rounded-md text-[11px] font-medium border ${
-                        editingTile.side === "left"
-                          ? "bg-green-500/15 border-green-500/30 text-green-400"
-                          : "bg-red-500/15 border-red-500/30 text-red-400"
-                      }`}>
-                        {editingTile.side === "left" ? t("on_left") : t("on_right")}
-                      </span>
+                      <button
+                        onClick={() => toggleSide(editing.id)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition ${
+                          editingTile.side === "left"
+                            ? "bg-green-500/15 border-green-500/30 text-green-400 hover:bg-green-500/25"
+                            : "bg-red-500/15 border-red-500/30 text-red-400 hover:bg-red-500/25"
+                        }`}
+                      >
+                        {editingTile.side === "left" ? t("on_left") : t("on_right")} · {t("tap_to_swap")}
+                      </button>
                       <div className="flex gap-1 ml-auto">
                         <IconBtn onClick={() => moveTile(editing.id, -1)} disabled={isFirst} title={t("move_up")}>
                           <polyline points="18 15 12 9 6 15" />
@@ -985,6 +862,115 @@ export default function LiveGenClient({
         )
       })()}
     </main>
+  )
+}
+
+// One tile rendered as a sortable list item. Drag is gated to the handle so
+// clicking elsewhere on the tile still opens the editor — `dragListener={false}`
+// + manual `controls.start(e)` from the handle is the documented pattern.
+function SortableTile({
+  f,
+  tile,
+  aspect,
+  gift,
+  resolveColor,
+  onOpen,
+  editLabel,
+  noImageLabel,
+}: {
+  f: Func
+  tile: TileState
+  aspect: number
+  gift: Gift | null
+  resolveColor: (t: TileState) => string
+  onOpen: () => void
+  editLabel: string
+  noImageLabel: string
+}) {
+  const controls = useDragControls()
+  const charUrl = tile.character_image || f.image_url
+
+  return (
+    <Reorder.Item
+      value={f}
+      dragListener={false}
+      dragControls={controls}
+      whileDrag={{ scale: 1.04, zIndex: 50, boxShadow: "0 10px 30px rgba(0,0,0,0.4)" }}
+      transition={{ type: "spring", stiffness: 600, damping: 40 }}
+      className="relative bg-bg-card border border-accent/15 rounded-2xl overflow-hidden hover:border-accent/40 list-none"
+      style={{ aspectRatio: `1 / ${aspect}` }}
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        className="absolute inset-0 w-full h-full text-left bg-transparent"
+        aria-label={editLabel}
+      >
+        {charUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={getImageUrl(charUrl)}
+            alt={f.name}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+            style={{
+              transform: `translateY(${tile.character_y / 4}px) scale(${tile.character_scale})`,
+              transformOrigin: "center",
+            }}
+            draggable={false}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-text-muted text-[11px]">
+            {noImageLabel}
+          </div>
+        )}
+
+        {gift?.image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={getImageUrl(gift.image_url)}
+            alt={gift.name}
+            className="absolute object-contain drop-shadow-md pointer-events-none"
+            style={{
+              left: `${tile.gift_x * 100}%`,
+              top: `${tile.gift_y * 100}%`,
+              width: `${tile.gift_scale * 100}%`,
+              height: `${tile.gift_scale * 100}%`,
+            }}
+            draggable={false}
+          />
+        )}
+
+        {tile?.label && (
+          <p
+            className="absolute font-bold leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] pointer-events-none whitespace-nowrap"
+            style={{
+              color: resolveColor(tile),
+              fontSize: `${Math.round(tile.label_size * 0.6)}px`,
+              right: `${(1 - tile.label_x) * 100}%`,
+              top: `${tile.label_y * 100}%`,
+              transform: "translateY(-100%)",
+            }}
+          >
+            {tile.label}
+          </p>
+        )}
+      </button>
+
+      {/* Drag handle — sits above the click-target button */}
+      <div
+        onPointerDown={(e) => {
+          e.preventDefault()
+          controls.start(e)
+        }}
+        className="absolute top-1.5 left-1.5 z-10 bg-black/50 hover:bg-black/70 text-white/80 rounded-md p-1 cursor-grab active:cursor-grabbing touch-none"
+        title="drag"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <circle cx="9" cy="5" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="9" cy="19" r="1" />
+          <circle cx="15" cy="5" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="19" r="1" />
+        </svg>
+      </div>
+    </Reorder.Item>
   )
 }
 
