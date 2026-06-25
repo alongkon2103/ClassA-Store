@@ -9,6 +9,9 @@ import Footer from "@/components/home/Footer"
 import OrderListClient from "@/components/orders/OrderListClient"
 import { setRequestLocale, getTranslations } from "next-intl/server"
 
+// Skip the static cache — admin feature toggles must reflect immediately.
+export const dynamic = "force-dynamic"
+
 export default async function MyOrdersPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   setRequestLocale(locale)

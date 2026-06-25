@@ -11,6 +11,8 @@ import AssetThumbnailCard from "@/components/orders/AssetThumbnailCard"
 import PayPalRetryBanner from "@/components/orders/PayPalRetryBanner"
 import { getImageUrl } from "@/lib/getImageUrl"
 
+// Skip the static cache — admin feature toggles must reflect immediately.
+export const dynamic = "force-dynamic"
 
 export default async function OrderPage({
     params,

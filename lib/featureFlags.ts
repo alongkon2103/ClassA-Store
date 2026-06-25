@@ -1,6 +1,8 @@
 // Generic feature flags stored in system_configs as plain "true"/"false".
-// 30-second in-memory cache; admin writes bump the cache via the API hook
-// in `app/api/admin/settings/configs/route.ts`.
+// NO in-memory cache — feature flags must take effect immediately when an
+// admin toggles them. In serverless each instance has its own module state,
+// so cached `true` on one instance would linger after a "disable" save on
+// another. Toggles are rare, so the extra DB hit per page is fine.
 
 import { prisma } from "@/lib/prisma"
 
@@ -12,9 +14,6 @@ const DEFAULTS = {
   livegen_enabled: true,
 }
 
-let cache: { flags: typeof DEFAULTS; fetchedAt: number } | null = null
-const CACHE_TTL_MS = 30 * 1000
-
 function parseBool(v: string | undefined, fallback: boolean): boolean {
   if (v === undefined || v === null || v === "") return fallback
   if (v === "true") return true
@@ -22,20 +21,16 @@ function parseBool(v: string | undefined, fallback: boolean): boolean {
   return fallback
 }
 
-export function invalidateFeatureFlagsCache() {
-  cache = null
-}
+// Kept as a no-op for callers (settings route) so we don't break imports.
+export function invalidateFeatureFlagsCache() {}
 
 export async function getFeatureFlags(): Promise<typeof DEFAULTS> {
-  if (cache && Date.now() - cache.fetchedAt < CACHE_TTL_MS) return cache.flags
   const rows = await prisma.system_configs.findMany({
     where: { key: { in: Object.values(FEATURE_KEYS) } },
     select: { key: true, value: true },
   })
   const map = Object.fromEntries(rows.map((r) => [r.key, r.value]))
-  const flags = {
+  return {
     livegen_enabled: parseBool(map[FEATURE_KEYS.livegen_enabled], DEFAULTS.livegen_enabled),
   }
-  cache = { flags, fetchedAt: Date.now() }
-  return flags
 }
