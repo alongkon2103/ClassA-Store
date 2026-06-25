@@ -44,6 +44,9 @@ type Func = {
   image_url: string | null
   default_gift_id: number | null
   default_trigger_threshold: number | null
+  // Only set on synthetic Funcs created by "Add card" — points to which real
+  // product_function provided the starting character image.
+  source_function_id?: string
 }
 
 type CharacterLibraryItem = { url: string; name: string }
@@ -72,6 +75,8 @@ export type LiveGenConfig = {
     character_image?: string | null
     character_scale?: number
     character_y?: number
+    name?: string
+    source_function_id?: string
   }>
   layout?: Partial<LayoutState>
 }
@@ -88,7 +93,7 @@ type LayoutState = {
 }
 
 const DEFAULT_LAYOUT: LayoutState = {
-  column_gap: 150,
+  column_gap: 100,
   row_gap: 16,
   padding: 24,
   left_y_offset: 0,
@@ -232,6 +237,28 @@ export default function LiveGenClient({
     return normalizeOrders(out)
   }, [functions, initialConfig, locale])
 
+  // Rehydrate custom Funcs from any saved config so the user sees their
+  // previously added cards on next visit. Real functions live in props.
+  const initialCustomFuncs = useMemo<Func[]>(() => {
+    if (!initialConfig?.tiles) return []
+    return initialConfig.tiles
+      .filter((t) => t.function_id.startsWith("custom_") && t.source_function_id)
+      .map((t) => {
+        const src = functions.find((f) => f.id === t.source_function_id)
+        return {
+          id: t.function_id,
+          name: t.name || "Custom",
+          label_th: null,
+          label_en: null,
+          image_url: t.character_image || src?.image_url || null,
+          default_gift_id: null,
+          default_trigger_threshold: null,
+          source_function_id: t.source_function_id,
+        }
+      })
+  }, [initialConfig, functions])
+
+  const [customFuncs, setCustomFuncs] = useState<Func[]>(initialCustomFuncs)
   const [tiles, setTiles] = useState<Record<string, TileState>>(initialTiles)
   const [layout, setLayout] = useState<LayoutState>({
     ...DEFAULT_LAYOUT,
@@ -241,9 +268,13 @@ export default function LiveGenClient({
   const [editingFunctionId, setEditingFunctionId] = useState<string | null>(null)
   const [giftSearch, setGiftSearch] = useState("")
   const [charPickerOpen, setCharPickerOpen] = useState(false)
+  const [addCardPickerOpen, setAddCardPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [savedAt, setSavedAt] = useState<Date | null>(null)
+
+  // All cards rendered in the grid: real product_functions + user duplicates.
+  const allFunctions = useMemo(() => [...functions, ...customFuncs], [functions, customFuncs])
 
   const updateLayout = (patch: Partial<LayoutState>) => setLayout((prev) => ({ ...prev, ...patch }))
 
@@ -258,7 +289,7 @@ export default function LiveGenClient({
     document.head.appendChild(l)
   }, [])
 
-  const editing = editingFunctionId ? functions.find((f) => f.id === editingFunctionId) : null
+  const editing = editingFunctionId ? allFunctions.find((f) => f.id === editingFunctionId) : null
   const editingTile = editingFunctionId ? tiles[editingFunctionId] : null
 
   const filteredGifts = useMemo(() => {
@@ -270,14 +301,14 @@ export default function LiveGenClient({
   const { leftFns, rightFns } = useMemo(() => {
     const left: Func[] = []
     const right: Func[] = []
-    for (const f of functions) {
+    for (const f of allFunctions) {
       if (tiles[f.id]?.side === "right") right.push(f)
       else left.push(f)
     }
     left.sort((a, b) => (tiles[a.id]?.order ?? 0) - (tiles[b.id]?.order ?? 0))
     right.sort((a, b) => (tiles[a.id]?.order ?? 0) - (tiles[b.id]?.order ?? 0))
     return { leftFns: left, rightFns: right }
-  }, [functions, tiles])
+  }, [allFunctions, tiles])
 
   const updateTile = (fid: string, patch: Partial<TileState>) => {
     setTiles((prev) => ({ ...prev, [fid]: { ...prev[fid], ...patch } }))
@@ -377,14 +408,73 @@ export default function LiveGenClient({
     })
   }
 
+  // Spawn a new custom card based on a chosen product_function's character.
+  // Drops it at the end of the shorter side so the grid stays balanced.
+  const addCustomTile = (source: Func) => {
+    const id = `custom_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
+    const newFunc: Func = {
+      id,
+      name: `${source.name} +`,
+      label_th: null,
+      label_en: null,
+      image_url: source.image_url,
+      default_gift_id: null,
+      default_trigger_threshold: null,
+      source_function_id: source.id,
+    }
+    setCustomFuncs((prev) => [...prev, newFunc])
+    setTiles((prev) => {
+      const leftCount = Object.values(prev).filter((t) => t.side === "left").length
+      const rightCount = Object.values(prev).filter((t) => t.side === "right").length
+      const side: Side = leftCount <= rightCount ? "left" : "right"
+      const order = side === "left" ? leftCount : rightCount
+      return {
+        ...prev,
+        [id]: {
+          gift_id: null,
+          gift_scale: 0.32,
+          gift_x: 0.03,
+          gift_y: 0.03,
+          label: "",
+          label_size: 32,
+          label_color: "auto",
+          label_x: 0.96,
+          label_y: 0.94,
+          label_font: "default",
+          label_stroke_color: "#000000",
+          label_stroke_width: 0.08,
+          character_image: source.image_url,
+          character_scale: 1,
+          character_y: 0,
+          side,
+          order,
+        },
+      }
+    })
+    setAddCardPickerOpen(false)
+  }
+
+  const removeCustomTile = (id: string) => {
+    if (!id.startsWith("custom_")) return
+    setCustomFuncs((prev) => prev.filter((f) => f.id !== id))
+    setTiles((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return normalizeOrders(next)
+    })
+    if (editingFunctionId === id) setEditingFunctionId(null)
+  }
+
   const handleSave = async () => {
     setSaving(true)
     try {
       const payload = {
-        tiles: functions.map((f) => {
+        tiles: allFunctions.map((f) => {
           const tt = tiles[f.id]
+          const isCustom = f.id.startsWith("custom_")
           return {
             function_id: f.id,
+            ...(isCustom && { name: f.name, source_function_id: f.source_function_id }),
             gift_id: tt?.gift_id ?? null,
             label: tt?.label ?? "",
             side: tt?.side ?? "left",
@@ -655,7 +745,7 @@ export default function LiveGenClient({
 
       <p className="text-[10px] text-text-muted text-center mb-3">{t("drag_tile_hint")}</p>
 
-      {functions.length === 0 ? (
+      {allFunctions.length === 0 ? (
         <div className="bg-bg-card border border-accent/10 rounded-2xl p-10 text-center">
           <p className="text-text-muted">{t("no_functions")}</p>
         </div>
@@ -701,7 +791,7 @@ export default function LiveGenClient({
                 rowGap: `${Math.min(layout.row_gap, 40)}px`,
               }}
             >
-              {functions.map((f) => {
+              {allFunctions.map((f) => {
                 const tt = tiles[f.id]
                 if (!tt) return null
                 return (
@@ -716,6 +806,9 @@ export default function LiveGenClient({
                     gridRow={tt.order + 1}
                     isHoverTarget={hoverTargetId === f.id}
                     swapHere={t("swap_here")}
+                    isCustom={f.id.startsWith("custom_")}
+                    removeLabel={t("remove_card")}
+                    onRemove={() => removeCustomTile(f.id)}
                     onOpen={() => openEditor(f.id)}
                     onDragStart={handleTileDragStart}
                     onDragMove={handleTileDrag}
@@ -739,6 +832,78 @@ export default function LiveGenClient({
               )}
             </div>
           </LayoutGroup>
+        </div>
+      )}
+
+      {/* Add card */}
+      {functions.length > 0 && (
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={() => setAddCardPickerOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent/15 border border-accent/30 text-accent-light text-[12px] font-medium hover:bg-accent/25 transition"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            {t("add_card")}
+          </button>
+        </div>
+      )}
+
+      {/* Add-card picker modal */}
+      {addCardPickerOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3"
+          onClick={() => setAddCardPickerOpen(false)}
+        >
+          <div
+            className="w-full max-w-md bg-bg-card border border-accent/15 rounded-2xl overflow-hidden flex flex-col max-h-[80vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+              <div>
+                <h2 className="text-[14px] font-bold text-text-base">{t("add_card_title")}</h2>
+                <p className="text-[10px] text-text-muted">{t("add_card_sub")}</p>
+              </div>
+              <button
+                onClick={() => setAddCardPickerOpen(false)}
+                className="w-7 h-7 rounded-md hover:bg-white/5 text-text-muted hover:text-text-base flex items-center justify-center"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto">
+              <div className="grid grid-cols-3 gap-2">
+                {functions.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => addCustomTile(f)}
+                    className="relative aspect-[7/9] rounded-xl border border-white/10 hover:border-accent/40 bg-bg-base overflow-hidden text-left group transition"
+                  >
+                    {f.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={getImageUrl(f.image_url)}
+                        alt={f.name}
+                        className="absolute inset-0 w-full h-full object-contain p-1"
+                      />
+                    ) : (
+                      <span className="absolute inset-0 flex items-center justify-center text-[10px] text-text-muted text-center px-2">
+                        {f.name}
+                      </span>
+                    )}
+                    <span className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[10px] text-center py-0.5 truncate">
+                      {f.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1081,6 +1246,9 @@ function DraggableTile({
   gridRow,
   isHoverTarget,
   swapHere,
+  isCustom,
+  removeLabel,
+  onRemove,
   onOpen,
   onDragStart,
   onDragMove,
@@ -1097,6 +1265,9 @@ function DraggableTile({
   gridRow: number
   isHoverTarget: boolean
   swapHere: string
+  isCustom: boolean
+  removeLabel: string
+  onRemove: () => void
   onOpen: () => void
   onDragStart: (id: string) => void
   onDragMove: (id: string, x: number, y: number) => void
@@ -1265,6 +1436,23 @@ function DraggableTile({
         <div className="absolute top-1.5 right-1.5 z-20 bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-md pointer-events-none">
           {swapHere}
         </div>
+      )}
+
+      {/* Remove button for custom tiles only */}
+      {isCustom && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onRemove()
+          }}
+          className="absolute top-1.5 right-1.5 z-20 bg-red-500/85 hover:bg-red-500 text-white rounded-md p-1"
+          title={removeLabel}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       )}
 
       {/* Drag handle */}

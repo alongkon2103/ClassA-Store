@@ -28,6 +28,10 @@ type Tile = {
   character_image?: string | null
   character_scale?: number
   character_y?: number
+  // Only present on user-added duplicates — their `function_id` starts with
+  // "custom_" and isn't backed by a row in product_functions.
+  name?: string
+  source_function_id?: string
 }
 
 const clamp = (n: unknown, lo: number, hi: number, def: number) => {
@@ -121,7 +125,15 @@ export async function PUT(req: Request, { params }: RouteContext) {
   )
 
   const tiles = incoming
-    .filter((t) => t && typeof t.function_id === "string" && validFunctionIds.has(t.function_id))
+    .filter((t) => {
+      if (!t || typeof t.function_id !== "string") return false
+      // Custom tiles are validated by their id prefix; real ones must exist
+      // in product_functions for this product.
+      if (t.function_id.startsWith("custom_")) {
+        return typeof t.source_function_id === "string" && validFunctionIds.has(t.source_function_id)
+      }
+      return validFunctionIds.has(t.function_id)
+    })
     .map((t) => ({
       function_id: t.function_id,
       gift_id: t.gift_id == null ? null : Number(t.gift_id),
@@ -141,6 +153,10 @@ export async function PUT(req: Request, { params }: RouteContext) {
       label_font: typeof t.label_font === "string" ? t.label_font.slice(0, 48) : "default",
       label_stroke_color: typeof t.label_stroke_color === "string" ? t.label_stroke_color.slice(0, 24) : "#000000",
       label_stroke_width: clamp(t.label_stroke_width, 0, 0.4, 0.08),
+      ...(t.function_id.startsWith("custom_") && {
+        name: typeof t.name === "string" ? t.name.slice(0, 64) : "Custom",
+        source_function_id: t.source_function_id,
+      }),
       character_image:
         typeof t.character_image === "string" && t.character_image.length > 0
           ? t.character_image.slice(0, 500)
