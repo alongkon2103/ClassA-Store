@@ -234,6 +234,32 @@ export default function LiveGenClient({
         order: s?.order ?? (side === "left" ? leftCount++ : rightCount++),
       }
     })
+    // Also seed tile state for custom cards rehydrated from saved config —
+    // without this their Func entry has no matching TileState and downstream
+    // reads explode with `tile.character_image is undefined`.
+    saved.forEach((s, key) => {
+      if (!key.startsWith("custom_") || out[key]) return
+      const legacy = cornerToXY(s.gift_position)
+      out[key] = {
+        gift_id: s.gift_id ?? null,
+        gift_scale: s.gift_scale ?? 0.32,
+        gift_x: s.gift_x ?? legacy.x,
+        gift_y: s.gift_y ?? legacy.y,
+        label: s.label ?? "",
+        label_size: s.label_size ?? 32,
+        label_color: s.label_color ?? "auto",
+        label_x: s.label_x ?? 0.96,
+        label_y: s.label_y ?? 0.94,
+        label_font: s.label_font ?? "default",
+        label_stroke_color: s.label_stroke_color ?? "#000000",
+        label_stroke_width: s.label_stroke_width ?? 0.08,
+        character_image: s.character_image ?? null,
+        character_scale: s.character_scale ?? 1,
+        character_y: s.character_y ?? 0,
+        side: s.side ?? "left",
+        order: s.order ?? 0,
+      }
+    })
     return normalizeOrders(out)
   }, [functions, initialConfig, locale])
 
@@ -469,13 +495,22 @@ export default function LiveGenClient({
     setSaving(true)
     try {
       const payload = {
-        tiles: allFunctions.map((f) => {
-          const tt = tiles[f.id]
-          const isCustom = f.id.startsWith("custom_")
-          return {
-            function_id: f.id,
-            ...(isCustom && { name: f.name, source_function_id: f.source_function_id }),
-            gift_id: tt?.gift_id ?? null,
+        tiles: allFunctions
+          .filter((f) => {
+            const tt = tiles[f.id]
+            if (!tt) return false
+            // Custom tiles must also carry a source_function_id; otherwise the
+            // server filter drops them silently and we'd lose the card.
+            if (f.id.startsWith("custom_") && !f.source_function_id) return false
+            return true
+          })
+          .map((f) => {
+            const tt = tiles[f.id]!
+            const isCustom = f.id.startsWith("custom_")
+            return {
+              function_id: f.id,
+              ...(isCustom && { name: f.name, source_function_id: f.source_function_id }),
+              gift_id: tt?.gift_id ?? null,
             label: tt?.label ?? "",
             side: tt?.side ?? "left",
             order: tt?.order ?? 0,
@@ -545,6 +580,7 @@ export default function LiveGenClient({
         for (let i = 0; i < cols.length; i++) {
           const f = cols[i]
           const tile = tiles[f.id]
+          if (!tile) continue  // defensive: skip any func without a tile state
           const x = layout.padding + colIdx * (tileW + layout.column_gap)
           const y = layout.padding + yOffset + i * (tileH + layout.row_gap)
 
