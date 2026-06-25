@@ -24,6 +24,7 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const t = useTranslations("Orders")
+  const tLive = useTranslations("LiveGen")
   const locale = useLocale()
 
   const handlePay = async (e: React.MouseEvent, order: any) => {
@@ -306,6 +307,33 @@ export default function OrderListClient({ orders }: OrderListClientProps) {
                       <line x1="10" y1="14" x2="21" y2="3" />
                     </svg>
                   </a>
+                )}
+
+                {/* LiveGen Button — แสดงเมื่อ paid + มี product_functions */}
+                {(selectedOrder.status === "paid" || selectedOrder.status === "Admin Buy") &&
+                  (selectedOrder.products?.product_functions?.length ?? 0) > 0 && (
+                  <Link
+                    href={`/orders/${selectedOrder.id}/livegen`}
+                    onClick={() => setSelectedOrder(null)}
+                    className="group w-full flex items-center justify-between gap-3 bg-accent/5 hover:bg-accent/10 border border-accent/20 hover:border-accent/40 text-text-base px-4 py-3.5 rounded-xl transition active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 bg-accent/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                      </div>
+                      <div className="text-left min-w-0">
+                        <p className="text-[13px] font-semibold text-accent-light truncate">{tLive("open_livegen")}</p>
+                        <p className="text-[11px] text-text-muted truncate">{tLive("open_livegen_sub")}</p>
+                      </div>
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light flex-shrink-0 group-hover:translate-x-0.5 transition-transform">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </Link>
                 )}
 
                 {/* Game Settings Button — แสดงเมื่อ product มี functions */}

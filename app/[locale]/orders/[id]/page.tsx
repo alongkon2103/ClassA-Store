@@ -22,6 +22,7 @@ export default async function OrderPage({
     const { paypal: paypalStatus } = await searchParams
     setRequestLocale(locale)
     const t = await getTranslations("Orders")
+    const tLive = await getTranslations("LiveGen")
 
     const order = await prisma.orders.findUnique({
         where: { id },
@@ -161,6 +162,24 @@ export default async function OrderPage({
                                 )}
                             </div>
                         </div>
+
+                        {(order.status === "paid" || order.status === "Admin Buy") && order.products.product_functions.length > 0 && (
+                            <Link
+                                href={`/orders/${order.id}/livegen`}
+                                className="w-full flex items-center justify-between gap-3 bg-bg-card hover:bg-accent/10 border border-accent/10 hover:border-accent/30 text-text-base px-4 py-3.5 rounded-2xl transition group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 bg-accent/15 group-hover:bg-accent/25 rounded-lg flex items-center justify-center transition-colors">
+                                        <ImageIcon size={16} />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-[13px] font-semibold text-text-base">{tLive("open_livegen")}</p>
+                                        <p className="text-[11px] text-text-muted">{tLive("open_livegen_sub")}</p>
+                                    </div>
+                                </div>
+                                <ChevronRightIcon size={16} className="text-text-muted group-hover:text-accent-light transition" />
+                            </Link>
+                        )}
 
                         {/* <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
                             <Link

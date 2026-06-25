@@ -114,6 +114,7 @@ model orders {
   premium_upgrades      premium_upgrades[]
   user_function_gifts   user_function_gifts[]
   discount_redemption   discount_redemptions?
+  livegen_config        user_livegen_configs?
 
   @@index([user_id], map: "idx_orders_user")
   @@index([recorded_by_id], map: "idx_orders_recorded_by")
@@ -375,6 +376,18 @@ model user_function_gifts {
   @@index([gift_id], map: "idx_ufg_gift")
 }
 
+model user_livegen_configs {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  order_id   String   @unique @db.Uuid
+  config     Json
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  orders     orders   @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_livegen_user")
+}
+
 model users {
   id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   username            String                @db.VarChar
@@ -396,6 +409,7 @@ model users {
   presets             presets[]
   created_products    products[]            @relation("ProductCreator")
   user_function_gifts user_function_gifts[]
+  user_livegen_configs user_livegen_configs[]
   user_presets        user_presets[]
 }
 
