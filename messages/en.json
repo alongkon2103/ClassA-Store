@@ -1130,7 +1130,7 @@
     "manual_short": "Manual:",
     "paypal_settlement_title": "PayPal Settlement",
     "paypal_settlement_sub": "{count} PayPal orders — actual amount landing in your bank after PayPal fees",
-    "paypal_fee_badge": "Fee {pct}%",
+    "paypal_fee_badge": "Fee {pct}% + ${fixed}/order",
     "paypal_gross": "Gross",
     "paypal_fee": "PayPal Fee",
     "paypal_net": "Net to Bank",

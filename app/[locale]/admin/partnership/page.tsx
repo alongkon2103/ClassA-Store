@@ -127,6 +127,7 @@
 import { useEffect, useState } from "react"
 import { useTranslations, useLocale } from "next-intl"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts"
+import { PAYPAL_FEE_PCT, PAYPAL_FIXED_FEE_USD } from "@/lib/paypalSettlement"
 
 type Partner = { name: string; contact: string; share: number; payout: number }
 type ProductRow = {
@@ -134,13 +135,9 @@ type ProductRow = {
   total_orders: number; gross_revenue: number;
   manual_orders?: number; manual_revenue?: number;
   paypal_orders?: number; paypal_revenue?: number;
+  paypal_amount_usd?: number; paypal_net_usd?: number; paypal_net_thb?: number;
   partners: Partner[]
 }
-
-// PayPal Merchant fee that lands on cross-border THB→USD receivers. Admin
-// asked for 3.9% specifically — the real number varies by country and tier
-// (typically 4.4% + fixed), so this is a conservative working estimate.
-const PAYPAL_FEE_PCT = 3.9
 
 function getLast12Months() {
   const months = []
@@ -182,8 +179,10 @@ export default function PartnershipEarningsPage() {
   const totalManualOrders = data.reduce((acc, r) => acc + (r.manual_orders ?? 0), 0)
   const totalPaypalRevenue = data.reduce((acc, r) => acc + (r.paypal_revenue ?? 0), 0)
   const totalPaypalOrders = data.reduce((acc, r) => acc + (r.paypal_orders ?? 0), 0)
-  const paypalFee = totalPaypalRevenue * (PAYPAL_FEE_PCT / 100)
-  const paypalNet = totalPaypalRevenue - paypalFee
+  const totalPaypalAmountUsd = data.reduce((acc, r) => acc + (r.paypal_amount_usd ?? 0), 0)
+  const totalPaypalNetUsd = data.reduce((acc, r) => acc + (r.paypal_net_usd ?? 0), 0)
+  const totalPaypalNetThb = data.reduce((acc, r) => acc + (r.paypal_net_thb ?? 0), 0)
+  const paypalFeeThb = totalPaypalRevenue - totalPaypalNetThb
 
   // รวม payout ต่อพาร์ทเนอร์ข้ามทุกสินค้า
   const partnerMap: Record<string, number> = {}
@@ -248,11 +247,10 @@ export default function PartnershipEarningsPage() {
         </div>
       )}
 
-      {/* PayPal Settlement card — only surfaces when there's PayPal revenue.
-          Shows gross THB recorded → minus PayPal's cross-border fee → net to
-          the bank. Useful because PayPal sales settle in USD with ~3.9% fee,
-          so the "gross_revenue" number in the main card overstates what
-          actually arrives in the merchant account. */}
+      {/* PayPal Settlement card — surfaces only when there's PayPal revenue.
+          Shows gross THB → fee (% of USD + $0.39/order) → net actually landing.
+          Net is computed per-order in the API so the $0.39 fixed fee is
+          applied N times, not once at the aggregate level. */}
       {totalPaypalRevenue > 0 && (
         <div className="bg-bg-card border border-blue-500/20 rounded-2xl p-5">
           <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
@@ -265,7 +263,7 @@ export default function PartnershipEarningsPage() {
               </p>
             </div>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20">
-              {t("paypal_fee_badge", { pct: PAYPAL_FEE_PCT })}
+              {t("paypal_fee_badge", { pct: PAYPAL_FEE_PCT, fixed: PAYPAL_FIXED_FEE_USD.toFixed(2) })}
             </span>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -276,13 +274,19 @@ export default function PartnershipEarningsPage() {
               <p className="text-[16px] font-bold text-text-base font-mono">
                 ฿{totalPaypalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </p>
+              <p className="text-[10px] text-text-muted font-mono mt-0.5">
+                ≈ ${totalPaypalAmountUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })} USD
+              </p>
             </div>
             <div>
               <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
                 {t("paypal_fee")}
               </p>
               <p className="text-[16px] font-bold text-red-400 font-mono">
-                −฿{paypalFee.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                −฿{paypalFeeThb.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </p>
+              <p className="text-[10px] text-text-muted font-mono mt-0.5">
+                {totalPaypalOrders} × ${PAYPAL_FIXED_FEE_USD.toFixed(2)} + {PAYPAL_FEE_PCT}%
               </p>
             </div>
             <div>
@@ -290,7 +294,10 @@ export default function PartnershipEarningsPage() {
                 {t("paypal_net")}
               </p>
               <p className="text-[18px] font-bold text-blue-300 font-mono">
-                ฿{paypalNet.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                ฿{totalPaypalNetThb.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </p>
+              <p className="text-[10px] text-blue-400/60 font-mono mt-0.5">
+                ≈ ${totalPaypalNetUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })} USD
               </p>
             </div>
           </div>
@@ -411,14 +418,13 @@ export default function PartnershipEarningsPage() {
                   {expandedId === r.id && (() => {
                     // Split a partner's payout into the two settlement channels:
                     //   - Normal: Stripe + manual orders (lands as THB directly)
-                    //   - PayPal Net: PayPal share * (1 - 3.9% fee), since the
-                    //     bank only receives the post-fee USD amount.
+                    //   - PayPal Net: pre-computed by the API per-order so the
+                    //     $0.39 fixed fee is applied per transaction, not once.
                     // Total = Normal + PayPal Net — equals p.payout MINUS the
-                    // partner's share of PayPal fees. Surfaces clearly what
-                    // each partner actually generated through each channel.
+                    // partner's share of PayPal fees.
                     const paypalRev = r.paypal_revenue ?? 0
                     const normalRev = r.gross_revenue - paypalRev
-                    const paypalNetRev = paypalRev * (1 - PAYPAL_FEE_PCT / 100)
+                    const paypalNetRev = r.paypal_net_thb ?? 0
                     return (
                       <tr key={`${r.id}-detail`} className="bg-white/[0.01]">
                         <td colSpan={5} className="px-5 py-4">

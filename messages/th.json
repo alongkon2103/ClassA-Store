@@ -1134,7 +1134,7 @@
     "manual_short": "บันทึกเอง:",
     "paypal_settlement_title": "ยอด PayPal เข้าบัญชี",
     "paypal_settlement_sub": "{count} ออเดอร์ผ่าน PayPal — ยอดสุทธิที่จะเข้าบัญชีจริงหลังหักค่าธรรมเนียม",
-    "paypal_fee_badge": "ค่าธรรมเนียม {pct}%",
+    "paypal_fee_badge": "ค่าธรรมเนียม {pct}% + ${fixed}/ออเดอร์",
     "paypal_gross": "ยอดขายรวม",
     "paypal_fee": "หักค่าธรรมเนียม PayPal",
     "paypal_net": "ยอดเข้าบัญชีจริง",

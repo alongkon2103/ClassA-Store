@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 import { parseBangkokDay } from "@/lib/bangkokTz"
+import { paypalSettlementFromAmounts } from "@/lib/paypalSettlement"
 
 export async function GET(req: NextRequest) {
   const admin = await validateAdmin(["admin"])
@@ -47,10 +48,12 @@ export async function GET(req: NextRequest) {
     const manualOrders = p.orders.filter((o) => o.recorded_by_id !== null)
     const manualRevenue = manualOrders.reduce((sum, o) => sum + Number(o.amount), 0)
     // PayPal-only slice — admin needs to see this separately because PayPal
-    // settles in USD and charges ~3.9% so the THB amount we recorded is NOT
-    // what actually lands in the bank account. The UI subtracts the fee.
+    // settles in USD and charges 4.4% + $0.39 per transaction, so the THB
+    // amount we recorded is NOT what actually lands in the bank account.
+    // Compute net here (per-order) so the $0.39 fixed fee is applied N times.
     const paypalOrders = p.orders.filter((o) => o.payment_method === "paypal")
-    const paypalRevenue = paypalOrders.reduce((sum, o) => sum + Number(o.amount), 0)
+    const paypalAmounts = paypalOrders.map((o) => Number(o.amount))
+    const paypalSettle = paypalSettlementFromAmounts(paypalAmounts)
     return {
       id: p.id,
       name_en: p.name_en,
@@ -60,7 +63,10 @@ export async function GET(req: NextRequest) {
       manual_orders: manualOrders.length,
       manual_revenue: manualRevenue,
       paypal_orders: paypalOrders.length,
-      paypal_revenue: paypalRevenue,
+      paypal_revenue: paypalSettle.amount_thb,
+      paypal_amount_usd: paypalSettle.amount_usd,
+      paypal_net_usd: paypalSettle.net_usd,
+      paypal_net_thb: paypalSettle.net_thb,
       partners: p.product_shares.map(s => ({
         name: s.partners.name,
         contact: s.partners.contact,
