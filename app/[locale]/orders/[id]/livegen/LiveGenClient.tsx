@@ -104,7 +104,15 @@ const DEFAULT_LAYOUT: LayoutState = {
 }
 
 type Props = {
-  orderId: string
+  // Either order-scoped (paid customer composing for their order) or
+  // public-scoped (anyone composing against a product directly). Exactly one
+  // of orderId / productId is set — `mode` tells us which.
+  mode: "order" | "public"
+  orderId?: string
+  productId?: string
+  // Public mode also needs to know whether the user can save (drafts require
+  // login). When false, the save button bounces them to login instead.
+  isAuthenticated: boolean
   locale: string
   productName: string
   functions: Func[]
@@ -186,7 +194,10 @@ function cornerToXY(pos: GiftPos | undefined): { x: number; y: number } {
 }
 
 export default function LiveGenClient({
+  mode,
   orderId,
+  productId,
+  isAuthenticated,
   locale,
   productName,
   functions,
@@ -492,6 +503,14 @@ export default function LiveGenClient({
   }
 
   const handleSave = async () => {
+    // Public mode without login: bounce to login with callbackUrl so the user
+    // lands right back on the builder with their work intact (unsaved local
+    // state will reload from draft after login since they'll be authed).
+    if (mode === "public" && !isAuthenticated) {
+      const callback = encodeURIComponent(`/${locale}/livegen/${productId}`)
+      window.location.href = `/${locale}/login?callbackUrl=${callback}`
+      return
+    }
     setSaving(true)
     try {
       const payload = {
@@ -531,7 +550,11 @@ export default function LiveGenClient({
         }),
         layout,
       }
-      const res = await fetch(`/api/orders/${orderId}/livegen`, {
+      const endpoint =
+        mode === "order"
+          ? `/api/orders/${orderId}/livegen`
+          : `/api/livegen/drafts/${productId}`
+      const res = await fetch(endpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -649,7 +672,8 @@ export default function LiveGenClient({
         const url = URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url
-        a.download = `livegen-${orderId.slice(0, 8)}.png`
+        const idForName = (orderId || productId || "image").slice(0, 8)
+        a.download = `livegen-${idForName}.png`
         document.body.appendChild(a)
         a.click()
         a.remove()
@@ -674,13 +698,13 @@ export default function LiveGenClient({
       <div className="flex items-start justify-between gap-4 mb-5">
         <div>
           <Link
-            href={`/orders/${orderId}`}
+            href={mode === "order" ? `/orders/${orderId}` : `/livegen`}
             className="text-[12px] text-text-muted hover:text-text-base inline-flex items-center gap-1.5 mb-1.5"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            {t("back_to_order")}
+            {mode === "order" ? t("back_to_order") : t("back_to_picker")}
           </Link>
           <h1 className="text-xl md:text-2xl font-bold text-text-base">{t("title")}</h1>
           <p className="text-text-muted text-[12px] mt-0.5">{productName}</p>
@@ -691,8 +715,13 @@ export default function LiveGenClient({
               onClick={handleSave}
               disabled={saving}
               className="px-3 py-1.5 rounded-lg bg-bg-card border border-accent/20 text-text-base text-[12px] font-medium hover:border-accent/40 disabled:opacity-50 transition"
+              title={mode === "public" && !isAuthenticated ? t("login_to_save_hint") : undefined}
             >
-              {saving ? t("saving") : t("save")}
+              {saving
+                ? t("saving")
+                : mode === "public" && !isAuthenticated
+                  ? t("login_to_save")
+                  : t("save")}
             </button>
             <button
               onClick={handleDownload}

@@ -3,41 +3,10 @@ import { NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getFeatureFlags } from "@/lib/featureFlags"
+import { sanitizeTiles, sanitizeLayout } from "@/lib/livegenConfig"
 
 type RouteContext = {
   params: Promise<{ id: string }>
-}
-
-type Tile = {
-  function_id: string
-  gift_id: number | null
-  label: string
-  side?: "left" | "right"
-  order?: number
-  gift_scale?: number
-  gift_position?: "tl" | "tr" | "bl" | "br"
-  gift_x?: number
-  gift_y?: number
-  label_size?: number
-  label_color?: string
-  label_x?: number
-  label_y?: number
-  label_font?: string
-  label_stroke_color?: string
-  label_stroke_width?: number
-  character_image?: string | null
-  character_scale?: number
-  character_y?: number
-  // Only present on user-added duplicates — their `function_id` starts with
-  // "custom_" and isn't backed by a row in product_functions.
-  name?: string
-  source_function_id?: string
-}
-
-const clamp = (n: unknown, lo: number, hi: number, def: number) => {
-  const v = Number(n)
-  if (!Number.isFinite(v)) return def
-  return Math.min(hi, Math.max(lo, v))
 }
 
 export async function GET(_req: Request, { params }: RouteContext) {
@@ -111,10 +80,6 @@ export async function PUT(req: Request, { params }: RouteContext) {
   }
 
   const body = await req.json()
-  const incoming: Tile[] = Array.isArray(body?.tiles) ? body.tiles : []
-
-  // Only keep tiles whose function actually belongs to this order's product —
-  // stops a stale client config from saving function_ids that don't exist.
   const validFunctionIds = new Set(
     (
       await prisma.product_functions.findMany({
@@ -124,62 +89,10 @@ export async function PUT(req: Request, { params }: RouteContext) {
     ).map((f) => f.id),
   )
 
-  const tiles = incoming
-    .filter((t) => {
-      if (!t || typeof t.function_id !== "string") return false
-      // Custom tiles are validated by their id prefix; real ones must exist
-      // in product_functions for this product.
-      if (t.function_id.startsWith("custom_")) {
-        return typeof t.source_function_id === "string" && validFunctionIds.has(t.source_function_id)
-      }
-      return validFunctionIds.has(t.function_id)
-    })
-    .map((t) => ({
-      function_id: t.function_id,
-      gift_id: t.gift_id == null ? null : Number(t.gift_id),
-      label: typeof t.label === "string" ? t.label.slice(0, 64) : "",
-      side: t.side === "right" ? "right" : "left",
-      order: Number.isFinite(Number(t.order)) ? Number(t.order) : 0,
-      gift_scale: clamp(t.gift_scale, 0.1, 0.8, 0.32),
-      gift_position: ["tl", "tr", "bl", "br"].includes(t.gift_position as string)
-        ? t.gift_position
-        : "tl",
-      gift_x: clamp(t.gift_x, 0, 1, 0.03),
-      gift_y: clamp(t.gift_y, 0, 1, 0.03),
-      label_size: clamp(t.label_size, 12, 96, 36),
-      label_color: typeof t.label_color === "string" ? t.label_color.slice(0, 24) : "auto",
-      label_x: clamp(t.label_x, 0, 1, 0.96),
-      label_y: clamp(t.label_y, 0, 1, 0.94),
-      label_font: typeof t.label_font === "string" ? t.label_font.slice(0, 48) : "default",
-      label_stroke_color: typeof t.label_stroke_color === "string" ? t.label_stroke_color.slice(0, 24) : "#000000",
-      label_stroke_width: clamp(t.label_stroke_width, 0, 0.4, 0.08),
-      ...(t.function_id.startsWith("custom_") && {
-        name: typeof t.name === "string" ? t.name.slice(0, 64) : "Custom",
-        source_function_id: t.source_function_id,
-      }),
-      character_image:
-        typeof t.character_image === "string" && t.character_image.length > 0
-          ? t.character_image.slice(0, 500)
-          : null,
-      character_scale: clamp(t.character_scale, 0.3, 2, 1),
-      character_y: clamp(t.character_y, -200, 200, 0),
-    }))
-
-  const incomingLayout = (body?.layout ?? {}) as Record<string, unknown>
-  const layout = {
-    column_gap: clamp(incomingLayout.column_gap, 0, 400, 16),
-    row_gap: clamp(incomingLayout.row_gap, 0, 200, 16),
-    padding: clamp(incomingLayout.padding, 0, 200, 24),
-    left_y_offset: clamp(incomingLayout.left_y_offset, -400, 400, 0),
-    right_y_offset: clamp(incomingLayout.right_y_offset, -400, 400, 0),
-    tile_width: clamp(incomingLayout.tile_width, 120, 600, 280),
-    tile_aspect: clamp(incomingLayout.tile_aspect, 0.5, 2.5, 9 / 7),
-    bg_color: typeof incomingLayout.bg_color === "string"
-      ? incomingLayout.bg_color.slice(0, 24)
-      : "transparent",
+  const config = {
+    tiles: sanitizeTiles(body?.tiles, validFunctionIds),
+    layout: sanitizeLayout(body?.layout),
   }
-
-  const config = { tiles, layout }
 
   await prisma.user_livegen_configs.upsert({
     where: { order_id: id },

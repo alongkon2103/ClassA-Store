@@ -108,7 +108,9 @@ export default async function LiveGenPage({
     <div className="min-h-screen bg-bg-base">
       <Navbar />
       <LiveGenClient
+        mode="order"
         orderId={order.id}
+        isAuthenticated={true}
         locale={locale}
         productName={locale === "th" ? order.products.name_th : order.products.name_en}
         functions={functions}

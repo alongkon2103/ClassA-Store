@@ -13,7 +13,8 @@
     "signed_in_google": "เข้าสู่ระบบด้วย Google",
     "signed_in_discord": "เข้าสู่ระบบด้วย Discord",
     "contact": "ติดต่อเรา",
-    "rules": "กฎและเงื่อนไข"
+    "rules": "กฎและเงื่อนไข",
+    "livegen": "สร้างภาพไลฟ์"
   },
   "Contact": {
     "eyebrow": "ติดต่อเรา",
@@ -554,6 +555,14 @@
   "LiveGen": {
     "title": "สร้างภาพไลฟ์",
     "back_to_order": "กลับไปยังออเดอร์",
+    "back_to_picker": "กลับไปเลือกเกม",
+    "picker_eyebrow": "สร้างภาพไลฟ์",
+    "picker_title": "สร้างภาพ overlay สำหรับ TikTok Live",
+    "picker_subtitle": "เลือกเกมเพื่อเริ่มจัดวาง ดาวน์โหลดได้ฟรีไม่ต้องล็อกอิน เข้าสู่ระบบเพื่อบันทึกแบบที่ทำไว้",
+    "picker_empty": "ยังไม่มีเกมที่พร้อมใช้งาน",
+    "picker_function_count": "{count} ช่อง",
+    "login_to_save": "เข้าสู่ระบบเพื่อบันทึก",
+    "login_to_save_hint": "ดาวน์โหลดได้โดยไม่ต้องล็อกอิน ล็อกอินเพื่อบันทึกแบบที่ทำไว้",
     "save": "บันทึก",
     "saving": "กำลังบันทึก...",
     "saved_just_now": "บันทึกแล้ว",

@@ -9,13 +9,32 @@ import { useTranslations } from "next-intl"
 import LanguageSwitcher from "./LanguageSwitcher"
 
 const navItems = [
-  { href: "/", labelKey: "home", auth: false },
-  { href: "/products", labelKey: "shop", auth: false },
-  { href: "/orders", labelKey: "orders", auth: true },
-  { href: "/contact", labelKey: "contact", auth: false },
-  { href: "/rules", labelKey: "rules", auth: false },
-  { href: "/admin", labelKey: "admin", auth: "admin_or_partnership" },
+  { href: "/", labelKey: "home", auth: false, flag: null },
+  { href: "/products", labelKey: "shop", auth: false, flag: null },
+  { href: "/livegen", labelKey: "livegen", auth: false, flag: "livegen_enabled" as const },
+  { href: "/orders", labelKey: "orders", auth: true, flag: null },
+  { href: "/contact", labelKey: "contact", auth: false, flag: null },
+  { href: "/rules", labelKey: "rules", auth: false, flag: null },
+  { href: "/admin", labelKey: "admin", auth: "admin_or_partnership", flag: null },
 ]
+
+// Cache the flag fetch across page navs so we don't refetch on every Navbar
+// remount. Module-level so it persists for the SPA session.
+let cachedFlags: Record<string, boolean> | null = null
+let flagsPromise: Promise<Record<string, boolean>> | null = null
+
+function getCachedFeatureFlags(): Promise<Record<string, boolean>> {
+  if (cachedFlags) return Promise.resolve(cachedFlags)
+  if (flagsPromise) return flagsPromise
+  flagsPromise = fetch("/api/public/feature-flags")
+    .then((r) => (r.ok ? r.json() : {}))
+    .then((data) => {
+      cachedFlags = data
+      return data
+    })
+    .catch(() => ({}))
+  return flagsPromise
+}
 
 export default function Navbar() {
   const { data: session } = useSession()
@@ -24,6 +43,7 @@ export default function Navbar() {
   const { theme, toggleTheme } = useTheme()
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>(cachedFlags ?? {})
 
   const isActive = (href: string) => pathname === href
 
@@ -34,11 +54,23 @@ export default function Navbar() {
     return () => { document.body.style.overflow = "" }
   }, [menuOpen])
 
+  useEffect(() => {
+    let cancelled = false
+    getCachedFeatureFlags().then((flags) => {
+      if (!cancelled) setFeatureFlags(flags)
+    })
+    return () => { cancelled = true }
+  }, [])
+
   const visibleItems = navItems.filter((item) => {
     if (item.auth === true && !session) return false
     if (item.auth === "admin_or_partnership" &&
       session?.user?.role !== "admin" &&
       session?.user?.role !== "partnership") return false
+    // Feature-flag-gated items are hidden until we've fetched the flags AND
+    // the flag is true. Defaulting to hidden means a disabled feature never
+    // leaks into the nav even briefly.
+    if (item.flag && !featureFlags[item.flag]) return false
     return true
   })
 

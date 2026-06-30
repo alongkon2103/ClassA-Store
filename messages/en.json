@@ -13,7 +13,8 @@
     "signed_in_google": "Signed in with Google",
     "signed_in_discord": "Signed in with Discord",
     "contact": "Contact",
-    "rules": "Rules"
+    "rules": "Rules",
+    "livegen": "Live Image"
   },
   "Contact": {
     "eyebrow": "Get in touch",
@@ -551,6 +552,14 @@
   "LiveGen": {
     "title": "Live Image Builder",
     "back_to_order": "Back to order",
+    "back_to_picker": "Back to game picker",
+    "picker_eyebrow": "Live Image Builder",
+    "picker_title": "Build your TikTok Live overlay",
+    "picker_subtitle": "Pick a game to start composing. Download is free for anyone — log in to save your draft.",
+    "picker_empty": "No live-ready games yet.",
+    "picker_function_count": "{count, plural, one {# slot} other {# slots}}",
+    "login_to_save": "Log in to save",
+    "login_to_save_hint": "You can download without logging in. Log in to save your draft.",
     "save": "Save",
     "saving": "Saving...",
     "saved_just_now": "Saved",

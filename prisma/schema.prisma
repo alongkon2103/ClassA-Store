@@ -283,6 +283,7 @@ model products {
   discount_codes        discount_codes[]
   created_by            users?                  @relation("ProductCreator", fields: [created_by_id], references: [id])
   user_whitelist_access user_whitelist_access[]
+  user_livegen_drafts   user_livegen_drafts[]
 
   @@index([is_consignment], map: "idx_products_consignment")
   @@index([created_by_id], map: "idx_products_creator")
@@ -388,6 +389,22 @@ model user_livegen_configs {
   @@index([user_id], map: "idx_livegen_user")
 }
 
+// Public-mode drafts — one config per (user, product). Separate from
+// user_livegen_configs (which is keyed by order) so users without an order can
+// still save, and so order-based configs and public drafts never overwrite
+// each other.
+model user_livegen_drafts {
+  user_id    String   @db.Uuid
+  product_id String   @db.Uuid
+  config     Json
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products   products @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, product_id])
+  @@index([product_id], map: "idx_livegen_drafts_product")
+}
+
 model users {
   id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   username            String                @db.VarChar
@@ -410,6 +427,7 @@ model users {
   created_products    products[]            @relation("ProductCreator")
   user_function_gifts user_function_gifts[]
   user_livegen_configs user_livegen_configs[]
+  user_livegen_drafts user_livegen_drafts[]
   user_presets        user_presets[]
 }
 
