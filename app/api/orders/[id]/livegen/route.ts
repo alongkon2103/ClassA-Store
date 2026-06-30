@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getFeatureFlags } from "@/lib/featureFlags"
-import { sanitizeTiles, sanitizeLayout } from "@/lib/livegenConfig"
+import { sanitizeTiles, sanitizeLayout, sanitizeHiddenFunctionIds } from "@/lib/livegenConfig"
 
 type RouteContext = {
   params: Promise<{ id: string }>
@@ -92,6 +92,7 @@ export async function PUT(req: Request, { params }: RouteContext) {
   const config = {
     tiles: sanitizeTiles(body?.tiles, validFunctionIds),
     layout: sanitizeLayout(body?.layout),
+    hidden_function_ids: sanitizeHiddenFunctionIds(body?.hidden_function_ids, validFunctionIds),
   }
 
   await prisma.user_livegen_configs.upsert({

@@ -79,6 +79,9 @@ export type LiveGenConfig = {
     source_function_id?: string
   }>
   layout?: Partial<LayoutState>
+  // function_ids the user explicitly removed. Kept separate from `tiles` so
+  // re-adding via the picker un-hides instead of duplicating the original.
+  hidden_function_ids?: string[]
 }
 
 type LayoutState = {
@@ -297,6 +300,9 @@ export default function LiveGenClient({
 
   const [customFuncs, setCustomFuncs] = useState<Func[]>(initialCustomFuncs)
   const [tiles, setTiles] = useState<Record<string, TileState>>(initialTiles)
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(
+    () => new Set(initialConfig?.hidden_function_ids ?? []),
+  )
   const [layout, setLayout] = useState<LayoutState>({
     ...DEFAULT_LAYOUT,
     ...(initialConfig?.layout ?? {}),
@@ -310,8 +316,14 @@ export default function LiveGenClient({
   const [downloading, setDownloading] = useState(false)
   const [savedAt, setSavedAt] = useState<Date | null>(null)
 
-  // All cards rendered in the grid: real product_functions + user duplicates.
-  const allFunctions = useMemo(() => [...functions, ...customFuncs], [functions, customFuncs])
+  // All cards rendered in the grid: real product_functions + user duplicates,
+  // minus anything the user explicitly hid via the remove button. We don't
+  // forget hidden ids from `tiles` state so the user's per-tile settings are
+  // preserved if they un-hide via the picker later.
+  const allFunctions = useMemo(
+    () => [...functions.filter((f) => !hiddenIds.has(f.id)), ...customFuncs],
+    [functions, customFuncs, hiddenIds],
+  )
 
   const updateLayout = (patch: Partial<LayoutState>) => setLayout((prev) => ({ ...prev, ...patch }))
 
@@ -491,15 +503,36 @@ export default function LiveGenClient({
     setAddCardPickerOpen(false)
   }
 
-  const removeCustomTile = (id: string) => {
-    if (!id.startsWith("custom_")) return
-    setCustomFuncs((prev) => prev.filter((f) => f.id !== id))
-    setTiles((prev) => {
-      const next = { ...prev }
-      delete next[id]
-      return normalizeOrders(next)
-    })
+  // Custom tiles are deleted outright (their data is user-generated and not
+  // recoverable). Real product_function tiles are hidden via a set instead so
+  // un-hiding restores the user's per-tile customizations.
+  const removeTile = (id: string) => {
+    if (id.startsWith("custom_")) {
+      setCustomFuncs((prev) => prev.filter((f) => f.id !== id))
+      setTiles((prev) => {
+        const next = { ...prev }
+        delete next[id]
+        return normalizeOrders(next)
+      })
+    } else {
+      setHiddenIds((prev) => {
+        const next = new Set(prev)
+        next.add(id)
+        return next
+      })
+      // Re-normalize so the column the original lived in doesn't get a gap.
+      setTiles((prev) => normalizeOrders({ ...prev }))
+    }
     if (editingFunctionId === id) setEditingFunctionId(null)
+  }
+
+  const unhideFunction = (id: string) => {
+    setHiddenIds((prev) => {
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+    setAddCardPickerOpen(false)
   }
 
   const handleSave = async () => {
@@ -549,6 +582,7 @@ export default function LiveGenClient({
           }
         }),
         layout,
+        hidden_function_ids: Array.from(hiddenIds),
       }
       const endpoint =
         mode === "order"
@@ -885,9 +919,9 @@ export default function LiveGenClient({
                     gridRow={tt.order + 1}
                     isHoverTarget={hoverTargetId === f.id}
                     swapHere={t("swap_here")}
-                    isCustom={f.id.startsWith("custom_")}
+                    canRemove={true}
                     removeLabel={t("remove_card")}
-                    onRemove={() => removeCustomTile(f.id)}
+                    onRemove={() => removeTile(f.id)}
                     onOpen={() => openEditor(f.id)}
                     onDragStart={handleTileDragStart}
                     onDragMove={handleTileDrag}
@@ -941,29 +975,43 @@ export default function LiveGenClient({
             </div>
             <div className="p-4 overflow-y-auto">
               <div className="grid grid-cols-3 gap-2">
-                {functions.map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => addCustomTile(f)}
-                    className="relative aspect-[7/9] rounded-xl border border-white/10 hover:border-accent/40 bg-bg-base overflow-hidden text-left group transition"
-                  >
-                    {f.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={getImageUrl(f.image_url)}
-                        alt={f.name}
-                        className="absolute inset-0 w-full h-full object-contain p-1"
-                      />
-                    ) : (
-                      <span className="absolute inset-0 flex items-center justify-center text-[10px] text-text-muted text-center px-2">
+                {functions.map((f) => {
+                  const isHidden = hiddenIds.has(f.id)
+                  return (
+                    <button
+                      key={f.id}
+                      // Hidden originals un-hide on click (restoring saved
+                      // tile state); visible ones spawn a custom duplicate.
+                      onClick={() => (isHidden ? unhideFunction(f.id) : addCustomTile(f))}
+                      className={`relative aspect-[7/9] rounded-xl border bg-bg-base overflow-hidden text-left group transition ${
+                        isHidden
+                          ? "border-accent/40 ring-1 ring-accent/30"
+                          : "border-white/10 hover:border-accent/40"
+                      }`}
+                    >
+                      {f.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={getImageUrl(f.image_url)}
+                          alt={f.name}
+                          className="absolute inset-0 w-full h-full object-contain p-1"
+                        />
+                      ) : (
+                        <span className="absolute inset-0 flex items-center justify-center text-[10px] text-text-muted text-center px-2">
+                          {f.name}
+                        </span>
+                      )}
+                      {isHidden && (
+                        <span className="absolute top-1 right-1 bg-accent text-white text-[9px] px-1.5 py-0.5 rounded font-bold">
+                          {t("restore_badge")}
+                        </span>
+                      )}
+                      <span className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[10px] text-center py-0.5 truncate">
                         {f.name}
                       </span>
-                    )}
-                    <span className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[10px] text-center py-0.5 truncate">
-                      {f.name}
-                    </span>
-                  </button>
-                ))}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -1309,7 +1357,7 @@ function DraggableTile({
   gridRow,
   isHoverTarget,
   swapHere,
-  isCustom,
+  canRemove,
   removeLabel,
   onRemove,
   onOpen,
@@ -1328,7 +1376,7 @@ function DraggableTile({
   gridRow: number
   isHoverTarget: boolean
   swapHere: string
-  isCustom: boolean
+  canRemove: boolean
   removeLabel: string
   onRemove: () => void
   onOpen: () => void
@@ -1501,8 +1549,10 @@ function DraggableTile({
         </div>
       )}
 
-      {/* Remove button for custom tiles only */}
-      {isCustom && (
+      {/* Remove button — visible on every tile. Real cards get hidden via a
+          set so un-hiding via the picker restores their per-tile settings;
+          custom cards are deleted outright by the caller. */}
+      {canRemove && (
         <button
           onClick={(e) => {
             e.stopPropagation()

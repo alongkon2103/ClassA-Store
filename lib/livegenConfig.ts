@@ -87,6 +87,18 @@ export function sanitizeTiles(incoming: unknown, validFunctionIds: Set<string>) 
     })
 }
 
+export function sanitizeHiddenFunctionIds(
+  incoming: unknown,
+  validFunctionIds: Set<string>,
+): string[] {
+  if (!Array.isArray(incoming)) return []
+  const out: string[] = []
+  for (const v of incoming) {
+    if (typeof v === "string" && validFunctionIds.has(v)) out.push(v)
+  }
+  return out
+}
+
 export function sanitizeLayout(incoming: unknown) {
   const l = (incoming ?? {}) as Record<string, unknown>
   return {

@@ -611,6 +611,7 @@
     "add_card_title": "Pick a character for the new card",
     "add_card_sub": "New card uses the chosen character image; set its own gift and label freely.",
     "remove_card": "Remove card",
+    "restore_badge": "Restore",
     "color_auto": "Auto",
     "color_green": "Green",
     "color_red": "Red",
