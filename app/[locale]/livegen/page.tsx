@@ -1,9 +1,9 @@
 import Link from "next/link"
-import Image from "next/image"
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { setRequestLocale, getTranslations } from "next-intl/server"
 import { getFeatureFlags } from "@/lib/featureFlags"
+import { getImageUrl } from "@/lib/getImageUrl"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 
@@ -88,12 +88,15 @@ export default async function LiveGenPickerPage({
                   >
                     <div className="aspect-square relative bg-white/[0.02] overflow-hidden">
                       {img ? (
-                        <Image
-                          src={img}
+                        // Use plain <img> + getImageUrl so the same
+                        // NEXT_PUBLIC_BASE_URL_IMG prefix logic kicks in as the
+                        // rest of the storefront — `next/image` would point at
+                        // the wrong origin in production.
+                        <img
+                          src={getImageUrl(img)}
                           alt={name}
-                          fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-text-muted text-[11px]">
