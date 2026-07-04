@@ -178,6 +178,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { evaluateDiscount, countUserRedemptions, releaseOrderDiscount } from "@/lib/discountCodes"
 import { getPaymentConfig, computeFeeAmount } from "@/lib/paymentConfig"
+import type { discount_codes } from "@prisma/client"
 import Stripe from "stripe"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
@@ -254,7 +255,7 @@ export async function POST(req: Request) {
 
     // 3.5 ตรวจ discount code (ถ้ามี) — เช็คอย่างเดียว ยังไม่ increment ใน DB
     // การ increment จะทำใน transaction ตอนสร้าง order เพื่อกัน race
-    let discountCodeRow: any = null
+    let discountCodeRow: discount_codes | null = null
     let discountAmount = 0
     if (typeof discountCode === "string" && discountCode.trim()) {
       const codeUpper = discountCode.trim().toUpperCase()
@@ -379,8 +380,8 @@ export async function POST(req: Request) {
           timeout: 15_000,
         },
       )
-    } catch (err: any) {
-      if (err?.message === "DISCOUNT_LIMIT_REACHED") {
+    } catch (err: unknown) {
+      if ((err as Error)?.message === "DISCOUNT_LIMIT_REACHED") {
         return NextResponse.json(
           { error: "Discount invalid", errorCode: "LIMIT_REACHED" },
           { status: 409 },
@@ -440,13 +441,14 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({ url: stripeSession.url })
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const e = err as { message?: string; type?: string; raw?: unknown; stack?: string }
     console.error("Checkout Error Detail:", {
-      message: err.message,
-      type: err.type,
-      raw: err.raw,
-      stack: err.stack,
+      message: e.message,
+      type: e.type,
+      raw: e.raw,
+      stack: e.stack,
     })
-    return NextResponse.json({ error: "Checkout failed", details: err.message }, { status: 500 })
+    return NextResponse.json({ error: "Checkout failed", details: e.message }, { status: 500 })
   }
 }

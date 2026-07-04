@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
-import { addDays } from "date-fns"
+import { computeWhitelistExpiry } from "@/lib/formatExpiresAt"
 
 export async function GET() {
     const adminCheck = await validateAdmin()
@@ -37,14 +37,14 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json()
-        const { userId, ign, productId, isPremium, durationDays } = body
+        const { userId, ign, productId, isPremium, durationDays, isPermanent } = body
 
-        if (!userId || !ign || !productId || durationDays === undefined) {
+        if (!userId || !ign || !productId || (!isPermanent && durationDays === undefined)) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
         }
 
-        // Calculate expiration date
-        const expiresAt = addDays(new Date(), durationDays)
+        // Permanent → year-9999 sentinel; otherwise now + durationDays.
+        const expiresAt = computeWhitelistExpiry(durationDays, !!isPermanent)
 
         const result = await prisma.$transaction(async (tx) => {
             // 1. Create Order

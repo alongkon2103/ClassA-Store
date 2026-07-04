@@ -1,6 +1,7 @@
 // app/api/admin/gifts/[id]/route.ts
 
 import { NextRequest, NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 
@@ -27,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     const body = await req.json()
 
-    const data: any = {}
+    const data: Prisma.giftsUncheckedUpdateInput = {}
 
     if (body.name !== undefined) {
       data.name = body.name.trim()

@@ -5,10 +5,22 @@ import { useRouter } from "@/i18n/routing"
 import { format } from "date-fns"
 import { useTranslations, useLocale } from "next-intl"
 import { th, enUS } from "date-fns/locale"
-import { motion } from "framer-motion"
-import { Monitor, RefreshCcw, Search, Shield, User, LogOut } from "lucide-react"
+import { Monitor, RefreshCcw, Search, Shield, LogOut } from "lucide-react"
+import type { Role } from "@prisma/client"
 
-export default function DesktopUsersClient({ users }: { users: any[] }) {
+type DesktopUser = {
+  id: string
+  username: string
+  email: string | null
+  avatar: string | null
+  role: Role
+  hwid: string | null
+  lastSeen: Date | null
+  isOnlineDesktop: boolean
+  nativeStatus: string
+}
+
+export default function DesktopUsersClient({ users }: { users: DesktopUser[] }) {
   const t = useTranslations("Admin")
   const locale = useLocale()
   const dateLocale = locale === "th" ? th : enUS

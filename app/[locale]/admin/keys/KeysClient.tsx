@@ -6,7 +6,32 @@ import { format } from "date-fns"
 
 import { useTranslations, useLocale } from "next-intl"
 
-export default function KeysClient({ keys, products }: { keys: any[]; products: any[] }) {
+type KeyRow = {
+  id: string
+  key_value: string
+  status: string
+  product_id: string
+  created_at: Date | null
+  products: { name_th?: string | null; name_en?: string | null } | null
+  product_variants: { label_th?: string | null; label_en?: string | null } | null
+  orders: { users: { username: string | null } | null } | null
+}
+
+type ProductVariant = {
+  id: string
+  label_th?: string | null
+  label_en: string
+  price: number
+}
+
+type ProductRow = {
+  id: string
+  name_th: string
+  name_en: string
+  product_variants: ProductVariant[]
+}
+
+export default function KeysClient({ keys, products }: { keys: KeyRow[]; products: ProductRow[] }) {
   const t = useTranslations("AdminKeys")
   const locale = useLocale()
   const router = useRouter()
@@ -83,7 +108,7 @@ export default function KeysClient({ keys, products }: { keys: any[]; products: 
     if (!confirm(t("delete_confirm"))) return
     setDeletingId(id)
     const key = keys.find((k) => k.id === id)
-    await fetch(`/api/admin/products/${key.product_id}/keys/${id}`, { method: "DELETE" })
+    await fetch(`/api/admin/products/${key!.product_id}/keys/${id}`, { method: "DELETE" })
     setDeletingId(null)
     router.refresh()
   }
@@ -173,7 +198,7 @@ export default function KeysClient({ keys, products }: { keys: any[]; products: 
             <div>
               <label className={lbl}>{t("variant")}</label>
               <select value={bulkVariant} onChange={(e) => setBulkVariant(e.target.value)} className={inp}>
-                {availableVariants.map((v: any) => (
+                {availableVariants.map((v) => (
                   <option key={v.id} value={v.id}>{(locale === "th" ? v.label_th : v.label_en) || "Standard"} — ฿{Number(v.price).toLocaleString()}</option>
                 ))}
               </select>

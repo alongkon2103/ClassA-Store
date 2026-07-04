@@ -4,11 +4,27 @@ import { useState, useMemo } from "react"
 import { format } from "date-fns"
 import { useTranslations, useLocale } from "next-intl"
 import { th, enUS } from "date-fns/locale"
-import { getImageUrl } from "@/lib/getImageUrl"
 import { useSession } from "next-auth/react"
 import ManualOrderModal from "./ManualOrderModal"
 
-export default function AdminOrdersClient({ orders }: { orders: any[] }) {
+type AdminOrder = {
+  id: string
+  product_id: string
+  amount: number
+  status: string
+  payment_method: string | null
+  whitelist_status: string | null
+  whitelisted_username: string | null
+  buyer_label: string | null
+  recorded_by_id: string | null
+  created_at: string | null
+  users: { username: string; avatar: string | null; email: string | null } | null
+  products: { name_en: string; name_th: string } | null
+  product_variants: { label_en: string; label_th: string } | null
+  recorded_by: { username: string; avatar: string | null } | null
+}
+
+export default function AdminOrdersClient({ orders }: { orders: AdminOrder[] }) {
   const { data: session } = useSession()
   const t = useTranslations("Admin")
   const locale = useLocale()

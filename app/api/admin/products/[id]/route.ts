@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 
+type ConsignmentInput = {
+  owner_name: string
+  owner_contact: string
+  payout_share: number | string
+}
+
+type ShareInput = {
+  partner_id: string
+  share_pct: number | string
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -43,7 +54,7 @@ export async function PATCH(
       await tx.product_consignments.deleteMany({ where: { product_id: id } })
       if (consignments.length > 0) {
         await tx.product_consignments.createMany({
-          data: consignments.map((c: any) => ({
+          data: consignments.map((c: ConsignmentInput) => ({
             product_id: id,
             owner_name: c.owner_name,
             owner_contact: c.owner_contact,
@@ -58,7 +69,7 @@ export async function PATCH(
       await tx.product_shares.deleteMany({ where: { product_id: id } })
       if (partnership_shares.length > 0) {
         await tx.product_shares.createMany({
-          data: partnership_shares.map((s: any) => ({
+          data: partnership_shares.map((s: ShareInput) => ({
             product_id: id,
             partner_id: s.partner_id,
             share_pct: Number(s.share_pct)

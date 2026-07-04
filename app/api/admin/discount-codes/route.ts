@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json(created)
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("POST discount-code error:", err)
     return NextResponse.json({ error: "Failed to create code" }, { status: 500 })
   }

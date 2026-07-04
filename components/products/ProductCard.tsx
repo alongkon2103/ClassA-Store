@@ -29,7 +29,6 @@ export default function ProductCard({
   price,
   image,
   previewVideo,
-  is_low,
   product_variants,
   is_featured,
   onClick,
@@ -38,7 +37,7 @@ export default function ProductCard({
   const locale = useLocale()
 
   const variants = (product_variants ?? []).filter(
-    (v: any) => v.is_active === true && v.variant_type !== "premium"
+    (v) => v.is_active === true && v.variant_type !== "premium"
   )
 
   const hasVariants = variants.length > 0

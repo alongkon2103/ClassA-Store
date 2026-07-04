@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 declare global {
-  var latestGift: any
+  var latestGift: unknown
 }
 
 export async function GET() {

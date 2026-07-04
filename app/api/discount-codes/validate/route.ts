@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       amountOff: result.amountOff,
       finalAmount: Math.max(0, Math.round((sub - result.amountOff) * 100) / 100),
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("validate discount error:", err)
     return NextResponse.json({ valid: false, errorCode: "SERVER_ERROR" }, { status: 500 })
   }

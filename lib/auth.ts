@@ -1,6 +1,6 @@
 // lib/auth.ts
-import type { AuthOptions, Session } from "next-auth"
-import type { JWT } from "next-auth/jwt"
+import type { AuthOptions } from "next-auth"
+import type { Role } from "@prisma/client"
 import DiscordProvider from "next-auth/providers/discord"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
@@ -51,7 +51,8 @@ export const authOptions: AuthOptions = {
     },
 
     callbacks: {
-        async signIn({ user, account, profile }: any) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async signIn({ user, account }: any) {
             if (!account) return false
 
             try {
@@ -68,7 +69,7 @@ export const authOptions: AuthOptions = {
                             username: user.name ?? "Unknown",
                             email,
                             avatar: user.image ?? null,
-                            role: (account.provider === "dev-admin" ? "admin" : "user") as any,
+                            role: (account.provider === "dev-admin" ? "admin" : "user") as Role,
                         },
                     })
                 } else {
@@ -117,6 +118,7 @@ export const authOptions: AuthOptions = {
             }
         },
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         async jwt({ token, user, account }: any) {
             // ── ตอน sign in ครั้งแรก: เซต id และ provider ──
             if (user) {
@@ -152,6 +154,7 @@ export const authOptions: AuthOptions = {
             return token
         },
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         async session({ session, token }: any) {
             session.user.id = token.id
             session.user.role = token.role

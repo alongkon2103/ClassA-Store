@@ -1,14 +1,34 @@
 "use client"
 
 import { motion } from "framer-motion"
+import Link from "next/link"
 import ProductCard from "./ProductCard"
 import { useTranslations, useLocale } from "next-intl"
-import { getImageUrl } from "@/lib/getImageUrl"
 
+
+type Variant = {
+  id: string
+  label_th: string
+  label_en: string
+  price: number
+  stock: number
+}
+
+export type Product = {
+  id: string
+  name_th: string
+  name_en: string
+  price: number
+  preview_video_url?: string | null
+  isLower?: boolean | null
+  is_featured?: boolean | null
+  product_images?: { url: string }[]
+  product_variants: Variant[]
+}
 
 type Props = {
-  products: any[]
-  onSelect?: (product: any) => void
+  products: Product[]
+  onSelect?: (product: Product) => void
 }
 
 export default function BestSeller({ products, onSelect }: Props) {
@@ -79,7 +99,7 @@ export default function BestSeller({ products, onSelect }: Props) {
                   previewVideo={product.preview_video_url}
                   is_low={product.isLower ?? false}
                   badge={product.is_featured ? "Hot" : undefined}
-                  product_variants={product.product_variants.map((v: any) => ({
+                  product_variants={product.product_variants.map((v) => ({
                     ...v,
                     label: locale === "th" ? v.label_th : v.label_en
                   }))}
@@ -101,12 +121,12 @@ export default function BestSeller({ products, onSelect }: Props) {
           transition={{ delay: 0.5 }}
           className="flex justify-center mt-7"
         >
-          <a
+          <Link
             href="/products"
             className="border border-accent/20 hover:border-accent-light text-text-muted hover:text-text-base text-[13px] px-6 py-2.5 rounded-lg transition-colors"
           >
             {t("view_all")}
-          </a>
+          </Link>
         </motion.div>
       </div>
     </section>

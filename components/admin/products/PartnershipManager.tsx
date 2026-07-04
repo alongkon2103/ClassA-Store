@@ -21,7 +21,6 @@ type Props = {
 }
 
 export default function PartnershipManager({
-  productId,
   allPartners,
   initialShares,
   onUpdate
@@ -44,7 +43,7 @@ export default function PartnershipManager({
     setShares(shares.filter((_, i) => i !== idx))
   }
 
-  const updateShare = (idx: number, key: keyof ProductShare, value: any) => {
+  const updateShare = (idx: number, key: keyof ProductShare, value: string) => {
     const newShares = [...shares]
     newShares[idx] = { ...newShares[idx], [key]: value }
     setShares(newShares)

@@ -24,6 +24,7 @@ export default async function AdminOrdersPage() {
         ...o,
         amount:          Number(o.amount),
         discount_amount: o.discount_amount === null ? null : Number(o.discount_amount),
+        expected_amount: o.expected_amount === null ? null : Number(o.expected_amount),
         created_at:      o.created_at?.toISOString() ?? null,
         paid_at:         o.paid_at?.toISOString()    ?? null,
       }))}

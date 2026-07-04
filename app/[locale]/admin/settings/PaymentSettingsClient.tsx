@@ -12,7 +12,7 @@ type MethodState = {
   fee_pct: string
 }
 
-const METHOD_KEYS = ["card", "promptpay", "paypal"] as const
+const METHOD_KEYS = ["card", "promptpay", "paypal", "paypal_me"] as const
 type MethodKey = (typeof METHOD_KEYS)[number]
 
 function parseBool(v: string | undefined, fallback: boolean): boolean {
@@ -36,7 +36,15 @@ export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
       enabled: parseBool(initialConfigs.payment_paypal_enabled, true),
       fee_pct: initialConfigs.payment_paypal_fee_pct ?? "0",
     },
+    // PayPal.me (email-verified). Default OFF to match the backend default — the
+    // worker must be running before customers see this method.
+    paypal_me: {
+      enabled: parseBool(initialConfigs.payment_paypal_me_enabled, false),
+      fee_pct: initialConfigs.payment_paypal_me_fee_pct ?? "0",
+    },
   })
+  // PayPal.me link is a standalone config (not a per-method fee) shown on the pay page.
+  const [paypalMeLink, setPaypalMeLink] = useState(initialConfigs.paypal_me_link ?? "")
   const [saving, setSaving] = useState(false)
 
   const update = (m: MethodKey, patch: Partial<MethodState>) => {
@@ -52,6 +60,7 @@ export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
       const parsed = parseFloat(methods[m].fee_pct)
       configs[`payment_${m}_fee_pct`] = Number.isFinite(parsed) && parsed >= 0 ? String(parsed) : "0"
     }
+    configs.paypal_me_link = paypalMeLink.trim()
     try {
       const res = await fetch("/api/admin/settings/configs", {
         method: "POST",
@@ -75,6 +84,7 @@ export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
     card: { title: t("payment_method_card"), hint: t("payment_method_card_hint") },
     promptpay: { title: t("payment_method_promptpay"), hint: t("payment_method_promptpay_hint") },
     paypal: { title: t("payment_method_paypal"), hint: t("payment_method_paypal_hint") },
+    paypal_me: { title: t("payment_method_paypal_me"), hint: t("payment_method_paypal_me_hint") },
   }
 
   return (
@@ -137,6 +147,24 @@ export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
                 </div>
                 <p className="text-[11px] text-text-muted italic">{t("payment_fee_hint")}</p>
               </div>
+
+              {/* PayPal.me link — only this method needs a payout link. */}
+              {m === "paypal_me" && (
+                <div className={`mt-3 pt-3 border-t border-white/5 ${!s.enabled ? "opacity-50 pointer-events-none" : ""}`}>
+                  <label className="block text-[12px] text-text-muted font-medium mb-1.5">
+                    {t("paypal_me_link_label")}
+                  </label>
+                  <input
+                    type="url"
+                    inputMode="url"
+                    value={paypalMeLink}
+                    onChange={(e) => setPaypalMeLink(e.target.value)}
+                    className="w-full bg-bg-base border border-white/10 rounded-xl px-3 py-2 text-[13px] outline-none focus:border-accent/40 transition"
+                    placeholder="https://www.paypal.com/paypalme/yourname"
+                  />
+                  <p className="text-[11px] text-text-muted italic mt-1">{t("paypal_me_link_hint")}</p>
+                </div>
+              )}
             </div>
           )
         })}

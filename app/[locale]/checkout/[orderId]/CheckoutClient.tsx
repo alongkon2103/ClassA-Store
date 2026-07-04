@@ -7,7 +7,41 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useTranslations, useLocale } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
 
-export default function CheckoutClient({ order, bankAccount }: any) {
+type CheckoutOrder = {
+  id: string
+  amount: number
+  discount_amount?: number | null
+  expected_amount?: number | null
+  products?: {
+    name_th?: string | null
+    name_en?: string | null
+    price?: number
+    product_images?: { url: string }[]
+  } | null
+  product_variants?: {
+    label_th?: string | null
+    label_en?: string | null
+    price?: number
+    premium_addon_price?: number
+    discount_pct?: number
+  } | null
+}
+
+type CheckoutBankAccount = {
+  bank_name: string
+  account_name: string
+  account_number: string
+  promptpay_no?: string | null
+  qr_code_url?: string | null
+}
+
+export default function CheckoutClient({
+  order,
+  bankAccount,
+}: {
+  order: CheckoutOrder
+  bankAccount: CheckoutBankAccount | null
+}) {
   const router = useRouter()
   const t = useTranslations("Checkout")
   const locale = useLocale()
@@ -231,7 +265,7 @@ export default function CheckoutClient({ order, bankAccount }: any) {
                     </div>
                     <p className="text-[13px] text-text-muted">
                       {t.rich("drag_drop", {
-                        browse: (chunks) => <span className="text-accent-light underline underline-offset-2">{t("browse_files")}</span>
+                        browse: () => <span className="text-accent-light underline underline-offset-2">{t("browse_files")}</span>
                       })}
                     </p>
                     <input

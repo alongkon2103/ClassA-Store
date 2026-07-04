@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useTranslations } from "next-intl"
 
 type Consignment = {
   id?: string
@@ -15,19 +14,17 @@ type Props = {
   initialConsignments: Consignment[]
   onUpdate: (consignments: Consignment[]) => void
   productPrice: number
-  platformCommission: any
-  onCommissionChange: (val: any) => void
+  platformCommission: number
+  onCommissionChange: (val: string) => void
 }
 
 export default function ConsignmentManager({
-  productId,
   initialConsignments,
   onUpdate,
-  productPrice,
   platformCommission,
   onCommissionChange
 }: Props) {
-  const t = useTranslations("AdminProductForm")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [list, setList] = useState<any[]>(
     initialConsignments.length > 0
       ? initialConsignments.map(c => ({ ...c, payout_share: String(c.payout_share) }))
@@ -46,7 +43,7 @@ export default function ConsignmentManager({
     setList(list.filter((_, i) => i !== idx))
   }
 
-  const updateOwner = (idx: number, k: keyof Consignment, v: any) => {
+  const updateOwner = (idx: number, k: keyof Consignment, v: string) => {
     const newList = [...list]
     newList[idx] = { ...newList[idx], [k]: v }
     setList(newList)

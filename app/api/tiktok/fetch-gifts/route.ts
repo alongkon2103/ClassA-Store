@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import type { product_functions } from "@prisma/client"
+
+interface TikTokGift {
+    giftId: number
+    [key: string]: unknown
+}
 
 const TIKTOK_SERVICE_URL = process.env.NEXT_PUBLIC_TIKTOK_API_URL || "http://localhost:4000"
 const TIKTOK_SERVICE_KEY = process.env.NEXT_PUBLIC_TIKTOK_API_KEY || "test"
@@ -65,8 +71,8 @@ export async function GET(req: Request) {
         const isPremium = !!order.is_premium_order
 
         // 3. Map gifts to functions based on premium status
-        const results = gifts.map((gift: any) => {
-            let mapping: any = null
+        const results = gifts.map((gift: TikTokGift) => {
+            let mapping: { product_functions: product_functions | null } | null | undefined = null
             
             if (isPremium) {
                 // Premium: Use user's custom mapping

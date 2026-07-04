@@ -36,9 +36,9 @@ export async function POST(req: NextRequest) {
   let event: Stripe.Event
   try {
     event = stripe.webhooks.constructEvent(body, sig, endpointSecret)
-  } catch (err: any) {
-    console.error("Webhook error:", err.message)
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 })
+  } catch (err: unknown) {
+    console.error("Webhook error:", (err as Error).message)
+    return new Response(`Webhook Error: ${(err as Error).message}`, { status: 400 })
   }
 
   // ─────────────────────────────────────────────

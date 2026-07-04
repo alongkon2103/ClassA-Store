@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useTranslations } from "next-intl"
 
 type Props = {
@@ -70,7 +70,7 @@ export default function GlobalSettingsClient({ initialConfigs = {} }: Props) {
       } else {
         alert(data.error || "Failed to clear mappings")
       }
-    } catch (error) {
+    } catch {
       alert("An error occurred while clearing mappings.")
     } finally {
       setResetting(false)

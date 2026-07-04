@@ -10,7 +10,17 @@ import { Megaphone, Plus, Edit2, Trash2, Eye, EyeOff, Save, X, Image as ImageIco
 import TiptapEditor from "@/components/admin/TiptapEditor"
 import { getImageUrl } from "@/lib/getImageUrl"
 
-export default function AnnouncementsClient({ announcements }: { announcements: any[] }) {
+interface AnnouncementItem {
+  id: string
+  title: string
+  content: string
+  imageUrl: string | null
+  isActive: boolean
+  createdAt: string | Date
+  users?: { username: string | null } | null
+}
+
+export default function AnnouncementsClient({ announcements }: { announcements: AnnouncementItem[] }) {
   const t = useTranslations("Admin")
   const locale = useLocale()
   const dateLocale = locale === "th" ? th : enUS
@@ -37,7 +47,7 @@ export default function AnnouncementsClient({ announcements }: { announcements: 
     return html.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ');
   }
 
-  const handleEdit = (ann: any) => {
+  const handleEdit = (ann: AnnouncementItem) => {
     setEditingId(ann.id)
     setFormData({
       title: ann.title,
@@ -98,8 +108,8 @@ export default function AnnouncementsClient({ announcements }: { announcements: 
         handleClose()
         router.refresh()
       }
-    } catch (error: any) {
-      alert(error.message || "An error occurred")
+    } catch (error: unknown) {
+      alert((error as Error)?.message || "An error occurred")
     } finally {
       setLoading(false)
     }

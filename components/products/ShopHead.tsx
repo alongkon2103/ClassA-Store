@@ -2,7 +2,12 @@
 
 import { useTranslations } from "next-intl"
 
-export default function ShopHeads({ search, setSearch }: any) {
+type ShopHeadsProps = {
+  search: string
+  setSearch: (value: string) => void
+}
+
+export default function ShopHeads({ search, setSearch }: ShopHeadsProps) {
   const t = useTranslations("Shop")
 
   return (

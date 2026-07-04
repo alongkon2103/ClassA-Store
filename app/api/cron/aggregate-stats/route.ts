@@ -103,8 +103,8 @@ export async function GET() {
     })
 
     return NextResponse.json({ ok: true, rolled: results, pruned: pruned.count })
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[/api/cron/aggregate-stats] error:", err)
-    return NextResponse.json({ error: err?.message ?? "rollup failed" }, { status: 500 })
+    return NextResponse.json({ error: (err as Error)?.message ?? "rollup failed" }, { status: 500 })
   }
 }

@@ -29,6 +29,7 @@ export async function GET(
   return NextResponse.json({
     ...order,
     amount: Number(order.amount),
+    expected_amount: order.expected_amount === null ? null : Number(order.expected_amount),
     product_variants: order.product_variants
       ? { ...order.product_variants, price: Number(order.product_variants.price) }
       : null,

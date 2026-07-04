@@ -9,14 +9,38 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useTranslations, useLocale } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
 
+type ProductGift = { id: string; url: string; filename: string | null }
+type ProductPreset = { id: string; url: string; filename: string | null }
+
+interface Order {
+  id: string
+  status: string
+  payment_method: string | null
+  product_id: string
+  variant_id: string | null
+  whitelisted_username: string | null
+  whitelist_status: string | null
+  products: {
+    name_th: string
+    name_en: string
+    info_page_url: string | null
+    product_images: { url: string | null }[]
+    product_gifts: ProductGift[]
+    product_presets: ProductPreset[]
+    product_functions: unknown[]
+  }
+  product_variants: { label_th: string | null; label_en: string | null } | null
+}
+
 interface OrderListClientProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   orders: any[]
   livegenEnabled?: boolean
 }
 
 export default function OrderListClient({ orders, livegenEnabled = true }: OrderListClientProps) {
   const router = useRouter()
-  const [selectedOrder, setSelectedOrder] = useState<any>(null)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [payingId, setPayingId] = useState<string | null>(null)
   // Modal renders through a portal to document.body so it escapes the
   // `relative z-10` wrapper in orders/page.tsx. Without the portal, the modal's
@@ -28,7 +52,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
   const tLive = useTranslations("LiveGen")
   const locale = useLocale()
 
-  const handlePay = async (e: React.MouseEvent, order: any) => {
+  const handlePay = async (e: React.MouseEvent, order: Order) => {
     e.stopPropagation()
     setPayingId(order.id)
     try {
@@ -368,7 +392,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                         stretched columns of a 4-col grid. Cards retain their shape
                         regardless of count. */}
                     <div className="flex flex-wrap gap-2">
-                      {selectedOrder.products.product_gifts.map((g: any, idx: number) => {
+                      {selectedOrder.products.product_gifts.map((g, idx: number) => {
                         const assetUrl = g.url.startsWith("http") ? g.url : g.url.startsWith("/") ? g.url : `/${g.url}`
                         const filename = g.filename || `Asset_${idx + 1}`
                         return (
@@ -428,7 +452,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                       <PresetIcon size={12} /> {t("config_presets")}
                     </h4>
                     <div className="flex flex-wrap gap-1.5 md:gap-2">
-                      {selectedOrder.products.product_presets.map((p: any, idx: number) => {
+                      {selectedOrder.products.product_presets.map((p, idx: number) => {
                         const assetUrl = p.url.startsWith("http") ? p.url : p.url.startsWith("/") ? p.url : `/${p.url}`
                         return (
                           <a key={p.id} href={assetUrl} download={p.filename || `Preset_${idx + 1}`}
@@ -487,14 +511,6 @@ function SettingsIcon({ size = 20, className = "" }: { size?: number; className?
   )
 }
 
-function ChevronRightIcon({ size = 20, className = "" }: { size?: number; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  )
-}
-
 function ImageIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -516,15 +532,6 @@ function DownloadIcon({ size = 20, className = "" }: { size?: number; className?
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  )
-}
-
-function EyeIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
     </svg>
   )
 }

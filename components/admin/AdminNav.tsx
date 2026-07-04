@@ -36,6 +36,7 @@ const groups = [
     items: [
       { href: "/admin/whitelist", key: "whitelist", roles: ["admin", "partnership"] },
       { href: "/admin/orders", key: "orders", roles: ["admin", "partnership"] },
+      { href: "/admin/paypal-review", key: "ppr_nav", roles: ["admin"] },
       { href: "/admin/users", key: "users", roles: ["admin", "partnership"] },
       { href: "/admin/upgrade-premium", key: "nav_title", roles: ["admin"] },
     ]

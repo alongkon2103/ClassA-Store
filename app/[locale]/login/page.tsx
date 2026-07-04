@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
-import { Link, redirect } from "@/i18n/routing"
-import { getServerSession } from "next-auth"
+import { Link } from "@/i18n/routing"
 // import { authOptions } from "@/lib/auth"
 import LoginCard from "@/components/login/LoginCard"
 import { setRequestLocale, getTranslations } from "next-intl/server"
@@ -104,14 +103,14 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
           background: "var(--color-bg-base)",
         }}
       >
-        <a
+        <Link
           href="/"
           className="font-display text-[20px] font-bold tracking-wide no-underline"
           style={{ color: "var(--color-text-base)" }}
         >
           Class A{" "}
           <span style={{ color: "var(--color-accent-light)" }}>Store</span>
-        </a>
+        </Link>
         <Link href="/" className="back-link text-[13px] flex items-center gap-1.5 no-underline">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

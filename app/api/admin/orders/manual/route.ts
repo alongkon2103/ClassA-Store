@@ -117,6 +117,7 @@ export async function POST(req: Request) {
       ...order,
       amount: Number(order.amount),
       discount_amount: order.discount_amount === null ? null : Number(order.discount_amount),
+      expected_amount: order.expected_amount === null ? null : Number(order.expected_amount),
       created_at: order.created_at?.toISOString() ?? null,
       paid_at: order.paid_at?.toISOString() ?? null,
     },

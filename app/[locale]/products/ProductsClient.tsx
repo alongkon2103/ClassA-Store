@@ -9,21 +9,27 @@ import { AnimatePresence } from "framer-motion"
 import { useLocale } from "next-intl"
 import { useSearchParams } from "next/navigation"
 
-export default function ProductsClient({ initialProducts }: any) {
+type Product = {
+  slug: string
+  name_th: string
+  name_en: string
+}
+
+export default function ProductsClient({ initialProducts }: { initialProducts: Product[] }) {
   const [search, setSearch] = useState("")
-  const [selected, setSelected] = useState<any>(null)
+  const [selected, setSelected] = useState<Product | null>(null)
   const locale = useLocale()
   const searchParams = useSearchParams()
 
   useEffect(() => {
     const slug = searchParams?.get("slug")
     if (slug) {
-      const product = initialProducts.find((p: any) => p.slug === slug)
+      const product = initialProducts.find((p: Product) => p.slug === slug)
       if (product) setSelected(product)
     }
   }, [searchParams, initialProducts])
 
-  const filtered = initialProducts.filter((p: any) => {
+  const filtered = initialProducts.filter((p: Product) => {
     const name = locale === "th" ? p.name_th : p.name_en
     return name?.toLowerCase().includes(search.toLowerCase())
   })
@@ -35,7 +41,7 @@ export default function ProductsClient({ initialProducts }: any) {
 
       <ContainerCard
         products={filtered}
-        onSelect={(product: any) => setSelected(product)}
+        onSelect={(product: Product) => setSelected(product)}
       />
 
       {/* POPUP */}

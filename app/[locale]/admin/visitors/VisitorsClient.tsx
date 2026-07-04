@@ -39,7 +39,14 @@ type Props = {
 
 const COLORS = ["#427ab5", "#3ecf8e", "#f0c060", "#a78bfa", "#e0904a", "#f87171"]
 
-function StatCard({ label, value, sub, color = "text-text-base" }: any) {
+type StatCardProps = {
+  label: string
+  value: string
+  sub?: string
+  color?: string
+}
+
+function StatCard({ label, value, sub, color = "text-text-base" }: StatCardProps) {
   return (
     <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
       <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{label}</p>
@@ -49,12 +56,20 @@ function StatCard({ label, value, sub, color = "text-text-base" }: any) {
   )
 }
 
-function ChartTooltip({ active, payload, label }: any) {
+type TooltipEntry = { name?: string; value?: number | string; color?: string }
+
+type ChartTooltipProps = {
+  active?: boolean
+  payload?: TooltipEntry[]
+  label?: string | number
+}
+
+function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-bg-card border border-accent/20 rounded-xl px-4 py-2.5 text-[13px] space-y-1">
       <p className="text-text-muted text-[11px]">{label}</p>
-      {payload.map((p: any) => (
+      {payload.map((p) => (
         <p key={p.name} style={{ color: p.color }} className="font-semibold">
           {p.name}: {Number(p.value).toLocaleString()}
         </p>

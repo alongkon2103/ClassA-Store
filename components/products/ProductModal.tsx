@@ -230,6 +230,25 @@ function PremiumWarningModal({ onConfirm, onCancel }: {
 }
 
 // --- Main Component ---
+interface ProductVariant {
+  id: string
+  price: number
+  label_en?: string
+  label_th?: string
+  variant_type?: string | null
+  is_active?: boolean | null
+  sort_order?: number | null
+  discount_pct: number
+  discount_used: number
+  discount_limit: number
+  premium_addon_price?: number | string | null
+}
+
+interface ProductImage {
+  url: string
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function ProductModal({ product, onClose }: any) {
   const { data: session } = useSession()
   const router = useRouter()
@@ -243,16 +262,16 @@ export default function ProductModal({ product, onClose }: any) {
   const hasShownUsernameHelp = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "promptpay" | "paypal">("card")
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "promptpay" | "paypal" | "paypal_me">("card")
   const [whitelistUsername, setWhitelistUsername] = useState("")
   const [robloxVerify, setRobloxVerify] = useState<"idle" | "loading" | "valid" | "invalid">("idle")
   const [robloxAvatarUrl, setRobloxAvatarUrl] = useState<string | null>(null)
   const [robloxDisplayName, setRobloxDisplayName] = useState<string | null>(null)
   const [usdRate, setUsdRate] = useState<number | null>(null)
   const [isPremiumSelected, setIsPremiumSelected] = useState(true)
-  const [hasUsedTrial, setHasUsedTrial] = useState(false)
-  const [loadingTrial, setLoadingTrial] = useState(false)
-  const [trialDuration, setTrialDuration] = useState<number | null>(null)
+  const [, setHasUsedTrial] = useState(false)
+  const [, setLoadingTrial] = useState(false)
+  const [, setTrialDuration] = useState<number | null>(null)
   const [isTrialEnabled, setIsTrialEnabled] = useState(true)
   const [showPremiumWarning, setShowPremiumWarning] = useState(false)
   const [discountInput, setDiscountInput] = useState("")
@@ -264,11 +283,12 @@ export default function ProductModal({ product, onClose }: any) {
   // /admin/settings; defaults applied here in case the fetch fails so the user
   // can still check out with sensible values.
   type PMConfig = { enabled: boolean; fee_pct: number }
-  type PMConfigMap = { card: PMConfig; promptpay: PMConfig; paypal: PMConfig }
+  type PMConfigMap = { card: PMConfig; promptpay: PMConfig; paypal: PMConfig; paypal_me: PMConfig }
   const [paymentConfig, setPaymentConfig] = useState<PMConfigMap>({
     card: { enabled: true, fee_pct: 6 },
     promptpay: { enabled: true, fee_pct: 0 },
     paypal: { enabled: true, fee_pct: 0 },
+    paypal_me: { enabled: false, fee_pct: 0 },
   })
 
   useEffect(() => {
@@ -280,7 +300,7 @@ export default function ProductModal({ product, onClose }: any) {
         setPaymentConfig(data)
         // If the currently selected method got disabled, fall back to the first
         // enabled one so the user is never stuck on a disabled choice.
-        const order: (keyof PMConfigMap)[] = ["card", "promptpay", "paypal"]
+        const order: (keyof PMConfigMap)[] = ["card", "promptpay", "paypal", "paypal_me"]
         setPaymentMethod((current) => {
           if (data[current]?.enabled) return current
           const next = order.find((m) => data[m]?.enabled)
@@ -305,8 +325,11 @@ export default function ProductModal({ product, onClose }: any) {
   }, [session])
 
   useEffect(() => {
-    fetch("https://open.er-api.com/v6/latest/THB")
-      .then(r => r.json()).then(data => { if (data?.rates?.USD) setUsdRate(data.rates.USD) }).catch(() => { })
+    // Use the SAME rate the checkout backend freezes onto the order (getThbToUsdRate,
+    // cached 6h) instead of a fresh open.er-api call, so the displayed price matches
+    // the amount charged — see /api/public/exchange-rate.
+    fetch("/api/public/exchange-rate")
+      .then(r => r.json()).then(data => { if (data?.rate) setUsdRate(data.rate) }).catch(() => { })
   }, [])
 
   useEffect(() => {
@@ -335,8 +358,8 @@ export default function ProductModal({ product, onClose }: any) {
           setRobloxAvatarUrl(null)
           setRobloxDisplayName(null)
         }
-      } catch (err: any) {
-        if (err?.name === "AbortError") return
+      } catch (err: unknown) {
+        if ((err as Error)?.name === "AbortError") return
         setRobloxVerify("invalid")
         setRobloxAvatarUrl(null)
         setRobloxDisplayName(null)
@@ -350,20 +373,17 @@ export default function ProductModal({ product, onClose }: any) {
   }, [whitelistUsername])
 
   const sortedVariants = [...(product.product_variants ?? [])]
-    .filter((v: any) => v.is_active === true && v.variant_type !== "premium")
-    .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .filter((v: ProductVariant) => v.is_active === true && v.variant_type !== "premium")
+    .sort((a: ProductVariant, b: ProductVariant) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
 
-  const premiumVar = (product.product_variants ?? []).find((v: any) => v.variant_type === "premium")
+  const premiumVar = (product.product_variants ?? []).find((v: ProductVariant) => v.variant_type === "premium")
   const premiumAddonPrice = Number(premiumVar?.premium_addon_price ?? 0)
-
-  // TypeScript Fix: Strictly cast nullable DB field to boolean
-  const isPremiumProduct: boolean = !!product.is_premium
 
   useEffect(() => {
     if (premiumAddonPrice <= 0) setIsPremiumSelected(false)
   }, [premiumAddonPrice])
 
-  const [selectedVariant, setSelectedVariant] = useState<any>(sortedVariants[0] || null)
+  const [selectedVariant, setSelectedVariant] = useState(sortedVariants[0] || null)
 
   // Clear applied discount when the order shape changes (different variant, premium toggle).
   // The user will have to re-apply since the new subtotal may not meet min_amount, etc.
@@ -408,7 +428,7 @@ export default function ProductModal({ product, onClose }: any) {
   // Translate a server-returned errorCode (+ optional params) into the
   // user's language. Falls back gracefully if a new code arrives that the
   // client doesn't have a translation for yet.
-  const translateDiscountError = (errorCode: string | undefined, params?: Record<string, any>) => {
+  const translateDiscountError = (errorCode: string | undefined, params?: Record<string, unknown>) => {
     if (!errorCode) return t("discount_error_INVALID_INPUT")
     const key = `discount_error_${errorCode}`
     try {
@@ -420,7 +440,7 @@ export default function ProductModal({ product, onClose }: any) {
           : `$${toUSD(minThb) ?? minThb.toFixed(2)}`
         return t("discount_error_BELOW_MIN_AMOUNT", { minAmount: minDisplay })
       }
-      return t(key as any)
+      return t(key as Parameters<typeof t>[0])
     } catch {
       return errorCode
     }
@@ -499,10 +519,15 @@ export default function ProductModal({ product, onClose }: any) {
     if (!selectedVariant || !whitelistUsername.trim()) { alert("Please enter your in-game username"); return }
     setLoading(true)
     try {
-      // PayPal uses a separate endpoint so the server can convert THB→USD,
-      // create a PayPal order, and return its approval URL. Stripe paths
-      // (card / promptpay) keep using /api/checkout unchanged.
-      const endpoint = paymentMethod === "paypal" ? "/api/checkout/paypal" : "/api/checkout"
+      // Each provider has its own endpoint. PayPal (API) converts THB→USD and
+      // returns an approval URL; paypal_me creates a pay-by-amount order and
+      // returns { orderId } for our own pay page; card/promptpay use /api/checkout.
+      const endpoint =
+        paymentMethod === "paypal"
+          ? "/api/checkout/paypal"
+          : paymentMethod === "paypal_me"
+            ? "/api/checkout/paypal-me"
+            : "/api/checkout"
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -517,14 +542,17 @@ export default function ProductModal({ product, onClose }: any) {
         }),
       })
       const data = await res.json()
-      if (data.url) window.location.href = data.url
-      else {
+      if (paymentMethod === "paypal_me" && data.orderId) {
+        router.push(`/checkout/${data.orderId}`)
+      } else if (data.url) {
+        window.location.href = data.url
+      } else {
         // Translate discount-related errors that the server tagged with errorCode;
         // fall back to the raw error string for any other failure path.
         alert(data.errorCode ? translateDiscountError(data.errorCode, data.params) : data.error)
         setLoading(false)
       }
-    } catch (err) { setLoading(false) }
+    } catch { setLoading(false) }
   }
 
   const handleTrialClick = async () => {
@@ -547,7 +575,7 @@ export default function ProductModal({ product, onClose }: any) {
         alert(data.error)
         setLoadingTrial(false)
       }
-    } catch (err) { setLoadingTrial(false) }
+    } catch { setLoadingTrial(false) }
   }
 
   const productDesc = isTH ? (product.description_th || product.description_en) : product.description_en
@@ -581,7 +609,7 @@ export default function ProductModal({ product, onClose }: any) {
           {/* IMAGE SLIDER */}
           <div className="relative aspect-video bg-bg-base overflow-hidden" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
             <div className="flex h-full transition-transform duration-300" style={{ transform: `translateX(-${index * 100}%)` }}>
-              {images.map((img: any, i: number) => (
+              {images.map((img: ProductImage, i: number) => (
                 <img key={i} src={getImageUrl(img.url)} alt="" className="min-w-full h-full object-cover" />
               ))}
               {youtubeEmbedUrl && (
@@ -615,7 +643,7 @@ export default function ProductModal({ product, onClose }: any) {
 
           {/* {total > 1 && (
             <div className="flex gap-2 px-4 py-3 bg-bg-base border-b border-white/5 overflow-x-auto scrollbar-none">
-              {images.map((img: any, i: number) => (
+              {images.map((img: ProductImage, i: number) => (
                 <button key={i} onClick={() => setIndex(i)} className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${i === index ? "ring-2 ring-accent opacity-100" : "opacity-40"}`}>
                   <img src={getImageUrl(img.url)} alt="" className="w-full h-full object-cover" />
                 </button>
@@ -633,7 +661,7 @@ export default function ProductModal({ product, onClose }: any) {
 
           {total > 1 && (
             <div className="flex gap-2 px-4 py-3 bg-bg-base border-b border-white/5 overflow-x-auto scrollbar-none">
-              {images.map((img: any, i: number) => (
+              {images.map((img: ProductImage, i: number) => (
                 <button key={i} onClick={() => setIndex(i)} className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${i === index ? "ring-2 ring-accent opacity-100" : "opacity-40"}`}>
                   <img src={getImageUrl(img.url)} alt="" className="w-full h-full object-cover" />
                 </button>
@@ -711,7 +739,7 @@ export default function ProductModal({ product, onClose }: any) {
             <div className="space-y-2">
               <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("select_option")}</p>
               <div className="grid grid-cols-2 gap-2">
-                {sortedVariants.map((v: any) => {
+                {sortedVariants.map((v: ProductVariant) => {
                   const vHasDiscount = !!(
                     product.has_limited_discount &&
                     v.discount_pct > 0 &&
@@ -901,7 +929,9 @@ export default function ProductModal({ product, onClose }: any) {
                       ? t("promptpay_label")
                       : paymentMethod === "paypal"
                         ? t("paypal_label")
-                        : t("stripe_label")}
+                        : paymentMethod === "paypal_me"
+                          ? t("paypal_me_label")
+                          : t("stripe_label")}
                   </p>
                   <div className="flex items-center gap-1.5 mt-1 text-[11px]">
                     <span
@@ -910,7 +940,9 @@ export default function ProductModal({ product, onClose }: any) {
                           ? "text-green-400"
                           : paymentMethod === "paypal"
                             ? "text-blue-400"
-                            : "text-orange-400"
+                            : paymentMethod === "paypal_me"
+                              ? "text-sky-400"
+                              : "text-orange-400"
                       }`}
                     >
                       {activeFeePct > 0
@@ -923,13 +955,16 @@ export default function ProductModal({ product, onClose }: any) {
                     {paymentMethod === "paypal" && (
                       <span className="text-text-muted">· {t("paypal_note")}</span>
                     )}
+                    {paymentMethod === "paypal_me" && (
+                      <span className="text-text-muted">· {t("paypal_me_note")}</span>
+                    )}
                   </div>
                 </div>
                 {(() => {
                   // Cycle through ENABLED methods only, in card → promptpay → paypal
                   // order. If only one method is enabled, the button is hidden
                   // (no point swapping).
-                  const order: (typeof paymentMethod)[] = ["card", "promptpay", "paypal"]
+                  const order: (typeof paymentMethod)[] = ["card", "promptpay", "paypal", "paypal_me"]
                   const enabled = order.filter((m) => paymentConfig[m]?.enabled)
                   if (enabled.length <= 1) return null
                   const idx = enabled.indexOf(paymentMethod)
@@ -939,7 +974,9 @@ export default function ProductModal({ product, onClose }: any) {
                       ? t("swap_to_promptpay")
                       : nextMethod === "paypal"
                         ? t("swap_to_paypal")
-                        : t("swap_to_card")
+                        : nextMethod === "paypal_me"
+                          ? t("swap_to_paypal_me")
+                          : t("swap_to_card")
                   return (
                     <div className="relative group/swap shrink-0">
                       <button

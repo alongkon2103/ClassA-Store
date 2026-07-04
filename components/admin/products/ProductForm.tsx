@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
+import type { gifts, partners } from "@prisma/client"
 import { useRouter } from "@/i18n/routing"
 import VariantManager from "./VariantManager"
 import ImageManager from "./ImageManager"
@@ -15,10 +16,11 @@ import TiptapEditor from "../TiptapEditor"
 import { useTranslations, useLocale } from "next-intl"
 
 type Props = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     product?: any
     mode: "create" | "edit"
-    allGifts?: any[]
-    allPartners?: any[]
+    allGifts?: gifts[]
+    allPartners?: partners[]
 }
 
 export default function ProductForm({ product, mode, allGifts, allPartners }: Props) {
@@ -58,7 +60,7 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
         partnership_shares: product?.product_shares ?? [],
     })
 
-    const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
+    const set = (k: string, v: unknown) => setForm((f) => ({ ...f, [k]: v }))
 
     // Read video duration client-side BEFORE uploading. Rejects > 10s
     // to avoid wasting bandwidth on files that won't be accepted.
@@ -107,8 +109,8 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
                 return
             }
             set("preview_video_url", data.url)
-        } catch (e: any) {
-            setVideoError(e?.message ?? "Upload failed")
+        } catch (e: unknown) {
+            setVideoError((e as Error)?.message ?? "Upload failed")
         } finally {
             setVideoUploading(false)
         }
@@ -185,7 +187,7 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
             {/* Tabs */}
             <div className="flex gap-1 bg-bg-card border border-accent/10 rounded-xl p-1 w-fit flex-wrap">
                 {tabs.filter((t) => !t.hidden).map((t) => (
-                    <button key={t.key} onClick={() => setActiveTab(t.key as any)}
+                    <button key={t.key} onClick={() => setActiveTab(t.key)}
                         className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${activeTab === t.key
                             ? "bg-accent/20 text-accent-light"
                             : "text-text-muted hover:text-text-base"
@@ -467,7 +469,12 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
     )
 }
 
-function Field({ label, children, required, className = "" }: any) {
+function Field({ label, children, required, className = "" }: {
+    label: ReactNode
+    children: ReactNode
+    required?: boolean
+    className?: string
+}) {
     return (
         <div className={className}>
             <label className="block text-[11px] tracking-wide text-text-muted uppercase mb-2">

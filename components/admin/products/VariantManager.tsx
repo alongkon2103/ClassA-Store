@@ -1,7 +1,22 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "@/i18n/routing"
+
+type Variant = {
+  id: string
+  label_en: string
+  label_th: string | null
+  duration_type: string
+  duration_days: number | null
+  price: number
+  sort_order: number | null
+  is_active: boolean
+  variant_type: string | null
+  premium_addon_price: number | null
+  discount_pct: number | null
+  discount_limit: number | null
+  discount_used: number | null
+}
 
 const blankVariant = {
   label_en: "", label_th: "",
@@ -13,17 +28,16 @@ const blankVariant = {
   discount_limit: "",
 }
 
-export default function VariantManager({ productId, variants }: { productId: string; variants: any[] }) {
-  const router = useRouter()
+export default function VariantManager({ productId, variants }: { productId: string; variants: Variant[] }) {
   const [list, setList]     = useState(variants)
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm]     = useState({ ...blankVariant })
   const [saving, setSaving] = useState(false)
 
-  const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
+  const set = (k: string, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }))
 
-  const handleEditClick = (v: any) => {
+  const handleEditClick = (v: Variant) => {
     setForm({
       label_en: v.label_en || "",
       label_th: v.label_th || "",
@@ -36,7 +50,7 @@ export default function VariantManager({ productId, variants }: { productId: str
       premium_addon_price: v.premium_addon_price?.toString() || "",
       discount_pct: v.discount_pct?.toString() || "",
       discount_limit: v.discount_limit?.toString() || "",
-    } as any)
+    })
     setEditingId(v.id)
   }
 
@@ -98,7 +112,7 @@ export default function VariantManager({ productId, variants }: { productId: str
       const res = await fetch(`/api/admin/products/${productId}/variants/${id}`, { method: "DELETE" })
       if (!res.ok) { alert("Failed to delete"); return }
       setList((l) => l.filter((v) => v.id !== id))
-    } catch (err) { alert("An error occurred") }
+    } catch { alert("An error occurred") }
   }
 
   const handleToggle = async (id: string, current: boolean) => {

@@ -73,8 +73,8 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.redirect(`${baseUrl}/${locale}/orders/${orderId}`)
-  } catch (err: any) {
-    console.error("PayPal capture error:", err?.message || err)
+  } catch (err: unknown) {
+    console.error("PayPal capture error:", (err as Error)?.message || err)
     return NextResponse.redirect(`${baseUrl}/${locale}/orders/${orderId}?paypal=failed`)
   }
 }

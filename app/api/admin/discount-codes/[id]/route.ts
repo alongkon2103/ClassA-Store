@@ -1,6 +1,7 @@
 // app/api/admin/discount-codes/[id]/route.ts
 
 import { NextRequest, NextResponse } from "next/server"
+import type { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 
@@ -14,7 +15,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const { id } = await params
     const body = await req.json()
 
-    const data: any = {}
+    const data: Prisma.discount_codesUncheckedUpdateInput = {}
     if (body.is_active !== undefined) data.is_active = Boolean(body.is_active)
     if (body.note !== undefined) data.note = body.note?.trim() || null
 
@@ -77,7 +78,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       data,
     })
     return NextResponse.json(updated)
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("PATCH discount-code error:", err)
     return NextResponse.json({ error: "Failed to update code" }, { status: 500 })
   }
@@ -94,7 +95,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     // so historical data isn't lost.
     await prisma.discount_codes.delete({ where: { id } })
     return NextResponse.json({ success: true })
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("DELETE discount-code error:", err)
     return NextResponse.json({ error: "Failed to delete code" }, { status: 500 })
   }

@@ -10,7 +10,7 @@ export async function POST(req: Request) {
         const session = await getServerSession(authOptions)
         if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-        const { action, username, cookie } = await req.json()
+        const { username, cookie } = await req.json()
         if (!username) return NextResponse.json({ error: "Username required" }, { status: 400 })
 
         // Forward to tiktok-service
@@ -48,12 +48,12 @@ export async function GET(req: Request) {
         if (!res.ok) return NextResponse.json({ error: "Failed to fetch status" }, { status: res.status })
 
         if (username) {
-            const worker = data.workers.find((w: any) => w.username === username.toLowerCase())
+            const worker = data.workers.find((w: { username: string; status: string }) => w.username === username.toLowerCase())
             return NextResponse.json({ status: worker ? worker.status : "stopped" })
         }
 
         return NextResponse.json(data)
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
     }
 }

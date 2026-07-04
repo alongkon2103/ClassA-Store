@@ -9,13 +9,16 @@
 //   payment_promptpay_fee_pct   = "0"
 //   payment_paypal_enabled      = "true" | "false"
 //   payment_paypal_fee_pct      = "0"
+//   payment_paypal_me_enabled   = "true" | "false"  (default false — hidden until
+//                                 the Gmail worker is live so no order gets stuck)
+//   payment_paypal_me_fee_pct   = "0"
 //
 // 30-second in-memory cache so the checkout hot path doesn't hit the DB every
 // time. Admin saves immediately bump the cache key by writing through.
 
 import { prisma } from "@/lib/prisma"
 
-export type PaymentMethodKey = "card" | "promptpay" | "paypal"
+export type PaymentMethodKey = "card" | "promptpay" | "paypal" | "paypal_me"
 
 export type PaymentMethodConfig = {
   enabled: boolean
@@ -28,6 +31,9 @@ const DEFAULTS: PaymentConfig = {
   card: { enabled: true, fee_pct: 6 },
   promptpay: { enabled: true, fee_pct: 0 },
   paypal: { enabled: true, fee_pct: 0 },
+  // Off by default: don't expose the email-verified method to customers until the
+  // Gmail worker is running, otherwise orders would sit unconfirmed forever.
+  paypal_me: { enabled: false, fee_pct: 0 },
 }
 
 export const PAYMENT_CONFIG_KEYS = {
@@ -37,6 +43,8 @@ export const PAYMENT_CONFIG_KEYS = {
   promptpay_fee_pct: "payment_promptpay_fee_pct",
   paypal_enabled: "payment_paypal_enabled",
   paypal_fee_pct: "payment_paypal_fee_pct",
+  paypal_me_enabled: "payment_paypal_me_enabled",
+  paypal_me_fee_pct: "payment_paypal_me_fee_pct",
 } as const
 
 let cache: { config: PaymentConfig; fetchedAt: number } | null = null
@@ -83,6 +91,10 @@ export async function getPaymentConfig(): Promise<PaymentConfig> {
     paypal: {
       enabled: parseBool(map[PAYMENT_CONFIG_KEYS.paypal_enabled], DEFAULTS.paypal.enabled),
       fee_pct: parseFee(map[PAYMENT_CONFIG_KEYS.paypal_fee_pct], DEFAULTS.paypal.fee_pct),
+    },
+    paypal_me: {
+      enabled: parseBool(map[PAYMENT_CONFIG_KEYS.paypal_me_enabled], DEFAULTS.paypal_me.enabled),
+      fee_pct: parseFee(map[PAYMENT_CONFIG_KEYS.paypal_me_fee_pct], DEFAULTS.paypal_me.fee_pct),
     },
   }
   cache = { config, fetchedAt: Date.now() }

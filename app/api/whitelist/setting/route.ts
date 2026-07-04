@@ -1,6 +1,14 @@
 import { prisma } from "@/lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 
+// Common shape shared by premium (user_function_gifts) and default rows.
+type WhitelistFunctionRow = {
+  product_functions: { name: string; label_th: string | null; label_en: string | null }
+  gifts: { name: string; image_url: string | null; diamonds: number; trigger_type: string | null } | null
+  gift_id: number | null
+  trigger_threshold: number | null
+}
+
 export async function GET(req: NextRequest) {
     const apiKey = req.headers.get("x-api-key")
     if (!apiKey || apiKey !== process.env.WHITELIST_API_KEY) {
@@ -49,7 +57,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ whitelisted: false }, { status: 404 })
     }
 
-    let functions
+    let functions: WhitelistFunctionRow[]
 
     if (order.is_premium_order) {
         functions = order.user_function_gifts
@@ -80,7 +88,7 @@ export async function GET(req: NextRequest) {
         whitelisted_username: order.whitelisted_username,
         tiktok_username: order.tiktok_username ?? null,
 
-        functions: functions.map((ufg: any) => ({
+        functions: functions.map((ufg) => ({
             name: ufg.product_functions.name,
             label_th: ufg.product_functions.label_th,
             label_en: ufg.product_functions.label_en,

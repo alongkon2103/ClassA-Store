@@ -3,6 +3,23 @@
 
 const PAYPAL_BASE = process.env.PAYPAL_BASE_URL || "https://api-m.sandbox.paypal.com"
 
+// Minimal shapes for the PayPal REST JSON fields we actually read.
+type PayPalLink = { href?: string; rel?: string }
+type PayPalOrderResponse = { id?: string; links?: PayPalLink[] }
+type PayPalCaptureResponse = {
+  status?: string
+  details?: { issue?: string }[]
+  payer?: { email_address?: string | null }
+  purchase_units?: {
+    payments?: {
+      captures?: {
+        id?: string
+        amount?: { currency_code: string; value: string }
+      }[]
+    }
+  }[]
+}
+
 let cachedToken: { token: string; expiresAt: number } | null = null
 
 export async function getPayPalAccessToken(): Promise<string> {
@@ -78,11 +95,11 @@ export async function createPayPalOrder(opts: {
     }),
     cache: "no-store",
   })
-  const data: any = await res.json().catch(() => ({}))
+  const data = (await res.json().catch(() => ({}))) as PayPalOrderResponse
   if (!res.ok) {
     throw new Error(`PayPal order create failed: ${res.status} ${JSON.stringify(data)}`)
   }
-  const approveLink = (data.links || []).find((l: any) => l.rel === "approve")
+  const approveLink = (data.links || []).find((l) => l.rel === "approve")
   if (!approveLink?.href || !data.id) {
     throw new Error("PayPal didn't return approve link")
   }
@@ -108,7 +125,7 @@ export async function capturePayPalOrder(orderId: string): Promise<PayPalCapture
     },
     cache: "no-store",
   })
-  const data: any = await res.json().catch(() => ({}))
+  const data = (await res.json().catch(() => ({}))) as PayPalCaptureResponse
   // ORDER_ALREADY_CAPTURED → treat as a retry success; fetch the existing order
   if (!res.ok && data?.details?.[0]?.issue === "ORDER_ALREADY_CAPTURED") {
     return await getPayPalOrder(orderId)
@@ -134,7 +151,7 @@ export async function getPayPalOrder(orderId: string): Promise<PayPalCapture> {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   })
-  const data: any = await res.json().catch(() => ({}))
+  const data = (await res.json().catch(() => ({}))) as PayPalCaptureResponse
   if (!res.ok) {
     throw new Error(`PayPal order fetch failed: ${res.status} ${JSON.stringify(data)}`)
   }
@@ -163,7 +180,7 @@ export async function getThbToUsdRate(): Promise<number> {
   try {
     const res = await fetch("https://open.er-api.com/v6/latest/THB", { cache: "no-store" })
     if (res.ok) {
-      const data: any = await res.json()
+      const data = (await res.json()) as { rates?: { USD?: number } }
       const rate = data?.rates?.USD
       if (typeof rate === "number" && rate > 0) {
         cachedRate = { rate, fetchedAt: Date.now() }

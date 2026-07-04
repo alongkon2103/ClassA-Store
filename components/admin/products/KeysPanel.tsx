@@ -2,8 +2,17 @@
 
 import { useState, useEffect } from "react"
 
-export default function KeysPanel({ productId, variants }: { productId: string; variants: any[] }) {
-  const [keys, setKeys]         = useState<any[]>([])
+type Variant = { id: string; label_en: string; price: number | string }
+type GameKey = {
+  id: string
+  status: string
+  variant_id: string | null
+  key_value: string
+  created_at: string | Date
+}
+
+export default function KeysPanel({ productId, variants }: { productId: string; variants: Variant[] }) {
+  const [keys, setKeys]         = useState<GameKey[]>([])
   const [loading, setLoading]   = useState(true)
   const [bulk, setBulk]         = useState("")
   const [variantId, setVariantId] = useState(variants[0]?.id ?? "")

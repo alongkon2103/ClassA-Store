@@ -1,24 +1,23 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { useRouter } from "@/i18n/routing"
 import { useTranslations } from "next-intl"
+import type { bank_accounts } from "@prisma/client"
 
 const blank = {
   bank_name: "", account_name: "", account_number: "",
   promptpay_no: "", qr_code_url: "", is_active: true,
 }
 
-export default function BankSettingsClient({ banks }: { banks: any[] }) {
+export default function BankSettingsClient({ banks }: { banks: bank_accounts[] }) {
   const t = useTranslations("Admin")
-  const router = useRouter()
   const [list, setList]     = useState(banks)
   const [form, setForm]     = useState({ ...blank })
   const [adding, setAdding] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
 
-  const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
+  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
   const handleSave = async () => {
     if (!form.bank_name || !form.account_name || !form.account_number) {
@@ -53,7 +52,7 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
     setList((l) => l.filter((b) => b.id !== id))
   }
 
-  const handleToggle = async (id: string, current: boolean) => {
+  const handleToggle = async (id: string, current: boolean | null) => {
     await fetch(`/api/admin/bank-accounts/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -62,7 +61,7 @@ export default function BankSettingsClient({ banks }: { banks: any[] }) {
     setList((l) => l.map((b) => b.id === id ? { ...b, is_active: !current } : b))
   }
 
-  const handleEdit = (bank: any) => {
+  const handleEdit = (bank: bank_accounts) => {
     setForm({
       bank_name:      bank.bank_name,
       account_name:   bank.account_name,

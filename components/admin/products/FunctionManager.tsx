@@ -5,7 +5,10 @@ import { useTranslations } from "next-intl"
 import Image from "next/image"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { motion, AnimatePresence } from "framer-motion"
-import Select, { components, type SingleValue, type StylesConfig } from "react-select"
+import Select, { components, type SingleValue, type StylesConfig, type OptionProps, type SingleValueProps } from "react-select"
+import type { gifts as Gift } from "@prisma/client"
+
+type Translate = ReturnType<typeof useTranslations<"AdminFunctions">>
 
 type ProductFunction = {
   id: string
@@ -23,13 +26,13 @@ type ProductFunction = {
 type Props = {
   productId: string
   functions: ProductFunction[]
-  allGifts: any[]
+  allGifts: Gift[]
 }
 
 type GiftOption = {
   value: number | null
   label: string
-  gift: any | null
+  gift: Gift | null
 }
 
 export default function FunctionManager({ productId, functions: initial, allGifts }: Props) {
@@ -495,7 +498,7 @@ export default function FunctionManager({ productId, functions: initial, allGift
 // - menuPortalTarget={document.body} + menuPosition="fixed" แก้บัค clip ทุกกรณี
 // - scroll ใน dropdown ไม่ปิด dropdown เพราะ react-select จัดการ event เอง
 function GiftPicker({ gifts, value, onChange, placeholder }: {
-  gifts: any[]
+  gifts: Gift[]
   value: number | null
   onChange: (id: number | null) => void
   placeholder: string
@@ -563,7 +566,7 @@ function GiftPicker({ gifts, value, onChange, placeholder }: {
   }
 
   // Option row — รูป + ชื่อ + diamonds
-  const CustomOption = (props: any) => {
+  const CustomOption = (props: OptionProps<GiftOption, false>) => {
     const g = props.data.gift
     return (
       <components.Option {...props}>
@@ -591,7 +594,7 @@ function GiftPicker({ gifts, value, onChange, placeholder }: {
   }
 
   // Selected value display
-  const CustomSingleValue = (props: any) => {
+  const CustomSingleValue = (props: SingleValueProps<GiftOption, false>) => {
     const g = props.data.gift
     return (
       <components.SingleValue {...props}>
@@ -642,7 +645,7 @@ function ImageUploadBox({ url, uploading, onUpload, onClear, t }: {
   uploading: boolean
   onUpload: (f: File) => void
   onClear: () => void
-  t: any
+  t: Translate
 }) {
   return (
     <div className="relative group/img w-16 h-16">

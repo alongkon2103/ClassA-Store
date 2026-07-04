@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import type { product_presets } from "@prisma/client"
 
 function formatBytes(bytes: number) {
   if (bytes < 1024)        return `${bytes} B`
@@ -8,7 +9,7 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function PresetManager({ productId, presets }: { productId: string; presets: any[] }) {
+export default function PresetManager({ productId, presets }: { productId: string; presets: product_presets[] }) {
   const [list, setList]       = useState(presets)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver]   = useState(false)
@@ -31,7 +32,7 @@ export default function PresetManager({ productId, presets }: { productId: strin
     fd.append("file", pendingFile)
     fd.append("type", "preset")
     const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: fd })
-    const { url, filename, filesize, error } = await uploadRes.json()
+    const { url, error } = await uploadRes.json()
 
     if (!uploadRes.ok) { alert(error); setUploading(false); return }
 

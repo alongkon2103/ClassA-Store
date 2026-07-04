@@ -6,12 +6,12 @@ import Footer from "@/components/home/Footer"
 import Hero from "@/components/home/Hero"
 import JoinDc from "@/components/home/JoinDc"
 import Driver from "@/components/home/Driver"
-import BestSeller from "@/components/home/BestSeller"
+import BestSeller, { type Product } from "@/components/home/BestSeller"
 import ProductModal from "@/components/products/ProductModal"
 import { AnimatePresence } from "framer-motion"
 
-export default function HomeClient({ products }: { products: any[] }) {
-  const [selected, setSelected] = useState<any>(null)
+export default function HomeClient({ products }: { products: Product[] }) {
+  const [selected, setSelected] = useState<Product | null>(null)
 
   return (
     <div className="relative min-h-screen flex flex-col">

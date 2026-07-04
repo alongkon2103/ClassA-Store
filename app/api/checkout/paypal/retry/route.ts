@@ -86,8 +86,8 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({ url: paypal.approveUrl })
-  } catch (err: any) {
-    console.error("PayPal Retry Error:", err?.message || err)
-    return NextResponse.json({ error: "Retry failed", details: err?.message }, { status: 500 })
+  } catch (err: unknown) {
+    console.error("PayPal Retry Error:", (err as Error)?.message || err)
+    return NextResponse.json({ error: "Retry failed", details: (err as Error)?.message }, { status: 500 })
   }
 }

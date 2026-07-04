@@ -1,17 +1,104 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useMemo, useState, useTransition, type ReactNode } from "react"
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, PieChart, Pie, Cell,
 } from "recharts"
-import { format, parseISO } from "date-fns"
+import { format, parseISO, type Locale } from "date-fns"
 import { useTranslations, useLocale } from "next-intl"
 import { th, enUS } from "date-fns/locale"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
+import { Link } from "@/i18n/routing"
 
-function fmt(n: number) {
+// Translation function returned by next-intl's useTranslations.
+type TFunc = ReturnType<typeof useTranslations>
+
+type TopProduct = {
+  product_id: string
+  name_th: string
+  name_en: string
+  total_revenue: number
+  net_revenue: number
+  order_count: number
+  unique_customers: number
+  avg_order: number
+  is_consignment?: boolean
+  commission_pct?: number | null
+  last_sale?: string | Date | null
+}
+
+type VariantRow = {
+  product_id: string
+  product_name_th: string
+  product_name_en: string
+  variant_id: string | null
+  label_th?: string | null
+  label_en?: string | null
+  order_count: number
+  revenue: number
+  duration_type?: string | null
+  duration_days?: number | null
+}
+
+type TopVariant = {
+  label_th?: string | null
+  label_en?: string | null
+  count: number
+}
+
+type OrderStatusRow = { status: string; count: number }
+type PaymentRow = { payment_method: string; total?: number; count?: number }
+type SourceRow = { source: string; total?: number; count?: number }
+type RevenuePoint = { bucket: string; total: number; count: number }
+
+type RecentOrder = {
+  id: string
+  amount: number
+  status: string
+  payment_method?: string | null
+  recorded_by_id?: string | null
+  buyer_label?: string | null
+  discount_amount?: number | null
+  expected_amount?: number | null
+  created_at?: string | Date | null
+  paid_at?: string | Date | null
+  users?: { avatar?: string | null; username?: string | null } | null
+  products?: { name_th?: string | null; name_en?: string | null } | null
+  product_variants?: { label_th?: string | null; label_en?: string | null } | null
+}
+
+type AnalyticsData = {
+  range?: {
+    from?: string | null
+    to?: string | null
+    fromParam?: string | null
+    toParam?: string | null
+    granularity?: "hour" | "day" | "month"
+  }
+  revenueOverTime?: RevenuePoint[]
+  ordersByStatus: OrderStatusRow[]
+  ordersByPayment?: PaymentRow[]
+  revenueBySource?: SourceRow[]
+  totalStats?: {
+    total_revenue: number
+    total_orders: number
+    unique_customers: number
+    avg_order: number
+  }
+  netRevenue?: {
+    total_gross: number
+    total_net: number
+    total_payout: number
+  } | null
+  topProducts: TopProduct[]
+  topVariants: TopVariant[]
+  productVariantBreakdown?: VariantRow[]
+  recentOrders: RecentOrder[]
+}
+
+function fmt(n: number | null | undefined) {
   return `฿${Number(n ?? 0).toLocaleString()}`
 }
 function fmtShort(n: number) {
@@ -20,12 +107,16 @@ function fmtShort(n: number) {
   return `฿${n}`
 }
 
-function ChartTooltip({ active, payload, label }: any) {
+function ChartTooltip({ active, payload, label }: {
+  active?: boolean
+  payload?: Array<{ name: string; value: number; color?: string }>
+  label?: string
+}) {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-bg-card border border-accent/20 rounded-xl px-4 py-2.5 text-[13px] space-y-1">
       <p className="text-text-muted text-[11px]">{label}</p>
-      {payload.map((p: any) => (
+      {payload.map((p) => (
         <p key={p.name} style={{ color: p.color }} className="font-semibold">
           {["total", "revenue", "commission", "payout"].includes(p.name) ? fmt(p.value) : p.value}
         </p>
@@ -39,7 +130,7 @@ function SourceCard({
 }: {
   color: string; label: string; sub: string
   revenue: number; count: number; percent: number
-  fmt: (n: number) => string; t: any
+  fmt: (n: number) => string; t: TFunc
 }) {
   return (
     <div
@@ -68,7 +159,12 @@ function SourceCard({
   )
 }
 
-function StatCard({ label, value, sub, color = "text-text-base" }: any) {
+function StatCard({ label, value, sub, color = "text-text-base" }: {
+  label: ReactNode
+  value: ReactNode
+  sub?: ReactNode
+  color?: string
+}) {
   return (
     <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
       <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{label}</p>
@@ -86,8 +182,6 @@ function SectionTitle({ title, sub }: { title: string; sub?: string }) {
     </div>
   )
 }
-
-const COLORS = ["#427ab5", "#5b93cc", "#3ecf8e", "#f0c060", "#e0904a", "#a78bfa"]
 
 const statusColors: Record<string, string> = {
   paid:      "#3ecf8e",
@@ -111,7 +205,7 @@ const methodColors: Record<string, string> = {
 // ── Top Products Table ──────────────────────────────────────────────────────
 type SortKey = "total_revenue" | "net_revenue" | "order_count" | "unique_customers" | "avg_order"
 
-function TopProductsTable({ products, locale, t }: { products: any[]; locale: string; t: any }) {
+function TopProductsTable({ products, locale, t }: { products: TopProduct[]; locale: string; t: TFunc }) {
   const [sort, setSort] = useState<SortKey>("total_revenue")
   const [dir,  setDir]  = useState<"desc" | "asc">("desc")
 
@@ -241,8 +335,8 @@ function DateRangePicker({
   toParam: string | null
   pending: boolean
   onApply: (from: string | null, to: string | null) => void
-  t: any
-  dateLocale: any
+  t: TFunc
+  dateLocale: Locale
 }) {
   const [customFrom, setCustomFrom] = useState(fromParam ?? "")
   const [customTo, setCustomTo] = useState(toParam ?? "")
@@ -345,7 +439,7 @@ function DateRangePicker({
 // appear so admins can see which variants aren't selling.
 function ProductVariantBreakdown({
   rows, locale, t,
-}: { rows: any[]; locale: string; t: any }) {
+}: { rows: VariantRow[]; locale: string; t: TFunc }) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [hideEmpty, setHideEmpty] = useState(false)
 
@@ -355,7 +449,7 @@ function ProductVariantBreakdown({
       name: string
       total_orders: number
       total_revenue: number
-      variants: any[]
+      variants: VariantRow[]
     }>()
     for (const r of rows) {
       const name = locale === "th" ? r.product_name_th : r.product_name_en
@@ -364,7 +458,7 @@ function ProductVariantBreakdown({
         name,
         total_orders: 0,
         total_revenue: 0,
-        variants: [] as any[],
+        variants: [] as VariantRow[],
       }
       existing.total_orders += r.order_count
       existing.total_revenue += r.revenue
@@ -472,7 +566,7 @@ function ProductVariantBreakdown({
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-export default function AnalyticsClient({ data }: { data: any }) {
+export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
   const t = useTranslations("Analytics")
   // Channel labels live in the Admin namespace (shared with /admin/orders).
   const tAdmin = useTranslations("Admin")
@@ -507,7 +601,7 @@ export default function AnalyticsClient({ data }: { data: any }) {
       if (granularity === "day")   return format(d, "dd MMM", { locale: dateLocale })
       return format(d, "MMM yyyy", { locale: dateLocale })
     }
-    return (data.revenueOverTime ?? []).map((r: any) => ({
+    return (data.revenueOverTime ?? []).map((r) => ({
       bucket: fmtBucket(r.bucket),
       total: r.total,
       count: r.count,
@@ -519,9 +613,9 @@ export default function AnalyticsClient({ data }: { data: any }) {
     : granularity === "day" ? t("granularity_daily")
     : t("granularity_monthly")
 
-  const totalPaid    = data.ordersByStatus?.find((s: any) => s.status === "paid")?.count    ?? 0
-  const totalPending = data.ordersByStatus?.find((s: any) => s.status === "pending")?.count ?? 0
-  const totalExpired = data.ordersByStatus?.find((s: any) => s.status === "expired")?.count ?? 0
+  const totalPaid    = data.ordersByStatus?.find((s) => s.status === "paid")?.count    ?? 0
+  const totalPending = data.ordersByStatus?.find((s) => s.status === "pending")?.count ?? 0
+  const totalExpired = data.ordersByStatus?.find((s) => s.status === "expired")?.count ?? 0
   const conversionRate = data.totalStats?.total_orders
     ? ((totalPaid / data.totalStats.total_orders) * 100).toFixed(1)
     : "0"
@@ -538,7 +632,7 @@ export default function AnalyticsClient({ data }: { data: any }) {
     if (m === "other")     return tAdmin("channel_other")
     return m
   }
-  const paymentChannels = ((data.ordersByPayment as any[]) ?? [])
+  const paymentChannels = (data.ordersByPayment ?? [])
     .map((p) => ({
       method:  p.payment_method,
       revenue: p.total ?? 0,
@@ -551,7 +645,7 @@ export default function AnalyticsClient({ data }: { data: any }) {
   const totalChannelRevenue = paymentChannels.reduce((sum, p) => sum + p.revenue, 0)
 
   // Source split: stripe (recorded_by_id IS NULL) vs manual admin entry.
-  const sourceRows = ((data.revenueBySource as any[]) ?? [])
+  const sourceRows = (data.revenueBySource ?? [])
   const stripeSource = sourceRows.find((r) => r.source === "stripe")
   const manualSource = sourceRows.find((r) => r.source === "manual")
   const stripeSourceRevenue = stripeSource?.total ?? 0
@@ -719,7 +813,7 @@ export default function AnalyticsClient({ data }: { data: any }) {
                         <Cell key={c.method} fill={c.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(v: any) => fmt(v)} />
+                    <Tooltip formatter={(v) => fmt(v as number)} />
                   </PieChart>
                 </ResponsiveContainer>
               </>
@@ -759,15 +853,15 @@ export default function AnalyticsClient({ data }: { data: any }) {
               <PieChart>
                 <Pie data={data.ordersByStatus} dataKey="count" nameKey="status"
                   cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3}>
-                  {data.ordersByStatus.map((entry: any) => (
+                  {data.ordersByStatus.map((entry) => (
                     <Cell key={entry.status} fill={statusColors[entry.status] ?? "#7a9bb8"} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: any, name: any) => [v, name]} />
+                <Tooltip formatter={(v, name) => [v, name]} />
               </PieChart>
             </ResponsiveContainer>
             <div className="flex-1 space-y-2">
-              {data.ordersByStatus.map((s: any) => (
+              {data.ordersByStatus.map((s) => (
                 <div key={s.status} className="flex items-center justify-between text-[13px]">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full flex-shrink-0"
@@ -805,9 +899,9 @@ export default function AnalyticsClient({ data }: { data: any }) {
             <p className="text-[13px] font-semibold">{t("recent_orders")}</p>
             <p className="text-[11px] text-text-muted">{t("orders_count", { count: data.recentOrders.length })}</p>
           </div>
-          <a href="/admin/orders" className="text-[12px] text-accent-light hover:underline">
+          <Link href="/admin/orders" className="text-[12px] text-accent-light hover:underline">
             {t("view_all")} →
-          </a>
+          </Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
@@ -823,7 +917,7 @@ export default function AnalyticsClient({ data }: { data: any }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {data.recentOrders.map((o: any) => {
+              {data.recentOrders.map((o) => {
                 const pm = o.payment_method || "stripe"
                 const pmColor = methodColors[pm] ?? "#6772e5"
                 return (

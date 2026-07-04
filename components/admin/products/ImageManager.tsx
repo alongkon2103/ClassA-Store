@@ -3,7 +3,9 @@
 import { useState, useRef } from "react"
 import { getImageUrl } from "@/lib/getImageUrl"
 
-export default function ImageManager({ productId, images }: { productId: string; images: any[] }) {
+type ProductImage = { id: string; url: string; alt_text?: string }
+
+export default function ImageManager({ productId, images }: { productId: string; images: ProductImage[] }) {
   const [list, setList]       = useState(images)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver]   = useState(false)

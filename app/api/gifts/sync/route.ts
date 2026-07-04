@@ -43,10 +43,11 @@ export async function POST(req: NextRequest) {
       { headers: corsHeaders }
     )
 
-  } catch (error: any) {
-    if (error.code === 'P2002') {
+  } catch (error: unknown) {
+    const err = error as { code?: string; meta?: unknown }
+    if (err.code === 'P2002') {
       return NextResponse.json(
-        { error: 'Gift name already exists', detail: error.meta },
+        { error: 'Gift name already exists', detail: err.meta },
         { status: 409, headers: corsHeaders }
       )
     }

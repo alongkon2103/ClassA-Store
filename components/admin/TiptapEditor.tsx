@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react"
 import { useEditor, EditorContent } from "@tiptap/react"
+import type { Editor } from "@tiptap/core"
 import StarterKit from "@tiptap/starter-kit"
 import Underline from "@tiptap/extension-underline"
 import Link from "@tiptap/extension-link"
@@ -17,10 +18,10 @@ import { TableRow } from "@tiptap/extension-table-row"
 import { TableCell } from "@tiptap/extension-table-cell"
 import { TableHeader } from "@tiptap/extension-table-header"
 
-import { 
-  Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, 
-  Quote, Undo, Redo, Code, Link as LinkIcon, Image as ImageIcon,
-  Heading1, Heading2, Heading3, AlignLeft, AlignCenter, AlignRight,
+import {
+  Bold, Italic, Underline as UnderlineIcon, List, ListOrdered,
+  Undo, Redo, Link as LinkIcon, Image as ImageIcon,
+  Heading1, Heading2, AlignLeft, AlignCenter, AlignRight,
   Highlighter, Play as YoutubeIcon, Table as TableIcon,
   Eraser
 } from "lucide-react"
@@ -30,7 +31,7 @@ interface TiptapEditorProps {
   onChange: (content: string) => void
 }
 
-const MenuBar = ({ editor }: { editor: any }) => {
+const MenuBar = ({ editor }: { editor: Editor | null }) => {
   if (!editor) return null
 
   const addLink = () => {

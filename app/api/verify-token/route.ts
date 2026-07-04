@@ -1,6 +1,6 @@
 // app/api/verify-token/route.ts
 import { NextRequest, NextResponse } from "next/server"
-import jwt from "jsonwebtoken"
+import jwt, { type JwtPayload } from "jsonwebtoken"
 import { prisma } from "@/lib/prisma"
 
 const JWT_SECRET = process.env.JWT_SECRET!
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const { token } = await req.json()
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload
     
     // Additional check for order status if it's a license token
     if (decoded.orderId && decoded.orderId !== 'simulator') {

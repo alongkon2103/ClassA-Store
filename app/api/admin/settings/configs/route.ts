@@ -20,7 +20,7 @@ export async function GET() {
         }, {} as Record<string, string>)
 
         return NextResponse.json(configMap)
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
     }
 }

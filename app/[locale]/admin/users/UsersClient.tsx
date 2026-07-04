@@ -7,8 +7,14 @@ import { useTranslations, useLocale } from "next-intl"
 import { useSession } from "next-auth/react"
 import { th, enUS } from "date-fns/locale"
 import { motion, AnimatePresence } from "framer-motion"
+import type { users } from "@prisma/client"
 
-export default function UsersClient({ users }: { users: any[] }) {
+type UserRow = users & {
+  accounts: { provider: string }[]
+  _count: { orders: number }
+}
+
+export default function UsersClient({ users }: { users: UserRow[] }) {
   const t = useTranslations("Admin")
   const locale = useLocale()
   const dateLocale = locale === "th" ? th : enUS
@@ -19,7 +25,7 @@ export default function UsersClient({ users }: { users: any[] }) {
   const [loadingId, setLoadingId] = useState<string | null>(null)
   
   // Edit State
-  const [editingUser, setEditingUser] = useState<any | null>(null)
+  const [editingUser, setEditingUser] = useState<UserRow | null>(null)
   const [editRole, setEditRole] = useState("")
 
   const filtered = useMemo(() => {
@@ -126,7 +132,7 @@ export default function UsersClient({ users }: { users: any[] }) {
                 {/* Provider */}
                 <td className="px-4 py-4">
                   <div className="flex gap-1 flex-wrap">
-                    {u.accounts.map((a: any) => (
+                    {u.accounts.map((a) => (
                       <span key={a.provider}
                         className="text-[11px] px-2 py-0.5 rounded-full bg-accent/10 text-accent-light capitalize">
                         {a.provider}

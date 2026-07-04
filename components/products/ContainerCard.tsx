@@ -4,7 +4,36 @@ import { useLocale } from "next-intl"
 import { motion } from "framer-motion"
 import ProductCard from "./ProductCard"
 
-export default function ContainerCard({ products, onSelect }: any) {
+type ProductVariant = {
+  id: string
+  label_th: string
+  label_en: string
+  price: number
+  is_active: boolean
+  variant_type?: string
+}
+
+type ProductItem = {
+  slug: string
+  id: string
+  name_th: string
+  name_en: string
+  price: number
+  product_images?: { url: string }[]
+  preview_video_url?: string | null
+  isLower?: boolean
+  is_featured?: boolean
+  product_variants?: ProductVariant[]
+}
+
+// Callers pass a narrow product shape ({ slug, name_th, name_en }); the richer
+// per-item fields are read via ProductItem below.
+type NarrowProduct = { slug: string; name_th: string; name_en: string }
+
+export default function ContainerCard({ products, onSelect }: {
+  products: NarrowProduct[]
+  onSelect: (item: NarrowProduct) => void
+}) {
     const locale = useLocale()
 
     const container = {
@@ -30,7 +59,7 @@ export default function ContainerCard({ products, onSelect }: any) {
                 animate="show"
                 className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
             >
-                {products.map((item: any) => (
+                {(products as ProductItem[]).map((item) => (
                     <motion.div key={item.id} variants={itemAnim}>
                         <ProductCard
                             name={locale === "th" ? item.name_th : item.name_en}

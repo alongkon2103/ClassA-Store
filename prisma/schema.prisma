@@ -105,6 +105,11 @@ model orders {
   recorded_by_id        String?               @db.Uuid
   buyer_label           String?               @db.VarChar
   manual_note           String?
+  // PayPal.me email-verification flow only. expected_amount is the exact USD
+  // total (THB→USD converted at creation + random cents) that the matcher looks
+  // for in the incoming PayPal email. Null for every other payment method.
+  expected_amount       Decimal?              @db.Decimal(10, 2)
+  expected_currency     String?               @default("USD") @db.VarChar
   game_keys             game_keys?
   products              products              @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                 users?                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -115,9 +120,12 @@ model orders {
   user_function_gifts   user_function_gifts[]
   discount_redemption   discount_redemptions?
   livegen_config        user_livegen_configs?
+  paypal_payment        paypal_payments?
 
   @@index([user_id], map: "idx_orders_user")
   @@index([recorded_by_id], map: "idx_orders_recorded_by")
+  // Matcher lookup: active paypal_me orders by the exact amount the customer paid.
+  @@index([expected_amount, status], map: "idx_orders_expected_amount")
 }
 
 model discount_codes {
@@ -406,29 +414,29 @@ model user_livegen_drafts {
 }
 
 model users {
-  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  username            String                @db.VarChar
-  email               String?               @unique @db.VarChar
-  role                Role                  @default(user)
-  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
-  avatar              String?               @db.VarChar
-  hwid                String?               @unique @db.VarChar
-  lastSeen            DateTime?             @db.Timestamptz(6)
-  nativeStatus        String                @default("ACTIVE") @db.VarChar
-  nativeExpiry        DateTime?             @db.Timestamptz(6)
-  isOnlineDesktop     Boolean               @default(false)
-  accounts            accounts[]
-  announcements       announcements[]
-  games               games[]
-  orders              orders[]
-  recorded_orders     orders[]              @relation("orders_recorded_by")
-  premium_upgrades    premium_upgrades[]
-  presets             presets[]
-  created_products    products[]            @relation("ProductCreator")
-  user_function_gifts user_function_gifts[]
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username             String                 @db.VarChar
+  email                String?                @unique @db.VarChar
+  role                 Role                   @default(user)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  avatar               String?                @db.VarChar
+  hwid                 String?                @unique @db.VarChar
+  lastSeen             DateTime?              @db.Timestamptz(6)
+  nativeStatus         String                 @default("ACTIVE") @db.VarChar
+  nativeExpiry         DateTime?              @db.Timestamptz(6)
+  isOnlineDesktop      Boolean                @default(false)
+  accounts             accounts[]
+  announcements        announcements[]
+  games                games[]
+  orders               orders[]
+  recorded_orders      orders[]               @relation("orders_recorded_by")
+  premium_upgrades     premium_upgrades[]
+  presets              presets[]
+  created_products     products[]             @relation("ProductCreator")
+  user_function_gifts  user_function_gifts[]
   user_livegen_configs user_livegen_configs[]
-  user_livegen_drafts user_livegen_drafts[]
-  user_presets        user_presets[]
+  user_livegen_drafts  user_livegen_drafts[]
+  user_presets         user_presets[]
 }
 
 model system_configs {
@@ -604,4 +612,49 @@ enum UserStatus {
   ACTIVE
   BANNED
   SUSPENDED
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PayPal.me email-verification flow (separate from the PayPal REST API flow).
+// A standalone PM2 worker polls a Gmail inbox for PayPal "money received" emails,
+// verifies DKIM/SPF + sender, parses them, and matches by exact gross USD amount.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Every PayPal email the worker touches — kept raw for debugging and so we can
+// alert when PayPal changes its template (verified/parse_ok both false).
+model paypal_email_log {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gmail_message_id String   @unique @db.VarChar // dedupe: never process one Gmail message twice
+  received_at      DateTime @db.Timestamptz(6)
+  verified         Boolean  @default(false) // DKIM=pass (paypal.com) + SPF=pass + From paypal.com
+  parse_ok         Boolean  @default(false)
+  error            String? // why verify/parse failed, if it did
+  raw_headers      String? // includes Authentication-Results for audit
+  raw_body         String?
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([verified, parse_ok], map: "idx_paypal_email_status")
+  @@index([received_at], map: "idx_paypal_email_received")
+}
+
+// One row per parsed PayPal transaction. Doubles as the idempotency ledger
+// (txn_id UNIQUE) and the admin review queue (match_status != 'matched').
+model paypal_payments {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  txn_id           String    @unique @db.VarChar // PayPal transaction id — 1 txn processed once
+  gmail_message_id String    @db.VarChar
+  gross_amount     Decimal   @db.Decimal(10, 2) // gross the customer paid (NOT net-of-fee)
+  currency         String    @db.VarChar
+  sender_name      String?   @db.VarChar
+  sender_email     String?   @db.VarChar
+  payment_status   String    @db.VarChar // completed | pending | ... (from the email)
+  match_status     String    @db.VarChar // matched | review | no_order | ambiguous | late
+  review_reason    String?   @db.VarChar
+  matched_order_id String?   @unique @db.Uuid
+  matched_order    orders?   @relation(fields: [matched_order_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  processed_at     DateTime? @db.Timestamptz(6)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([match_status], map: "idx_paypal_payments_match")
+  @@index([created_at], map: "idx_paypal_payments_created")
 }

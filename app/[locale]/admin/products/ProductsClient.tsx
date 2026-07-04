@@ -12,7 +12,28 @@ function StatusDot({ active }: { active: boolean }) {
   )
 }
 
-export default function ProductsClient({ products }: { products: any[] }) {
+type ProductVariant = {
+  id: string
+  label_th: string | null
+  label_en: string | null
+  variant_type: string | null
+  price: number
+}
+
+type AdminProduct = {
+  id: string
+  name_th: string | null
+  name_en: string | null
+  slug: string
+  is_active: boolean
+  is_featured: boolean
+  created_by_id: string | null
+  orders_new_count: number
+  product_images?: { url: string }[]
+  product_variants: ProductVariant[]
+}
+
+export default function ProductsClient({ products }: { products: AdminProduct[] }) {
   const router = useRouter()
   const t = useTranslations("Admin")
   const locale = useLocale()
@@ -129,7 +150,7 @@ export default function ProductsClient({ products }: { products: any[] }) {
                   {/* Variants (Added Premium Labels) */}
                   <td className="px-4 py-4">
                     <div className="flex flex-wrap gap-x-4 gap-y-1">
-                      {p.product_variants.map((v: any) => (
+                      {p.product_variants.map((v) => (
                         <div
                           key={v.id}
                           className="flex items-center gap-1.5 text-[12px]"

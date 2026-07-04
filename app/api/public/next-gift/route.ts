@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server"
 
 declare global {
-  var giftQueue: any[] | undefined
+  var giftQueue: unknown[] | undefined
 }
 
 const giftQueue = (global.giftQueue ??= [])
