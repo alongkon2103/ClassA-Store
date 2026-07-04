@@ -54,6 +54,15 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
 
   const handlePay = async (e: React.MouseEvent, order: Order) => {
     e.stopPropagation()
+
+    // paypal_me is paid on OUR own page against the amount frozen at creation —
+    // the customer pays that exact figure and the worker matches on it, so just
+    // return to that page. Never re-hit an API here that could change the amount.
+    if (order.payment_method === "paypal_me") {
+      router.push(`/checkout/${order.id}`)
+      return
+    }
+
     setPayingId(order.id)
     try {
       // Resume the SAME provider the order was created with — a PayPal pending

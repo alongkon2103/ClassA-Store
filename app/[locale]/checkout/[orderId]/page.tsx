@@ -34,14 +34,15 @@ export default async function CheckoutPage({
   if (order.payment_method === "paypal_me") {
     const link = await getPayPalMeLink()
     const expectedAmount = Number(order.expected_amount ?? 0)
-    const payUrl = buildPayPalMePayUrl(link, expectedAmount)
+    const expectedCurrency = order.expected_currency ?? "USD"
+    const payUrl = buildPayPalMePayUrl(link, expectedAmount, expectedCurrency)
 
     return (
       <PayPalMeCheckout
         order={{
           id: order.id,
           expected_amount: expectedAmount,
-          expected_currency: order.expected_currency ?? "USD",
+          expected_currency: expectedCurrency,
           amount: Number(order.amount),
           expires_at: order.expires_at ? order.expires_at.toISOString() : null,
           whitelisted_username: order.whitelisted_username,

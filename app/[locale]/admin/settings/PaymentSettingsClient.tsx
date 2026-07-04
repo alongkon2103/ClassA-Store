@@ -45,6 +45,11 @@ export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
   })
   // PayPal.me link is a standalone config (not a per-method fee) shown on the pay page.
   const [paypalMeLink, setPaypalMeLink] = useState(initialConfigs.paypal_me_link ?? "")
+  // Currency the customer sends via PayPal.me. THB lets the owner test with a Thai
+  // account (which can't send USD); defaults to USD for real foreign customers.
+  const [paypalMeCurrency, setPaypalMeCurrency] = useState<"USD" | "THB">(
+    initialConfigs.paypal_me_currency === "THB" ? "THB" : "USD",
+  )
   const [saving, setSaving] = useState(false)
 
   const update = (m: MethodKey, patch: Partial<MethodState>) => {
@@ -61,6 +66,7 @@ export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
       configs[`payment_${m}_fee_pct`] = Number.isFinite(parsed) && parsed >= 0 ? String(parsed) : "0"
     }
     configs.paypal_me_link = paypalMeLink.trim()
+    configs.paypal_me_currency = paypalMeCurrency
     try {
       const res = await fetch("/api/admin/settings/configs", {
         method: "POST",
@@ -148,9 +154,31 @@ export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
                 <p className="text-[11px] text-text-muted italic">{t("payment_fee_hint")}</p>
               </div>
 
-              {/* PayPal.me link — only this method needs a payout link. */}
+              {/* PayPal.me link + currency — only this method needs them. */}
               {m === "paypal_me" && (
                 <div className={`mt-3 pt-3 border-t border-white/5 ${!s.enabled ? "opacity-50 pointer-events-none" : ""}`}>
+                  <div className="mb-4">
+                    <label className="block text-[12px] text-text-muted font-medium mb-1.5">
+                      {t("paypal_me_currency_label")}
+                    </label>
+                    <div className="inline-flex rounded-xl border border-white/10 bg-bg-base p-1">
+                      {(["USD", "THB"] as const).map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setPaypalMeCurrency(c)}
+                          className={`px-5 py-1.5 rounded-lg text-[12px] font-semibold transition ${
+                            paypalMeCurrency === c
+                              ? "bg-accent text-white"
+                              : "text-text-muted hover:text-text-base"
+                          }`}
+                        >
+                          {c === "USD" ? "USD ($)" : "THB (฿)"}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-text-muted italic mt-1">{t("paypal_me_currency_hint")}</p>
+                  </div>
                   <label className="block text-[12px] text-text-muted font-medium mb-1.5">
                     {t("paypal_me_link_label")}
                   </label>

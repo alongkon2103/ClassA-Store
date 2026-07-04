@@ -13,6 +13,10 @@ module.exports = {
   apps: [
     {
       name: "paypal-mail-worker",
+      // __dirname pins cwd to this project folder so `--env-file=.env` and the
+      // relative script path resolve correctly no matter where `pm2 start` /
+      // `pm2 resurrect` (after a reboot) is invoked from.
+      cwd: __dirname,
       script: "./worker/paypalWorker.ts",
       interpreter: "node",
       interpreter_args: "--import tsx --env-file=.env",

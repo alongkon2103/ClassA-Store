@@ -17,8 +17,8 @@ import { evaluateDiscount, countUserRedemptions, releaseOrderDiscount } from "@/
 import { getThbToUsdRate, convertThbToUsd } from "@/lib/paypal"
 import { getPaymentConfig, computeFeeAmount } from "@/lib/paymentConfig"
 import {
-  PAYPAL_ME_CURRENCY,
   PAYPAL_ME_EXPIRY_MS,
+  getPayPalMeCurrency,
   isAmountInWindow,
   pickUniqueExpectedAmount,
 } from "@/lib/paypalMe"
@@ -103,11 +103,16 @@ export async function POST(req: Request) {
     const fee = computeFeeAmount(baseAfterDiscount, paymentConfig.paypal_me.fee_pct)
     const totalThb = baseAfterDiscount + fee
 
-    // Freeze the USD amount NOW. The live rate is cached 6h and may drift, but the
-    // matcher only ever compares against this stored value.
-    const rate = await getThbToUsdRate()
-    const baseUsd = convertThbToUsd(totalThb, rate)
-    if (!Number.isFinite(baseUsd) || baseUsd <= 0) {
+    // Freeze the charged amount NOW, in the admin-selected currency:
+    //   USD → convert the THB total once (rate cached 6h, may drift later — the
+    //         matcher only ever compares against this stored value).
+    //   THB → the customer sends baht directly, so there is nothing to convert;
+    //         the unique cent offset is added in satang instead.
+    const currency = await getPayPalMeCurrency()
+    const rate = currency === "USD" ? await getThbToUsdRate() : 1
+    const baseAmount =
+      currency === "USD" ? convertThbToUsd(totalThb, rate) : Math.round(totalThb * 100) / 100
+    if (!Number.isFinite(baseAmount) || baseAmount <= 0) {
       return NextResponse.json({ error: "Invalid price calculation" }, { status: 400 })
     }
 
@@ -147,16 +152,19 @@ export async function POST(req: Request) {
           }
 
           // Keep the existing pending order's frozen amount ONLY while it's still
-          // valid for the current displayed price — same THB total (fee/discount)
-          // AND the frozen amount is still within [price .. next-whole-dollar).
-          // If the rate/fee moved enough that the old figure is below the new
-          // price or crossed a dollar, mint a fresh amount in the new window.
-          const existingUsd = existing?.expected_amount != null ? Number(existing.expected_amount) : null
+          // valid for the current displayed price — same currency, same THB total
+          // (fee/discount) AND the frozen amount is still within
+          // [price .. next-whole-unit). If the admin switched currency, or the
+          // rate/fee moved enough that the old figure is below the new price or
+          // crossed a whole unit, mint a fresh amount in the new window.
+          const existingAmt = existing?.expected_amount != null ? Number(existing.expected_amount) : null
+          const sameCurrency = existing?.expected_currency === currency
           const sameBaseThb = existing != null && Math.abs(Number(existing.amount) - totalThb) < 0.01
-          const canReuse = existingUsd != null && sameBaseThb && isAmountInWindow(existingUsd, baseUsd)
+          const canReuse =
+            existingAmt != null && sameCurrency && sameBaseThb && isAmountInWindow(existingAmt, baseAmount)
           const expectedAmount = canReuse
-            ? existingUsd
-            : await pickUniqueExpectedAmount(tx, baseUsd, existing?.id)
+            ? existingAmt
+            : await pickUniqueExpectedAmount(tx, baseAmount, currency, existing?.id)
 
           const orderData = {
             amount: totalThb,
@@ -165,7 +173,7 @@ export async function POST(req: Request) {
             is_premium_order: !!isPremium,
             expires_at: expiresAt,
             expected_amount: expectedAmount,
-            expected_currency: PAYPAL_ME_CURRENCY,
+            expected_currency: currency,
             discount_code_id: discountCodeRow && discountAmount > 0 ? discountCodeRow.id : null,
             discount_amount: discountAmount > 0 ? discountAmount : null,
           }

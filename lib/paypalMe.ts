@@ -12,9 +12,11 @@ import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { releaseOrderDiscount } from "@/lib/discountCodes"
 
-export const PAYPAL_ME_CURRENCY = "USD"
+export const PAYPAL_ME_CURRENCY = "USD" // default currency when none is configured
 export const PAYPAL_ME_EXPIRY_MS = 30 * 60 * 1000 // order is payable for 30 minutes
 export const PAYPAL_ME_RECYCLE_BUFFER_MS = 24 * 60 * 60 * 1000 // keep an amount reserved 24h past expiry
+
+export type PayPalMeCurrency = "USD" | "THB"
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -24,12 +26,26 @@ export async function getPayPalMeLink(): Promise<string> {
   return (row?.value?.trim() || process.env.PAYPAL_ME_LINK || "").trim()
 }
 
-// Build a "paypal.me/<name>/<amount>USD" deep link that prefills the exact amount
-// so the customer is less likely to mistype it. Returns "" if no link configured.
-export function buildPayPalMePayUrl(link: string, amount: number): string {
+// Which currency the customer actually sends. Admin-switchable in Settings
+// (system_configs key "paypal_me_currency"); defaults to USD. THB mode exists so
+// the shop owner can test the whole match flow with a Thai PayPal account, which
+// can only send THB — the matcher keys on amount + currency either way.
+export async function getPayPalMeCurrency(): Promise<PayPalMeCurrency> {
+  const row = await prisma.system_configs.findUnique({ where: { key: "paypal_me_currency" } })
+  return row?.value === "THB" ? "THB" : "USD"
+}
+
+// Build a "paypal.me/<name>/<amount><CUR>" deep link that prefills the exact
+// amount + currency so the customer is less likely to mistype it. Returns "" if
+// no link configured.
+export function buildPayPalMePayUrl(
+  link: string,
+  amount: number,
+  currency: string = PAYPAL_ME_CURRENCY,
+): string {
   if (!link) return ""
   const base = link.replace(/\/+$/, "")
-  return `${base}/${amount.toFixed(2)}${PAYPAL_ME_CURRENCY}`
+  return `${base}/${amount.toFixed(2)}${currency}`
 }
 
 // Amounts already taken by any paypal_me order that is still active or expired
@@ -38,13 +54,14 @@ export function buildPayPalMePayUrl(link: string, amount: number): string {
 // pending order's own amount so it doesn't treat its old figure as taken).
 async function reservedAmounts(
   tx: Prisma.TransactionClient,
+  currency: string,
   excludeOrderId?: string,
 ): Promise<Set<string>> {
   const cutoff = new Date(Date.now() - PAYPAL_ME_RECYCLE_BUFFER_MS)
   const rows = await tx.orders.findMany({
     where: {
       payment_method: "paypal_me",
-      expected_currency: PAYPAL_ME_CURRENCY,
+      expected_currency: currency,
       expected_amount: { not: null },
       // active (expires_at > now) OR expired-but-within-buffer (expires_at > now-24h)
       expires_at: { gt: cutoff },
@@ -71,17 +88,18 @@ export function isAmountInWindow(amount: number, baseUsd: number): boolean {
   return amount >= baseUsd - 0.001 && amount < Math.floor(baseUsd) + 1
 }
 
-// Pick a unique USD amount in [baseUsd .. floor(baseUsd)+0.99]. Starts from a
-// random cent in that window so amounts don't cluster. Throws
-// PAYPAL_ME_NO_UNIQUE_AMOUNT if every slot is taken (practically impossible at
-// this volume) so the caller can surface a "try again shortly".
+// Pick a unique amount in [baseAmount .. floor(baseAmount)+0.99] for the given
+// currency. Starts from a random cent in that window so amounts don't cluster.
+// Throws PAYPAL_ME_NO_UNIQUE_AMOUNT if every slot is taken (practically
+// impossible at this volume) so the caller can surface a "try again shortly".
 export async function pickUniqueExpectedAmount(
   tx: Prisma.TransactionClient,
-  baseUsd: number,
+  baseAmount: number,
+  currency: string = PAYPAL_ME_CURRENCY,
   excludeOrderId?: string,
 ): Promise<number> {
-  const taken = await reservedAmounts(tx, excludeOrderId)
-  const { floor, startCents } = amountWindow(baseUsd)
+  const taken = await reservedAmounts(tx, currency, excludeOrderId)
+  const { floor, startCents } = amountWindow(baseAmount)
   const span = 100 - startCents // cents from startCents..99 (>= price, < next dollar)
   const offset = Math.floor(Math.random() * span)
   for (let i = 0; i < span; i++) {

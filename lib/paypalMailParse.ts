@@ -47,9 +47,11 @@ export function htmlToText(html: string): string {
     .trim()
 }
 
-// Matches "$44.68 USD", "44.68 USD", "$1,234.56 USD".
+// Matches "$44.68 USD", "44.68 USD", "$1,234.56 USD", "฿594.75 THB". The leading
+// currency symbol ($ or ฿) is optional; the authoritative currency is the 3-letter
+// code that trails the number.
 function parseAmountCurrency(s: string): { amount: number | null; currency: string | null } {
-  const m = s.match(/\$?\s*([\d,]+\.\d{2})\s*([A-Z]{3})/)
+  const m = s.match(/[$฿]?\s*([\d,]+\.\d{2})\s*([A-Z]{3})/)
   if (!m) return { amount: null, currency: null }
   return { amount: Number(m[1].replace(/,/g, "")), currency: m[2] }
 }
@@ -73,7 +75,7 @@ export function parsePayPalReceivedEmail(subject: string, rawBody: string): Pars
   // GROSS + currency — authoritative source is the subject.
   let gross: number | null = null
   let currency: string | null = null
-  const subjM = subject.match(/ได้รับเงินจำนวน\s*\$?\s*([\d,]+\.\d{2})\s*([A-Z]{3})/)
+  const subjM = subject.match(/ได้รับเงินจำนวน\s*[$฿]?\s*([\d,]+\.\d{2})\s*([A-Z]{3})/)
   if (subjM) {
     gross = Number(subjM[1].replace(/,/g, ""))
     currency = subjM[2]

@@ -42,6 +42,9 @@ export default function PayPalMeCheckout({
   const locale = useLocale()
 
   const amountStr = order.expected_amount.toFixed(2)
+  // Symbol matches the frozen currency so THB test orders read "฿594.75", not "$".
+  const CURRENCY_SYMBOLS: Record<string, string> = { USD: "$", THB: "฿" }
+  const symbol = CURRENCY_SYMBOLS[order.expected_currency] ?? ""
   const expiresMs = order.expires_at ? new Date(order.expires_at).getTime() : 0
 
   const [copied, setCopied] = useState(false)
@@ -161,7 +164,7 @@ export default function PayPalMeCheckout({
 
                 <div className="p-5">
                   <div className="flex items-end justify-center gap-2 py-2">
-                    <span className="text-[22px] font-bold text-text-muted mb-1">$</span>
+                    <span className="text-[22px] font-bold text-text-muted mb-1">{symbol}</span>
                     <span className="text-[48px] leading-none font-extrabold text-accent-light tracking-tight">
                       {amountStr}
                     </span>
@@ -264,7 +267,7 @@ export default function PayPalMeCheckout({
                   <div className="flex items-center justify-between">
                     <span className="text-[13px] font-semibold">{t("total")}</span>
                     <span className="text-[22px] font-bold text-accent-light">
-                      ${amountStr}
+                      {symbol}{amountStr}
                     </span>
                   </div>
                   <div className="bg-bg-base rounded-xl px-3 py-2.5">

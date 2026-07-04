@@ -336,6 +336,8 @@
     "payment_method_paypal_me_hint": "Customer transfers via a PayPal.me link in USD; verified automatically from the payment-received email.",
     "paypal_me_link_label": "PayPal.me link",
     "paypal_me_link_hint": "The link customers pay to, shown on the checkout page. e.g. https://www.paypal.com/paypalme/yourname",
+    "paypal_me_currency_label": "Charge currency",
+    "paypal_me_currency_hint": "The currency customers actually send. Use USD for foreign customers; switch to THB to test with a Thai PayPal account that can only send baht.",
     "ppr_nav": "PayPal Review",
     "ppr_title": "PayPal Payment Review Queue",
     "ppr_subtitle": "Payments the system could not auto-match. Please review and resolve them manually.",
