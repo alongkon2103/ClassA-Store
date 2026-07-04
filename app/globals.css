@@ -146,6 +146,13 @@
 [data-theme="light"] .text-gray-400 { color: #64748b !important; }
 [data-theme="light"] .text-gray-500 { color: #64748b !important; }
 
+/* Amber warning text (PayPal.me "pay exact amount" notice, PayPal retry banner,
+   etc.) is a pale yellow that pops on dark backgrounds but nearly vanishes on the
+   pale-yellow warning boxes in light mode — shift it to a deep amber there. */
+[data-theme="light"] .text-yellow-200,
+[data-theme="light"] .text-yellow-200\/90,
+[data-theme="light"] .text-yellow-200\/80 { color: #92400e !important; }
+
 /* Escape hatch for any component that genuinely needs pure white text/border
    (e.g. text sitting on the accent button, or on a media overlay). Apply
    .text-on-accent or .border-on-image alongside the original utility.
