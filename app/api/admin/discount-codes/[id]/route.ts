@@ -17,6 +17,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     const data: Prisma.discount_codesUncheckedUpdateInput = {}
     if (body.is_active !== undefined) data.is_active = Boolean(body.is_active)
+    if (body.is_public !== undefined) data.is_public = Boolean(body.is_public)
     if (body.note !== undefined) data.note = body.note?.trim() || null
 
     if (body.code !== undefined) {

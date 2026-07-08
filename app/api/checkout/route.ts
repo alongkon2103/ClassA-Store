@@ -319,15 +319,16 @@ export async function POST(req: Request) {
         }
 
         // ถ้ามี code ใหม่ → reserve slot (atomic, กัน race)
+        // โค้ดไม่จำกัดสิทธิ์ (max_uses=null) ข้ามเช็คเพดานไปเลย — ห้ามใช้ sentinel
+        // อย่าง MAX_SAFE_INTEGER เพราะเกินช่วง Postgres int4 แล้ว query พังทันที
         if (discountCodeRow && discountAmount > 0) {
           const reserved = await tx.discount_codes.updateMany({
             where: {
               id: discountCodeRow.id,
               is_active: true,
-              OR: [
-                { max_uses: null },
-                { used_count: { lt: discountCodeRow.max_uses ?? Number.MAX_SAFE_INTEGER } },
-              ],
+              ...(discountCodeRow.max_uses === null
+                ? {}
+                : { used_count: { lt: discountCodeRow.max_uses } }),
             },
             data: { used_count: { increment: 1 } },
           })

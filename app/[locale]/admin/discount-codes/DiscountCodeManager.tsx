@@ -17,6 +17,7 @@ type DiscountCode = {
   starts_at: string | null
   expires_at: string | null
   is_active: boolean
+  is_public: boolean
   note: string | null
   redemption_count: number
 }
@@ -33,6 +34,7 @@ type FormState = {
   product_id: string
   starts_at: string
   expires_at: string
+  is_public: boolean
   note: string
 }
 
@@ -46,6 +48,7 @@ const EMPTY_FORM: FormState = {
   product_id: "",
   starts_at: "",
   expires_at: "",
+  is_public: false,
   note: "",
 }
 
@@ -70,6 +73,7 @@ function codeToForm(c: DiscountCode): FormState {
     product_id: c.product_id ?? "",
     starts_at: toLocalDatetime(c.starts_at),
     expires_at: toLocalDatetime(c.expires_at),
+    is_public: c.is_public,
     note: c.note ?? "",
   }
 }
@@ -130,6 +134,7 @@ export default function DiscountCodeManager({
         product_id: form.product_id || null,
         starts_at: form.starts_at || null,
         expires_at: form.expires_at || null,
+        is_public: form.is_public,
         note: form.note || null,
       }
 
@@ -165,6 +170,7 @@ export default function DiscountCodeManager({
         starts_at: data.starts_at,
         expires_at: data.expires_at,
         is_active: data.is_active,
+        is_public: data.is_public,
         note: data.note,
         redemption_count: editingId
           ? codes.find((c) => c.id === editingId)?.redemption_count ?? 0
@@ -348,6 +354,23 @@ export default function DiscountCodeManager({
             </div>
 
             <div className="md:col-span-2">
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.is_public}
+                  onChange={(e) => setForm({ ...form, is_public: e.target.checked })}
+                  className="w-4 h-4 mt-0.5 accent-accent"
+                />
+                <span>
+                  <span className="block text-[13px] font-medium">{t("field_is_public")}</span>
+                  <span className="block text-[11px] text-text-muted mt-0.5">
+                    {t("field_is_public_hint")}
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            <div className="md:col-span-2">
               <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
                 {t("field_note")}
               </label>
@@ -406,7 +429,14 @@ export default function DiscountCodeManager({
               ) : (
                 codes.map((c) => (
                   <tr key={c.id} className="hover:bg-white/[0.02]">
-                    <td className="px-4 py-3 font-mono font-semibold">{c.code}</td>
+                    <td className="px-4 py-3 font-mono font-semibold">
+                      {c.code}
+                      {c.is_public && (
+                        <span className="ml-2 align-middle text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-sans font-medium uppercase tracking-wider">
+                          {t("badge_public")}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       {c.type === "fixed" ? `฿${c.value.toLocaleString()}` : `${c.value}%`}
                     </td>

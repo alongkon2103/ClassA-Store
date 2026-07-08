@@ -279,6 +279,20 @@ export default function ProductModal({ product, onClose }: any) {
   const [discountChecking, setDiscountChecking] = useState(false)
   const [discountError, setDiscountError] = useState<string | null>(null)
 
+  // Public/featured codes (is_public) — shown as one-tap cards under the
+  // discount input. Visible to everyone; applying still requires login.
+  type PublicCode = {
+    code: string
+    type: string // "fixed" | "percent"
+    value: number
+    min_amount: number | null
+    remaining: number | null // null = unlimited
+    already_used: boolean
+  }
+  const [publicCodes, setPublicCodes] = useState<PublicCode[]>([])
+  // Collapsed by default: show only the first 3 cards, "show more" expands.
+  const [showAllCodes, setShowAllCodes] = useState(false)
+
   // Payment config (per-method enabled flag + fee_pct). Admin-controlled via
   // /admin/settings; defaults applied here in case the fetch fails so the user
   // can still check out with sensible values.
@@ -312,6 +326,19 @@ export default function ProductModal({ product, onClose }: any) {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/discount-codes/public?productId=${encodeURIComponent(product.id)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data?.codes)) setPublicCodes(data.codes)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [product.id, session?.user?.id])
 
   useEffect(() => {
     fetch("/api/checkout/trial")
@@ -396,8 +423,7 @@ export default function ProductModal({ product, onClose }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVariant?.id, isPremiumSelected])
 
-  const handleApplyDiscount = async () => {
-    const codeRaw = discountInput.trim().toUpperCase()
+  const applyDiscountCode = async (codeRaw: string) => {
     if (!codeRaw) return
     setDiscountChecking(true)
     setDiscountError(null)
@@ -423,6 +449,20 @@ export default function ProductModal({ product, onClose }: any) {
     } finally {
       setDiscountChecking(false)
     }
+  }
+
+  const handleApplyDiscount = () => applyDiscountCode(discountInput.trim().toUpperCase())
+
+  // One-tap apply from a public-code card. Anyone can see the cards, but
+  // applying requires login (same rule as the validate endpoint).
+  const handlePublicCodeClick = (c: { code: string }) => {
+    if (discountChecking) return
+    if (!session) {
+      setShowLoginModal(true)
+      return
+    }
+    setDiscountInput(c.code)
+    applyDiscountCode(c.code)
   }
 
   // Translate a server-returned errorCode (+ optional params) into the
@@ -473,6 +513,11 @@ export default function ProductModal({ product, onClose }: any) {
 
   const toUSD = (thbPrice: number) => usdRate ? (Number(thbPrice) * usdRate).toFixed(2) : null
   const totalPriceUSD = toUSD(totalPrice)
+
+  // Money label in the viewer's currency (THB for th locale, USD otherwise) —
+  // same convention as the total price display.
+  const fmtMoney = (thb: number) =>
+    isTH ? `฿${thb.toLocaleString()}` : `$${toUSD(thb) ?? thb.toFixed(2)}`
 
   const getYoutubeEmbedUrl = (url: string) => {
     if (!url) return null
@@ -1060,6 +1105,105 @@ export default function ProductModal({ product, onClose }: any) {
                   {discountError && (
                     <p className="text-[12px] text-red-400 mt-1.5">{discountError}</p>
                   )}
+
+                  {/* PUBLIC CODES — one-tap cards (TikTok/Shopee style).
+                      Usable cards sort first so the collapsed top-3 never hides
+                      a usable code behind disabled ones. */}
+                  {publicCodes.length > 0 && (() => {
+                    const isDisabledCard = (c: PublicCode) =>
+                      c.remaining === 0 || c.already_used || currentSubtotal < (c.min_amount ?? 0)
+                    const sorted = [...publicCodes].sort(
+                      (a, b) => Number(isDisabledCard(a)) - Number(isDisabledCard(b)),
+                    )
+                    const visible = showAllCodes ? sorted : sorted.slice(0, 3)
+                    const hiddenCount = sorted.length - 3
+                    return (
+                    <div className="mt-2.5 space-y-2">
+                      {visible.map((c) => {
+                        const soldOut = c.remaining === 0
+                        const belowMin = currentSubtotal < (c.min_amount ?? 0)
+                        const disabled = soldOut || c.already_used || belowMin
+                        const chipLabel = c.already_used
+                          ? t("public_code_used")
+                          : soldOut
+                            ? t("public_code_sold_out")
+                            : belowMin
+                              ? t("public_code_below_min")
+                              : t("public_code_use")
+                        return (
+                          <button
+                            key={c.code}
+                            type="button"
+                            disabled={disabled || discountChecking}
+                            onClick={() => handlePublicCodeClick(c)}
+                            className={`w-full flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+                              disabled
+                                ? "border-white/5 bg-white/[0.02] opacity-45 cursor-not-allowed"
+                                : "border-amber-500/30 bg-amber-500/[0.06] hover:bg-amber-500/[0.12] active:scale-[0.99]"
+                            }`}
+                          >
+                            <div className="shrink-0 min-w-[56px] text-center">
+                              <p className={`text-[16px] font-bold leading-none ${disabled ? "text-text-muted" : "text-amber-400"}`}>
+                                {c.type === "fixed" ? fmtMoney(c.value) : `${c.value}%`}
+                              </p>
+                              <p className="text-[9px] uppercase tracking-widest text-text-muted mt-1">
+                                {t("public_code_off")}
+                              </p>
+                            </div>
+                            <div className="self-stretch border-l border-dashed border-white/15" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-mono font-semibold text-[13px] text-text-base truncate">
+                                {c.code}
+                              </p>
+                              <p className="text-[11px] text-text-muted mt-0.5 truncate">
+                                {[
+                                  c.min_amount ? t("public_code_min", { min: fmtMoney(c.min_amount) }) : null,
+                                  c.remaining !== null ? t("public_code_left", { n: c.remaining }) : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </p>
+                            </div>
+                            <span
+                              className={`shrink-0 text-[11px] px-2.5 py-1 rounded-lg font-medium ${
+                                disabled
+                                  ? "bg-white/5 text-text-muted"
+                                  : "bg-amber-500/15 text-amber-400"
+                              }`}
+                            >
+                              {discountChecking ? "..." : chipLabel}
+                            </span>
+                          </button>
+                        )
+                      })}
+
+                      {hiddenCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAllCodes((v) => !v)}
+                          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12px] text-text-muted hover:text-text-base hover:bg-white/[0.04] transition"
+                        >
+                          {showAllCodes
+                            ? t("public_code_show_less")
+                            : t("public_code_show_more", { n: hiddenCount })}
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className={`transition-transform ${showAllCodes ? "rotate-180" : ""}`}
+                          >
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    )
+                  })()}
                 </div>
               )}
             </div>

@@ -143,6 +143,10 @@ model discount_codes {
   starts_at      DateTime?              @db.Timestamptz(6)
   expires_at     DateTime?              @db.Timestamptz(6)
   is_active      Boolean                @default(true)
+  // Public/featured code (TikTok/Shopee-style): shown as a clickable card under
+  // the discount input in the product modal for EVERYONE. Visibility only —
+  // redemption rules (max_uses/per_user_limit/…) are identical to normal codes.
+  is_public      Boolean                @default(false)
   note           String?                @db.VarChar
   created_at     DateTime?              @default(now()) @db.Timestamptz(6)
   updated_at     DateTime?              @default(now()) @db.Timestamptz(6)

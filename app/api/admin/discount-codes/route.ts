@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
     const startsAt = body.starts_at ? new Date(body.starts_at) : null
     const expiresAt = body.expires_at ? new Date(body.expires_at) : null
     const note: string | null = body.note?.trim() || null
+    const isPublic = Boolean(body.is_public)
 
     if (!Number.isFinite(value) || value <= 0) {
       return NextResponse.json({ error: "value must be > 0" }, { status: 400 })
@@ -93,6 +94,7 @@ export async function POST(req: NextRequest) {
         product_id: productId,
         starts_at: startsAt,
         expires_at: expiresAt,
+        is_public: isPublic,
         note,
       },
     })

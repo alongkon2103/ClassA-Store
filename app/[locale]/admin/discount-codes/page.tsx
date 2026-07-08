@@ -38,6 +38,7 @@ export default async function DiscountCodesAdminPage() {
           starts_at: c.starts_at?.toISOString() ?? null,
           expires_at: c.expires_at?.toISOString() ?? null,
           is_active: c.is_active,
+          is_public: c.is_public,
           note: c.note,
           redemption_count: c._count.redemptions,
         }))}

@@ -129,15 +129,16 @@ export async function POST(req: Request) {
             await releaseOrderDiscount(tx, existing.id)
           }
 
+          // Unlimited codes (max_uses=null) skip the cap check — a JS sentinel
+          // like MAX_SAFE_INTEGER overflows Postgres int4 and kills the query.
           if (discountCodeRow && discountAmount > 0) {
             const reserved = await tx.discount_codes.updateMany({
               where: {
                 id: discountCodeRow.id,
                 is_active: true,
-                OR: [
-                  { max_uses: null },
-                  { used_count: { lt: discountCodeRow.max_uses ?? Number.MAX_SAFE_INTEGER } },
-                ],
+                ...(discountCodeRow.max_uses === null
+                  ? {}
+                  : { used_count: { lt: discountCodeRow.max_uses } }),
               },
               data: { used_count: { increment: 1 } },
             })
