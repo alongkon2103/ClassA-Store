@@ -54,9 +54,21 @@ type CharacterLibraryItem = { url: string; name: string }
 type Side = "left" | "right"
 type GiftPos = "tl" | "tr" | "bl" | "br"
 
+// One gift image on a tile — its own position and size so up to
+// MAX_GIFTS_PER_TILE gifts can sit on the same card without overlapping.
+export type TileGift = {
+  gift_id: number
+  scale: number
+  x: number
+  y: number
+}
+
 export type LiveGenConfig = {
   tiles: Array<{
     function_id: string
+    // New multi-gift format. Older saves only carry the flat gift_* fields
+    // below — migrateTileGifts() folds those into a 1-item array on load.
+    gifts?: Array<Partial<TileGift>>
     gift_id: number | null
     label: string
     side?: Side
@@ -125,10 +137,7 @@ type Props = {
 }
 
 type TileState = {
-  gift_id: number | null
-  gift_scale: number
-  gift_x: number
-  gift_y: number
+  gifts: TileGift[]
   label: string
   label_size: number
   label_color: string
@@ -196,6 +205,49 @@ function cornerToXY(pos: GiftPos | undefined): { x: number; y: number } {
   }
 }
 
+const MAX_GIFTS = 3
+
+// Where the 1st/2nd/3rd gift lands when added, so they never spawn stacked on
+// top of each other — the user drags them into place from there.
+const GIFT_SPAWN_POINTS = [
+  { x: 0.03, y: 0.03 },
+  { x: 0.65, y: 0.03 },
+  { x: 0.03, y: 0.65 },
+]
+
+// Fold a saved tile's gift data into the multi-gift array:
+//  - new saves carry `gifts` directly
+//  - legacy saves carry a single gift in flat fields → 1-item array
+//  - unsaved tiles fall back to the product function's default gift
+function migrateTileGifts(
+  s: LiveGenConfig["tiles"][number] | undefined,
+  defaultGiftId: number | null,
+): TileGift[] {
+  if (Array.isArray(s?.gifts)) {
+    return s.gifts
+      .filter((g) => g && Number.isFinite(Number(g.gift_id)))
+      .slice(0, MAX_GIFTS)
+      .map((g, i) => ({
+        gift_id: Number(g.gift_id),
+        scale: g.scale ?? 0.32,
+        x: g.x ?? GIFT_SPAWN_POINTS[i].x,
+        y: g.y ?? GIFT_SPAWN_POINTS[i].y,
+      }))
+  }
+  const legacy = cornerToXY(s?.gift_position)
+  // Same fallback chain the single-gift loader used: saved value → default.
+  const gid = s?.gift_id ?? defaultGiftId
+  if (gid == null) return []
+  return [
+    {
+      gift_id: gid,
+      scale: s?.gift_scale ?? 0.32,
+      x: s?.gift_x ?? legacy.x,
+      y: s?.gift_y ?? legacy.y,
+    },
+  ]
+}
+
 export default function LiveGenClient({
   mode,
   orderId,
@@ -225,13 +277,9 @@ export default function LiveGenClient({
     const out: Record<string, TileState> = {}
     functions.forEach((f, i) => {
       const s = saved.get(f.id)
-      const legacy = cornerToXY(s?.gift_position)
       const side: Side = s?.side ?? (i < half ? "left" : "right")
       out[f.id] = {
-        gift_id: s?.gift_id ?? f.default_gift_id ?? null,
-        gift_scale: s?.gift_scale ?? 0.32,
-        gift_x: s?.gift_x ?? legacy.x,
-        gift_y: s?.gift_y ?? legacy.y,
+        gifts: migrateTileGifts(s, f.default_gift_id),
         label: s?.label ?? (locale === "th" ? f.label_th : f.label_en) ?? "",
         label_size: s?.label_size ?? 32,
         label_color: s?.label_color ?? "auto",
@@ -253,12 +301,8 @@ export default function LiveGenClient({
     // reads explode with `tile.character_image is undefined`.
     saved.forEach((s, key) => {
       if (!key.startsWith("custom_") || out[key]) return
-      const legacy = cornerToXY(s.gift_position)
       out[key] = {
-        gift_id: s.gift_id ?? null,
-        gift_scale: s.gift_scale ?? 0.32,
-        gift_x: s.gift_x ?? legacy.x,
-        gift_y: s.gift_y ?? legacy.y,
+        gifts: migrateTileGifts(s, null),
         label: s.label ?? "",
         label_size: s.label_size ?? 32,
         label_color: s.label_color ?? "auto",
@@ -361,6 +405,44 @@ export default function LiveGenClient({
 
   const updateTile = (fid: string, patch: Partial<TileState>) => {
     setTiles((prev) => ({ ...prev, [fid]: { ...prev[fid], ...patch } }))
+  }
+
+  // Patch one gift (by index) on a tile — used by the preview drag and the
+  // per-gift size sliders.
+  const updateTileGift = (fid: string, index: number, patch: Partial<TileGift>) => {
+    setTiles((prev) => {
+      const cur = prev[fid]
+      if (!cur || !cur.gifts[index]) return prev
+      const gifts = cur.gifts.map((g, i) => (i === index ? { ...g, ...patch } : g))
+      return { ...prev, [fid]: { ...cur, gifts } }
+    })
+  }
+
+  // Picker click: gift already on the tile → remove it; otherwise append (up
+  // to MAX_GIFTS), spawning at the next free corner so gifts never stack.
+  const toggleTileGift = (fid: string, giftId: number) => {
+    setTiles((prev) => {
+      const cur = prev[fid]
+      if (!cur) return prev
+      const idx = cur.gifts.findIndex((g) => g.gift_id === giftId)
+      let gifts: TileGift[]
+      if (idx >= 0) {
+        gifts = cur.gifts.filter((_, i) => i !== idx)
+      } else {
+        if (cur.gifts.length >= MAX_GIFTS) return prev
+        const spawn = GIFT_SPAWN_POINTS[cur.gifts.length] ?? GIFT_SPAWN_POINTS[0]
+        gifts = [...cur.gifts, { gift_id: giftId, scale: 0.32, x: spawn.x, y: spawn.y }]
+      }
+      return { ...prev, [fid]: { ...cur, gifts } }
+    })
+  }
+
+  const removeTileGiftAt = (fid: string, index: number) => {
+    setTiles((prev) => {
+      const cur = prev[fid]
+      if (!cur) return prev
+      return { ...prev, [fid]: { ...cur, gifts: cur.gifts.filter((_, i) => i !== index) } }
+    })
   }
 
   const toggleSide = (fid: string) => {
@@ -480,10 +562,7 @@ export default function LiveGenClient({
       return {
         ...prev,
         [id]: {
-          gift_id: null,
-          gift_scale: 0.32,
-          gift_x: 0.03,
-          gift_y: 0.03,
+          gifts: [],
           label: "",
           label_size: 32,
           label_color: "auto",
@@ -562,13 +641,16 @@ export default function LiveGenClient({
             return {
               function_id: f.id,
               ...(isCustom && { name: f.name, source_function_id: f.source_function_id }),
-              gift_id: tt?.gift_id ?? null,
+              gifts: tt?.gifts ?? [],
+              // Legacy mirror of the first gift so a rollback to the
+              // single-gift client still renders something sensible.
+              gift_id: tt?.gifts[0]?.gift_id ?? null,
             label: tt?.label ?? "",
             side: tt?.side ?? "left",
             order: tt?.order ?? 0,
-            gift_scale: tt?.gift_scale ?? 0.32,
-            gift_x: tt?.gift_x ?? 0.03,
-            gift_y: tt?.gift_y ?? 0.03,
+            gift_scale: tt?.gifts[0]?.scale ?? 0.32,
+            gift_x: tt?.gifts[0]?.x ?? 0.03,
+            gift_y: tt?.gifts[0]?.y ?? 0.03,
             label_size: tt?.label_size ?? 32,
             label_color: tt?.label_color ?? "auto",
             label_x: tt?.label_x ?? 0.96,
@@ -659,17 +741,16 @@ export default function LiveGenClient({
             } catch { /* skip */ }
           }
 
-          if (tile.gift_id) {
-            const g = giftById.get(tile.gift_id)
-            if (g?.image_url) {
-              try {
-                const img = await loadImage(getImageUrl(g.image_url))
-                const size = Math.round(tileW * tile.gift_scale)
-                const gx = x + tile.gift_x * tileW
-                const gy = y + tile.gift_y * tileH
-                ctx.drawImage(img, gx, gy, size, size)
-              } catch { /* skip */ }
-            }
+          for (const tg of tile.gifts) {
+            const g = giftById.get(tg.gift_id)
+            if (!g?.image_url) continue
+            try {
+              const img = await loadImage(getImageUrl(g.image_url))
+              const size = Math.round(tileW * tg.scale)
+              const gx = x + tg.x * tileW
+              const gy = y + tg.y * tileH
+              ctx.drawImage(img, gx, gy, size, size)
+            } catch { /* skip */ }
           }
 
           const label = tile.label?.trim()
@@ -913,7 +994,7 @@ export default function LiveGenClient({
                     f={f}
                     tile={tt}
                     aspect={layout.tile_aspect}
-                    gift={tt.gift_id ? giftById.get(tt.gift_id) ?? null : null}
+                    giftById={giftById}
                     resolveColor={resolveLabelColor}
                     gridColumn={tt.side === "left" ? 1 : 2}
                     gridRow={tt.order + 1}
@@ -1064,15 +1145,19 @@ export default function LiveGenClient({
                     tile={editingTile}
                     aspect={layout.tile_aspect}
                     previewCharUrl={previewCharUrl}
-                    giftImage={editingTile.gift_id ? giftById.get(editingTile.gift_id)?.image_url ?? null : null}
+                    giftById={giftById}
                     resolveColor={resolveLabelColor}
-                    onGiftMove={(x, y) => updateTile(editing.id, { gift_x: x, gift_y: y })}
+                    onGiftMove={(i, x, y) => updateTileGift(editing.id, i, { x, y })}
                     onLabelMove={(x, y) => updateTile(editing.id, { label_x: x, label_y: y })}
                   />
                   <p className="text-[9px] text-text-muted mt-1.5 leading-tight">{t("drag_hint")}</p>
                   <button
                     onClick={() => updateTile(editing.id, {
-                      gift_x: 0.03, gift_y: 0.03,
+                      gifts: editingTile.gifts.map((g, i) => ({
+                        ...g,
+                        x: (GIFT_SPAWN_POINTS[i] ?? GIFT_SPAWN_POINTS[0]).x,
+                        y: (GIFT_SPAWN_POINTS[i] ?? GIFT_SPAWN_POINTS[0]).y,
+                      })),
                       label_x: 0.96, label_y: 0.94,
                     })}
                     className="text-[9px] text-text-muted hover:text-text-base mt-1 underline"
@@ -1277,15 +1362,21 @@ export default function LiveGenClient({
                     </div>
                   </Section>
 
-                  {/* Gift */}
-                  <Section title={t("gift_field")}>
+                  {/* Gifts — up to MAX_GIFTS per tile. Grid toggles add/remove;
+                      each selected gift gets its own size slider below. */}
+                  <Section title={`${t("gift_field")} (${editingTile.gifts.length}/${MAX_GIFTS})`}>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-[10px] text-text-muted">
-                        {editingTile.gift_id ? giftById.get(editingTile.gift_id)?.name : t("none")}
+                        {editingTile.gifts.length === 0
+                          ? t("none")
+                          : editingTile.gifts
+                              .map((tg) => giftById.get(tg.gift_id)?.name)
+                              .filter(Boolean)
+                              .join(" · ")}
                       </span>
-                      {editingTile.gift_id !== null && (
+                      {editingTile.gifts.length > 0 && (
                         <button
-                          onClick={() => updateTile(editing.id, { gift_id: null })}
+                          onClick={() => updateTile(editing.id, { gifts: [] })}
                           className="text-[10px] text-red-400 hover:text-red-300"
                         >
                           {t("clear_gift")}
@@ -1300,13 +1391,19 @@ export default function LiveGenClient({
                     />
                     <div className="grid grid-cols-6 sm:grid-cols-8 gap-1 max-h-[22vh] overflow-y-auto pr-1">
                       {filteredGifts.map((g) => {
-                        const selected = editingTile.gift_id === g.id
+                        const selected = editingTile.gifts.some((tg) => tg.gift_id === g.id)
+                        const full = !selected && editingTile.gifts.length >= MAX_GIFTS
                         return (
                           <button
                             key={g.id}
-                            onClick={() => updateTile(editing.id, { gift_id: g.id })}
+                            onClick={() => toggleTileGift(editing.id, g.id)}
+                            disabled={full}
                             className={`relative aspect-square rounded-md border ${
-                              selected ? "border-accent bg-accent/15" : "border-white/10 bg-bg-base hover:border-accent/30"
+                              selected
+                                ? "border-accent bg-accent/15"
+                                : full
+                                  ? "border-white/5 bg-bg-base opacity-35 cursor-not-allowed"
+                                  : "border-white/10 bg-bg-base hover:border-accent/30"
                             }`}
                             title={`${g.name} · ${g.diamonds}`}
                           >
@@ -1322,7 +1419,40 @@ export default function LiveGenClient({
                         )
                       })}
                     </div>
-                    <Slider label={t("gift_size")} value={editingTile.gift_scale} min={0.1} max={0.8} step={0.02} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => updateTile(editing.id, { gift_scale: v })} />
+                    {editingTile.gifts.map((tg, i) => {
+                      const g = giftById.get(tg.gift_id)
+                      return (
+                        <div key={`${tg.gift_id}-${i}`} className="flex items-center gap-2">
+                          <div className="w-7 h-7 shrink-0 rounded-md border border-white/10 bg-bg-base relative overflow-hidden">
+                            {g?.image_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={getImageUrl(g.image_url)} alt={g?.name ?? ""} className="absolute inset-0.5 w-[calc(100%-4px)] h-[calc(100%-4px)] object-contain" />
+                            ) : null}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <Slider
+                              label={`${t("gift_size")} · ${g?.name ?? "?"}`}
+                              value={tg.scale}
+                              min={0.1}
+                              max={0.8}
+                              step={0.02}
+                              format={(v) => `${Math.round(v * 100)}%`}
+                              onChange={(v) => updateTileGift(editing.id, i, { scale: v })}
+                            />
+                          </div>
+                          <button
+                            onClick={() => removeTileGiftAt(editing.id, i)}
+                            className="w-5 h-5 shrink-0 rounded-md text-text-muted hover:text-red-400 hover:bg-white/5 flex items-center justify-center"
+                            title={t("clear_gift")}
+                          >
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <line x1="18" y1="6" x2="6" y2="18" />
+                              <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                          </button>
+                        </div>
+                      )
+                    })}
                   </Section>
                 </div>
               </div>
@@ -1351,7 +1481,7 @@ function DraggableTile({
   f,
   tile,
   aspect,
-  gift,
+  giftById,
   resolveColor,
   gridColumn,
   gridRow,
@@ -1370,7 +1500,7 @@ function DraggableTile({
   f: Func
   tile: TileState
   aspect: number
-  gift: Gift | null
+  giftById: Map<number, Gift>
   resolveColor: (t: TileState) => string
   gridColumn: number
   gridRow: number
@@ -1502,21 +1632,26 @@ function DraggableTile({
           </div>
         )}
 
-        {gift?.image_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={getImageUrl(gift.image_url)}
-            alt={gift.name}
-            className="absolute object-contain drop-shadow-md pointer-events-none"
-            style={{
-              left: `${tile.gift_x * 100}%`,
-              top: `${tile.gift_y * 100}%`,
-              width: `${tile.gift_scale * 100}%`,
-              height: `${tile.gift_scale * 100}%`,
-            }}
-            draggable={false}
-          />
-        )}
+        {tile.gifts.map((tg, i) => {
+          const g = giftById.get(tg.gift_id)
+          if (!g?.image_url) return null
+          return (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={`${tg.gift_id}-${i}`}
+              src={getImageUrl(g.image_url)}
+              alt={g.name}
+              className="absolute object-contain drop-shadow-md pointer-events-none"
+              style={{
+                left: `${tg.x * 100}%`,
+                top: `${tg.y * 100}%`,
+                width: `${tg.scale * 100}%`,
+                height: `${tg.scale * 100}%`,
+              }}
+              draggable={false}
+            />
+          )
+        })}
 
         {tile?.label && (() => {
           const fs = Math.round(tile.label_size * 0.6)
@@ -1594,7 +1729,7 @@ function DraggablePreview({
   tile,
   aspect,
   previewCharUrl,
-  giftImage,
+  giftById,
   resolveColor,
   onGiftMove,
   onLabelMove,
@@ -1603,22 +1738,23 @@ function DraggablePreview({
   tile: TileState
   aspect: number
   previewCharUrl: string | null
-  giftImage: string | null
+  giftById: Map<number, Gift>
   resolveColor: (t: TileState) => string
-  onGiftMove: (x: number, y: number) => void
+  onGiftMove: (index: number, x: number, y: number) => void
   onLabelMove: (x: number, y: number) => void
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   // Capture the offset from the item's anchor to where the pointer was first
   // pressed; on move we subtract it so the item stays under the cursor instead
-  // of snapping its top-left to the pointer.
+  // of snapping its top-left to the pointer. `index` picks which gift.
   const dragRef = useRef<{
     kind: "gift" | "label" | null
+    index: number
     offsetX: number
     offsetY: number
-  }>({ kind: null, offsetX: 0, offsetY: 0 })
+  }>({ kind: null, index: 0, offsetX: 0, offsetY: 0 })
 
-  const handlePointerDown = (kind: "gift" | "label") => (e: React.PointerEvent) => {
+  const handlePointerDown = (kind: "gift" | "label", index = 0) => (e: React.PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
     ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
@@ -1626,9 +1762,9 @@ function DraggablePreview({
     if (!rect) return
     const mx = (e.clientX - rect.left) / rect.width
     const my = (e.clientY - rect.top) / rect.height
-    const anchorX = kind === "gift" ? tile.gift_x : tile.label_x
-    const anchorY = kind === "gift" ? tile.gift_y : tile.label_y
-    dragRef.current = { kind, offsetX: mx - anchorX, offsetY: my - anchorY }
+    const anchorX = kind === "gift" ? tile.gifts[index]?.x ?? 0 : tile.label_x
+    const anchorY = kind === "gift" ? tile.gifts[index]?.y ?? 0 : tile.label_y
+    dragRef.current = { kind, index, offsetX: mx - anchorX, offsetY: my - anchorY }
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -1639,7 +1775,7 @@ function DraggablePreview({
     const my = (e.clientY - rect.top) / rect.height
     const x = Math.min(1, Math.max(0, mx - dragRef.current.offsetX))
     const y = Math.min(1, Math.max(0, my - dragRef.current.offsetY))
-    if (dragRef.current.kind === "gift") onGiftMove(x, y)
+    if (dragRef.current.kind === "gift") onGiftMove(dragRef.current.index, x, y)
     else onLabelMove(x, y)
   }
 
@@ -1666,22 +1802,27 @@ function DraggablePreview({
           draggable={false}
         />
       ) : null}
-      {giftImage && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={getImageUrl(giftImage)}
-          alt=""
-          className="absolute object-contain drop-shadow-md cursor-move"
-          style={{
-            left: `${tile.gift_x * 100}%`,
-            top: `${tile.gift_y * 100}%`,
-            width: `${tile.gift_scale * 100}%`,
-            height: `${tile.gift_scale * 100}%`,
-          }}
-          draggable={false}
-          onPointerDown={handlePointerDown("gift")}
-        />
-      )}
+      {tile.gifts.map((tg, i) => {
+        const g = giftById.get(tg.gift_id)
+        if (!g?.image_url) return null
+        return (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={`${tg.gift_id}-${i}`}
+            src={getImageUrl(g.image_url)}
+            alt=""
+            className="absolute object-contain drop-shadow-md cursor-move"
+            style={{
+              left: `${tg.x * 100}%`,
+              top: `${tg.y * 100}%`,
+              width: `${tg.scale * 100}%`,
+              height: `${tg.scale * 100}%`,
+            }}
+            draggable={false}
+            onPointerDown={handlePointerDown("gift", i)}
+          />
+        )
+      })}
       {tile.label && (() => {
         const fo = FONT_OPTIONS.find((o) => o.key === tile.label_font)
         const fs = Math.round(tile.label_size * 0.5)
