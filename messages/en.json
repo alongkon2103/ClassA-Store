@@ -1356,5 +1356,21 @@
     "ign": "In-game username",
     "total": "Total amount",
     "order_id": "Order number"
+  },
+  "Notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "mark_all_read": "Mark all read",
+    "view_all": "View all",
+    "payout_paid_title": "Payout sent",
+    "payout_paid_body": "You received ฿{amount}",
+    "payout_rejected_title": "Withdrawal rejected",
+    "payout_rejected_body": "Your ฿{amount} withdrawal was rejected: {reason}",
+    "commission_earned_title": "Commission earned",
+    "commission_earned_body": "You earned ฿{amount} from a new order",
+    "just_now": "just now",
+    "minutes_ago": "{n}m ago",
+    "hours_ago": "{n}h ago",
+    "days_ago": "{n}d ago"
   }
 }

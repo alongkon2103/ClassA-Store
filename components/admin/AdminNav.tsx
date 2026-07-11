@@ -28,7 +28,7 @@ const groups = [
     items: [
       { href: "/admin/partners", key: "partners", roles: ["admin"] },
       { href: "/admin/partnership", key: "partnership_earnings", roles: ["admin"] },
-      { href: "/admin/affiliates", key: "affiliates", roles: ["admin"] },
+      { href: "/admin/affiliates", key: "affiliates", roles: ["admin"], badge: "affiliate_requests" },
       { href: "/admin/consignment", key: "consignment", roles: ["admin"] },
     ]
   },
@@ -64,6 +64,23 @@ export default function AdminNav() {
   const { data: session } = useSession()
   const userRole = session?.user?.role || "user"
   const [open, setOpen] = useState(false)
+  const [badges, setBadges] = useState<Record<string, number>>({})
+
+  // Live counts for sidebar badges (e.g. pending withdrawal requests). Polled so
+  // a new request shows up without a manual refresh.
+  useEffect(() => {
+    if (userRole !== "admin" && userRole !== "partnership") return
+    let cancelled = false
+    const load = async () => {
+      try {
+        const r = await fetch("/api/admin/nav-badges")
+        if (r.ok && !cancelled) setBadges(await r.json())
+      } catch { /* transient */ }
+    }
+    load()
+    const iv = setInterval(load, 45_000)
+    return () => { cancelled = true; clearInterval(iv) }
+  }, [userRole])
 
   // Close the mobile drawer on route change so it doesn't stay open after navigating
   useEffect(() => {
@@ -150,10 +167,13 @@ export default function AdminNav() {
               <p className="px-3 text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 opacity-50">
                 {t(group.title) || group.title.replace("_", " ")}
               </p>
-              {group.items.map(({ href, key }) => {
+              {group.items.map((item) => {
+                const { href, key } = item
                 const active = (href === "/admin" || href === "/admin/desktop")
                   ? pathname === href
                   : pathname.startsWith(href)
+                const badgeKey = (item as { badge?: string }).badge
+                const count = badgeKey ? (badges[badgeKey] || 0) : 0
 
                 return (
                   <Link key={href} href={href}
@@ -163,8 +183,13 @@ export default function AdminNav() {
                       }`}
                   >
                     <span className="truncate">{t(key)}</span>
+                    {count > 0 && (
+                      <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                        {count > 9 ? "9+" : count}
+                      </span>
+                    )}
                     {active && (
-                      <span className="ml-auto w-1 h-3 rounded-full bg-accent-light" />
+                      <span className={`${count > 0 ? "ml-1.5" : "ml-auto"} w-1 h-3 rounded-full bg-accent-light`} />
                     )}
                   </Link>
                 )

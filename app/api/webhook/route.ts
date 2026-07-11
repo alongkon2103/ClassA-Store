@@ -5,6 +5,7 @@ import { headers } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { releaseOrderDiscount } from "@/lib/discountCodes"
 import { prepareAffiliateEarning, reverseAffiliateEarning } from "@/lib/affiliateEarnings"
+import { notify } from "@/lib/notifications"
 import { NextRequest } from "next/server"
 
 export const runtime = "nodejs"
@@ -209,6 +210,16 @@ export async function POST(req: NextRequest) {
       // 4. Freeze affiliate commission if this order carries an affiliate code
       ...(earning ? [prisma.affiliate_earnings.create({ data: earning })] : [])
     ])
+
+    // Notify the affiliate of the new commission (best-effort, after commit).
+    if (earning) {
+      await notify({
+        userId: earning.affiliate_user_id,
+        type: "commission_earned",
+        data: { amount: Number(earning.commission_amount) },
+        link: "/affiliate",
+      })
+    }
 
     // ─────────────────────────────────────────────
     // DISCORD ROLE

@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
+import { notify } from "@/lib/notifications"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -33,7 +34,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const result = await prisma.$transaction(async (tx) => {
       const request = await tx.affiliate_payouts.findUnique({
         where: { id },
-        select: { id: true, status: true },
+        select: { id: true, status: true, affiliate_user_id: true, amount: true },
       })
       if (!request) return { ok: false as const, code: "NOT_FOUND" }
       if (request.status !== "requested") return { ok: false as const, code: "ALREADY_RESOLVED" }
@@ -53,12 +54,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         })
         await tx.affiliate_payouts.update({ where: { id }, data: { status: "rejected", reject_reason: reason } })
       }
-      return { ok: true as const }
+      return { ok: true as const, affiliateUserId: request.affiliate_user_id, amount: Number(request.amount) }
     })
 
     if (!result.ok) {
       const status = result.code === "NOT_FOUND" ? 404 : 409
       return NextResponse.json({ error: result.code }, { status })
+    }
+
+    // Notify the affiliate of the outcome (best-effort, after commit).
+    if (action === "paid") {
+      await notify({ userId: result.affiliateUserId, type: "payout_paid", data: { amount: result.amount }, link: "/affiliate" })
+    } else {
+      await notify({ userId: result.affiliateUserId, type: "payout_rejected", data: { amount: result.amount, reason }, link: "/affiliate" })
     }
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {

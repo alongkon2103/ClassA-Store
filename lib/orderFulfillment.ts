@@ -9,6 +9,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { prepareAffiliateEarning } from "@/lib/affiliateEarnings"
+import { notify } from "@/lib/notifications"
 
 const PERMANENT_EXPIRES_AT = new Date("9999-12-31T00:00:00.000Z")
 
@@ -92,6 +93,16 @@ export async function fulfillPaidOrder(orderId: string, opts?: { isPremium?: boo
       : []),
     ...(earning ? [prisma.affiliate_earnings.create({ data: earning })] : []),
   ])
+
+  // Notify the affiliate of the new commission (best-effort, after commit).
+  if (earning) {
+    await notify({
+      userId: earning.affiliate_user_id,
+      type: "commission_earned",
+      data: { amount: Number(earning.commission_amount) },
+      link: "/affiliate",
+    })
+  }
 
   // Best-effort Discord role assignment — never block fulfillment on bot failures.
   if (order.users) {

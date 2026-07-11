@@ -1359,5 +1359,21 @@
     "ign": "ชื่อผู้ใช้ในเกม",
     "total": "ยอดเงินรวม",
     "order_id": "หมายเลขคำสั่งซื้อ"
+  },
+  "Notifications": {
+    "title": "การแจ้งเตือน",
+    "empty": "ยังไม่มีการแจ้งเตือน",
+    "mark_all_read": "อ่านทั้งหมด",
+    "view_all": "ดูทั้งหมด",
+    "payout_paid_title": "โอนเงินให้แล้ว",
+    "payout_paid_body": "คุณได้รับเงิน ฿{amount} เรียบร้อยแล้ว",
+    "payout_rejected_title": "คำขอถอนถูกปฏิเสธ",
+    "payout_rejected_body": "คำขอถอน ฿{amount} ถูกปฏิเสธ: {reason}",
+    "commission_earned_title": "ได้รับค่าคอมมิชชัน",
+    "commission_earned_body": "คุณได้รับคอม ฿{amount} จากคำสั่งซื้อใหม่",
+    "just_now": "เมื่อสักครู่",
+    "minutes_ago": "{n} นาทีที่แล้ว",
+    "hours_ago": "{n} ชม.ที่แล้ว",
+    "days_ago": "{n} วันที่แล้ว"
   }
 }

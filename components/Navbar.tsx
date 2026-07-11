@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useTheme } from "./ThemeContext"
 import { useTranslations } from "next-intl"
 import LanguageSwitcher from "./LanguageSwitcher"
+import NotificationBell from "./NotificationBell"
 
 const navItems = [
   { href: "/", labelKey: "home", auth: false, flag: null },
@@ -123,6 +124,9 @@ export default function Navbar() {
 
         {/* RIGHT SIDE */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* NOTIFICATION BELL (affiliates only) */}
+          <NotificationBell />
+
           {/* LANGUAGE SWITCHER */}
           <LanguageSwitcher />
 
