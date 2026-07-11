@@ -53,7 +53,7 @@ export async function GET() {
     prisma.affiliate_payouts.findMany({
       where: { affiliate_user_id: userId },
       orderBy: { created_at: "desc" },
-      select: { id: true, amount: true, method: true, status: true, requested_at: true, paid_at: true },
+      select: { id: true, amount: true, method: true, status: true, reject_reason: true, requested_at: true, paid_at: true },
     }),
     prisma.affiliate_earnings.groupBy({
       by: ["status"],
@@ -84,12 +84,19 @@ export async function GET() {
       paid: sumFor("paid"),
       sales_count: countFor("pending") + countFor("requested") + countFor("paid"),
     },
-    // Self-service withdrawal state for the dashboard.
+    // Self-service withdrawal state for the dashboard. ETA = 5–7 calendar days
+    // from the request date (real dates the affiliate can read off).
     withdraw: {
       min: minWithdraw,
       can_request: !openRequest && sumFor("pending") >= minWithdraw && !!(profile.payout_method && profile.payout_detail),
       open_request: openRequest
-        ? { id: openRequest.id, amount: Number(openRequest.amount), requested_at: openRequest.requested_at?.toISOString() ?? null }
+        ? {
+            id: openRequest.id,
+            amount: Number(openRequest.amount),
+            requested_at: openRequest.requested_at?.toISOString() ?? null,
+            eta_from: openRequest.requested_at ? new Date(openRequest.requested_at.getTime() + 5 * 86400000).toISOString() : null,
+            eta_to: openRequest.requested_at ? new Date(openRequest.requested_at.getTime() + 7 * 86400000).toISOString() : null,
+          }
         : null,
     },
     codes: codes.map((c) => ({
@@ -117,6 +124,7 @@ export async function GET() {
       amount: Number(p.amount),
       method: p.method,
       status: p.status,
+      reject_reason: p.reject_reason,
       requested_at: p.requested_at?.toISOString() ?? null,
       paid_at: p.paid_at?.toISOString() ?? null,
     })),

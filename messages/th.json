@@ -67,7 +67,13 @@
     "err_no_pending": "ไม่มียอดค้างให้ถอน",
     "payout_status_requested": "รอโอน",
     "payout_status_paid": "จ่ายแล้ว",
-    "payout_status_rejected": "ปฏิเสธ"
+    "payout_status_rejected": "ถูกปฏิเสธ",
+    "payout_status_cancelled": "ยกเลิกแล้ว",
+    "status_cancelled": "ยกเลิก",
+    "eta": "คาดว่าจะได้รับ {from} – {to}",
+    "cancel_withdraw": "ยกเลิกคำขอ",
+    "cancel_withdraw_confirm": "ยกเลิกคำขอถอนนี้? ยอดจะกลับเป็นค้างจ่าย",
+    "reject_reason_label": "เหตุผล"
   },
   "Contact": {
     "eyebrow": "ติดต่อเรา",
@@ -550,6 +556,8 @@
     "req_mark_paid": "จ่ายแล้ว",
     "req_paid_confirm": "ยืนยันว่าโอนเงินให้นายหน้าเรียบร้อยแล้ว?",
     "req_reject_confirm": "ปฏิเสธคำขอนี้? ยอดจะกลับไปเป็นค้างจ่ายให้นายหน้าขอใหม่ได้",
+    "reject_reason_ph": "เหตุผลที่ปฏิเสธ (จะส่งให้นายหน้าเห็น)",
+    "confirm_reject": "ยืนยันปฏิเสธ",
     "delete_affiliate": "ลบตัวแทน",
     "delete_confirm": "ยกเลิกสถานะตัวแทนของคนนี้? โค้ดจะถูกปิด และเปลี่ยนกลับเป็นผู้ใช้ทั่วไป (ประวัติค่าคอม/การจ่ายยังเก็บไว้)",
     "delete_pending": "ยังมีค่าคอมค้างจ่าย {amount} — กรุณากด \"จ่ายที่ค้าง\" ให้เรียบร้อยก่อนลบ"

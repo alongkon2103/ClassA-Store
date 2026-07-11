@@ -257,10 +257,11 @@ model affiliate_payouts {
   id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   affiliate_user_id String    @db.Uuid
   amount            Decimal   @db.Decimal(10, 2)
-  status            String    @default("paid") @db.VarChar // requested | paid | rejected
+  status            String    @default("paid") @db.VarChar // requested | paid | rejected | cancelled
   method            String?   @db.VarChar // payout channel snapshot
   detail            String?   @db.VarChar // account / promptpay snapshot
   note              String?   @db.VarChar
+  reject_reason     String?   @db.VarChar // admin's reason when status=rejected (shown to affiliate)
   requested_at      DateTime? @db.Timestamptz(6)
   paid_at           DateTime? @db.Timestamptz(6) // set when status becomes paid
   created_by_id     String?   @db.Uuid

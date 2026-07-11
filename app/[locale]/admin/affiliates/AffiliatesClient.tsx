@@ -65,11 +65,11 @@ export default function AffiliatesClient() {
   }, [])
   useEffect(() => { load() }, [load])
 
-  const resolveRequest = async (id: string, action: "paid" | "reject") => {
-    if (!confirm(action === "paid" ? t("req_paid_confirm") : t("req_reject_confirm"))) return
+  const resolveRequest = async (id: string, action: "paid" | "reject", reason?: string) => {
+    if (action === "paid" && !confirm(t("req_paid_confirm"))) return
     setReqBusy(true)
     const res = await fetch(`/api/admin/affiliates/requests/${id}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }),
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, reason }),
     })
     if (!res.ok) alert((await res.json().catch(() => ({}))).error || t("error_save"))
     await load(); setReqBusy(false)
@@ -126,22 +126,10 @@ export default function AffiliatesClient() {
           <p className="text-[11px] uppercase tracking-widest text-blue-300 mb-3 font-bold">{t("requests_title")} ({requests.length})</p>
           <div className="space-y-2">
             {requests.map((r) => (
-              <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 bg-bg-base border border-white/5 rounded-xl px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-[13px] font-medium">{r.username} <span className="text-text-muted font-normal">· {r.email}</span></p>
-                  <p className="text-[11px] text-text-muted mt-0.5">
-                    {t("send_to")}: <span className="text-text-base font-mono">{r.method ?? "—"} {r.detail ?? ""}</span>
-                    {r.requested_at ? ` · ${new Date(r.requested_at).toLocaleDateString()}` : ""}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-mono font-bold text-amber-400 text-[15px] mr-1">{baht(r.amount)}</span>
-                  <button onClick={() => resolveRequest(r.id, "reject")} disabled={reqBusy}
-                    className="text-[12px] px-3 py-1.5 rounded-lg text-text-muted hover:text-red-400 hover:bg-white/5 disabled:opacity-40">{t("req_reject")}</button>
-                  <button onClick={() => resolveRequest(r.id, "paid")} disabled={reqBusy}
-                    className="text-[12px] px-3 py-1.5 rounded-lg bg-green-500/15 text-green-400 font-medium hover:bg-green-500/25 disabled:opacity-40">{t("req_mark_paid")}</button>
-                </div>
-              </div>
+              <RequestRow key={r.id} r={r} busy={reqBusy}
+                onPaid={() => resolveRequest(r.id, "paid")}
+                onReject={(reason) => resolveRequest(r.id, "reject", reason)}
+                t={t} />
             ))}
           </div>
         </div>
@@ -668,6 +656,48 @@ function CreateCode({ userId, products, defaultPct, onDone, t }: { userId: strin
       </div>
       <p className="text-[11px] text-text-muted mt-2 leading-relaxed">{t("add_code_hint", { pct: defaultPct })}</p>
       {err && <p className="text-[12px] text-red-400 mt-1">{err}</p>}
+    </div>
+  )
+}
+
+// One withdrawal request. "Reject" reveals an inline reason box (required)
+// before confirming, so the affiliate always gets told why.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function RequestRow({ r, busy, onPaid, onReject, t }: { r: Req; busy: boolean; onPaid: () => void; onReject: (reason: string) => void; t: any }) {
+  const [rejecting, setRejecting] = useState(false)
+  const [reason, setReason] = useState("")
+  return (
+    <div className="bg-bg-base border border-white/5 rounded-xl px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13px] font-medium">{r.username} <span className="text-text-muted font-normal">· {r.email}</span></p>
+          <p className="text-[11px] text-text-muted mt-0.5">
+            {t("send_to")}: <span className="text-text-base font-mono">{r.method ?? "—"} {r.detail ?? ""}</span>
+            {r.requested_at ? ` · ${new Date(r.requested_at).toLocaleDateString()}` : ""}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="font-mono font-bold text-amber-400 text-[15px] mr-1">{baht(r.amount)}</span>
+          {!rejecting && (
+            <>
+              <button onClick={() => setRejecting(true)} disabled={busy}
+                className="text-[12px] px-3 py-1.5 rounded-lg text-text-muted hover:text-red-400 hover:bg-white/5 disabled:opacity-40">{t("req_reject")}</button>
+              <button onClick={onPaid} disabled={busy}
+                className="text-[12px] px-3 py-1.5 rounded-lg bg-green-500/15 text-green-400 font-medium hover:bg-green-500/25 disabled:opacity-40">{t("req_mark_paid")}</button>
+            </>
+          )}
+        </div>
+      </div>
+      {rejecting && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reject_reason_ph")}
+            className="flex-1 min-w-[180px] bg-bg-card border border-red-500/20 rounded-lg px-3 py-1.5 text-[12px]" autoFocus />
+          <button onClick={() => { setRejecting(false); setReason("") }} disabled={busy}
+            className="text-[12px] px-3 py-1.5 rounded-lg text-text-muted hover:bg-white/5">{t("cancel")}</button>
+          <button onClick={() => onReject(reason.trim())} disabled={busy || !reason.trim()}
+            className="text-[12px] px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 font-medium hover:bg-red-500/25 disabled:opacity-40">{t("confirm_reject")}</button>
+        </div>
+      )}
     </div>
   )
 }

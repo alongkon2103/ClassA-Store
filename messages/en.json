@@ -67,7 +67,13 @@
     "err_no_pending": "No balance to withdraw.",
     "payout_status_requested": "Requested",
     "payout_status_paid": "Paid",
-    "payout_status_rejected": "Rejected"
+    "payout_status_rejected": "Rejected",
+    "payout_status_cancelled": "Cancelled",
+    "status_cancelled": "Cancelled",
+    "eta": "Estimated arrival {from} – {to}",
+    "cancel_withdraw": "Cancel request",
+    "cancel_withdraw_confirm": "Cancel this withdrawal request? The amount goes back to your pending balance.",
+    "reject_reason_label": "Reason"
   },
   "Contact": {
     "eyebrow": "Get in touch",
@@ -547,6 +553,8 @@
     "req_mark_paid": "Mark paid",
     "req_paid_confirm": "Confirm you've transferred the money to this affiliate?",
     "req_reject_confirm": "Reject this request? The amount returns to the affiliate's pending balance.",
+    "reject_reason_ph": "Reason for rejection (shown to the affiliate)",
+    "confirm_reject": "Confirm reject",
     "delete_affiliate": "Remove",
     "delete_confirm": "Revoke this person's affiliate status? Their codes will be disabled and they revert to a normal user (commission/payout history is kept).",
     "delete_pending": "Still owes {amount} in pending commission — click \"Pay pending\" first before removing."

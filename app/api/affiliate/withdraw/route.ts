@@ -81,3 +81,32 @@ export async function POST() {
     return NextResponse.json({ error: "Failed to request withdrawal" }, { status: 500 })
   }
 }
+
+// DELETE → the affiliate cancels their own open request (before admin acts on
+// it). The reserved earnings go back to their pending balance.
+export async function DELETE() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const userId = session.user.id
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const open = await tx.affiliate_payouts.findFirst({
+        where: { affiliate_user_id: userId, status: "requested" },
+        select: { id: true },
+      })
+      if (!open) return { ok: false as const }
+      await tx.affiliate_earnings.updateMany({
+        where: { payout_id: open.id, status: "requested" },
+        data: { status: "pending", payout_id: null },
+      })
+      await tx.affiliate_payouts.update({ where: { id: open.id }, data: { status: "cancelled" } })
+      return { ok: true as const }
+    })
+    if (!result.ok) return NextResponse.json({ error: "No open request", errorCode: "NO_REQUEST" }, { status: 400 })
+    return NextResponse.json({ ok: true })
+  } catch (err: unknown) {
+    console.error("withdraw cancel error:", err)
+    return NextResponse.json({ error: "Failed to cancel" }, { status: 500 })
+  }
+}

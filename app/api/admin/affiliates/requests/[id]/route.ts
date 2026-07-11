@@ -23,6 +23,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (action !== "paid" && action !== "reject") {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 })
   }
+  // Rejecting requires a reason — it's shown to the affiliate.
+  const reason: string = action === "reject" ? (body.reason?.trim() || "") : ""
+  if (action === "reject" && !reason) {
+    return NextResponse.json({ error: "Reason required", errorCode: "REASON_REQUIRED" }, { status: 400 })
+  }
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -40,12 +45,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           data: { status: "paid", paid_at: new Date() },
         })
       } else {
-        // Reject: return the earnings to the affiliate's pending balance.
+        // Reject: return the earnings to the affiliate's pending balance, and
+        // record the reason so the affiliate can see why.
         await tx.affiliate_earnings.updateMany({
           where: { payout_id: id, status: "requested" },
           data: { status: "pending", payout_id: null },
         })
-        await tx.affiliate_payouts.update({ where: { id }, data: { status: "rejected" } })
+        await tx.affiliate_payouts.update({ where: { id }, data: { status: "rejected", reject_reason: reason } })
       }
       return { ok: true as const }
     })

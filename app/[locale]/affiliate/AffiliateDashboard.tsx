@@ -18,7 +18,7 @@ type Data = {
   withdraw: {
     min: number
     can_request: boolean
-    open_request: { id: string; amount: number; requested_at: string | null } | null
+    open_request: { id: string; amount: number; requested_at: string | null; eta_from: string | null; eta_to: string | null } | null
   }
   codes: {
     code: string; type: string; value: number; commission_pct: number | null
@@ -28,7 +28,7 @@ type Data = {
     id: string; base_amount: number; commission_pct: number; commission_amount: number
     status: string; created_at: string; paid_at: string | null; product_name: string | null
   }[]
-  payouts: { id: string; amount: number; method: string | null; status: string; requested_at: string | null; paid_at: string | null }[]
+  payouts: { id: string; amount: number; method: string | null; status: string; reject_reason: string | null; requested_at: string | null; paid_at: string | null }[]
 }
 
 const baht = (n: number) => `฿${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
@@ -55,6 +55,13 @@ export default function AffiliateDashboard() {
       body: JSON.stringify({ payout_method: method, payout_info: info }),
     })
     if (!res.ok) { alert((await res.json().catch(() => ({}))).error || t("error")); setBusy(false); return }
+    await load(); setBusy(false)
+  }
+
+  const cancelWithdraw = async () => {
+    if (!confirm(t("cancel_withdraw_confirm"))) return
+    setBusy(true)
+    await fetch("/api/affiliate/withdraw", { method: "DELETE" })
     await load(); setBusy(false)
   }
 
@@ -126,15 +133,25 @@ export default function AffiliateDashboard() {
               />
 
               {d.withdraw.open_request ? (
-                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-[13px] font-medium text-blue-300">{t("request_pending")}</p>
-                    <p className="text-[11px] text-text-muted mt-0.5">
-                      {baht(d.withdraw.open_request.amount)}
-                      {d.withdraw.open_request.requested_at ? ` · ${new Date(d.withdraw.open_request.requested_at).toLocaleDateString()}` : ""}
+                    <p className="text-[13px] font-medium text-blue-300">
+                      {t("request_pending")} · {baht(d.withdraw.open_request.amount)}
                     </p>
+                    {d.withdraw.open_request.eta_from && d.withdraw.open_request.eta_to && (
+                      <p className="text-[12px] text-text-base mt-1">
+                        {t("eta", {
+                          from: new Date(d.withdraw.open_request.eta_from).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short" }),
+                          to: new Date(d.withdraw.open_request.eta_to).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short" }),
+                        })}
+                      </p>
+                    )}
+                    <p className="text-[11px] text-text-muted mt-0.5">{t("waiting_transfer")}</p>
                   </div>
-                  <span className="text-[11px] px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-300">{t("waiting_transfer")}</span>
+                  <button onClick={cancelWithdraw} disabled={busy}
+                    className="text-[12px] px-3 py-1.5 rounded-lg text-text-muted hover:text-red-400 hover:bg-white/5 border border-white/10 disabled:opacity-40">
+                    {t("cancel_withdraw")}
+                  </button>
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -229,19 +246,25 @@ export default function AffiliateDashboard() {
                   {d.payouts.map((p) => {
                     const date = p.paid_at ?? p.requested_at
                     return (
-                      <div key={p.id} className="flex items-center justify-between text-[13px]">
-                        <span className="text-text-muted">
-                          {date ? new Date(date).toLocaleDateString() : "—"}{p.method ? ` · ${p.method}` : ""}
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <span className="font-mono font-semibold text-green-400/90">{baht(p.amount)}</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                            p.status === "paid" ? "bg-green-500/15 text-green-400"
-                            : p.status === "rejected" ? "bg-white/10 text-text-muted"
-                            : "bg-blue-500/15 text-blue-300"}`}>
-                            {t(`payout_status_${p.status}`)}
+                      <div key={p.id} className="text-[13px]">
+                        <div className="flex items-center justify-between">
+                          <span className="text-text-muted">
+                            {date ? new Date(date).toLocaleDateString() : "—"}{p.method ? ` · ${p.method}` : ""}
                           </span>
-                        </span>
+                          <span className="flex items-center gap-2">
+                            <span className="font-mono font-semibold text-green-400/90">{baht(p.amount)}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                              p.status === "paid" ? "bg-green-500/15 text-green-400"
+                              : p.status === "rejected" ? "bg-red-500/15 text-red-400"
+                              : p.status === "cancelled" ? "bg-white/10 text-text-muted"
+                              : "bg-blue-500/15 text-blue-300"}`}>
+                              {t(`payout_status_${p.status}`)}
+                            </span>
+                          </span>
+                        </div>
+                        {p.status === "rejected" && p.reject_reason && (
+                          <p className="text-[11px] text-red-400/80 mt-0.5">{t("reject_reason_label")}: {p.reject_reason}</p>
+                        )}
                       </div>
                     )
                   })}
