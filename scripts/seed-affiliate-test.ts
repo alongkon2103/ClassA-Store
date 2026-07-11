@@ -27,6 +27,25 @@ async function main() {
   const uid = profile.user_id
   console.log(`Affiliate: ${profile.user.username} <${profile.user.email}>`)
 
+  if (mode === "request") {
+    // Simulate the affiliate clicking "ขอถอนเงิน": move pending → requested and
+    // create the request row, so the cancel button (affiliate) and the reject/
+    // pay buttons (admin) appear.
+    const pending = await prisma.affiliate_earnings.findMany({ where: { affiliate_user_id: uid, status: "pending" }, select: { id: true, commission_amount: true } })
+    const total = Math.round(pending.reduce((s, e) => s + Number(e.commission_amount), 0) * 100) / 100
+    if (pending.length === 0) { console.log("No pending balance to request."); return }
+    const open = await prisma.affiliate_payouts.count({ where: { affiliate_user_id: uid, status: "requested" } })
+    if (open > 0) { console.log("There's already an open request."); return }
+    const req = await prisma.affiliate_payouts.create({
+      data: { affiliate_user_id: uid, amount: total, status: "requested", method: profile.payout_method, detail: profile.payout_detail, requested_at: new Date() },
+    })
+    await prisma.affiliate_earnings.updateMany({ where: { id: { in: pending.map((e) => e.id) } }, data: { status: "requested", payout_id: req.id } })
+    console.log(`Created a withdrawal request for ฿${total}.`)
+    console.log("→ /affiliate: ค้างจ่าย = ฿0, รอโอน = ฿" + total + ", + ปุ่ม 'ยกเลิกคำขอ'")
+    console.log("→ /admin/affiliates: การ์ด 'คำขอถอนเงิน (1)' + ปุ่ม จ่ายแล้ว / ปฏิเสธ")
+    return
+  }
+
   if (mode === "clean") {
     const testOrders = await prisma.orders.findMany({ where: { buyer_label: TAG }, select: { id: true } })
     const ids = testOrders.map((o) => o.id)

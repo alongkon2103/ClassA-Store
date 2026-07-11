@@ -160,7 +160,7 @@ export default function AffiliateDashboard() {
                     <span className="text-text-muted/70"> · {t("min_note", { min: baht(d.withdraw.min) })}</span>
                   </p>
                   <button onClick={requestWithdraw} disabled={busy || !d.withdraw.can_request}
-                    className="px-4 py-2 rounded-xl bg-accent text-white text-[13px] font-medium hover:bg-accent/90 disabled:opacity-40">
+                    className="px-5 py-2.5 rounded-xl bg-accent text-white text-[13px] font-semibold shadow-lg shadow-accent/20 hover:bg-accent/90 hover:shadow-accent/30 active:scale-95 transition-all disabled:opacity-40 disabled:shadow-none">
                     {t("request_withdraw")}
                   </button>
                 </div>
@@ -171,14 +171,14 @@ export default function AffiliateDashboard() {
             </section>
 
             {/* Codes + links */}
-            <section className="bg-bg-card border border-accent/10 rounded-2xl p-5">
+            <section className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-colors duration-200 hover:border-accent/25">
               <p className="text-[11px] uppercase tracking-widest text-text-muted mb-3">{t("your_codes")}</p>
               {d.codes.length === 0 ? (
                 <p className="text-[13px] text-text-muted">{t("no_codes")}</p>
               ) : (
                 <div className="space-y-2">
                   {d.codes.map((c) => (
-                    <div key={c.code} className="flex flex-wrap items-center justify-between gap-2 bg-bg-base border border-white/5 rounded-xl px-3 py-2.5">
+                    <div key={c.code} className="flex flex-wrap items-center justify-between gap-2 bg-bg-base border border-white/5 rounded-xl px-3 py-2.5 transition-all duration-200 hover:border-accent/25">
                       <div className="min-w-0">
                         <span className="font-mono font-semibold text-[14px]">{c.code}</span>
                         <span className="text-[12px] text-text-muted ml-2">
@@ -217,7 +217,7 @@ export default function AffiliateDashboard() {
                     {d.earnings.length === 0 ? (
                       <tr><td colSpan={5} className="text-center py-10 text-text-muted">{t("no_sales")}</td></tr>
                     ) : d.earnings.map((e) => (
-                      <tr key={e.id} className="hover:bg-white/[0.02]">
+                      <tr key={e.id} className="hover:bg-accent/[0.04] transition-colors">
                         <td className="px-5 py-2.5 text-text-muted">{new Date(e.created_at).toLocaleDateString()}</td>
                         <td className="px-4 py-2.5">{e.product_name ?? "—"}</td>
                         <td className="px-4 py-2.5 text-right font-mono text-text-muted">{baht(e.base_amount)}</td>
@@ -240,7 +240,7 @@ export default function AffiliateDashboard() {
 
             {/* Payout history */}
             {d.payouts.length > 0 && (
-              <section className="bg-bg-card border border-accent/10 rounded-2xl p-5">
+              <section className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-colors duration-200 hover:border-accent/25">
                 <p className="text-[11px] uppercase tracking-widest text-text-muted mb-3">{t("payout_history")}</p>
                 <div className="space-y-1.5">
                   {d.payouts.map((p) => {
@@ -280,7 +280,7 @@ export default function AffiliateDashboard() {
 
 function Stat({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
+    <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-all duration-200 hover:border-accent/25 hover:-translate-y-0.5">
       <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{label}</p>
       <p className={`text-[24px] font-bold ${color}`}>{value}</p>
     </div>
@@ -336,7 +336,7 @@ function PayoutForm({ method0, info0, summary, locale, busy, onSave, t }: {
           {summary ? `${t("saved_as")}: ${summary}` : ""}
         </p>
         <button onClick={() => onSave(method, info)} disabled={busy || !method}
-          className="shrink-0 px-4 py-2 rounded-xl bg-accent/15 text-accent-light text-[13px] font-medium hover:bg-accent/25 disabled:opacity-40">
+          className="shrink-0 px-4 py-2 rounded-xl bg-accent/15 text-accent-light text-[13px] font-medium hover:bg-accent/25 active:scale-95 transition-all disabled:opacity-40">
           {t("save_payout")}
         </button>
       </div>

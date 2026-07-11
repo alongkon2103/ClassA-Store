@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
+import { motion, AnimatePresence } from "framer-motion"
 
 type ListRow = {
   user_id: string
@@ -95,7 +96,7 @@ export default function AffiliatesClient() {
         </div>
         <button
           onClick={() => setShowCreate((v) => !v)}
-          className="px-4 py-2 rounded-xl bg-accent text-white text-[13px] font-medium hover:bg-accent/90 self-start sm:self-auto"
+          className="px-4 py-2 rounded-xl bg-accent text-white text-[13px] font-medium hover:bg-accent/90 active:scale-95 transition-all self-start sm:self-auto"
         >
           {showCreate ? t("cancel") : t("new_affiliate")}
         </button>
@@ -103,15 +104,15 @@ export default function AffiliatesClient() {
 
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
+        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-all duration-200 hover:border-accent/25 hover:-translate-y-0.5">
           <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{t("affiliates")}</p>
           <p className="text-[24px] font-bold">{rows.length}</p>
         </div>
-        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
+        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-all duration-200 hover:border-accent/25 hover:-translate-y-0.5">
           <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{t("total_pending")}</p>
           <p className="text-[24px] font-bold text-amber-400">{baht(totalPending)}</p>
         </div>
-        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
+        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-all duration-200 hover:border-accent/25 hover:-translate-y-0.5">
           <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{t("total_paid")}</p>
           <p className="text-[24px] font-bold text-green-400">{baht(totalPaid)}</p>
         </div>
@@ -157,7 +158,7 @@ export default function AffiliatesClient() {
               ) : rows.length === 0 ? (
                 <tr><td colSpan={7} className="text-center py-12 text-text-muted">{t("empty")}</td></tr>
               ) : rows.map((r) => (
-                <tr key={r.user_id} className="hover:bg-white/[0.02]">
+                <tr key={r.user_id} className="hover:bg-accent/[0.04] transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-medium">{r.display_name || r.username}</p>
                     <p className="text-[11px] text-text-muted">{r.email}</p>
@@ -183,9 +184,11 @@ export default function AffiliatesClient() {
         </div>
       </div>
 
-      {openId && (
-        <DetailModal userId={openId} onClose={() => setOpenId(null)} onChanged={load} t={t} />
-      )}
+      <AnimatePresence>
+        {openId && (
+          <DetailModal userId={openId} onClose={() => setOpenId(null)} onChanged={load} t={t} />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -374,8 +377,17 @@ function DetailModal({ userId, onClose, onChanged, t }: { userId: string; onClos
   const link = d ? `${typeof window !== "undefined" ? window.location.origin : ""}/r/` : ""
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/60 p-2 sm:p-4" onClick={onClose}>
-      <div className="w-full max-w-3xl bg-bg-card border border-accent/15 rounded-2xl overflow-hidden max-h-[95vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 12 }}
+        transition={{ type: "spring", damping: 26, stiffness: 320 }}
+        className="w-full max-w-3xl bg-bg-card border border-accent/15 rounded-2xl overflow-hidden max-h-[95vh] flex flex-col shadow-2xl shadow-black/40"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between sticky top-0 bg-bg-card z-10">
           <div>
             <h2 className="text-[15px] font-bold">{d?.profile.display_name || d?.profile.username || "…"}</h2>
@@ -480,8 +492,8 @@ function DetailModal({ userId, onClose, onChanged, t }: { userId: string; onClos
             )}
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -568,7 +580,7 @@ function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, on
   }
 
   return (
-    <div className={`flex items-center justify-between bg-bg-base border rounded-lg px-3 py-2 text-[12px] ${code.is_active ? "border-white/5" : "border-white/5 opacity-50"}`}>
+    <div className={`flex items-center justify-between bg-bg-base border rounded-lg px-3 py-2 text-[12px] transition-all duration-200 hover:border-accent/25 ${code.is_active ? "border-white/5" : "border-white/5 opacity-50"}`}>
       <div className="flex items-center gap-2 min-w-0">
         <span className="font-mono font-semibold">{code.code}</span>
         <span className="text-text-muted">−{code.type === "fixed" ? `฿${code.value}` : `${code.value}%`}</span>
@@ -667,7 +679,7 @@ function RequestRow({ r, busy, onPaid, onReject, t }: { r: Req; busy: boolean; o
   const [rejecting, setRejecting] = useState(false)
   const [reason, setReason] = useState("")
   return (
-    <div className="bg-bg-base border border-white/5 rounded-xl px-4 py-3">
+    <div className="bg-bg-base border border-white/5 rounded-xl px-4 py-3 transition-all duration-200 hover:border-blue-500/25">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[13px] font-medium">{r.username} <span className="text-text-muted font-normal">· {r.email}</span></p>
