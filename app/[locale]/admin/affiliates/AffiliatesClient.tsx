@@ -76,7 +76,11 @@ export default function AffiliatesClient() {
   }
 
   const saveMin = async (v: number) => {
-    await fetch("/api/admin/affiliates/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ min_withdraw: v }) })
+    const res = await fetch("/api/admin/affiliates/settings", {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ min_withdraw: v }),
+    })
+    if (res.ok) { const j = await res.json(); setMinWithdraw(j.min_withdraw ?? v) }
+    return res.ok
   }
 
   const totalPending = rows.reduce((s, r) => s + r.pending_amount, 0)
@@ -114,17 +118,7 @@ export default function AffiliatesClient() {
       </div>
 
       {/* Min withdrawal setting */}
-      <div className="bg-bg-card border border-accent/10 rounded-2xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-[12px] font-medium">{t("min_withdraw_label")}</p>
-          <p className="text-[11px] text-text-muted">{t("min_withdraw_hint")}</p>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-text-muted text-[13px]">฿</span>
-          <input type="number" defaultValue={minWithdraw} onBlur={(e) => saveMin(Number(e.target.value))}
-            className="w-24 bg-bg-base border border-accent/15 rounded-lg px-3 py-1.5 text-[13px]" />
-        </div>
-      </div>
+      <MinWithdrawSetting value={minWithdraw} onSave={saveMin} t={t} />
 
       {/* Pending withdrawal requests */}
       {requests.length > 0 && (
@@ -683,6 +677,57 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <label className="block text-[11px] text-text-muted mb-1 uppercase tracking-wider">{label}</label>
       {children}
+    </div>
+  )
+}
+
+// Controlled min-withdrawal input. Syncs from the loaded value (fixes the old
+// uncontrolled input that always showed 0), saves on blur/Enter, and flashes a
+// "saved" confirmation so the admin knows it persisted.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function MinWithdrawSetting({ value, onSave, t }: { value: number; onSave: (v: number) => Promise<boolean>; t: any }) {
+  const [val, setVal] = useState(String(value ?? 0))
+  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  // Reflect the value once it loads / after a save round-trips.
+  useEffect(() => { setVal(String(value ?? 0)) }, [value])
+
+  const commit = async () => {
+    const n = Number(val)
+    if (!Number.isFinite(n) || n < 0) { setVal(String(value ?? 0)); return }
+    if (n === value) return
+    setSaving(true)
+    const okSave = await onSave(n)
+    setSaving(false)
+    if (okSave) { setSaved(true); setTimeout(() => setSaved(false), 1800) }
+  }
+
+  return (
+    <div className="bg-bg-card border border-accent/10 rounded-2xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <p className="text-[12px] font-medium">{t("min_withdraw_label")}</p>
+        <p className="text-[11px] text-text-muted">{t("min_withdraw_hint")}</p>
+      </div>
+      <div className="flex items-center gap-2.5">
+        {saved && (
+          <span className="text-[11px] text-green-400 flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+            {t("saved")}
+          </span>
+        )}
+        <div className="flex items-center gap-1.5">
+          <span className="text-text-muted text-[13px]">฿</span>
+          <input
+            type="number"
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur() }}
+            disabled={saving}
+            className="w-24 bg-bg-base border border-accent/15 rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-50"
+          />
+        </div>
+      </div>
     </div>
   )
 }

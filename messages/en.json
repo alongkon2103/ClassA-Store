@@ -540,6 +540,7 @@
     "payout_done": "Paid {amount} ({count} items)",
     "min_withdraw_label": "Minimum withdrawal",
     "min_withdraw_hint": "Affiliates can request a withdrawal once their pending balance reaches this.",
+    "saved": "Saved",
     "requests_title": "Withdrawal requests",
     "send_to": "Send to",
     "req_reject": "Reject",
