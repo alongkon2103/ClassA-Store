@@ -204,8 +204,11 @@ model affiliate_profiles {
   id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id               String    @unique @db.Uuid
   default_commission_pct Decimal  @default(0) @db.Decimal(5, 2)
-  payout_method         String?   @db.VarChar // e.g. "promptpay" | "bank" | "paypal"
-  payout_detail         String?   @db.VarChar // account number / promptpay id / paypal email
+  payout_method         String?   @db.VarChar // channel: promptpay | bank_th | paypal | wise | bank_intl | other
+  // Structured per-channel fields (email, account no, SWIFT, country, …) so the
+  // affiliate fills it once and can edit later without re-typing. See lib/affiliatePayout.ts.
+  payout_info           Json?
+  payout_detail         String?   @db.VarChar // computed one-line summary (for admin display + payout snapshot)
   display_name          String?   @db.VarChar // optional public-facing name
   is_active             Boolean   @default(true)
   created_at            DateTime  @default(now()) @db.Timestamptz(6)

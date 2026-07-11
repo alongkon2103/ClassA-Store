@@ -85,7 +85,7 @@ export default function Navbar() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-10 py-4 border-b backdrop-blur-md"
+        className="sticky top-0 z-50 flex items-center justify-between gap-3 px-5 sm:px-6 lg:px-10 py-4 border-b backdrop-blur-md"
         style={{
           borderColor: "var(--color-border-soft)",
           background: "var(--color-navbar-bg)"
@@ -94,13 +94,14 @@ export default function Navbar() {
         {/* LOGO */}
         <Link
           href="/"
-          className="font-display text-[20px] font-bold tracking-wide text-text-base no-underline"
+          className="font-display text-[18px] sm:text-[20px] font-bold tracking-wide text-text-base no-underline whitespace-nowrap shrink-0"
         >
           A Class <span className="text-accent-light">Store</span>
         </Link>
 
-        {/* NAV LINKS — desktop */}
-        <ul className="hidden md:flex items-center gap-1 lg:gap-2 list-none m-0 p-0">
+        {/* NAV LINKS — desktop (lg+). Below lg (incl. iPad portrait 768px) the
+            hamburger menu is used so the row never overflows. */}
+        <ul className="hidden lg:flex items-center gap-0.5 xl:gap-1.5 list-none m-0 p-0">
           {visibleItems.map((item) => (
             <li key={item.href}>
               <Link
@@ -109,7 +110,7 @@ export default function Navbar() {
                     ? "/admin/products"
                     : item.href
                 }
-                className={`text-[13.5px] px-3 py-1.5 rounded-lg transition-colors no-underline ${isActive(item.href)
+                className={`text-[13px] xl:text-[13.5px] px-2.5 xl:px-3 py-1.5 rounded-lg transition-colors no-underline whitespace-nowrap ${isActive(item.href)
                   ? "font-medium text-accent-light bg-accent/5"
                   : "text-text-muted hover:text-text-base hover:bg-white/[0.04]"
                   }`}
@@ -121,7 +122,7 @@ export default function Navbar() {
         </ul>
 
         {/* RIGHT SIDE */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* LANGUAGE SWITCHER */}
           <LanguageSwitcher />
 
@@ -166,8 +167,8 @@ export default function Navbar() {
             </AnimatePresence>
           </button>
 
-          {/* AUTH BUTTON — desktop */}
-          <div className="hidden md:block">
+          {/* AUTH BUTTON — desktop (lg+) */}
+          <div className="hidden lg:block">
             {!session ? (
               <Link
                 href="/login"
@@ -180,20 +181,20 @@ export default function Navbar() {
             ) : (
               <button
                 onClick={() => setLogoutOpen(true)}
-                className="flex items-center gap-2 text-white text-on-accent text-[13px] font-medium px-5 py-2 rounded-lg cursor-pointer hover:opacity-90 hover:scale-105 active:scale-95 transition-all"
+                className="flex items-center gap-2 text-white text-on-accent text-[13px] font-medium px-4 py-2 rounded-lg cursor-pointer hover:opacity-90 hover:scale-105 active:scale-95 transition-all max-w-[180px]"
                 style={{ background: providerColor(provider) }}
               >
-                <ProviderIcon provider={provider} />
-                {session.user?.name || t("logged_in")}
+                <span className="shrink-0"><ProviderIcon provider={provider} /></span>
+                <span className="truncate">{session.user?.name || t("logged_in")}</span>
               </button>
             )}
           </div>
 
-          {/* HAMBURGER — mobile */}
+          {/* HAMBURGER — below lg (mobile + iPad portrait) */}
           <button
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Toggle menu"
-            className="md:hidden flex flex-col justify-center items-center w-9 h-9 rounded-lg transition-colors"
+            className="lg:hidden flex flex-col justify-center items-center w-9 h-9 rounded-lg transition-colors"
             style={{ color: "var(--color-text-muted)" }}
           >
             <span
@@ -222,7 +223,7 @@ export default function Navbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMenuOpen(false)}
-              className="md:hidden fixed inset-0 z-40 backdrop-blur-[4px]"
+              className="lg:hidden fixed inset-0 z-40 backdrop-blur-[4px]"
               style={{
                 background: "var(--color-overlay)",
               }}
@@ -234,7 +235,7 @@ export default function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="md:hidden fixed top-0 right-0 z-50 h-full w-[280px] flex flex-col"
+              className="lg:hidden fixed top-0 right-0 z-50 h-full w-[280px] flex flex-col"
               style={{
                 background: "var(--color-bg-card)",
                 borderLeft: "1px solid var(--color-border-soft)",

@@ -1,13 +1,15 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useTranslations } from "next-intl"
+import { useTranslations, useLocale } from "next-intl"
 import Navbar from "@/components/Navbar"
+import { PAYOUT_CHANNELS, getChannel } from "@/lib/affiliatePayout"
 
 type Data = {
   profile: {
     default_commission_pct: number
     payout_method: string | null
+    payout_info: Record<string, string>
     payout_detail: string | null
     display_name: string | null
     is_active: boolean
@@ -33,6 +35,7 @@ const baht = (n: number) => `฿${n.toLocaleString(undefined, { minimumFractionD
 
 export default function AffiliateDashboard() {
   const t = useTranslations("Affiliate")
+  const locale = useLocale()
   const [d, setD] = useState<Data | null>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState<string | null>(null)
@@ -45,9 +48,13 @@ export default function AffiliateDashboard() {
       .catch(() => setLoading(false))
   useEffect(() => { load() }, [])
 
-  const savePayout = async (patch: Record<string, unknown>) => {
+  const savePayout = async (method: string, info: Record<string, string>) => {
     setBusy(true)
-    await fetch("/api/affiliate/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) })
+    const res = await fetch("/api/affiliate/me", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payout_method: method, payout_info: info }),
+    })
+    if (!res.ok) { alert((await res.json().catch(() => ({}))).error || t("error")); setBusy(false); return }
     await load(); setBusy(false)
   }
 
@@ -108,20 +115,15 @@ export default function AffiliateDashboard() {
             <section className="bg-bg-card border border-accent/10 rounded-2xl p-5 space-y-4">
               <p className="text-[11px] uppercase tracking-widest text-text-muted">{t("withdraw_title")}</p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] text-text-muted mb-1 uppercase tracking-wider">{t("payout_method")}</label>
-                  <input defaultValue={d.profile.payout_method ?? ""} onBlur={(e) => savePayout({ payout_method: e.target.value })}
-                    placeholder={t("payout_method_ph")} disabled={busy}
-                    className="w-full bg-bg-base border border-accent/15 rounded-lg px-3 py-2 text-[14px]" />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-text-muted mb-1 uppercase tracking-wider">{t("payout_detail")}</label>
-                  <input defaultValue={d.profile.payout_detail ?? ""} onBlur={(e) => savePayout({ payout_detail: e.target.value })}
-                    placeholder={t("payout_detail_ph")} disabled={busy}
-                    className="w-full bg-bg-base border border-accent/15 rounded-lg px-3 py-2 text-[14px]" />
-                </div>
-              </div>
+              <PayoutForm
+                method0={d.profile.payout_method}
+                info0={d.profile.payout_info}
+                summary={d.profile.payout_detail}
+                locale={locale}
+                busy={busy}
+                onSave={savePayout}
+                t={t}
+              />
 
               {d.withdraw.open_request ? (
                 <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
@@ -258,6 +260,63 @@ function Stat({ label, value, color }: { label: string; value: string; color: st
     <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
       <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{label}</p>
       <p className={`text-[24px] font-bold ${color}`}>{value}</p>
+    </div>
+  )
+}
+
+// Structured payout-info form: pick a channel, fill its fields, save once. The
+// channel definitions + labels come from lib/affiliatePayout so form and server
+// stay in sync. Saved info prefills so the affiliate never re-types it.
+function PayoutForm({ method0, info0, summary, locale, busy, onSave, t }: {
+  method0: string | null; info0: Record<string, string>; summary: string | null
+  locale: string; busy: boolean
+  onSave: (method: string, info: Record<string, string>) => void
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t: any
+}) {
+  const [method, setMethod] = useState(method0 ?? "")
+  const [info, setInfo] = useState<Record<string, string>>(info0 ?? {})
+  const channel = getChannel(method)
+  const inputCls = "w-full bg-bg-base border border-accent/15 rounded-lg px-3 py-2 text-[14px] outline-none focus:border-accent/40 transition"
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="block text-[11px] text-text-muted mb-1 uppercase tracking-wider">{t("payout_method")}</label>
+        <select value={method} onChange={(e) => setMethod(e.target.value)} className={inputCls}>
+          <option value="">{t("select_channel")}</option>
+          {PAYOUT_CHANNELS.map((c) => (
+            <option key={c.value} value={c.value}>{locale === "th" ? c.label_th : c.label_en}</option>
+          ))}
+        </select>
+      </div>
+
+      {channel && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {channel.fields.map((f) => (
+            <div key={f.key}>
+              <label className="block text-[11px] text-text-muted mb-1 uppercase tracking-wider">
+                {locale === "th" ? f.label_th : f.label_en}{f.required ? " *" : ""}
+              </label>
+              <input
+                value={info[f.key] ?? ""}
+                onChange={(e) => setInfo((p) => ({ ...p, [f.key]: e.target.value }))}
+                className={inputCls}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11px] text-text-muted truncate">
+          {summary ? `${t("saved_as")}: ${summary}` : ""}
+        </p>
+        <button onClick={() => onSave(method, info)} disabled={busy || !method}
+          className="shrink-0 px-4 py-2 rounded-xl bg-accent/15 text-accent-light text-[13px] font-medium hover:bg-accent/25 disabled:opacity-40">
+          {t("save_payout")}
+        </button>
+      </div>
     </div>
   )
 }

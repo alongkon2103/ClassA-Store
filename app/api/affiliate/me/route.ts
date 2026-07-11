@@ -11,6 +11,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getAffiliateMinWithdraw } from "@/lib/affiliateConfig"
+import { sanitizePayoutInfo, summarizePayout, validatePayout } from "@/lib/affiliatePayout"
 
 export const dynamic = "force-dynamic"
 
@@ -23,7 +24,7 @@ export async function GET() {
 
   const profile = await prisma.affiliate_profiles.findUnique({
     where: { user_id: userId },
-    select: { default_commission_pct: true, payout_method: true, payout_detail: true, display_name: true, is_active: true },
+    select: { default_commission_pct: true, payout_method: true, payout_info: true, payout_detail: true, display_name: true, is_active: true },
   })
   // Not an affiliate → 403 (the page redirects too, this guards the API).
   if (!profile) return NextResponse.json({ error: "Not an affiliate" }, { status: 403 })
@@ -72,6 +73,7 @@ export async function GET() {
     profile: {
       default_commission_pct: Number(profile.default_commission_pct),
       payout_method: profile.payout_method,
+      payout_info: (profile.payout_info as Record<string, string> | null) ?? {},
       payout_detail: profile.payout_detail,
       display_name: profile.display_name,
       is_active: profile.is_active,
@@ -132,10 +134,35 @@ export async function PATCH(req: NextRequest) {
   if (!profile) return NextResponse.json({ error: "Not an affiliate" }, { status: 403 })
 
   const body = await req.json()
-  const data: { payout_method?: string | null; payout_detail?: string | null; display_name?: string | null } = {}
-  if (body.payout_method !== undefined) data.payout_method = body.payout_method?.trim() || null
-  if (body.payout_detail !== undefined) data.payout_detail = body.payout_detail?.trim() || null
+  const data: {
+    payout_method?: string | null
+    payout_info?: Record<string, string>
+    payout_detail?: string | null
+    display_name?: string | null
+  } = {}
+
   if (body.display_name !== undefined) data.display_name = body.display_name?.trim() || null
+
+  // Structured payout: validate the required fields for the chosen channel,
+  // store the clean structured info + a computed one-line summary (payout_detail)
+  // used by the admin view and the withdrawal snapshot.
+  if (body.payout_method !== undefined) {
+    const method: string = body.payout_method?.trim() || ""
+    if (method === "") {
+      data.payout_method = null
+      data.payout_info = {}
+      data.payout_detail = null
+    } else {
+      const info = sanitizePayoutInfo(method, body.payout_info)
+      const v = validatePayout(method, info)
+      if (!v.ok) {
+        return NextResponse.json({ error: v.error, errorCode: "INVALID_PAYOUT" }, { status: 400 })
+      }
+      data.payout_method = method
+      data.payout_info = info
+      data.payout_detail = summarizePayout(method, info)
+    }
+  }
 
   await prisma.affiliate_profiles.update({ where: { user_id: userId }, data })
   return NextResponse.json({ ok: true })
