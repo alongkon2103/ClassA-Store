@@ -12,7 +12,12 @@ type Data = {
     display_name: string | null
     is_active: boolean
   }
-  totals: { pending: number; paid: number; sales_count: number }
+  totals: { pending: number; requested: number; paid: number; sales_count: number }
+  withdraw: {
+    min: number
+    can_request: boolean
+    open_request: { id: string; amount: number; requested_at: string | null } | null
+  }
   codes: {
     code: string; type: string; value: number; commission_pct: number | null
     is_active: boolean; used_count: number; max_uses: number | null; product_name: string | null
@@ -21,7 +26,7 @@ type Data = {
     id: string; base_amount: number; commission_pct: number; commission_amount: number
     status: string; created_at: string; paid_at: string | null; product_name: string | null
   }[]
-  payouts: { id: string; amount: number; method: string | null; paid_at: string }[]
+  payouts: { id: string; amount: number; method: string | null; status: string; requested_at: string | null; paid_at: string | null }[]
 }
 
 const baht = (n: number) => `฿${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
@@ -31,13 +36,34 @@ export default function AffiliateDashboard() {
   const [d, setD] = useState<Data | null>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
+  const load = () =>
     fetch("/api/affiliate/me")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => { setD(data); setLoading(false) })
       .catch(() => setLoading(false))
-  }, [])
+  useEffect(() => { load() }, [])
+
+  const savePayout = async (patch: Record<string, unknown>) => {
+    setBusy(true)
+    await fetch("/api/affiliate/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) })
+    await load(); setBusy(false)
+  }
+
+  const requestWithdraw = async () => {
+    if (!confirm(t("withdraw_confirm", { amount: baht(d?.totals.pending ?? 0) }))) return
+    setBusy(true)
+    const res = await fetch("/api/affiliate/withdraw", { method: "POST" })
+    setBusy(false)
+    if (res.ok) { await load(); return }
+    const j = await res.json().catch(() => ({}))
+    const map: Record<string, string> = {
+      NO_PAYOUT_INFO: t("err_no_payout_info"), BELOW_MIN: t("err_below_min", { min: baht(j.min ?? d?.withdraw.min ?? 0) }),
+      ALREADY_REQUESTED: t("err_already_requested"), NO_PENDING: t("err_no_pending"),
+    }
+    alert(map[j.errorCode] || t("error"))
+  }
 
   const origin = typeof window !== "undefined" ? window.location.origin : ""
   const copy = (code: string) => {
@@ -65,8 +91,9 @@ export default function AffiliateDashboard() {
         ) : (
           <>
             {/* Summary */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <Stat label={t("pending")} value={baht(d.totals.pending)} color="text-amber-400" />
+              <Stat label={t("requested")} value={baht(d.totals.requested)} color="text-blue-400" />
               <Stat label={t("paid")} value={baht(d.totals.paid)} color="text-green-400" />
               <Stat label={t("sales")} value={String(d.totals.sales_count)} color="text-text-base" />
             </div>
@@ -76,6 +103,53 @@ export default function AffiliateDashboard() {
                 {t("paused_notice")}
               </div>
             )}
+
+            {/* Withdraw + payout info */}
+            <section className="bg-bg-card border border-accent/10 rounded-2xl p-5 space-y-4">
+              <p className="text-[11px] uppercase tracking-widest text-text-muted">{t("withdraw_title")}</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] text-text-muted mb-1 uppercase tracking-wider">{t("payout_method")}</label>
+                  <input defaultValue={d.profile.payout_method ?? ""} onBlur={(e) => savePayout({ payout_method: e.target.value })}
+                    placeholder={t("payout_method_ph")} disabled={busy}
+                    className="w-full bg-bg-base border border-accent/15 rounded-lg px-3 py-2 text-[14px]" />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-text-muted mb-1 uppercase tracking-wider">{t("payout_detail")}</label>
+                  <input defaultValue={d.profile.payout_detail ?? ""} onBlur={(e) => savePayout({ payout_detail: e.target.value })}
+                    placeholder={t("payout_detail_ph")} disabled={busy}
+                    className="w-full bg-bg-base border border-accent/15 rounded-lg px-3 py-2 text-[14px]" />
+                </div>
+              </div>
+
+              {d.withdraw.open_request ? (
+                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[13px] font-medium text-blue-300">{t("request_pending")}</p>
+                    <p className="text-[11px] text-text-muted mt-0.5">
+                      {baht(d.withdraw.open_request.amount)}
+                      {d.withdraw.open_request.requested_at ? ` · ${new Date(d.withdraw.open_request.requested_at).toLocaleDateString()}` : ""}
+                    </p>
+                  </div>
+                  <span className="text-[11px] px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-300">{t("waiting_transfer")}</span>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-[12px] text-text-muted">
+                    {t("withdrawable")}: <span className="font-mono font-semibold text-amber-400">{baht(d.totals.pending)}</span>
+                    <span className="text-text-muted/70"> · {t("min_note", { min: baht(d.withdraw.min) })}</span>
+                  </p>
+                  <button onClick={requestWithdraw} disabled={busy || !d.withdraw.can_request}
+                    className="px-4 py-2 rounded-xl bg-accent text-white text-[13px] font-medium hover:bg-accent/90 disabled:opacity-40">
+                    {t("request_withdraw")}
+                  </button>
+                </div>
+              )}
+              {!d.profile.payout_method || !d.profile.payout_detail ? (
+                <p className="text-[11px] text-amber-500/80">{t("fill_payout_first")}</p>
+              ) : null}
+            </section>
 
             {/* Codes + links */}
             <section className="bg-bg-card border border-accent/10 rounded-2xl p-5">
@@ -132,6 +206,7 @@ export default function AffiliateDashboard() {
                         <td className="px-4 py-2.5">
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                             e.status === "paid" ? "bg-green-500/15 text-green-400"
+                            : e.status === "requested" ? "bg-blue-500/15 text-blue-300"
                             : e.status === "reversed" ? "bg-white/10 text-text-muted"
                             : "bg-amber-500/15 text-amber-400"}`}>
                             {t(`status_${e.status}`)}
@@ -149,14 +224,25 @@ export default function AffiliateDashboard() {
               <section className="bg-bg-card border border-accent/10 rounded-2xl p-5">
                 <p className="text-[11px] uppercase tracking-widest text-text-muted mb-3">{t("payout_history")}</p>
                 <div className="space-y-1.5">
-                  {d.payouts.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between text-[13px]">
-                      <span className="text-text-muted">
-                        {new Date(p.paid_at).toLocaleDateString()}{p.method ? ` · ${p.method}` : ""}
-                      </span>
-                      <span className="font-mono font-semibold text-green-400/90">{baht(p.amount)}</span>
-                    </div>
-                  ))}
+                  {d.payouts.map((p) => {
+                    const date = p.paid_at ?? p.requested_at
+                    return (
+                      <div key={p.id} className="flex items-center justify-between text-[13px]">
+                        <span className="text-text-muted">
+                          {date ? new Date(date).toLocaleDateString() : "—"}{p.method ? ` · ${p.method}` : ""}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <span className="font-mono font-semibold text-green-400/90">{baht(p.amount)}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                            p.status === "paid" ? "bg-green-500/15 text-green-400"
+                            : p.status === "rejected" ? "bg-white/10 text-text-muted"
+                            : "bg-blue-500/15 text-blue-300"}`}>
+                            {t(`payout_status_${p.status}`)}
+                          </span>
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               </section>
             )}

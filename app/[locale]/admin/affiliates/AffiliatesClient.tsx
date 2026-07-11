@@ -39,20 +39,45 @@ type Detail = {
 
 const baht = (n: number) => `฿${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
 
+type Req = { id: string; affiliate_user_id: string; username: string; email: string | null; amount: number; method: string | null; detail: string | null; requested_at: string | null }
+
 export default function AffiliatesClient() {
   const t = useTranslations("AdminAffiliates")
   const [rows, setRows] = useState<ListRow[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
+  const [requests, setRequests] = useState<Req[]>([])
+  const [minWithdraw, setMinWithdraw] = useState<number>(0)
+  const [reqBusy, setReqBusy] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const r = await fetch("/api/admin/affiliates")
-    setRows(r.ok ? await r.json() : [])
+    const [a, rq, st] = await Promise.all([
+      fetch("/api/admin/affiliates"),
+      fetch("/api/admin/affiliates/requests"),
+      fetch("/api/admin/affiliates/settings"),
+    ])
+    setRows(a.ok ? await a.json() : [])
+    setRequests(rq.ok ? await rq.json() : [])
+    if (st.ok) setMinWithdraw((await st.json()).min_withdraw ?? 0)
     setLoading(false)
   }, [])
   useEffect(() => { load() }, [load])
+
+  const resolveRequest = async (id: string, action: "paid" | "reject") => {
+    if (!confirm(action === "paid" ? t("req_paid_confirm") : t("req_reject_confirm"))) return
+    setReqBusy(true)
+    const res = await fetch(`/api/admin/affiliates/requests/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }),
+    })
+    if (!res.ok) alert((await res.json().catch(() => ({}))).error || t("error_save"))
+    await load(); setReqBusy(false)
+  }
+
+  const saveMin = async (v: number) => {
+    await fetch("/api/admin/affiliates/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ min_withdraw: v }) })
+  }
 
   const totalPending = rows.reduce((s, r) => s + r.pending_amount, 0)
   const totalPaid = rows.reduce((s, r) => s + r.paid_amount, 0)
@@ -87,6 +112,46 @@ export default function AffiliatesClient() {
           <p className="text-[24px] font-bold text-green-400">{baht(totalPaid)}</p>
         </div>
       </div>
+
+      {/* Min withdrawal setting */}
+      <div className="bg-bg-card border border-accent/10 rounded-2xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-[12px] font-medium">{t("min_withdraw_label")}</p>
+          <p className="text-[11px] text-text-muted">{t("min_withdraw_hint")}</p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-text-muted text-[13px]">฿</span>
+          <input type="number" defaultValue={minWithdraw} onBlur={(e) => saveMin(Number(e.target.value))}
+            className="w-24 bg-bg-base border border-accent/15 rounded-lg px-3 py-1.5 text-[13px]" />
+        </div>
+      </div>
+
+      {/* Pending withdrawal requests */}
+      {requests.length > 0 && (
+        <div className="bg-blue-500/[0.04] border border-blue-500/20 rounded-2xl p-5">
+          <p className="text-[11px] uppercase tracking-widest text-blue-300 mb-3 font-bold">{t("requests_title")} ({requests.length})</p>
+          <div className="space-y-2">
+            {requests.map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 bg-bg-base border border-white/5 rounded-xl px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium">{r.username} <span className="text-text-muted font-normal">· {r.email}</span></p>
+                  <p className="text-[11px] text-text-muted mt-0.5">
+                    {t("send_to")}: <span className="text-text-base font-mono">{r.method ?? "—"} {r.detail ?? ""}</span>
+                    {r.requested_at ? ` · ${new Date(r.requested_at).toLocaleDateString()}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="font-mono font-bold text-amber-400 text-[15px] mr-1">{baht(r.amount)}</span>
+                  <button onClick={() => resolveRequest(r.id, "reject")} disabled={reqBusy}
+                    className="text-[12px] px-3 py-1.5 rounded-lg text-text-muted hover:text-red-400 hover:bg-white/5 disabled:opacity-40">{t("req_reject")}</button>
+                  <button onClick={() => resolveRequest(r.id, "paid")} disabled={reqBusy}
+                    className="text-[12px] px-3 py-1.5 rounded-lg bg-green-500/15 text-green-400 font-medium hover:bg-green-500/25 disabled:opacity-40">{t("req_mark_paid")}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {showCreate && <CreateForm onDone={() => { setShowCreate(false); load() }} t={t} />}
 
@@ -441,10 +506,11 @@ function DetailModal({ userId, onClose, onChanged, t }: { userId: string; onClos
 const fieldInput = "w-full bg-bg-base border border-accent/15 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-accent/40 transition"
 
 // Display row for one code + an inline editor (toggled by the pencil).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, onSaved, t }:
   { code: CodeRow; products: ProductOpt[]; defaultPct: number; link: string; busy: boolean
-    onCopy: () => void; onDelete: () => void; onSaved: () => void; t: any }) {
+    onCopy: () => void; onDelete: () => void; onSaved: () => void
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    t: any }) {
   const [editing, setEditing] = useState(false)
   const [c, setC] = useState(code.code)
   const [type, setType] = useState<"percent" | "fixed">(code.type === "fixed" ? "fixed" : "percent")
