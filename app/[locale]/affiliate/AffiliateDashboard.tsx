@@ -86,16 +86,29 @@ export default function AffiliateDashboard() {
     setTimeout(() => setCopied(null), 1500)
   }
 
+  const fmtDay = (iso: string) => new Date(iso).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short" })
+  const payoutSet = !!(d?.profile.payout_method && d?.profile.payout_detail)
+
   return (
     <>
       <Navbar />
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div>
-          <h1 className="text-[24px] font-bold">{t("title")}</h1>
-          <p className="text-text-muted text-[13px] mt-0.5">
-            {d?.profile.display_name ? `${d.profile.display_name} · ` : ""}
-            {t("subtitle", { pct: d?.profile.default_commission_pct ?? 0 })}
-          </p>
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        {/* ── Header ── */}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-[24px] sm:text-[26px] font-bold">{t("title")}</h1>
+            {d?.profile.display_name && <p className="text-text-muted text-[13px] mt-0.5">{d.profile.display_name}</p>}
+          </div>
+          {d && (
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] px-3 py-1.5 rounded-full bg-accent/10 text-accent-light font-medium">
+                {t("subtitle", { pct: d.profile.default_commission_pct })}
+              </span>
+              <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${d.profile.is_active ? "bg-green-500/15 text-green-400" : "bg-amber-500/15 text-amber-400"}`}>
+                {d.profile.is_active ? t("active_badge") : t("paused_badge")}
+              </span>
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -104,81 +117,72 @@ export default function AffiliateDashboard() {
           <p className="text-text-muted py-16 text-center">{t("error")}</p>
         ) : (
           <>
-            {/* Summary */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <Stat label={t("pending")} value={baht(d.totals.pending)} color="text-amber-400" />
-              <Stat label={t("requested")} value={baht(d.totals.requested)} color="text-blue-400" />
-              <Stat label={t("paid")} value={baht(d.totals.paid)} color="text-green-400" />
-              <Stat label={t("sales")} value={String(d.totals.sales_count)} color="text-text-base" />
+            {/* ── KPIs ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Kpi icon={<WalletIcon />} label={t("pending")} value={baht(d.totals.pending)} tone="amber" />
+              <Kpi icon={<ClockIcon />} label={t("requested")} value={baht(d.totals.requested)} tone="blue" />
+              <Kpi icon={<CheckIcon />} label={t("paid")} value={baht(d.totals.paid)} tone="green" />
             </div>
 
-            {!d.profile.is_active && (
-              <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl px-5 py-3 text-[13px] text-amber-500/90">
-                {t("paused_notice")}
-              </div>
-            )}
-
-            {/* Withdraw + payout info */}
-            <section className="bg-bg-card border border-accent/10 rounded-2xl p-5 space-y-4">
-              <p className="text-[11px] uppercase tracking-widest text-text-muted">{t("withdraw_title")}</p>
-
-              <PayoutForm
-                method0={d.profile.payout_method}
-                info0={d.profile.payout_info}
-                summary={d.profile.payout_detail}
-                locale={locale}
-                busy={busy}
-                onSave={savePayout}
-                t={t}
-              />
-
-              {d.withdraw.open_request ? (
-                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[13px] font-medium text-blue-300">
-                      {t("request_pending")} · {baht(d.withdraw.open_request.amount)}
-                    </p>
+            {/* ── Money zone: Withdraw | Payout info ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {/* Withdraw */}
+              <SectionCard>
+                <SectionHeader icon={<WalletIcon />} title={t("withdraw_action_title")} />
+                {d.withdraw.open_request ? (
+                  <div className="bg-blue-500/[0.06] border border-blue-500/25 rounded-xl p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 font-medium">{t("waiting_transfer")}</span>
+                      <button onClick={cancelWithdraw} disabled={busy}
+                        className="text-[12px] px-3 py-1.5 rounded-lg text-text-muted hover:text-red-400 hover:bg-white/5 border border-white/10 transition-all disabled:opacity-40">
+                        {t("cancel_withdraw")}
+                      </button>
+                    </div>
+                    <p className="text-[28px] font-bold text-blue-300 leading-tight mt-2">{baht(d.withdraw.open_request.amount)}</p>
                     {d.withdraw.open_request.eta_from && d.withdraw.open_request.eta_to && (
-                      <p className="text-[12px] text-text-base mt-1">
-                        {t("eta", {
-                          from: new Date(d.withdraw.open_request.eta_from).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short" }),
-                          to: new Date(d.withdraw.open_request.eta_to).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short" }),
-                        })}
+                      <p className="text-[13px] text-text-base mt-1">
+                        {t("eta", { from: fmtDay(d.withdraw.open_request.eta_from), to: fmtDay(d.withdraw.open_request.eta_to) })}
                       </p>
                     )}
-                    <p className="text-[11px] text-text-muted mt-0.5">{t("waiting_transfer")}</p>
                   </div>
-                  <button onClick={cancelWithdraw} disabled={busy}
-                    className="text-[12px] px-3 py-1.5 rounded-lg text-text-muted hover:text-red-400 hover:bg-white/5 border border-white/10 disabled:opacity-40">
-                    {t("cancel_withdraw")}
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-[12px] text-text-muted">
-                    {t("withdrawable")}: <span className="font-mono font-semibold text-amber-400">{baht(d.totals.pending)}</span>
-                    <span className="text-text-muted/70"> · {t("min_note", { min: baht(d.withdraw.min) })}</span>
-                  </p>
-                  <button onClick={requestWithdraw} disabled={busy || !d.withdraw.can_request}
-                    className="px-5 py-2.5 rounded-xl bg-accent text-white text-[13px] font-semibold shadow-lg shadow-accent/20 hover:bg-accent/90 hover:shadow-accent/30 active:scale-95 transition-all disabled:opacity-40 disabled:shadow-none">
-                    {t("request_withdraw")}
-                  </button>
-                </div>
-              )}
-              {!d.profile.payout_method || !d.profile.payout_detail ? (
-                <p className="text-[11px] text-amber-500/80">{t("fill_payout_first")}</p>
-              ) : null}
-            </section>
+                ) : (
+                  <div>
+                    <p className="text-[11px] text-text-muted uppercase tracking-wider">{t("withdrawable")}</p>
+                    <p className="text-[30px] font-bold text-amber-400 leading-tight mt-0.5">{baht(d.totals.pending)}</p>
+                    <p className="text-[11px] text-text-muted mt-1">{t("min_note", { min: baht(d.withdraw.min) })}</p>
+                    <button onClick={requestWithdraw} disabled={busy || !d.withdraw.can_request}
+                      className="w-full mt-4 px-5 py-3 rounded-xl bg-accent text-white text-[14px] font-semibold shadow-lg shadow-accent/20 hover:bg-accent/90 hover:shadow-accent/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none">
+                      {t("request_withdraw")}
+                    </button>
+                    {!payoutSet && <p className="text-[11px] text-amber-500/80 mt-2 text-center">{t("fill_payout_first")}</p>}
+                  </div>
+                )}
+              </SectionCard>
 
-            {/* Codes + links */}
-            <section className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-colors duration-200 hover:border-accent/25">
-              <p className="text-[11px] uppercase tracking-widest text-text-muted mb-3">{t("your_codes")}</p>
+              {/* Payout info */}
+              <SectionCard>
+                <SectionHeader icon={<BankIcon />} title={t("payout_info_title")} />
+                <PayoutForm
+                  method0={d.profile.payout_method}
+                  info0={d.profile.payout_info}
+                  summary={d.profile.payout_detail}
+                  locale={locale}
+                  busy={busy}
+                  onSave={savePayout}
+                  t={t}
+                />
+              </SectionCard>
+            </div>
+
+            {/* ── Codes & links ── */}
+            <SectionCard>
+              <SectionHeader icon={<TagIcon />} title={t("your_codes")} />
               {d.codes.length === 0 ? (
                 <p className="text-[13px] text-text-muted">{t("no_codes")}</p>
               ) : (
                 <div className="space-y-2">
                   {d.codes.map((c) => (
-                    <div key={c.code} className="flex flex-wrap items-center justify-between gap-2 bg-bg-base border border-white/5 rounded-xl px-3 py-2.5 transition-all duration-200 hover:border-accent/25">
+                    <div key={c.code} className="flex flex-wrap items-center justify-between gap-2 bg-bg-base border border-white/5 rounded-xl px-3.5 py-3 transition-all duration-200 hover:border-accent/25">
                       <div className="min-w-0">
                         <span className="font-mono font-semibold text-[14px]">{c.code}</span>
                         <span className="text-[12px] text-text-muted ml-2">
@@ -187,25 +191,26 @@ export default function AffiliateDashboard() {
                           {!c.is_active ? ` · ${t("inactive")}` : ""}
                         </span>
                       </div>
-                      <button
-                        onClick={() => copy(c.code)}
-                        className="shrink-0 text-[12px] px-3 py-1.5 rounded-lg bg-accent/15 text-accent-light hover:bg-accent/25 transition"
-                      >
+                      <button onClick={() => copy(c.code)}
+                        className="shrink-0 text-[12px] px-3 py-1.5 rounded-lg bg-accent/15 text-accent-light hover:bg-accent/25 active:scale-95 transition-all">
                         {copied === c.code ? t("copied") : t("copy_link")}
                       </button>
                     </div>
                   ))}
                 </div>
               )}
-            </section>
+            </SectionCard>
 
-            {/* Sales log — no buyer identity */}
-            <section className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
-              <p className="text-[11px] uppercase tracking-widest text-text-muted px-5 pt-5 pb-2">{t("sales_log")}</p>
+            {/* ── Sales log (no buyer identity) ── */}
+            <SectionCard noPad>
+              <div className="px-5 pt-5 pb-3">
+                <SectionHeader icon={<ListIcon />} title={t("sales_log")}
+                  right={<span className="text-[12px] text-text-muted">{t("items", { n: d.totals.sales_count })}</span>} />
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-[13px] min-w-[520px]">
                   <thead>
-                    <tr className="text-left text-[11px] text-text-muted border-b border-white/5">
+                    <tr className="text-left text-[11px] text-text-muted border-y border-white/5 bg-white/[0.015]">
                       <th className="px-5 py-2.5 font-medium">{t("col_date")}</th>
                       <th className="px-4 py-2.5 font-medium">{t("col_product")}</th>
                       <th className="px-4 py-2.5 font-medium text-right">{t("col_sale")}</th>
@@ -236,17 +241,17 @@ export default function AffiliateDashboard() {
                   </tbody>
                 </table>
               </div>
-            </section>
+            </SectionCard>
 
-            {/* Payout history */}
+            {/* ── Payout history ── */}
             {d.payouts.length > 0 && (
-              <section className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-colors duration-200 hover:border-accent/25">
-                <p className="text-[11px] uppercase tracking-widest text-text-muted mb-3">{t("payout_history")}</p>
-                <div className="space-y-1.5">
+              <SectionCard>
+                <SectionHeader icon={<HistoryIcon />} title={t("payout_history")} />
+                <div className="divide-y divide-white/5">
                   {d.payouts.map((p) => {
                     const date = p.paid_at ?? p.requested_at
                     return (
-                      <div key={p.id} className="text-[13px]">
+                      <div key={p.id} className="text-[13px] py-2.5 first:pt-0 last:pb-0">
                         <div className="flex items-center justify-between">
                           <span className="text-text-muted">
                             {date ? new Date(date).toLocaleDateString() : "—"}{p.method ? ` · ${p.method}` : ""}
@@ -263,13 +268,13 @@ export default function AffiliateDashboard() {
                           </span>
                         </div>
                         {p.status === "rejected" && p.reject_reason && (
-                          <p className="text-[11px] text-red-400/80 mt-0.5">{t("reject_reason_label")}: {p.reject_reason}</p>
+                          <p className="text-[11px] text-red-400/80 mt-1">{t("reject_reason_label")}: {p.reject_reason}</p>
                         )}
                       </div>
                     )
                   })}
                 </div>
-              </section>
+              </SectionCard>
             )}
           </>
         )}
@@ -278,14 +283,55 @@ export default function AffiliateDashboard() {
   )
 }
 
-function Stat({ label, value, color }: { label: string; value: string; color: string }) {
+// ── Layout helpers (match the admin design language) ──────────────────────────
+function SectionCard({ children, noPad }: { children: React.ReactNode; noPad?: boolean }) {
   return (
-    <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-all duration-200 hover:border-accent/25 hover:-translate-y-0.5">
-      <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{label}</p>
-      <p className={`text-[24px] font-bold ${color}`}>{value}</p>
+    <section className={`bg-bg-card border border-accent/10 rounded-2xl transition-colors duration-200 hover:border-accent/20 ${noPad ? "overflow-hidden" : "p-5"}`}>
+      {children}
+    </section>
+  )
+}
+
+function SectionHeader({ icon, title, right }: { icon: React.ReactNode; title: string; right?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-2.5">
+        <span className="w-7 h-7 rounded-lg bg-accent/10 text-accent-light flex items-center justify-center shrink-0">{icon}</span>
+        <h2 className="text-[14px] font-semibold text-text-base">{title}</h2>
+      </div>
+      {right}
     </div>
   )
 }
+
+const TONES = {
+  amber: { text: "text-amber-400", chip: "bg-amber-500/12 text-amber-400" },
+  blue: { text: "text-blue-400", chip: "bg-blue-500/12 text-blue-300" },
+  green: { text: "text-green-400", chip: "bg-green-500/12 text-green-400" },
+} as const
+
+function Kpi({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string; tone: keyof typeof TONES }) {
+  const c = TONES[tone]
+  return (
+    <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-all duration-200 hover:border-accent/25 hover:-translate-y-0.5">
+      <div className="flex items-center gap-2.5 mb-2.5">
+        <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${c.chip}`}>{icon}</span>
+        <p className="text-[11px] tracking-widest text-text-muted uppercase">{label}</p>
+      </div>
+      <p className={`text-[26px] font-bold leading-none ${c.text}`}>{value}</p>
+    </div>
+  )
+}
+
+// ── Icons (18px, stroke) ──────────────────────────────────────────────────────
+const iconProps = { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }
+function WalletIcon() { return <svg {...iconProps}><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" /><path d="M4 6v12a2 2 0 0 0 2 2h14v-4" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg> }
+function ClockIcon() { return <svg {...iconProps}><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg> }
+function CheckIcon() { return <svg {...iconProps}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg> }
+function BankIcon() { return <svg {...iconProps}><rect x="3" y="5" width="18" height="14" rx="2" /><line x1="3" y1="10" x2="21" y2="10" /></svg> }
+function TagIcon() { return <svg {...iconProps}><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> }
+function ListIcon() { return <svg {...iconProps}><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg> }
+function HistoryIcon() { return <svg {...iconProps}><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><polyline points="12 7 12 12 15 14" /></svg> }
 
 // Structured payout-info form: pick a channel, fill its fields, save once. The
 // channel definitions + labels come from lib/affiliatePayout so form and server
