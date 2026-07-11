@@ -36,7 +36,9 @@ export async function GET(req: NextRequest) {
         include: { partners: true }
       },
       orders: {
-        where: { status: "paid", ...dateFilter },
+        // TRIAL orders are ฿0 giveaways — they must not inflate the order
+        // counts partners see on this page.
+        where: { status: "paid", order_type: { not: "TRIAL" }, ...dateFilter },
         select: { amount: true, recorded_by_id: true, paid_at: true, payment_method: true }
       }
     }
@@ -47,19 +49,28 @@ export async function GET(req: NextRequest) {
     const grossRevenue = p.orders.reduce((sum, o) => sum + Number(o.amount), 0)
     const manualOrders = p.orders.filter((o) => o.recorded_by_id !== null)
     const manualRevenue = manualOrders.reduce((sum, o) => sum + Number(o.amount), 0)
-    // PayPal-only slice — admin needs to see this separately because PayPal
+    // PayPal slice — admin needs to see this separately because PayPal
     // settles in USD and charges 4.4% + $0.39 per transaction, so the THB
     // amount we recorded is NOT what actually lands in the bank account.
+    // Includes BOTH channels that land in the PayPal account: the REST API
+    // flow ("paypal") and the PayPal.me email-verified flow ("paypal_me").
     // Compute net here (per-order) so the $0.39 fixed fee is applied N times.
-    const paypalOrders = p.orders.filter((o) => o.payment_method === "paypal")
+    const paypalOrders = p.orders.filter(
+      (o) => o.payment_method === "paypal" || o.payment_method === "paypal_me",
+    )
     const paypalAmounts = paypalOrders.map((o) => Number(o.amount))
     const paypalSettle = paypalSettlementFromAmounts(paypalAmounts)
+    // Revenue after the PayPal fees we can compute exactly. Stripe fees are
+    // not tracked per-order, so this is "net of PayPal" — the closest honest
+    // net figure without inventing Stripe rates.
+    const netRevenue = grossRevenue - paypalSettle.amount_thb + paypalSettle.net_thb
     return {
       id: p.id,
       name_en: p.name_en,
       name_th: p.name_th,
       total_orders: totalOrders,
       gross_revenue: grossRevenue,
+      net_revenue: netRevenue,
       manual_orders: manualOrders.length,
       manual_revenue: manualRevenue,
       paypal_orders: paypalOrders.length,
@@ -71,7 +82,11 @@ export async function GET(req: NextRequest) {
         name: s.partners.name,
         contact: s.partners.contact,
         share: Number(s.share_pct),
-        payout: (grossRevenue * Number(s.share_pct)) / 100
+        // Headline payout stays gross-based (existing agreement with
+        // partners); payout_net shows the same share on PayPal-net revenue
+        // for comparison.
+        payout: (grossRevenue * Number(s.share_pct)) / 100,
+        payout_net: (netRevenue * Number(s.share_pct)) / 100
       }))
     }
   }).filter(p => p.partners.length > 0)

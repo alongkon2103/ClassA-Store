@@ -8,6 +8,7 @@
 // Idempotent: if status is already "paid" we no-op so retries are safe.
 
 import { prisma } from "@/lib/prisma"
+import { prepareAffiliateEarning } from "@/lib/affiliateEarnings"
 
 const PERMANENT_EXPIRES_AT = new Date("9999-12-31T00:00:00.000Z")
 
@@ -44,6 +45,11 @@ export async function fulfillPaidOrder(orderId: string, opts?: { isPremium?: boo
     Number(order.product_variants.discount_pct) > 0 &&
     (order.product_variants.discount_used ?? 0) < (order.product_variants.discount_limit ?? 0)
   )
+
+  // Affiliate commission (frozen). Computed here (reads only) and added to the
+  // paid transaction so a paid order and its earning are always atomic. null
+  // for non-affiliate codes, self-purchases, trials, and 0-commission codes.
+  const earning = await prepareAffiliateEarning(order)
 
   await prisma.$transaction([
     prisma.orders.update({
@@ -84,6 +90,7 @@ export async function fulfillPaidOrder(orderId: string, opts?: { isPremium?: boo
           }),
         ]
       : []),
+    ...(earning ? [prisma.affiliate_earnings.create({ data: earning })] : []),
   ])
 
   // Best-effort Discord role assignment — never block fulfillment on bot failures.

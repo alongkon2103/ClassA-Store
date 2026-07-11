@@ -6,7 +6,7 @@ import {
     AreaChart, Area, XAxis, YAxis,
     Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts"
-import { format, parseISO, eachDayOfInterval, subDays } from "date-fns"
+import { format, parseISO } from "date-fns"
 import { useTranslations, useLocale } from "next-intl"
 import { th, enUS } from "date-fns/locale"
 import { Link } from "@/i18n/routing"
@@ -93,16 +93,14 @@ export default function DashboardClient({ data }: { data: any }) {
     const locale = useLocale()
     const dateLocale = locale === "th" ? th : enUS
 
-    // Fill in dates with no sales for the full 7 days
+    // Server already sends 7 zero-filled rows keyed by Bangkok calendar day
+    // ("YYYY-MM-DD"). parseISO on a date-only string is timezone-free, so the
+    // label can't shift no matter what timezone the viewer's browser is in.
     const chartData = useMemo(() => {
-        const days = eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() })
-        return days.map((d) => {
-            const key = format(d, "yyyy-MM-dd")
-            const found = data.dailyRevenue.find((r: DailyRevenue) =>
-                format(parseISO(r.day), "yyyy-MM-dd") === key
-            )
-            return { day: format(d, "dd MMM", { locale: dateLocale }), total: found?.total ?? 0 }
-        })
+        return data.dailyRevenue.map((r: DailyRevenue) => ({
+            day: format(parseISO(r.day), "dd MMM", { locale: dateLocale }),
+            total: r.total,
+        }))
     }, [data.dailyRevenue, dateLocale])
 
     return (

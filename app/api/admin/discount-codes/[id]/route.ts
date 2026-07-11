@@ -18,7 +18,42 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const data: Prisma.discount_codesUncheckedUpdateInput = {}
     if (body.is_active !== undefined) data.is_active = Boolean(body.is_active)
     if (body.is_public !== undefined) data.is_public = Boolean(body.is_public)
+    if (body.is_auto_select !== undefined) data.is_auto_select = Boolean(body.is_auto_select)
     if (body.note !== undefined) data.note = body.note?.trim() || null
+
+    // Affiliate ownership + per-code commission override.
+    if (body.owner_user_id !== undefined) {
+      data.owner_user_id = body.owner_user_id?.trim() || null
+    }
+    if (body.commission_pct !== undefined) {
+      if (body.commission_pct === null || body.commission_pct === "") {
+        data.commission_pct = null
+      } else {
+        const c = Number(body.commission_pct)
+        if (!Number.isFinite(c) || c < 0 || c > 100) {
+          return NextResponse.json({ error: "commission_pct must be 0-100 or empty" }, { status: 400 })
+        }
+        data.commission_pct = c
+      }
+    }
+
+    // Auto-select requires visibility — turning auto on forces public on so the
+    // two flags can never contradict.
+    if (data.is_auto_select === true) data.is_public = true
+    // An affiliate code is private (link-applied) — owning it forces off the
+    // public/auto flags so it never leaks into the public card list. Check the
+    // EFFECTIVE owner (existing owner if this PATCH doesn't touch it), otherwise
+    // flipping is_public=true on an already-owned code would leak it.
+    const existing = await prisma.discount_codes.findUnique({
+      where: { id },
+      select: { owner_user_id: true },
+    })
+    const effectiveOwner =
+      body.owner_user_id !== undefined ? (body.owner_user_id?.trim() || null) : existing?.owner_user_id ?? null
+    if (effectiveOwner) {
+      data.is_public = false
+      data.is_auto_select = false
+    }
 
     if (body.code !== undefined) {
       const next = body.code?.trim().toUpperCase()

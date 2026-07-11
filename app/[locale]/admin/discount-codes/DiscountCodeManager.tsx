@@ -18,6 +18,7 @@ type DiscountCode = {
   expires_at: string | null
   is_active: boolean
   is_public: boolean
+  is_auto_select: boolean
   note: string | null
   redemption_count: number
 }
@@ -35,6 +36,7 @@ type FormState = {
   starts_at: string
   expires_at: string
   is_public: boolean
+  is_auto_select: boolean
   note: string
 }
 
@@ -49,6 +51,7 @@ const EMPTY_FORM: FormState = {
   starts_at: "",
   expires_at: "",
   is_public: false,
+  is_auto_select: false,
   note: "",
 }
 
@@ -74,6 +77,7 @@ function codeToForm(c: DiscountCode): FormState {
     starts_at: toLocalDatetime(c.starts_at),
     expires_at: toLocalDatetime(c.expires_at),
     is_public: c.is_public,
+    is_auto_select: c.is_auto_select,
     note: c.note ?? "",
   }
 }
@@ -134,7 +138,9 @@ export default function DiscountCodeManager({
         product_id: form.product_id || null,
         starts_at: form.starts_at || null,
         expires_at: form.expires_at || null,
-        is_public: form.is_public,
+        // Auto-select implies public (server also enforces this).
+        is_public: form.is_public || form.is_auto_select,
+        is_auto_select: form.is_auto_select,
         note: form.note || null,
       }
 
@@ -171,6 +177,7 @@ export default function DiscountCodeManager({
         expires_at: data.expires_at,
         is_active: data.is_active,
         is_public: data.is_public,
+        is_auto_select: data.is_auto_select,
         note: data.note,
         redemption_count: editingId
           ? codes.find((c) => c.id === editingId)?.redemption_count ?? 0
@@ -357,14 +364,39 @@ export default function DiscountCodeManager({
               <label className="flex items-start gap-2.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
-                  checked={form.is_public}
+                  checked={form.is_public || form.is_auto_select}
+                  disabled={form.is_auto_select}
                   onChange={(e) => setForm({ ...form, is_public: e.target.checked })}
-                  className="w-4 h-4 mt-0.5 accent-accent"
+                  className="w-4 h-4 mt-0.5 accent-accent disabled:opacity-50"
                 />
                 <span>
                   <span className="block text-[13px] font-medium">{t("field_is_public")}</span>
                   <span className="block text-[11px] text-text-muted mt-0.5">
                     {t("field_is_public_hint")}
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.is_auto_select}
+                  // Checking auto also forces public on (auto needs visibility).
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      is_auto_select: e.target.checked,
+                      is_public: e.target.checked ? true : form.is_public,
+                    })
+                  }
+                  className="w-4 h-4 mt-0.5 accent-amber-500"
+                />
+                <span>
+                  <span className="block text-[13px] font-medium">{t("field_is_auto_select")}</span>
+                  <span className="block text-[11px] text-text-muted mt-0.5">
+                    {t("field_is_auto_select_hint")}
                   </span>
                 </span>
               </label>
@@ -431,11 +463,15 @@ export default function DiscountCodeManager({
                   <tr key={c.id} className="hover:bg-white/[0.02]">
                     <td className="px-4 py-3 font-mono font-semibold">
                       {c.code}
-                      {c.is_public && (
+                      {c.is_auto_select ? (
+                        <span className="ml-2 align-middle text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/25 text-amber-300 font-sans font-bold uppercase tracking-wider">
+                          {t("badge_auto")}
+                        </span>
+                      ) : c.is_public ? (
                         <span className="ml-2 align-middle text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-sans font-medium uppercase tracking-wider">
                           {t("badge_public")}
                         </span>
-                      )}
+                      ) : null}
                     </td>
                     <td className="px-4 py-3">
                       {c.type === "fixed" ? `฿${c.value.toLocaleString()}` : `${c.value}%`}

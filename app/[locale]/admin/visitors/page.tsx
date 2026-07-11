@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { bangkokDayStart, bangkokDayKey } from "@/lib/bangkokTz"
 import VisitorsClient from "./VisitorsClient"
 
 export const dynamic = "force-dynamic"
@@ -11,10 +12,15 @@ export default async function VisitorsPage() {
   if (!session?.user || session.user.role !== "admin") redirect("/")
 
   const now = new Date()
-  const todayStart = new Date(now)
-  todayStart.setUTCHours(0, 0, 0, 0)
-  const thirtyDaysAgo = new Date(todayStart)
-  thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29)
+  // Bangkok day boundary, NOT setUTCHours(0): with UTC boundaries the "today"
+  // numbers would reset at 07:00 Bangkok instead of midnight.
+  const todayStart = bangkokDayStart(now)
+  const thirtyDaysAgo = new Date(todayStart.getTime() - 29 * 24 * 60 * 60 * 1000)
+  // daily_stats rows are keyed by UTC-midnight of the Bangkok day LABEL
+  // (a date column), separate from the instant boundaries above.
+  const todayLabel = bangkokDayKey(now)
+  const todayKey = new Date(`${todayLabel}T00:00:00.000Z`)
+  const thirtyDaysAgoKey = new Date(todayKey.getTime() - 29 * 24 * 60 * 60 * 1000)
 
   const [
     dailyStats,
@@ -26,7 +32,7 @@ export default async function VisitorsPage() {
     last24hHourly,
   ] = await Promise.all([
     prisma.daily_stats.findMany({
-      where: { date: { gte: thirtyDaysAgo, lte: todayStart } },
+      where: { date: { gte: thirtyDaysAgoKey, lte: todayKey } },
       orderBy: { date: "asc" },
     }),
 
@@ -94,8 +100,12 @@ export default async function VisitorsPage() {
   ])
 
   const todayRow = todayLive[0] ?? { total_views: 0, unique_visitors: 0, logged_in_views: 0 }
-  const totalAll = dailyStats.reduce((a, d) => a + d.total_views, 0) + todayRow.total_views
-  const uniqAll = dailyStats.reduce((a, d) => a + d.unique_visitors, 0) + todayRow.unique_visitors
+  // The cron rolls up "today" too, so today's daily_stats row and the live
+  // numbers describe the SAME day — summing both double-counts today. Use
+  // rolled rows for past days only, live numbers for today.
+  const pastDays = dailyStats.filter((d) => d.date.getTime() < todayKey.getTime())
+  const totalAll = pastDays.reduce((a, d) => a + d.total_views, 0) + todayRow.total_views
+  const uniqAll = pastDays.reduce((a, d) => a + d.unique_visitors, 0) + todayRow.unique_visitors
 
   return (
     <VisitorsClient
@@ -108,7 +118,9 @@ export default async function VisitorsPage() {
           logged_in_views: d.logged_in_views,
         })),
         today: {
-          date: todayStart.toISOString().slice(0, 10),
+          // Bangkok day label — todayStart is 17:00Z of the previous UTC day,
+          // so slicing ITS ISO string would label today as yesterday.
+          date: todayLabel,
           ...todayRow,
         },
         totals30: {

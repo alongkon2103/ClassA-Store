@@ -592,21 +592,34 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
     })
   }
 
-  // Format bucket label based on granularity. Server pre-bucketed the data, so
-  // we just format each bucket timestamp using the unit picked server-side.
+  // Format bucket label based on granularity. Buckets are Bangkok-local
+  // periods (their instant = Bangkok midnight / hour start), so labels MUST be
+  // rendered in Asia/Bangkok explicitly — date-fns `format` uses the browser's
+  // timezone, which would shift every label a day back for viewers west of
+  // UTC+7 (e.g. a sale on 11 Jul would label as 10 Jul).
   const chartData = useMemo(() => {
+    const intlLocale = locale === "th" ? "th-TH" : "en-GB"
+    const fmtHour = new Intl.DateTimeFormat(intlLocale, {
+      timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hour12: false,
+    })
+    const fmtDay = new Intl.DateTimeFormat(intlLocale, {
+      timeZone: "Asia/Bangkok", day: "2-digit", month: "short",
+    })
+    const fmtMonth = new Intl.DateTimeFormat(intlLocale, {
+      timeZone: "Asia/Bangkok", month: "short", year: "numeric",
+    })
     const fmtBucket = (iso: string) => {
       const d = parseISO(iso)
-      if (granularity === "hour")  return format(d, "HH:mm", { locale: dateLocale })
-      if (granularity === "day")   return format(d, "dd MMM", { locale: dateLocale })
-      return format(d, "MMM yyyy", { locale: dateLocale })
+      if (granularity === "hour") return fmtHour.format(d)
+      if (granularity === "day") return fmtDay.format(d)
+      return fmtMonth.format(d)
     }
     return (data.revenueOverTime ?? []).map((r) => ({
       bucket: fmtBucket(r.bucket),
       total: r.total,
       count: r.count,
     }))
-  }, [data.revenueOverTime, granularity, dateLocale])
+  }, [data.revenueOverTime, granularity, locale])
 
   const granularityLabel =
     granularity === "hour"  ? t("granularity_hourly")

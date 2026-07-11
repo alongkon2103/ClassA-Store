@@ -37,6 +37,9 @@ export default async function Page({
         ],
     })
 
+    // Strikethrough preview prices are computed CLIENT-side (per shopper, via
+    // useAutoDiscounts) so each user sees the best code THEY can still use —
+    // the server render is shared/ISR-cached and can't be personalised.
     const safeProducts = products.map((p) => ({
         ...p,
         price: Number(p.price),

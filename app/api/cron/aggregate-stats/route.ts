@@ -1,19 +1,17 @@
 import { NextResponse } from "next/server"
 import { headers } from "next/headers"
 import { prisma } from "@/lib/prisma"
+import { bangkokDayKey, BANGKOK_UTC_OFFSET } from "@/lib/bangkokTz"
 
 const RAW_RETENTION_DAYS = 90
 
-function todayDate(): Date {
-  const d = new Date()
-  d.setUTCHours(0, 0, 0, 0)
-  return d
-}
-
-async function rollupDate(date: Date) {
-  const start = new Date(date)
-  const end = new Date(date)
-  end.setUTCDate(end.getUTCDate() + 1)
+// Roll up one Bangkok calendar day ("YYYY-MM-DD"). Day boundaries are Bangkok
+// midnight — NOT setUTCHours(0), which would reset the day at 07:00 Thai time.
+// daily_stats.date is keyed by the UTC-midnight Date of the label.
+async function rollupDay(label: string) {
+  const start = new Date(`${label}T00:00:00.000${BANGKOK_UTC_OFFSET}`)
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000)
+  const dateKey = new Date(`${label}T00:00:00.000Z`)
 
   const [agg] = await prisma.$queryRaw<{
     total_views: number
@@ -48,9 +46,9 @@ async function rollupDate(date: Date) {
   `
 
   await prisma.daily_stats.upsert({
-    where: { date: start },
+    where: { date: dateKey },
     create: {
-      date: start,
+      date: dateKey,
       total_views: agg?.total_views ?? 0,
       unique_visitors: agg?.unique_visitors ?? 0,
       new_visitors: newVisitorRow?.new_visitors ?? 0,
@@ -67,7 +65,7 @@ async function rollupDate(date: Date) {
   })
 
   return {
-    date: start.toISOString().slice(0, 10),
+    date: label,
     total_views: agg?.total_views ?? 0,
     unique_visitors: agg?.unique_visitors ?? 0,
   }
@@ -87,17 +85,17 @@ export async function GET() {
   }
 
   try {
-    const today = todayDate()
-    const yesterday = new Date(today)
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+    const now = new Date()
+    const todayLabel = bangkokDayKey(now)
+    const yesterdayLabel = bangkokDayKey(new Date(now.getTime() - 24 * 60 * 60 * 1000))
 
     const results = await Promise.all([
-      rollupDate(yesterday),
-      rollupDate(today),
+      rollupDay(yesterdayLabel),
+      rollupDay(todayLabel),
     ])
 
-    const pruneCutoff = new Date(today)
-    pruneCutoff.setUTCDate(pruneCutoff.getUTCDate() - RAW_RETENTION_DAYS)
+    const todayStart = new Date(`${todayLabel}T00:00:00.000${BANGKOK_UTC_OFFSET}`)
+    const pruneCutoff = new Date(todayStart.getTime() - RAW_RETENTION_DAYS * 24 * 60 * 60 * 1000)
     const pruned = await prisma.page_views.deleteMany({
       where: { created_at: { lt: pruneCutoff } },
     })

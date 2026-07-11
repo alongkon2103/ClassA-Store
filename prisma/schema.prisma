@@ -121,6 +121,7 @@ model orders {
   discount_redemption   discount_redemptions?
   livegen_config        user_livegen_configs?
   paypal_payment        paypal_payments?
+  affiliate_earning     affiliate_earnings?
 
   @@index([user_id], map: "idx_orders_user")
   @@index([recorded_by_id], map: "idx_orders_recorded_by")
@@ -147,15 +148,31 @@ model discount_codes {
   // the discount input in the product modal for EVERYONE. Visibility only —
   // redemption rules (max_uses/per_user_limit/…) are identical to normal codes.
   is_public      Boolean                @default(false)
+  // Auto-select: this code is pre-applied when a shopper opens the product
+  // modal, and drives the strikethrough preview price on the shop card. Only
+  // takes effect while is_public is also true (must be visible to be applied).
+  // Multiple codes may be flagged; per product the biggest-discount one wins.
+  is_auto_select Boolean                @default(false)
+  // Affiliate code: when set, this code belongs to an affiliate (a user with
+  // role=affiliate). A paid order carrying it credits the owner a commission
+  // (see affiliate_earnings). Affiliate codes are NOT is_public — they auto-
+  // apply only when the shopper arrives via the affiliate's /r/<code> link.
+  owner_user_id  String?                @db.Uuid
+  // Per-code commission override (%). null = use the owner's
+  // affiliate_profiles.default_commission_pct. Only meaningful when owner set.
+  commission_pct Decimal?               @db.Decimal(5, 2)
   note           String?                @db.VarChar
   created_at     DateTime?              @default(now()) @db.Timestamptz(6)
   updated_at     DateTime?              @default(now()) @db.Timestamptz(6)
   product        products?              @relation(fields: [product_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  owner          users?                 @relation("affiliate_codes", fields: [owner_user_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   redemptions    discount_redemptions[]
   orders         orders[]
+  affiliate_earnings affiliate_earnings[]
 
   @@index([code], map: "idx_discount_codes_code")
   @@index([is_active, expires_at], map: "idx_discount_codes_active")
+  @@index([owner_user_id], map: "idx_discount_codes_owner")
 }
 
 model discount_redemptions {
@@ -170,6 +187,77 @@ model discount_redemptions {
 
   @@index([discount_code_id], map: "idx_redemptions_code")
   @@index([user_id], map: "idx_redemptions_user")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Affiliate program. An affiliate is a `users` row with role=affiliate that
+// owns one or more discount_codes. When a paid order carries an owned code, the
+// owner earns a commission — frozen into affiliate_earnings at fulfillment time
+// so history never shifts when rates change. Attribution is code-based (the
+// /r/<code> link just auto-applies the code; credit follows the code on the
+// paid order). See lib/orderFulfillment.ts for the capture point.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// One row per affiliate user: their default commission rate + payout details.
+// Created by admin when granting the affiliate role.
+model affiliate_profiles {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String    @unique @db.Uuid
+  default_commission_pct Decimal  @default(0) @db.Decimal(5, 2)
+  payout_method         String?   @db.VarChar // e.g. "promptpay" | "bank" | "paypal"
+  payout_detail         String?   @db.VarChar // account number / promptpay id / paypal email
+  display_name          String?   @db.VarChar // optional public-facing name
+  is_active             Boolean   @default(true)
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  user                  users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+// Immutable commission ledger. One row per credited order (order_id UNIQUE =
+// never double-credit). base_amount/commission_pct/commission_amount are FROZEN
+// at creation — later rate edits never touch past earnings. status lifecycle:
+//   pending → paid   (admin settles, links a payout)
+//   pending → reversed / paid → reversed (order later cancelled; clawback flags
+//                                          a reversal of money already paid out)
+model affiliate_earnings {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  affiliate_user_id String    @db.Uuid
+  order_id          String    @unique @db.Uuid
+  discount_code_id  String?   @db.Uuid
+  base_amount       Decimal   @db.Decimal(10, 2) // product revenue: subtotal after discount, ex-fee
+  commission_pct    Decimal   @db.Decimal(5, 2)  // rate actually applied (frozen)
+  commission_amount Decimal   @db.Decimal(10, 2) // base_amount * commission_pct / 100 (frozen)
+  status            String    @default("pending") @db.VarChar // pending | paid | reversed
+  clawback          Boolean   @default(false) // true when a PAID earning was reversed → admin must recover
+  payout_id         String?   @db.Uuid
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  paid_at           DateTime? @db.Timestamptz(6)
+  reversed_at       DateTime? @db.Timestamptz(6)
+  affiliate         users          @relation(fields: [affiliate_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  order             orders         @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  discount_code     discount_codes? @relation(fields: [discount_code_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  payout            affiliate_payouts? @relation(fields: [payout_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([affiliate_user_id, status], map: "idx_aff_earnings_user_status")
+  @@index([payout_id], map: "idx_aff_earnings_payout")
+  @@index([created_at], map: "idx_aff_earnings_created")
+}
+
+// One row per real payment made to an affiliate. The earnings it covers point
+// back via payout_id, so "what did this ฿X cover?" is always answerable.
+model affiliate_payouts {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  affiliate_user_id String    @db.Uuid
+  amount            Decimal   @db.Decimal(10, 2)
+  method            String?   @db.VarChar
+  note              String?   @db.VarChar
+  paid_at           DateTime  @default(now()) @db.Timestamptz(6)
+  created_by_id     String?   @db.Uuid
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  affiliate         users     @relation(fields: [affiliate_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  earnings          affiliate_earnings[]
+
+  @@index([affiliate_user_id], map: "idx_aff_payouts_user")
 }
 
 model product_functions {
@@ -441,6 +529,10 @@ model users {
   user_livegen_configs user_livegen_configs[]
   user_livegen_drafts  user_livegen_drafts[]
   user_presets         user_presets[]
+  affiliate_profile    affiliate_profiles?
+  affiliate_codes      discount_codes[]       @relation("affiliate_codes")
+  affiliate_earnings   affiliate_earnings[]
+  affiliate_payouts    affiliate_payouts[]
 }
 
 model system_configs {
@@ -588,6 +680,7 @@ enum Role {
   user
   admin
   partnership
+  affiliate
 }
 
 enum RuleAction {

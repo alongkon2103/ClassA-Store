@@ -3,6 +3,23 @@
 
 import type { discount_codes, Prisma, PrismaClient } from "@prisma/client"
 
+// Lightweight, DB-free version of the discount math for PREVIEW only (shop
+// card strikethrough + modal auto-select). Takes plain numbers so it can run
+// on both the server (card) and the client (modal) with no Prisma types.
+// The authoritative amount is still recomputed server-side at checkout via
+// evaluateDiscount — this never drives what the customer is actually charged.
+export function previewDiscountAmount(
+  code: { type: string; value: number; minAmount?: number | null },
+  subtotal: number,
+): number {
+  if (!(subtotal > 0)) return 0
+  const min = code.minAmount ?? 0
+  if (subtotal < min) return 0
+  let off = code.type === "fixed" ? Math.min(code.value, subtotal) : subtotal * (code.value / 100)
+  off = Math.round(off * 100) / 100
+  return off > 0 ? off : 0
+}
+
 // Error codes are stable identifiers that the UI maps to localized strings.
 // `params` carries values for placeholders (e.g. min amount in THB).
 export type DiscountErrorCode =
@@ -55,6 +72,38 @@ export function evaluateDiscount(
   if (amountOff <= 0) return { ok: false, errorCode: "NO_EFFECT" }
 
   return { ok: true, code, amountOff }
+}
+
+// A candidate code for auto-selection (shop card / modal open). Normalized so
+// both the server (raw discount_codes rows) and the client (public API shape)
+// can feed the same picker.
+export type AutoCodeCandidate = {
+  code: string
+  type: string
+  value: number
+  minAmount?: number | null
+  isAutoSelect: boolean
+  soldOut?: boolean
+  alreadyUsed?: boolean
+}
+
+// Pick the auto-select code that gives the LARGEST discount for this subtotal
+// (the user's chosen "biggest discount wins" rule). Skips codes that aren't
+// auto, are sold out, already used by this shopper, or don't apply to the
+// amount (below min / zero effect). Deterministic: on a tie the first
+// candidate wins, so callers should pre-sort (e.g. newest first).
+export function pickBestAutoCode(
+  candidates: AutoCodeCandidate[],
+  subtotal: number,
+): { code: string; amountOff: number } | null {
+  let best: { code: string; amountOff: number } | null = null
+  for (const c of candidates) {
+    if (!c.isAutoSelect || c.soldOut || c.alreadyUsed) continue
+    const off = previewDiscountAmount(c, subtotal)
+    if (off <= 0) continue
+    if (!best || off > best.amountOff) best = { code: c.code, amountOff: off }
+  }
+  return best
 }
 
 // Count how many times a user has actively claimed a code. We exclude

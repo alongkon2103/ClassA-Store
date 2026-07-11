@@ -49,6 +49,7 @@ export async function GET(req: NextRequest) {
         max_uses: true,
         used_count: true,
         per_user_limit: true,
+        is_auto_select: true,
       },
     })
 
@@ -73,6 +74,7 @@ export async function GET(req: NextRequest) {
           // is exactly what checkout enforces, so this never over-promises.
           remaining: c.max_uses === null ? null : Math.max(0, c.max_uses - c.used_count),
           already_used: alreadyUsed,
+          is_auto_select: c.is_auto_select,
         }
       }),
     )

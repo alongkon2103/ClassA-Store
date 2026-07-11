@@ -28,6 +28,7 @@ const groups = [
     items: [
       { href: "/admin/partners", key: "partners", roles: ["admin"] },
       { href: "/admin/partnership", key: "partnership_earnings", roles: ["admin"] },
+      { href: "/admin/affiliates", key: "affiliates", roles: ["admin"] },
       { href: "/admin/consignment", key: "consignment", roles: ["admin"] },
     ]
   },

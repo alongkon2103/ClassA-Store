@@ -4,6 +4,7 @@ import Stripe from "stripe"
 import { headers } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { releaseOrderDiscount } from "@/lib/discountCodes"
+import { prepareAffiliateEarning, reverseAffiliateEarning } from "@/lib/affiliateEarnings"
 import { NextRequest } from "next/server"
 
 export const runtime = "nodejs"
@@ -147,12 +148,17 @@ export async function POST(req: NextRequest) {
 
     // Check if we should increment discount_used
     const shouldIncrementDiscount = !!(
-      order.variant_id && 
-      order.products.has_limited_discount && 
+      order.variant_id &&
+      order.products.has_limited_discount &&
       order.product_variants &&
       Number(order.product_variants.discount_pct) > 0 &&
       (order.product_variants.discount_used ?? 0) < (order.product_variants.discount_limit ?? 0)
     )
+
+    // Affiliate commission (frozen) — Stripe fulfils inline here rather than via
+    // fulfillPaidOrder, so the capture must live in this path too or every card/
+    // promptpay sale would miss its commission. Added to the paid txn = atomic.
+    const earning = await prepareAffiliateEarning(order)
 
     await prisma.$transaction([
       // 1. update order
@@ -198,7 +204,10 @@ export async function POST(req: NextRequest) {
           where: { id: order.variant_id! },
           data: { discount_used: { increment: 1 } }
         })
-      ] : [])
+      ] : []),
+
+      // 4. Freeze affiliate commission if this order carries an affiliate code
+      ...(earning ? [prisma.affiliate_earnings.create({ data: earning })] : [])
     ])
 
     // ─────────────────────────────────────────────

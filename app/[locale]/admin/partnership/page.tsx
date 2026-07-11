@@ -124,15 +124,15 @@
 // }
 
 "use client"
-import { useEffect, useState } from "react"
+import { Fragment, useEffect, useState } from "react"
 import { useTranslations, useLocale } from "next-intl"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts"
 import { PAYPAL_FEE_PCT, PAYPAL_FIXED_FEE_USD } from "@/lib/paypalSettlement"
 
-type Partner = { name: string; contact: string; share: number; payout: number }
+type Partner = { name: string; contact: string; share: number; payout: number; payout_net?: number }
 type ProductRow = {
   id: string; name_en: string; name_th: string;
-  total_orders: number; gross_revenue: number;
+  total_orders: number; gross_revenue: number; net_revenue?: number;
   manual_orders?: number; manual_revenue?: number;
   paypal_orders?: number; paypal_revenue?: number;
   paypal_amount_usd?: number; paypal_net_usd?: number; paypal_net_thb?: number;
@@ -175,6 +175,10 @@ export default function PartnershipEarningsPage() {
   const totalGross = data.reduce((acc, r) => acc + r.gross_revenue, 0)
   const totalPayout = data.reduce((acc, r) =>
     acc + r.partners.reduce((s, p) => s + p.payout, 0), 0)
+  // Same shares applied to PayPal-net revenue — what the payout would be if
+  // computed on money that actually lands in the account.
+  const totalPayoutNet = data.reduce((acc, r) =>
+    acc + r.partners.reduce((s, p) => s + (p.payout_net ?? p.payout), 0), 0)
   const totalManualRevenue = data.reduce((acc, r) => acc + (r.manual_revenue ?? 0), 0)
   const totalManualOrders = data.reduce((acc, r) => acc + (r.manual_orders ?? 0), 0)
   const totalPaypalRevenue = data.reduce((acc, r) => acc + (r.paypal_revenue ?? 0), 0)
@@ -228,6 +232,11 @@ export default function PartnershipEarningsPage() {
           <p className="text-[24px] font-bold text-red-400">
             ฿{totalPayout.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </p>
+          {totalPayoutNet < totalPayout - 0.005 && (
+            <p className="text-[11px] text-blue-300/90 mt-1 font-mono">
+              {t("total_payout_net_hint")} ฿{totalPayoutNet.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </p>
+          )}
         </div>
         <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
           <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{t("active_products")}</p>
@@ -387,9 +396,10 @@ export default function PartnershipEarningsPage() {
               ) : data.length === 0 ? (
                 <tr><td colSpan={5} className="text-center py-12 text-text-muted">{t("no_data")}</td></tr>
               ) : data.map((r) => (
-                <>
+                // Fragment needs the key (not the inner <tr>) — it's the
+                // direct child of the map.
+                <Fragment key={r.id}>
                   <tr
-                    key={r.id}
                     className="hover:bg-white/[0.02] transition cursor-pointer"
                     onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
                   >
@@ -410,6 +420,15 @@ export default function PartnershipEarningsPage() {
                     </td>
                     <td className="px-4 py-4 text-right font-mono font-bold text-red-400">
                       ฿{r.partners.reduce((s, p) => s + p.payout, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      {(() => {
+                        const rowNet = r.partners.reduce((s, p) => s + (p.payout_net ?? p.payout), 0)
+                        const rowGross = r.partners.reduce((s, p) => s + p.payout, 0)
+                        return rowNet < rowGross - 0.005 ? (
+                          <p className="text-[10px] text-blue-300/80 mt-0.5 font-normal">
+                            {t("total_payout_net_hint")} ฿{rowNet.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </p>
+                        ) : null
+                      })()}
                     </td>
                     <td className="px-4 py-4 text-right text-text-muted text-[11px]">
                       {expandedId === r.id ? t("hide") : t("show")}
@@ -471,7 +490,7 @@ export default function PartnershipEarningsPage() {
                       </tr>
                     )
                   })()}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

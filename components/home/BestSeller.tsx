@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import Link from "next/link"
 import ProductCard from "./ProductCard"
 import { useTranslations, useLocale } from "next-intl"
+import { useAutoDiscounts } from "@/lib/useAutoDiscounts"
 
 
 type Variant = {
@@ -34,6 +35,8 @@ type Props = {
 export default function BestSeller({ products, onSelect }: Props) {
   const t = useTranslations("Home")
   const locale = useLocale()
+  // Personalised strikethrough prices — one fetch for the whole row.
+  const { bestDiscountedPrice } = useAutoDiscounts()
 
   const container = {
     hidden: { opacity: 0 },
@@ -101,7 +104,8 @@ export default function BestSeller({ products, onSelect }: Props) {
                   badge={product.is_featured ? "Hot" : undefined}
                   product_variants={product.product_variants.map((v) => ({
                     ...v,
-                    label: locale === "th" ? v.label_th : v.label_en
+                    label: locale === "th" ? v.label_th : v.label_en,
+                    discounted_price: bestDiscountedPrice(product.id, Number(v.price)),
                   }))}
                   onClick={() => onSelect?.(product)}
                 />

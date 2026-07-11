@@ -3,6 +3,7 @@
 import { useLocale } from "next-intl"
 import { motion } from "framer-motion"
 import ProductCard from "./ProductCard"
+import { useAutoDiscounts } from "@/lib/useAutoDiscounts"
 
 type ProductVariant = {
   id: string
@@ -11,6 +12,7 @@ type ProductVariant = {
   price: number
   is_active: boolean
   variant_type?: string
+  discounted_price?: number | null
 }
 
 type ProductItem = {
@@ -35,6 +37,8 @@ export default function ContainerCard({ products, onSelect }: {
   onSelect: (item: NarrowProduct) => void
 }) {
     const locale = useLocale()
+    // Personalised strikethrough prices — one fetch for the whole grid.
+    const { bestDiscountedPrice } = useAutoDiscounts()
 
     const container = {
         hidden: { opacity: 0 },
@@ -69,7 +73,10 @@ export default function ContainerCard({ products, onSelect }: {
                             is_low={item.isLower ?? false}
                             onClick={() => onSelect(item)}
                             is_featured={item.is_featured ?? false}
-                            product_variants={item.product_variants}
+                            product_variants={item.product_variants?.map((v) => ({
+                                ...v,
+                                discounted_price: bestDiscountedPrice(item.id, Number(v.price)),
+                            }))}
                         />
                     </motion.div>
                 ))}

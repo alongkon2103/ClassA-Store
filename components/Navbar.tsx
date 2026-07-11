@@ -15,6 +15,7 @@ const navItems = [
   { href: "/orders", labelKey: "orders", auth: true, flag: null },
   { href: "/contact", labelKey: "contact", auth: false, flag: null },
   { href: "/rules", labelKey: "rules", auth: false, flag: null },
+  { href: "/affiliate", labelKey: "affiliate", auth: "affiliate", flag: null },
   { href: "/admin", labelKey: "admin", auth: "admin_or_partnership", flag: null },
 ]
 
@@ -67,6 +68,7 @@ export default function Navbar() {
     if (item.auth === "admin_or_partnership" &&
       session?.user?.role !== "admin" &&
       session?.user?.role !== "partnership") return false
+    if (item.auth === "affiliate" && session?.user?.role !== "affiliate") return false
     // Feature-flag-gated items are hidden until we've fetched the flags AND
     // the flag is true. Defaulting to hidden means a disabled feature never
     // leaks into the nav even briefly.

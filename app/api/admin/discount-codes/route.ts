@@ -41,7 +41,9 @@ export async function POST(req: NextRequest) {
     let code: string = (body.code || "").trim().toUpperCase()
     const type: string = body.type === "percent" ? "percent" : "fixed"
     const value = Number(body.value)
-    const maxUses = body.max_uses === null || body.max_uses === "" ? null : Number(body.max_uses)
+    // `== null` catches BOTH null and undefined (an omitted field) so a form
+    // that doesn't send max_uses means "unlimited", not NaN.
+    const maxUses = body.max_uses == null || body.max_uses === "" ? null : Number(body.max_uses)
     const perUserLimit =
       body.per_user_limit === null || body.per_user_limit === undefined || body.per_user_limit === ""
         ? 1
@@ -51,7 +53,18 @@ export async function POST(req: NextRequest) {
     const startsAt = body.starts_at ? new Date(body.starts_at) : null
     const expiresAt = body.expires_at ? new Date(body.expires_at) : null
     const note: string | null = body.note?.trim() || null
-    const isPublic = Boolean(body.is_public)
+    // Auto-select only works while public (must be visible to be applied), so
+    // flagging auto forces public on.
+    const isAutoSelect = Boolean(body.is_auto_select)
+    const isPublic = Boolean(body.is_public) || isAutoSelect
+    // Affiliate ownership: when set, redeeming this code credits the owner a
+    // commission. Affiliate codes must NOT be public/auto (they auto-apply only
+    // via the owner's /r/<code> link), so ownership forces those flags off.
+    const ownerUserId: string | null = body.owner_user_id?.trim() || null
+    const commissionPct =
+      body.commission_pct === null || body.commission_pct === undefined || body.commission_pct === ""
+        ? null
+        : Number(body.commission_pct)
 
     if (!Number.isFinite(value) || value <= 0) {
       return NextResponse.json({ error: "value must be > 0" }, { status: 400 })
@@ -61,6 +74,9 @@ export async function POST(req: NextRequest) {
     }
     if (maxUses !== null && (!Number.isFinite(maxUses) || maxUses < 1)) {
       return NextResponse.json({ error: "max_uses must be >= 1 or empty" }, { status: 400 })
+    }
+    if (commissionPct !== null && (!Number.isFinite(commissionPct) || commissionPct < 0 || commissionPct > 100)) {
+      return NextResponse.json({ error: "commission_pct must be 0-100 or empty" }, { status: 400 })
     }
 
     if (!code) {
@@ -94,7 +110,12 @@ export async function POST(req: NextRequest) {
         product_id: productId,
         starts_at: startsAt,
         expires_at: expiresAt,
-        is_public: isPublic,
+        // Affiliate codes are private (link-applied), so an owned code is never
+        // public/auto even if those flags were sent.
+        is_public: ownerUserId ? false : isPublic,
+        is_auto_select: ownerUserId ? false : isAutoSelect,
+        owner_user_id: ownerUserId,
+        commission_pct: commissionPct,
         note,
       },
     })

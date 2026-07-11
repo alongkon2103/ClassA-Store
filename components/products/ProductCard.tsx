@@ -11,6 +11,8 @@ type Variant = {
   price: number
   is_active: boolean
   variant_type?: string
+  // Set by the server when an auto-select code lowers this variant's price.
+  discounted_price?: number | null
 }
 
 type Props = {
@@ -122,16 +124,31 @@ export default function ProductCard({
 
         {hasVariants ? (
           <div className="space-y-1">
-            {variants.slice(0, 3).map((v) => (
-              <div key={v.id} className="flex justify-between text-[12px]">
-                <span className="text-text-muted">
-                  {locale === "th" ? v.label_th : v.label_en}
-                </span>
-                <span className="font-semibold text-accent-light">
-                  ฿{Number(v.price).toLocaleString()}
-                </span>
-              </div>
-            ))}
+            {variants.slice(0, 3).map((v) => {
+              const hasDeal =
+                v.discounted_price != null && v.discounted_price < Number(v.price)
+              return (
+                <div key={v.id} className="flex justify-between items-center text-[12px]">
+                  <span className="text-text-muted">
+                    {locale === "th" ? v.label_th : v.label_en}
+                  </span>
+                  {hasDeal ? (
+                    <span className="flex items-baseline gap-1.5">
+                      <span className="text-[11px] text-text-muted/70 line-through decoration-red-400">
+                        ฿{Number(v.price).toLocaleString()}
+                      </span>
+                      <span className="font-bold text-red-400">
+                        ฿{Number(v.discounted_price).toLocaleString()}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="font-semibold text-accent-light">
+                      ฿{Number(v.price).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              )
+            })}
           </div>
         ) : (
           <p className="text-[14px] font-bold text-accent-light">

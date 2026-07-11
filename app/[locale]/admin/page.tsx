@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import DashboardClient from "./DashboardClient"
 import { setRequestLocale } from "next-intl/server"
-import { bangkokDayStart, bangkokMonthStart, bangkokBucketSql } from "@/lib/bangkokTz"
+import { bangkokDayStart, bangkokMonthStart, bangkokDayKey } from "@/lib/bangkokTz"
 
 export default async function AdminDashboard({
   params,
@@ -152,20 +152,29 @@ export default async function AdminDashboard({
       },
     }),
 
-    // Revenue - last 7 Bangkok days (current day + previous 6)
-    prisma.$queryRaw<{ day: Date; total: number }[]>`
-      SELECT
-        ${bangkokBucketSql("day")} AS day,
-        SUM(amount)::float AS total
-      FROM orders
-      WHERE status = 'paid'
-        AND order_type != 'TRIAL'
-        AND paid_at IS NOT NULL
-        AND paid_at >= ${sevenDayStart}
-      GROUP BY 1
-      ORDER BY 1
-    `,
+    // Revenue - last 7 Bangkok days (current day + previous 6).
+    // Grouping happens in JS below, NOT in SQL: the DB server's clock is
+    // misconfigured (instants stored 7h early) and the Prisma driver shifts
+    // them back on read, so timestamps are only trustworthy AFTER they cross
+    // the driver. SQL-side DATE_TRUNC bucketing lands sales on the wrong day.
+    prisma.orders.findMany({
+      where: {
+        status: "paid",
+        NOT: { order_type: "TRIAL" },
+        paid_at: { gte: sevenDayStart },
+      },
+      select: { paid_at: true, amount: true },
+    }),
   ])
+
+  // Group the last-7-days orders by Bangkok calendar day (driver-corrected
+  // timestamps, same read path as the cards — so chart and cards ALWAYS agree).
+  const revenueByDay = new Map<string, number>()
+  for (const o of dailyRevenue) {
+    if (!o.paid_at) continue
+    const k = bangkokDayKey(o.paid_at)
+    revenueByDay.set(k, (revenueByDay.get(k) ?? 0) + Number(o.amount))
+  }
 
   const data = {
     todayRevenue: Number(todayRevenue._sum.amount ?? 0),
@@ -190,10 +199,14 @@ export default async function AdminDashboard({
       expected_amount: o.expected_amount === null ? null : Number(o.expected_amount),
     })),
 
-    dailyRevenue: dailyRevenue.map((d) => ({
-      day: d.day.toISOString(),
-      total: d.total,
-    })),
+    // Chart-ready: exactly 7 rows keyed by Bangkok calendar day ("YYYY-MM-DD"),
+    // zero-filled. Matching by day KEY (not timestamp) means the viewer's
+    // browser timezone can never shift a sale onto the wrong bar, and a day
+    // with no sales shows as ฿0 instead of disappearing.
+    dailyRevenue: Array.from({ length: 7 }, (_, i) => {
+      const key = bangkokDayKey(new Date(sevenDayStart.getTime() + i * 24 * 60 * 60 * 1000))
+      return { day: key, total: revenueByDay.get(key) ?? 0 }
+    }),
   }
 
   return <DashboardClient data={data} />
