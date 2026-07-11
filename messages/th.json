@@ -556,6 +556,7 @@
     "min_withdraw_hint": "นายหน้าจะขอถอนได้เมื่อยอดค้างถึงจำนวนนี้",
     "saved": "บันทึกแล้ว",
     "requests_title": "คำขอถอนเงิน",
+    "requests_count": "คำขอรอจ่าย",
     "send_to": "โอนไปที่",
     "req_reject": "ปฏิเสธ",
     "req_mark_paid": "จ่ายแล้ว",

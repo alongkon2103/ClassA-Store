@@ -89,6 +89,7 @@ export default function AffiliatesClient() {
 
   return (
     <div className="space-y-6">
+      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-[22px] sm:text-[26px] font-bold">{t("title")}</h1>
@@ -102,29 +103,24 @@ export default function AffiliatesClient() {
         </button>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-all duration-200 hover:border-accent/25 hover:-translate-y-0.5">
-          <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{t("affiliates")}</p>
-          <p className="text-[24px] font-bold">{rows.length}</p>
-        </div>
-        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-all duration-200 hover:border-accent/25 hover:-translate-y-0.5">
-          <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{t("total_pending")}</p>
-          <p className="text-[24px] font-bold text-amber-400">{baht(totalPending)}</p>
-        </div>
-        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-all duration-200 hover:border-accent/25 hover:-translate-y-0.5">
-          <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{t("total_paid")}</p>
-          <p className="text-[24px] font-bold text-green-400">{baht(totalPaid)}</p>
-        </div>
+      {showCreate && <CreateForm onDone={() => { setShowCreate(false); load() }} t={t} />}
+
+      {/* ── KPIs ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Kpi icon={<UsersIcon />} label={t("affiliates")} value={String(rows.length)} tone="accent" />
+        <Kpi icon={<ClockIcon />} label={t("requests_count")} value={String(requests.length)} tone="blue" />
+        <Kpi icon={<WalletIcon />} label={t("total_pending")} value={baht(totalPending)} tone="amber" />
+        <Kpi icon={<CheckIcon />} label={t("total_paid")} value={baht(totalPaid)} tone="green" />
       </div>
 
-      {/* Min withdrawal setting */}
-      <MinWithdrawSetting value={minWithdraw} onSave={saveMin} t={t} />
-
-      {/* Pending withdrawal requests */}
+      {/* ── Withdrawal requests (actionable — prominent when present) ── */}
       {requests.length > 0 && (
-        <div className="bg-blue-500/[0.04] border border-blue-500/20 rounded-2xl p-5">
-          <p className="text-[11px] uppercase tracking-widest text-blue-300 mb-3 font-bold">{t("requests_title")} ({requests.length})</p>
+        <section className="bg-blue-500/[0.05] border border-blue-500/25 rounded-2xl p-5">
+          <div className="flex items-center gap-2.5 mb-4">
+            <span className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-300 flex items-center justify-center shrink-0"><ClockIcon /></span>
+            <h2 className="text-[14px] font-semibold">{t("requests_title")}</h2>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-medium">{requests.length}</span>
+          </div>
           <div className="space-y-2">
             {requests.map((r) => (
               <RequestRow key={r.id} r={r} busy={reqBusy}
@@ -133,23 +129,29 @@ export default function AffiliatesClient() {
                 t={t} />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {showCreate && <CreateForm onDone={() => { setShowCreate(false); load() }} t={t} />}
+      {/* ── Setting ── */}
+      <MinWithdrawSetting value={minWithdraw} onSave={saveMin} t={t} />
 
-      <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+      {/* ── Affiliates table ── */}
+      <section className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+        <div className="flex items-center gap-2.5 px-5 pt-5 pb-3">
+          <span className="w-7 h-7 rounded-lg bg-accent/10 text-accent-light flex items-center justify-center shrink-0"><UsersIcon /></span>
+          <h2 className="text-[14px] font-semibold">{t("affiliates")}</h2>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-[13px] min-w-[720px]">
             <thead>
-              <tr className="text-left text-[11px] text-text-muted border-b border-white/5">
-                <th className="px-4 py-3 font-medium">{t("col_affiliate")}</th>
-                <th className="px-4 py-3 font-medium text-right">{t("col_rate")}</th>
-                <th className="px-4 py-3 font-medium text-right">{t("col_codes")}</th>
-                <th className="px-4 py-3 font-medium text-right">{t("col_pending")}</th>
-                <th className="px-4 py-3 font-medium text-right">{t("col_paid")}</th>
-                <th className="px-4 py-3 font-medium">{t("col_status")}</th>
-                <th className="px-4 py-3"></th>
+              <tr className="text-left text-[11px] text-text-muted border-y border-white/5 bg-white/[0.015]">
+                <th className="px-5 py-2.5 font-medium">{t("col_affiliate")}</th>
+                <th className="px-4 py-2.5 font-medium text-right">{t("col_rate")}</th>
+                <th className="px-4 py-2.5 font-medium text-right">{t("col_codes")}</th>
+                <th className="px-4 py-2.5 font-medium text-right">{t("col_pending")}</th>
+                <th className="px-4 py-2.5 font-medium text-right">{t("col_paid")}</th>
+                <th className="px-4 py-2.5 font-medium">{t("col_status")}</th>
+                <th className="px-4 py-2.5"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -159,7 +161,7 @@ export default function AffiliatesClient() {
                 <tr><td colSpan={7} className="text-center py-12 text-text-muted">{t("empty")}</td></tr>
               ) : rows.map((r) => (
                 <tr key={r.user_id} className="hover:bg-accent/[0.04] transition-colors">
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-3">
                     <p className="font-medium">{r.display_name || r.username}</p>
                     <p className="text-[11px] text-text-muted">{r.email}</p>
                   </td>
@@ -173,7 +175,8 @@ export default function AffiliatesClient() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => setOpenId(r.user_id)} className="text-[12px] text-accent-light hover:underline">
+                    <button onClick={() => setOpenId(r.user_id)}
+                      className="text-[12px] px-3 py-1.5 rounded-lg bg-accent/10 text-accent-light hover:bg-accent/20 active:scale-95 transition-all">
                       {t("manage")}
                     </button>
                   </td>
@@ -182,7 +185,7 @@ export default function AffiliatesClient() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
       <AnimatePresence>
         {openId && (
@@ -773,3 +776,30 @@ function MinWithdrawSetting({ value, onSave, t }: { value: number; onSave: (v: n
     </div>
   )
 }
+
+// ── KPI card + icons (shared design language with the affiliate dashboard) ─────
+const KPI_TONES = {
+  accent: { text: "text-accent-light", chip: "bg-accent/12 text-accent-light" },
+  blue: { text: "text-blue-400", chip: "bg-blue-500/12 text-blue-300" },
+  amber: { text: "text-amber-400", chip: "bg-amber-500/12 text-amber-400" },
+  green: { text: "text-green-400", chip: "bg-green-500/12 text-green-400" },
+} as const
+
+function Kpi({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string; tone: keyof typeof KPI_TONES }) {
+  const c = KPI_TONES[tone]
+  return (
+    <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-all duration-200 hover:border-accent/25 hover:-translate-y-0.5">
+      <div className="flex items-center gap-2.5 mb-2.5">
+        <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${c.chip}`}>{icon}</span>
+        <p className="text-[11px] tracking-widest text-text-muted uppercase leading-tight">{label}</p>
+      </div>
+      <p className={`text-[24px] font-bold leading-none ${c.text}`}>{value}</p>
+    </div>
+  )
+}
+
+const kIcon = { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }
+function UsersIcon() { return <svg {...kIcon}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> }
+function WalletIcon() { return <svg {...kIcon}><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" /><path d="M4 6v12a2 2 0 0 0 2 2h14v-4" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg> }
+function ClockIcon() { return <svg {...kIcon}><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg> }
+function CheckIcon() { return <svg {...kIcon}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg> }
