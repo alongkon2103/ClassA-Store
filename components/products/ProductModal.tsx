@@ -361,7 +361,7 @@ export default function ProductModal({ product, onClose }: any) {
     let cancelled = false
     let code: string | null = null
     try {
-      code = localStorage.getItem("aff_ref")
+      code = sessionStorage.getItem("aff_ref")
     } catch { /* storage disabled */ }
     if (!code) {
       setRefInfo(null)

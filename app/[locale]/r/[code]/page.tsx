@@ -1,10 +1,11 @@
 "use client"
 
 // Affiliate referral landing: /r/<CODE>
-// Remembers the affiliate's code (last-click — a newer link overwrites an older
-// one) then sends the shopper into the shop, where the product modal auto-applies
-// it. Attribution stays code-based: credit is decided by the code on the paid
-// order, so this page only ever pre-fills a convenience code.
+// Remembers the affiliate's code for THIS browsing session only (sessionStorage
+// — cleared when the tab/site is closed, so leaving the affiliate's link ends
+// the attribution). Last-click: a newer link overwrites an older one. Then sends
+// the shopper into the shop, where the card + modal auto-apply it. Attribution
+// stays code-based: credit is decided by the code on the paid order.
 
 import { useEffect } from "react"
 import { useParams } from "next/navigation"
@@ -21,7 +22,7 @@ export default function AffiliateRefLanding() {
     const code = (Array.isArray(raw) ? raw[0] : raw)?.toString().trim().toUpperCase()
     if (code) {
       try {
-        localStorage.setItem(AFF_REF_KEY, code)
+        sessionStorage.setItem(AFF_REF_KEY, code)
       } catch { /* private mode / storage disabled — ignore, code just won't persist */ }
     }
     router.replace("/products")
