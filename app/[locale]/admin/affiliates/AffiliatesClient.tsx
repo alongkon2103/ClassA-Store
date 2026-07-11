@@ -19,18 +19,22 @@ type ListRow = {
   pending_count: number
 }
 
+type CodeRow = {
+  id: string; code: string; type: string; value: number
+  commission_pct: number | null; is_active: boolean
+  used_count: number; max_uses: number | null; product_id: string | null; product_name: string | null
+}
+type ProductOpt = { id: string; name: string }
+
 type Detail = {
   profile: ListRow
-  codes: {
-    id: string; code: string; type: string; value: number
-    commission_pct: number | null; is_active: boolean
-    used_count: number; max_uses: number | null; product_name: string | null
-  }[]
+  codes: CodeRow[]
   earnings: {
     id: string; base_amount: number; commission_pct: number; commission_amount: number
     status: string; clawback: boolean; created_at: string; paid_at: string | null; product_name: string | null
   }[]
   payouts: { id: string; amount: number; method: string | null; note: string | null; paid_at: string }[]
+  products: ProductOpt[]
 }
 
 const baht = (n: number) => `฿${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
@@ -374,31 +378,14 @@ function DetailModal({ userId, onClose, onChanged, t }: { userId: string; onClos
               <div className="space-y-1.5">
                 {d.codes.length === 0 && <p className="text-[12px] text-text-muted">{t("no_codes")}</p>}
                 {d.codes.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between bg-bg-base border border-white/5 rounded-lg px-3 py-2 text-[12px]">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-mono font-semibold">{c.code}</span>
-                      <span className="text-text-muted">−{c.type === "fixed" ? `฿${c.value}` : `${c.value}%`}</span>
-                      <span className="text-amber-400/80">· {t("comm")} {c.commission_pct ?? d.profile.default_commission_pct}%</span>
-                      {c.product_name && <span className="text-text-muted truncate">· {c.product_name}</span>}
-                    </div>
-                    <div className="shrink-0 flex items-center gap-3">
-                      <button
-                        onClick={() => navigator.clipboard?.writeText(`${link}${c.code}`)}
-                        className="text-[11px] text-accent-light hover:underline">{t("copy_link")}</button>
-                      <button
-                        onClick={() => deleteCode(c.id, c.code)}
-                        disabled={busy}
-                        title={t("delete_code")}
-                        className="text-text-muted hover:text-red-400 disabled:opacity-40 transition">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                          <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
+                  <CodeItem key={c.id} code={c} products={d.products} defaultPct={d.profile.default_commission_pct}
+                    link={link} busy={busy} t={t}
+                    onCopy={() => navigator.clipboard?.writeText(`${link}${c.code}`)}
+                    onDelete={() => deleteCode(c.id, c.code)}
+                    onSaved={() => { reload(); onChanged() }} />
                 ))}
               </div>
-              <CreateCode userId={userId} defaultPct={d.profile.default_commission_pct} onDone={() => { reload(); onChanged() }} t={t} />
+              <CreateCode userId={userId} products={d.products} defaultPct={d.profile.default_commission_pct} onDone={() => { reload(); onChanged() }} t={t} />
             </section>
 
             {/* Earnings */}
@@ -451,12 +438,117 @@ function DetailModal({ userId, onClose, onChanged, t }: { userId: string; onClos
   )
 }
 
+const fieldInput = "w-full bg-bg-base border border-accent/15 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-accent/40 transition"
+
+// Display row for one code + an inline editor (toggled by the pencil).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CreateCode({ userId, defaultPct, onDone, t }: { userId: string; defaultPct: number; onDone: () => void; t: any }) {
+function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, onSaved, t }:
+  { code: CodeRow; products: ProductOpt[]; defaultPct: number; link: string; busy: boolean
+    onCopy: () => void; onDelete: () => void; onSaved: () => void; t: any }) {
+  const [editing, setEditing] = useState(false)
+  const [c, setC] = useState(code.code)
+  const [type, setType] = useState<"percent" | "fixed">(code.type === "fixed" ? "fixed" : "percent")
+  const [value, setValue] = useState(String(code.value))
+  const [comm, setComm] = useState(code.commission_pct === null ? "" : String(code.commission_pct))
+  const [productId, setProductId] = useState(code.product_id ?? "")
+  const [active, setActive] = useState(code.is_active)
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const save = async () => {
+    setErr(null); setSaving(true)
+    const res = await fetch(`/api/admin/discount-codes/${code.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: c, type, value: Number(value),
+        commission_pct: comm === "" ? null : Number(comm),
+        product_id: productId || null, is_active: active,
+      }),
+    })
+    setSaving(false)
+    if (!res.ok) { setErr((await res.json().catch(() => ({}))).error || t("error_save")); return }
+    setEditing(false); onSaved()
+  }
+
+  if (editing) {
+    return (
+      <div className="bg-bg-base border border-accent/25 rounded-lg p-3 space-y-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div>
+            <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_code")}</label>
+            <input value={c} onChange={(e) => setC(e.target.value.toUpperCase())} className={`${fieldInput} uppercase`} />
+          </div>
+          <div>
+            <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_discount")}</label>
+            <div className="flex gap-1.5">
+              <select value={type} onChange={(e) => setType(e.target.value as "percent" | "fixed")}
+                className="bg-bg-base border border-accent/15 rounded-lg px-2 py-2 text-[13px] shrink-0">
+                <option value="percent">%</option><option value="fixed">฿</option>
+              </select>
+              <input type="number" value={value} onChange={(e) => setValue(e.target.value)} className={fieldInput} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_comm")}</label>
+            <input type="number" value={comm} onChange={(e) => setComm(e.target.value)}
+              placeholder={t("comm_default_ph", { pct: defaultPct })} className={fieldInput} />
+          </div>
+          <div>
+            <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_product")}</label>
+            <select value={productId} onChange={(e) => setProductId(e.target.value)} className={fieldInput}>
+              <option value="">{t("all_products")}</option>
+              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+        </div>
+        {err && <p className="text-[12px] text-red-400">{err}</p>}
+        <div className="flex items-center justify-between">
+          <button onClick={() => setActive((v) => !v)}
+            className={`text-[11px] px-2.5 py-1 rounded-lg font-medium ${active ? "bg-green-500/15 text-green-400" : "bg-white/10 text-text-muted"}`}>
+            {active ? t("active") : t("inactive")}
+          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setEditing(false)} className="text-[12px] px-3 py-1.5 rounded-lg text-text-muted hover:bg-white/5">{t("cancel")}</button>
+            <button onClick={save} disabled={saving}
+              className="text-[12px] px-3 py-1.5 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 disabled:opacity-50">
+              {saving ? t("saving") : t("save")}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={`flex items-center justify-between bg-bg-base border rounded-lg px-3 py-2 text-[12px] ${code.is_active ? "border-white/5" : "border-white/5 opacity-50"}`}>
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="font-mono font-semibold">{code.code}</span>
+        <span className="text-text-muted">−{code.type === "fixed" ? `฿${code.value}` : `${code.value}%`}</span>
+        <span className="text-amber-400/80">· {t("comm")} {code.commission_pct ?? defaultPct}%</span>
+        <span className="text-text-muted truncate">· {code.product_name ?? t("all_products")}</span>
+        {!code.is_active && <span className="text-text-muted">· {t("inactive")}</span>}
+      </div>
+      <div className="shrink-0 flex items-center gap-3">
+        <button onClick={() => setEditing(true)} className="text-[11px] text-accent-light hover:underline">{t("edit")}</button>
+        <button onClick={onCopy} className="text-[11px] text-accent-light hover:underline">{t("copy_link")}</button>
+        <button onClick={onDelete} disabled={busy} title={t("delete_code")}
+          className="text-text-muted hover:text-red-400 disabled:opacity-40 transition">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function CreateCode({ userId, products, defaultPct, onDone, t }: { userId: string; products: ProductOpt[]; defaultPct: number; onDone: () => void; t: any }) {
   const [code, setCode] = useState("")
   const [value, setValue] = useState("10")
   const [type, setType] = useState<"percent" | "fixed">("percent")
   const [comm, setComm] = useState("")
+  const [productId, setProductId] = useState("")
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -467,24 +559,22 @@ function CreateCode({ userId, defaultPct, onDone, t }: { userId: string; default
       body: JSON.stringify({
         code: code || undefined, type, value: Number(value),
         owner_user_id: userId, commission_pct: comm === "" ? null : Number(comm),
-        per_user_limit: 1, max_uses: null,
+        product_id: productId || null, per_user_limit: 1, max_uses: null,
       }),
     })
     setBusy(false)
     if (!res.ok) { setErr((await res.json()).error || t("error_save")); return }
-    setCode(""); setComm(""); setValue("10"); onDone()
+    setCode(""); setComm(""); setValue("10"); setProductId(""); onDone()
   }
-
-  const inputCls = "w-full bg-bg-base border border-accent/15 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-accent/40 transition"
 
   return (
     <div className="mt-3 border-t border-white/10 pt-4">
       <p className="text-[11px] uppercase tracking-wider text-text-muted mb-3 font-bold">{t("add_code_title")}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <div>
           <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_code")}</label>
           <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder={t("code_ph")}
-            className={`${inputCls} uppercase`} />
+            className={`${fieldInput} uppercase`} />
         </div>
         <div>
           <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_discount")}</label>
@@ -494,13 +584,20 @@ function CreateCode({ userId, defaultPct, onDone, t }: { userId: string; default
               <option value="percent">%</option><option value="fixed">฿</option>
             </select>
             <input type="number" value={value} onChange={(e) => setValue(e.target.value)}
-              placeholder={type === "percent" ? "10" : "50"} className={inputCls} />
+              placeholder={type === "percent" ? "10" : "50"} className={fieldInput} />
           </div>
         </div>
         <div>
           <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_comm")}</label>
           <input type="number" value={comm} onChange={(e) => setComm(e.target.value)}
-            placeholder={t("comm_default_ph", { pct: defaultPct })} className={inputCls} />
+            placeholder={t("comm_default_ph", { pct: defaultPct })} className={fieldInput} />
+        </div>
+        <div>
+          <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_product")}</label>
+          <select value={productId} onChange={(e) => setProductId(e.target.value)} className={fieldInput}>
+            <option value="">{t("all_products")}</option>
+            {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
         </div>
         <div className="flex items-end">
           <button onClick={submit} disabled={busy}

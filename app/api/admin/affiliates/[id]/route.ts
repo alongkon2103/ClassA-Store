@@ -23,13 +23,13 @@ export async function GET(_req: NextRequest, { params }: Params) {
   })
   if (!profile) return NextResponse.json({ error: "Affiliate not found" }, { status: 404 })
 
-  const [codes, earnings, payouts] = await Promise.all([
+  const [codes, earnings, payouts, products] = await Promise.all([
     prisma.discount_codes.findMany({
       where: { owner_user_id: id },
       orderBy: { created_at: "desc" },
       select: {
         id: true, code: true, type: true, value: true, commission_pct: true,
-        is_active: true, used_count: true, max_uses: true,
+        is_active: true, used_count: true, max_uses: true, product_id: true,
         product: { select: { name_en: true } },
       },
     }),
@@ -48,6 +48,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
       where: { affiliate_user_id: id },
       orderBy: { paid_at: "desc" },
       select: { id: true, amount: true, method: true, note: true, paid_at: true },
+    }),
+    // Active products for the "which product does this code apply to?" picker.
+    prisma.products.findMany({
+      where: { is_active: true },
+      select: { id: true, name_en: true },
+      orderBy: { name_en: "asc" },
     }),
   ])
 
@@ -87,6 +93,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       note: p.note,
       paid_at: p.paid_at.toISOString(),
     })),
+    products: products.map((p) => ({ id: p.id, name: p.name_en })),
   })
 }
 
