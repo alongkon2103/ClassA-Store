@@ -487,6 +487,8 @@
     "no_codes": "No codes yet",
     "comm": "comm",
     "copy_link": "Copy link",
+    "delete_code": "Delete code",
+    "delete_code_confirm": "Delete code {code}? The link will stop working (past commission history is kept).",
     "add_code_title": "Add a code for this affiliate",
     "label_code": "Code",
     "label_discount": "Customer discount",

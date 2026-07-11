@@ -301,6 +301,14 @@ function DetailModal({ userId, onClose, onChanged, t }: { userId: string; onClos
     await reload(); onChanged(); setBusy(false)
   }
 
+  const deleteCode = async (codeId: string, code: string) => {
+    if (!confirm(t("delete_code_confirm", { code }))) return
+    setBusy(true)
+    const res = await fetch(`/api/admin/discount-codes/${codeId}`, { method: "DELETE" })
+    if (!res.ok) alert((await res.json().catch(() => ({}))).error || t("error_save"))
+    await reload(); onChanged(); setBusy(false)
+  }
+
   const removeAffiliate = async () => {
     if (!confirm(t("delete_confirm"))) return
     setBusy(true)
@@ -373,9 +381,20 @@ function DetailModal({ userId, onClose, onChanged, t }: { userId: string; onClos
                       <span className="text-amber-400/80">· {t("comm")} {c.commission_pct ?? d.profile.default_commission_pct}%</span>
                       {c.product_name && <span className="text-text-muted truncate">· {c.product_name}</span>}
                     </div>
-                    <button
-                      onClick={() => navigator.clipboard?.writeText(`${link}${c.code}`)}
-                      className="shrink-0 text-[11px] text-accent-light hover:underline">{t("copy_link")}</button>
+                    <div className="shrink-0 flex items-center gap-3">
+                      <button
+                        onClick={() => navigator.clipboard?.writeText(`${link}${c.code}`)}
+                        className="text-[11px] text-accent-light hover:underline">{t("copy_link")}</button>
+                      <button
+                        onClick={() => deleteCode(c.id, c.code)}
+                        disabled={busy}
+                        title={t("delete_code")}
+                        className="text-text-muted hover:text-red-400 disabled:opacity-40 transition">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                          <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
