@@ -46,8 +46,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     }),
     prisma.affiliate_payouts.findMany({
       where: { affiliate_user_id: id },
-      orderBy: { paid_at: "desc" },
-      select: { id: true, amount: true, method: true, note: true, paid_at: true },
+      orderBy: { created_at: "desc" },
+      select: { id: true, amount: true, method: true, note: true, status: true, requested_at: true, paid_at: true },
     }),
     // Active products for the "which product does this code apply to?" picker.
     prisma.products.findMany({
@@ -91,7 +91,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
       amount: Number(p.amount),
       method: p.method,
       note: p.note,
-      paid_at: p.paid_at.toISOString(),
+      status: p.status,
+      requested_at: p.requested_at?.toISOString() ?? null,
+      paid_at: p.paid_at?.toISOString() ?? null,
     })),
     products: products.map((p) => ({ id: p.id, name: p.name_en })),
   })
@@ -142,10 +144,10 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     const profile = await prisma.affiliate_profiles.findUnique({ where: { user_id: id }, select: { user_id: true } })
     if (!profile) return NextResponse.json({ error: "Affiliate not found" }, { status: 404 })
 
-    // Safety: never revoke while commission is still owed — the pending earnings
-    // would be stranded (money the store owes). Admin must pay out first.
+    // Safety: never revoke while commission is still owed — pending OR requested
+    // (an open withdrawal) earnings would be stranded. Admin must settle first.
     const pending = await prisma.affiliate_earnings.aggregate({
-      where: { affiliate_user_id: id, status: "pending" },
+      where: { affiliate_user_id: id, status: { in: ["pending", "requested"] } },
       _sum: { commission_amount: true },
       _count: { _all: true },
     })

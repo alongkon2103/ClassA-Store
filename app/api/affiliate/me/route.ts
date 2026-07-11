@@ -6,10 +6,11 @@
 // Privacy: earnings expose date / product / amount only — NEVER the buyer's
 // identity (name / email / ign). Scoped strictly to the caller's own user_id.
 
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getAffiliateMinWithdraw } from "@/lib/affiliateConfig"
 
 export const dynamic = "force-dynamic"
 
@@ -50,8 +51,8 @@ export async function GET() {
     }),
     prisma.affiliate_payouts.findMany({
       where: { affiliate_user_id: userId },
-      orderBy: { paid_at: "desc" },
-      select: { id: true, amount: true, method: true, paid_at: true },
+      orderBy: { created_at: "desc" },
+      select: { id: true, amount: true, method: true, status: true, requested_at: true, paid_at: true },
     }),
     prisma.affiliate_earnings.groupBy({
       by: ["status"],
@@ -60,6 +61,9 @@ export async function GET() {
       _count: { _all: true },
     }),
   ])
+
+  const minWithdraw = await getAffiliateMinWithdraw()
+  const openRequest = payouts.find((p) => p.status === "requested") ?? null
 
   const sumFor = (s: string) => Number(totals.find((t) => t.status === s)?._sum.commission_amount ?? 0)
   const countFor = (s: string) => totals.find((t) => t.status === s)?._count._all ?? 0
@@ -74,8 +78,17 @@ export async function GET() {
     },
     totals: {
       pending: sumFor("pending"),
+      requested: sumFor("requested"),
       paid: sumFor("paid"),
-      sales_count: countFor("pending") + countFor("paid"),
+      sales_count: countFor("pending") + countFor("requested") + countFor("paid"),
+    },
+    // Self-service withdrawal state for the dashboard.
+    withdraw: {
+      min: minWithdraw,
+      can_request: !openRequest && sumFor("pending") >= minWithdraw && !!(profile.payout_method && profile.payout_detail),
+      open_request: openRequest
+        ? { id: openRequest.id, amount: Number(openRequest.amount), requested_at: openRequest.requested_at?.toISOString() ?? null }
+        : null,
     },
     codes: codes.map((c) => ({
       code: c.code,
@@ -101,7 +114,29 @@ export async function GET() {
       id: p.id,
       amount: Number(p.amount),
       method: p.method,
-      paid_at: p.paid_at.toISOString(),
+      status: p.status,
+      requested_at: p.requested_at?.toISOString() ?? null,
+      paid_at: p.paid_at?.toISOString() ?? null,
     })),
   })
+}
+
+// PATCH → the affiliate edits their OWN payout info (where to send the money)
+// and display name. They can NEVER change their commission rate (admin only).
+export async function PATCH(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const userId = session.user.id
+
+  const profile = await prisma.affiliate_profiles.findUnique({ where: { user_id: userId }, select: { user_id: true } })
+  if (!profile) return NextResponse.json({ error: "Not an affiliate" }, { status: 403 })
+
+  const body = await req.json()
+  const data: { payout_method?: string | null; payout_detail?: string | null; display_name?: string | null } = {}
+  if (body.payout_method !== undefined) data.payout_method = body.payout_method?.trim() || null
+  if (body.payout_detail !== undefined) data.payout_detail = body.payout_detail?.trim() || null
+  if (body.display_name !== undefined) data.display_name = body.display_name?.trim() || null
+
+  await prisma.affiliate_profiles.update({ where: { user_id: userId }, data })
+  return NextResponse.json({ ok: true })
 }

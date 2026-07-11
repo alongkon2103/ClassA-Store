@@ -37,8 +37,11 @@ export async function POST(req: NextRequest, { params }: Params) {
         data: {
           affiliate_user_id: id,
           amount: roundedTotal,
+          status: "paid", // admin direct-pay: paid immediately, no request step
           method,
           note,
+          requested_at: new Date(),
+          paid_at: new Date(),
           created_by_id: admin.session?.user?.id ?? null,
         },
       })

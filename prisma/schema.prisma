@@ -243,21 +243,30 @@ model affiliate_earnings {
   @@index([created_at], map: "idx_aff_earnings_created")
 }
 
-// One row per real payment made to an affiliate. The earnings it covers point
-// back via payout_id, so "what did this ฿X cover?" is always answerable.
+// One withdrawal record. Doubles as the affiliate-initiated REQUEST and the
+// admin PAYOUT: status walks requested → paid (admin transferred) or
+// requested → rejected (amount returned to the affiliate's pending balance).
+// Admin can also create one directly as status=paid (no request). The earnings
+// it covers point back via payout_id, so "what did this ฿X cover?" is always
+// answerable. method/detail snapshot the affiliate's payout info at request
+// time so admin knows where to send even if the affiliate edits it later.
 model affiliate_payouts {
   id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   affiliate_user_id String    @db.Uuid
   amount            Decimal   @db.Decimal(10, 2)
-  method            String?   @db.VarChar
+  status            String    @default("paid") @db.VarChar // requested | paid | rejected
+  method            String?   @db.VarChar // payout channel snapshot
+  detail            String?   @db.VarChar // account / promptpay snapshot
   note              String?   @db.VarChar
-  paid_at           DateTime  @default(now()) @db.Timestamptz(6)
+  requested_at      DateTime? @db.Timestamptz(6)
+  paid_at           DateTime? @db.Timestamptz(6) // set when status becomes paid
   created_by_id     String?   @db.Uuid
   created_at        DateTime  @default(now()) @db.Timestamptz(6)
   affiliate         users     @relation(fields: [affiliate_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   earnings          affiliate_earnings[]
 
   @@index([affiliate_user_id], map: "idx_aff_payouts_user")
+  @@index([status], map: "idx_aff_payouts_status")
 }
 
 model product_functions {
