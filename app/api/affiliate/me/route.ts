@@ -29,7 +29,7 @@ export async function GET() {
   // Not an affiliate → 403 (the page redirects too, this guards the API).
   if (!profile) return NextResponse.json({ error: "Not an affiliate" }, { status: 403 })
 
-  const [codes, earnings, payouts, totals] = await Promise.all([
+  const [codes, earnings, payouts, totals, products] = await Promise.all([
     prisma.discount_codes.findMany({
       where: { owner_user_id: userId },
       orderBy: { created_at: "desc" },
@@ -60,6 +60,12 @@ export async function GET() {
       where: { affiliate_user_id: userId },
       _sum: { commission_amount: true },
       _count: { _all: true },
+    }),
+    // Active products for the "link to a product" generator (slug + names only).
+    prisma.products.findMany({
+      where: { is_active: true },
+      orderBy: [{ is_featured: "desc" }, { created_at: "desc" }],
+      select: { slug: true, name_th: true, name_en: true },
     }),
   ])
 
@@ -128,6 +134,7 @@ export async function GET() {
       requested_at: p.requested_at?.toISOString() ?? null,
       paid_at: p.paid_at?.toISOString() ?? null,
     })),
+    products: products.map((p) => ({ slug: p.slug, name_th: p.name_th, name_en: p.name_en })),
   })
 }
 

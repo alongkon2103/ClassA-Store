@@ -33,6 +33,8 @@
     "inactive": "ปิดใช้งาน",
     "copy_link": "ก็อปลิงค์",
     "copied": "ก็อปแล้ว!",
+    "product_link_title": "สร้างลิงก์ไปสินค้า",
+    "product_link_hint": "เลือกสินค้าและโค้ดของคุณ ได้ลิงก์ตรงไปหน้าสินค้าพร้อมส่วนลด — เครดิตเข้าคุณอัตโนมัติ",
     "sales_log": "รายการขาย",
     "col_date": "วันที่",
     "col_product": "สินค้า",
@@ -1359,6 +1361,17 @@
     "ign": "ชื่อผู้ใช้ในเกม",
     "total": "ยอดเงินรวม",
     "order_id": "หมายเลขคำสั่งซื้อ"
+  },
+  "ProductPage": {
+    "breadcrumb_home": "หน้าแรก",
+    "breadcrumb_shop": "ร้านค้า",
+    "from": "เริ่มต้น",
+    "options": "ตัวเลือก",
+    "description_title": "รายละเอียดสินค้า",
+    "videos_title": "วิดีโอ",
+    "related_title": "สินค้าที่เกี่ยวข้อง",
+    "share": "แชร์ / คัดลอกลิงก์",
+    "link_copied": "คัดลอกลิงก์แล้ว"
   },
   "Notifications": {
     "title": "การแจ้งเตือน",

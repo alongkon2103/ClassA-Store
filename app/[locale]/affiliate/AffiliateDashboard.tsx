@@ -29,6 +29,7 @@ type Data = {
     status: string; created_at: string; paid_at: string | null; product_name: string | null
   }[]
   payouts: { id: string; amount: number; method: string | null; status: string; reject_reason: string | null; requested_at: string | null; paid_at: string | null }[]
+  products: { slug: string; name_th: string; name_en: string }[]
 }
 
 const baht = (n: number) => `฿${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
@@ -40,6 +41,10 @@ export default function AffiliateDashboard() {
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Product-link generator: chosen code + product → /products/<slug>?ref=<CODE>
+  const [linkCode, setLinkCode] = useState("")
+  const [linkSlug, setLinkSlug] = useState("")
+  const [linkCopied, setLinkCopied] = useState(false)
 
   const load = () =>
     fetch("/api/affiliate/me")
@@ -201,6 +206,45 @@ export default function AffiliateDashboard() {
               )}
             </SectionCard>
 
+            {/* ── Product-link generator ── */}
+            {d.codes.length > 0 && d.products.length > 0 && (() => {
+              const codeVal = linkCode || d.codes[0].code
+              const slugVal = linkSlug || d.products[0].slug
+              const link = `${origin}/products/${slugVal}?ref=${codeVal}`
+              const copyLink = () => {
+                navigator.clipboard?.writeText(link)
+                setLinkCopied(true)
+                setTimeout(() => setLinkCopied(false), 1500)
+              }
+              return (
+                <SectionCard>
+                  <SectionHeader icon={<LinkIcon />} title={t("product_link_title")} />
+                  <p className="text-[12px] text-text-muted mb-3">{t("product_link_hint")}</p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <select value={slugVal} onChange={(e) => setLinkSlug(e.target.value)}
+                      className="flex-1 bg-bg-base border border-white/10 rounded-xl px-3 py-2.5 text-[13px] focus:border-accent/40 outline-none">
+                      {d.products.map((p) => (
+                        <option key={p.slug} value={p.slug}>{locale === "th" ? p.name_th : p.name_en}</option>
+                      ))}
+                    </select>
+                    <select value={codeVal} onChange={(e) => setLinkCode(e.target.value)}
+                      className="sm:w-40 bg-bg-base border border-white/10 rounded-xl px-3 py-2.5 text-[13px] font-mono focus:border-accent/40 outline-none">
+                      {d.codes.map((c) => (
+                        <option key={c.code} value={c.code}>{c.code}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3 bg-bg-base border border-white/5 rounded-xl px-3.5 py-2.5">
+                    <span className="min-w-0 flex-1 truncate text-[12px] text-text-muted font-mono">{link}</span>
+                    <button onClick={copyLink}
+                      className="shrink-0 text-[12px] px-3 py-1.5 rounded-lg bg-accent/15 text-accent-light hover:bg-accent/25 active:scale-95 transition-all">
+                      {linkCopied ? t("copied") : t("copy_link")}
+                    </button>
+                  </div>
+                </SectionCard>
+              )
+            })()}
+
             {/* ── Sales log (no buyer identity) ── */}
             <SectionCard noPad>
               <div className="px-5 pt-5 pb-3">
@@ -332,6 +376,7 @@ function BankIcon() { return <svg {...iconProps}><rect x="3" y="5" width="18" he
 function TagIcon() { return <svg {...iconProps}><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> }
 function ListIcon() { return <svg {...iconProps}><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg> }
 function HistoryIcon() { return <svg {...iconProps}><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><polyline points="12 7 12 12 15 14" /></svg> }
+function LinkIcon() { return <svg {...iconProps}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg> }
 
 // Structured payout-info form: pick a channel, fill its fields, save once. The
 // channel definitions + labels come from lib/affiliatePayout so form and server

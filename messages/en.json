@@ -33,6 +33,8 @@
     "inactive": "inactive",
     "copy_link": "Copy link",
     "copied": "Copied!",
+    "product_link_title": "Link to a product",
+    "product_link_hint": "Pick a product and your code to get a direct link to the product page with the discount — credited to you automatically.",
     "sales_log": "Sales log",
     "col_date": "Date",
     "col_product": "Product",
@@ -1356,6 +1358,17 @@
     "ign": "In-game username",
     "total": "Total amount",
     "order_id": "Order number"
+  },
+  "ProductPage": {
+    "breadcrumb_home": "Home",
+    "breadcrumb_shop": "Shop",
+    "from": "from",
+    "options": "Options",
+    "description_title": "Product details",
+    "videos_title": "Videos",
+    "related_title": "Related products",
+    "share": "Share / copy link",
+    "link_copied": "Link copied"
   },
   "Notifications": {
     "title": "Notifications",
