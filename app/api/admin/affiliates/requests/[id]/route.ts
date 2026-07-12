@@ -11,6 +11,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 import { notify } from "@/lib/notifications"
+import { sendWithdrawPaidEmail } from "@/lib/affiliateMail"
+
+export const runtime = "nodejs"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -34,7 +37,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const result = await prisma.$transaction(async (tx) => {
       const request = await tx.affiliate_payouts.findUnique({
         where: { id },
-        select: { id: true, status: true, affiliate_user_id: true, amount: true },
+        select: { id: true, status: true, affiliate_user_id: true, amount: true, method: true },
       })
       if (!request) return { ok: false as const, code: "NOT_FOUND" }
       if (request.status !== "requested") return { ok: false as const, code: "ALREADY_RESOLVED" }
@@ -54,7 +57,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         })
         await tx.affiliate_payouts.update({ where: { id }, data: { status: "rejected", reject_reason: reason } })
       }
-      return { ok: true as const, affiliateUserId: request.affiliate_user_id, amount: Number(request.amount) }
+      return { ok: true as const, affiliateUserId: request.affiliate_user_id, amount: Number(request.amount), method: request.method }
     })
 
     if (!result.ok) {
@@ -65,6 +68,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     // Notify the affiliate of the outcome (best-effort, after commit).
     if (action === "paid") {
       await notify({ userId: result.affiliateUserId, type: "payout_paid", data: { amount: result.amount }, link: "/affiliate" })
+      // Email the affiliate that their withdrawal was approved, CC admins.
+      const [user, prof] = await Promise.all([
+        prisma.users.findUnique({ where: { id: result.affiliateUserId }, select: { email: true, username: true } }),
+        prisma.affiliate_profiles.findUnique({ where: { user_id: result.affiliateUserId }, select: { display_name: true } }),
+      ])
+      await sendWithdrawPaidEmail({
+        affiliateName: prof?.display_name || user?.username || "นายหน้า",
+        affiliateEmail: user?.email ?? null,
+        amount: result.amount,
+        method: result.method,
+      })
     } else {
       await notify({ userId: result.affiliateUserId, type: "payout_rejected", data: { amount: result.amount, reason }, link: "/affiliate" })
     }

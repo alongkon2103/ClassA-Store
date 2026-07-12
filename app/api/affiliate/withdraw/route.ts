@@ -13,7 +13,9 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getAffiliateMinWithdraw } from "@/lib/affiliateConfig"
+import { sendWithdrawRequestedEmail } from "@/lib/affiliateMail"
 
+export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 export async function POST() {
@@ -72,6 +74,20 @@ export async function POST() {
       const status = result.code === "NO_PENDING" ? 400 : 409
       return NextResponse.json({ error: result.code, errorCode: result.code, min: result.min }, { status })
     }
+
+    // Notify admins of the new request, CC the affiliate (best-effort).
+    const [user, prof] = await Promise.all([
+      prisma.users.findUnique({ where: { id: userId }, select: { email: true, username: true } }),
+      prisma.affiliate_profiles.findUnique({ where: { user_id: userId }, select: { display_name: true } }),
+    ])
+    await sendWithdrawRequestedEmail({
+      affiliateName: prof?.display_name || user?.username || "นายหน้า",
+      affiliateEmail: user?.email ?? null,
+      amount: result.amount,
+      method: profile.payout_method,
+      detail: profile.payout_detail,
+    })
+
     return NextResponse.json(result)
   } catch (err: unknown) {
     if ((err as Error)?.message === "CONCURRENT") {
