@@ -153,23 +153,22 @@ export default function ProductPageClient({ product, related }: { product: Produ
             {displayVariants.length > 0 && (
               <div className="mt-5 space-y-2">
                 <p className="text-[12px] tracking-widest text-text-muted uppercase">{t("options")}</p>
-                {priced.map(({ v, price, discounted }) => {
-                  const soldOut = v.stock <= 0
-                  return (
-                    <div
-                      key={v.id}
-                      className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${soldOut ? "border-accent/10 opacity-50" : "border-accent/15 bg-bg-card"}`}
-                    >
-                      <span className="text-[14px] font-medium">{isTH ? v.label_th : v.label_en}</span>
-                      <span className="flex items-center gap-2">
-                        {discounted != null && <span className="text-[13px] text-text-muted line-through">{baht(price)}</span>}
-                        <span className={`text-[15px] font-semibold ${discounted != null ? "text-accent-light" : ""}`}>
-                          {soldOut ? tc("out_of_stock") : baht(discounted ?? price)}
-                        </span>
+                {/* Whitelist products have no key stock — never show "sold out",
+                    just the price (matching the shop cards + modal). */}
+                {priced.map(({ v, price, discounted }) => (
+                  <div
+                    key={v.id}
+                    className="flex items-center justify-between px-4 py-3 rounded-xl border border-accent/15 bg-bg-card"
+                  >
+                    <span className="text-[14px] font-medium">{isTH ? v.label_th : v.label_en}</span>
+                    <span className="flex items-center gap-2">
+                      {discounted != null && <span className="text-[13px] text-text-muted line-through">{baht(price)}</span>}
+                      <span className={`text-[15px] font-semibold ${discounted != null ? "text-accent-light" : ""}`}>
+                        {baht(discounted ?? price)}
                       </span>
-                    </div>
-                  )
-                })}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
 
