@@ -48,6 +48,7 @@ async function getProduct(slug: string) {
     where: { slug, is_active: true },
     include: {
       product_images: { orderBy: { sort_order: "asc" } },
+      product_videos: { orderBy: { sort_order: "asc" } },
       product_variants: {
         where: { is_active: true },
         orderBy: { sort_order: "asc" },
@@ -110,6 +111,7 @@ export default async function Page({ params }: Params) {
   // Number-convert every Decimal before it crosses to the Client Component.
   const safeProduct = {
     ...product,
+    videos: product.product_videos.map((v) => v.url),
     price: Number(product.price),
     commission_pct: Number(product.commission_pct ?? 0),
     created_at: product.created_at?.toISOString() ?? null,

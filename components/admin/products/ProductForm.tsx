@@ -51,7 +51,10 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
         owner_contact: product?.owner_contact ?? "",
 
         info_page_url: product?.info_page_url ?? "",
-        youtube_url: product?.youtube_url ?? "",
+        // Multiple YouTube URLs. Migrate a legacy single youtube_url into the
+        // list so old products keep their video on first edit.
+        videos: (product?.product_videos?.map((v: { url: string }) => v.url)
+            ?? (product?.youtube_url ? [product.youtube_url] : [])) as string[],
         tutorial_video_url: product?.tutorial_video_url ?? "",
         preview_video_url: product?.preview_video_url ?? "",
         discord_role_id: product?.discord_role_id ?? "",
@@ -61,6 +64,11 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
     })
 
     const set = (k: string, v: unknown) => setForm((f) => ({ ...f, [k]: v }))
+
+    // YouTube video list helpers.
+    const setVideo = (i: number, v: string) => setForm((f) => ({ ...f, videos: f.videos.map((u, idx) => (idx === i ? v : u)) }))
+    const addVideo = () => setForm((f) => ({ ...f, videos: [...f.videos, ""] }))
+    const removeVideo = (i: number) => setForm((f) => ({ ...f, videos: f.videos.filter((_, idx) => idx !== i) }))
 
     // Read video duration client-side BEFORE uploading. Rejects > 10s
     // to avoid wasting bandwidth on files that won't be accepted.
@@ -238,13 +246,37 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
                         />
                     </Field>
 
-                    <Field label={t("label_youtube_url")}>
-                        <input
-                            value={form.youtube_url}
-                            onChange={(e) => set("youtube_url", e.target.value)}
-                            placeholder="https://www.youtube.com/watch?v=..."
-                            className={input}
-                        />
+                    <Field label={t("label_youtube_url")} className="lg:col-span-2">
+                        <div className="space-y-2">
+                            {form.videos.length === 0 && (
+                                <p className="text-[12px] text-text-muted">{t("no_videos")}</p>
+                            )}
+                            {form.videos.map((url, i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                    <input
+                                        value={url}
+                                        onChange={(e) => setVideo(i, e.target.value)}
+                                        placeholder="https://www.youtube.com/watch?v=..."
+                                        className={input}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeVideo(i)}
+                                        className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg border border-red-400/25 text-red-400 hover:bg-red-500/10 transition-colors"
+                                        aria-label="remove"
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={addVideo}
+                                className="text-[13px] px-3 py-1.5 rounded-lg bg-accent/15 text-accent-light hover:bg-accent/25 transition-colors"
+                            >
+                                + {t("add_video")}
+                            </button>
+                        </div>
                     </Field>
 
                     <Field label={t("label_tutorial_video_url")}>

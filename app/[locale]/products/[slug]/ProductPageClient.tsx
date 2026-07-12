@@ -30,8 +30,7 @@ type Product = {
   name_en: string
   description_th: string | null
   description_en: string | null
-  youtube_url: string | null
-  tutorial_video_url: string | null
+  videos: string[]
   preview_video_url: string | null
   price: number
   product_images: ProductImage[]
@@ -40,6 +39,7 @@ type Product = {
 type Related = { slug: string; name_th: string; name_en: string; image: string | null; min_price: number }
 
 const baht = (n: number) => `฿${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+const pct = (was: number, now: number) => (was > 0 ? Math.round(((was - now) / was) * 100) : 0)
 
 function youtubeEmbed(url: string): string | null {
   const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/)
@@ -91,8 +91,8 @@ export default function ProductPageClient({ product, related }: { product: Produ
   const headlineNow = cheapest ? (cheapest.discounted ?? cheapest.price) : product.price
   const headlineWas = cheapest?.discounted != null ? cheapest.price : null
 
-  const ytEmbed = product.youtube_url ? youtubeEmbed(product.youtube_url) : null
-  const hasVideo = !!ytEmbed || !!product.tutorial_video_url
+  // YouTube-only video section — every valid URL becomes an embed.
+  const ytEmbeds = (product.videos ?? []).map(youtubeEmbed).filter((u): u is string => !!u)
 
   const copyLink = async () => {
     try {
@@ -141,10 +141,15 @@ export default function ProductPageClient({ product, related }: { product: Produ
           <div>
             <h1 className="text-[24px] sm:text-[30px] font-bold leading-tight">{name}</h1>
 
-            <div className="flex items-end gap-3 mt-4">
+            <div className="flex items-end flex-wrap gap-x-3 gap-y-1.5 mt-4">
               <span className="text-[32px] font-bold text-accent-light leading-none">{baht(headlineNow)}</span>
               {headlineWas != null && (
-                <span className="text-[17px] text-text-muted line-through mb-0.5">{baht(headlineWas)}</span>
+                <>
+                  <span className="text-[17px] text-text-muted/70 line-through decoration-red-400 decoration-2 mb-0.5">{baht(headlineWas)}</span>
+                  <span className="mb-1 px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 text-[12px] font-bold">
+                    -{pct(headlineWas, headlineNow)}%
+                  </span>
+                </>
               )}
               {displayVariants.length > 1 && <span className="text-[13px] text-text-muted mb-1">{t("from")}</span>}
             </div>
@@ -158,12 +163,19 @@ export default function ProductPageClient({ product, related }: { product: Produ
                 {priced.map(({ v, price, discounted }) => (
                   <div
                     key={v.id}
-                    className="flex items-center justify-between px-4 py-3 rounded-xl border border-accent/15 bg-bg-card"
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl border bg-bg-card transition-colors ${discounted != null ? "border-red-400/25" : "border-accent/15"}`}
                   >
-                    <span className="text-[14px] font-medium">{isTH ? v.label_th : v.label_en}</span>
                     <span className="flex items-center gap-2">
-                      {discounted != null && <span className="text-[13px] text-text-muted line-through">{baht(price)}</span>}
-                      <span className={`text-[15px] font-semibold ${discounted != null ? "text-accent-light" : ""}`}>
+                      <span className="text-[14px] font-medium">{isTH ? v.label_th : v.label_en}</span>
+                      {discounted != null && (
+                        <span className="px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 text-[11px] font-bold leading-none">
+                          -{pct(price, discounted)}%
+                        </span>
+                      )}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      {discounted != null && <span className="text-[13px] text-text-muted/70 line-through decoration-red-400 decoration-2">{baht(price)}</span>}
+                      <span className={`text-[15px] font-bold ${discounted != null ? "text-red-400" : ""}`}>
                         {baht(discounted ?? price)}
                       </span>
                     </span>
@@ -207,21 +219,16 @@ export default function ProductPageClient({ product, related }: { product: Produ
           </section>
         )}
 
-        {/* ── Videos ── */}
-        {hasVideo && (
+        {/* ── Videos (YouTube only) ── */}
+        {ytEmbeds.length > 0 && (
           <section className="mt-12">
             <h2 className="text-[18px] font-bold mb-4">{t("videos_title")}</h2>
             <div className="grid sm:grid-cols-2 gap-4">
-              {ytEmbed && (
-                <div className="aspect-video rounded-2xl overflow-hidden border border-accent/10">
-                  <iframe src={ytEmbed} title="YouTube" className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+              {ytEmbeds.map((src, i) => (
+                <div key={i} className="aspect-video rounded-2xl overflow-hidden border border-accent/10">
+                  <iframe src={src} title={`YouTube ${i + 1}`} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
                 </div>
-              )}
-              {product.tutorial_video_url && (
-                <div className="aspect-video rounded-2xl overflow-hidden border border-accent/10 bg-black">
-                  <video src={getImageUrl(product.tutorial_video_url)} controls className="w-full h-full object-contain" />
-                </div>
-              )}
+              ))}
             </div>
           </section>
         )}

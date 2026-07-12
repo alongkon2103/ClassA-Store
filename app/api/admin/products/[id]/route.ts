@@ -34,7 +34,12 @@ export async function PATCH(
     }
   }
 
-  const { consignments, partnership_shares, ...rest } = await req.json()
+  const { consignments, partnership_shares, videos, ...rest } = await req.json()
+
+  // Normalize the YouTube list (when provided) and keep youtube_url in sync with
+  // the first video for the shop ProductModal.
+  const videosProvided = Array.isArray(videos)
+  const vids: string[] = videosProvided ? videos.map((s: string) => (s ?? "").trim()).filter(Boolean) : []
 
   const result = await prisma.$transaction(async (tx) => {
     // 1. Update product main info
@@ -45,9 +50,20 @@ export async function PATCH(
         ...rest,
         owner_name: firstOwner ? firstOwner.owner_name : (rest.owner_name ?? undefined),
         owner_contact: firstOwner ? firstOwner.owner_contact : (rest.owner_contact ?? undefined),
+        ...(videosProvided ? { youtube_url: vids[0] ?? null } : {}),
         updated_at: new Date(),
       },
     })
+
+    // 1b. Rebuild the video list when provided (replace-all).
+    if (videosProvided) {
+      await tx.product_videos.deleteMany({ where: { product_id: id } })
+      if (vids.length > 0) {
+        await tx.product_videos.createMany({
+          data: vids.map((url, i) => ({ product_id: id, url, sort_order: i })),
+        })
+      }
+    }
 
     // 2. Handle consignments if provided
     if (consignments) {

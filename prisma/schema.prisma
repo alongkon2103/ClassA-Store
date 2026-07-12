@@ -315,6 +315,20 @@ model product_images {
   @@index([product_id], map: "idx_product_images_product")
 }
 
+// Multiple YouTube video URLs per product (shown on the product page). The
+// legacy single `products.youtube_url` is kept in sync with the first video so
+// the shop ProductModal keeps working unchanged.
+model product_videos {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id String   @db.Uuid
+  url        String
+  sort_order Int?     @default(0)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  products   products @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([product_id], map: "idx_product_videos_product")
+}
+
 model product_presets {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   product_id String    @db.Uuid
@@ -390,6 +404,7 @@ model products {
   product_functions     product_functions[]
   product_gifts         product_gifts[]
   product_images        product_images[]
+  product_videos        product_videos[]
   product_presets       product_presets[]
   product_shares        product_shares[]
   product_variants      product_variants[]
