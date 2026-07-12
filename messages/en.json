@@ -562,6 +562,8 @@
     "req_paid_confirm": "Confirm you've transferred the money to this affiliate?",
     "req_reject_confirm": "Reject this request? The amount returns to the affiliate's pending balance.",
     "reject_reason_ph": "Reason for rejection (shown to the affiliate)",
+    "reject_reason_label": "Rejection reason",
+    "reject_reason_hint": "Be specific — the affiliate sees this on the site and by email.",
     "confirm_reject": "Confirm reject",
     "delete_affiliate": "Remove",
     "delete_confirm": "Revoke this person's affiliate status? Their codes will be disabled and they revert to a normal user (commission/payout history is kept).",

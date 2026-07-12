@@ -704,13 +704,18 @@ function RequestRow({ r, busy, onPaid, onReject, t }: { r: Req; busy: boolean; o
         </div>
       </div>
       {rejecting && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reject_reason_ph")}
-            className="flex-1 min-w-[180px] bg-bg-card border border-red-500/20 rounded-lg px-3 py-1.5 text-[12px]" autoFocus />
-          <button onClick={() => { setRejecting(false); setReason("") }} disabled={busy}
-            className="text-[12px] px-3 py-1.5 rounded-lg text-text-muted hover:bg-white/5">{t("cancel")}</button>
-          <button onClick={() => onReject(reason.trim())} disabled={busy || !reason.trim()}
-            className="text-[12px] px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 font-medium hover:bg-red-500/25 disabled:opacity-40">{t("confirm_reject")}</button>
+        <div className="mt-3">
+          <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">{t("reject_reason_label")}</label>
+          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reject_reason_ph")}
+            rows={4}
+            className="w-full bg-bg-card border border-red-500/20 rounded-lg px-3 py-2.5 text-[13px] leading-relaxed resize-y focus:border-red-500/45 outline-none transition-colors" autoFocus />
+          <p className="text-[11px] text-text-muted mt-1">{t("reject_reason_hint")}</p>
+          <div className="flex items-center justify-end gap-2 mt-2.5">
+            <button onClick={() => { setRejecting(false); setReason("") }} disabled={busy}
+              className="text-[12px] px-3.5 py-2 rounded-lg text-text-muted hover:bg-white/5">{t("cancel")}</button>
+            <button onClick={() => onReject(reason.trim())} disabled={busy || !reason.trim()}
+              className="text-[12px] px-3.5 py-2 rounded-lg bg-red-500/15 text-red-400 font-medium hover:bg-red-500/25 disabled:opacity-40">{t("confirm_reject")}</button>
+          </div>
         </div>
       )}
     </div>

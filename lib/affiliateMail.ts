@@ -1,7 +1,8 @@
 // Affiliate withdrawal emails (English — the audience is largely international).
-// Two events:
+// Three events:
 //   1. Affiliate requests a withdrawal → email admins, CC the affiliate.
 //   2. Admin marks it paid          → email the affiliate, CC admins.
+//   3. Admin rejects it (w/ reason)  → email the affiliate, CC admins.
 // All sends are best-effort via lib/mailer (never break the request).
 
 import { sendMail, getAdminEmails } from "@/lib/mailer"
@@ -93,6 +94,39 @@ export async function sendWithdrawPaidEmail(input: PaidInput): Promise<void> {
     to: input.affiliateEmail,
     cc: admins.length ? admins : undefined,
     subject: `[Affiliate] Your withdrawal ${baht(input.amount)} has been approved`,
+    html,
+  })
+}
+
+type RejectedInput = {
+  affiliateName: string
+  affiliateEmail: string | null
+  amount: number
+  reason: string
+}
+
+// Admin rejected the request → notify the affiliate with the reason, CC admins.
+// The balance is returned to the affiliate's pending pool (they can re-request).
+export async function sendWithdrawRejectedEmail(input: RejectedInput): Promise<void> {
+  if (!input.affiliateEmail) return
+  const admins = await getAdminEmails()
+
+  const reasonHtml = esc(input.reason).replace(/\n/g, "<br>")
+  const html = shell("Your withdrawal request was rejected", [
+    row("Status", `<span style="color:#f87171;">Rejected</span>`),
+    row("Amount", `<span style="color:#5b9bd5;font-size:16px;">${baht(input.amount)}</span>`),
+  ].join("") + `<tr><td colspan="2" style="padding-top:12px;">
+      <div style="color:#7d8899;font-size:12px;margin-bottom:6px;">Reason</div>
+      <div style="background:#0f1420;border:1px solid #2a3547;border-radius:10px;padding:12px 14px;color:#e8edf5;line-height:1.6;">${reasonHtml}</div>
+    </td></tr>
+    <tr><td colspan="2" style="padding-top:14px;color:#c3ccd9;">
+      Your balance has been returned to your pending earnings — you can request a withdrawal again once resolved.
+    </td></tr>`)
+
+  await sendMail({
+    to: input.affiliateEmail,
+    cc: admins.length ? admins : undefined,
+    subject: `[Affiliate] Your withdrawal ${baht(input.amount)} was rejected`,
     html,
   })
 }

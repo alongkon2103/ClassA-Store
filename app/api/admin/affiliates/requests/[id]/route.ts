@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 import { notify } from "@/lib/notifications"
-import { sendWithdrawPaidEmail } from "@/lib/affiliateMail"
+import { sendWithdrawPaidEmail, sendWithdrawRejectedEmail } from "@/lib/affiliateMail"
 
 export const runtime = "nodejs"
 
@@ -81,6 +81,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       })
     } else {
       await notify({ userId: result.affiliateUserId, type: "payout_rejected", data: { amount: result.amount, reason }, link: "/affiliate" })
+      // Email the affiliate the rejection + reason, CC admins.
+      const [user, prof] = await Promise.all([
+        prisma.users.findUnique({ where: { id: result.affiliateUserId }, select: { email: true, username: true } }),
+        prisma.affiliate_profiles.findUnique({ where: { user_id: result.affiliateUserId }, select: { display_name: true } }),
+      ])
+      await sendWithdrawRejectedEmail({
+        affiliateName: prof?.display_name || user?.username || "affiliate",
+        affiliateEmail: user?.email ?? null,
+        amount: result.amount,
+        reason,
+      })
     }
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
