@@ -21,8 +21,11 @@ import { prisma } from "@/lib/prisma"
 
 // Resolved sender: dedicated MAIL_FROM/MAIL_APP_PASSWORD if set, else the
 // worker's GMAIL_USER + GMAIL_APP_PASSWORD.
-const SENDER_EMAIL = process.env.MAIL_FROM || process.env.GMAIL_USER || ""
-const SENDER_PASSWORD = process.env.MAIL_APP_PASSWORD || process.env.GMAIL_APP_PASSWORD || ""
+const SENDER_EMAIL = (process.env.MAIL_FROM || process.env.GMAIL_USER || "").trim()
+// Google shows the 16-char app password in 4 space-separated groups for
+// readability; the real value has no spaces. Strip whitespace so a pasted
+// "xxxx xxxx xxxx xxxx" works either way.
+const SENDER_PASSWORD = (process.env.MAIL_APP_PASSWORD || process.env.GMAIL_APP_PASSWORD || "").replace(/\s+/g, "")
 const SENDER_NAME = process.env.MAIL_FROM_NAME || "A Class Store"
 
 let transporter: nodemailer.Transporter | null = null
@@ -64,7 +67,7 @@ export async function sendMail(input: MailInput): Promise<boolean> {
     })
     return true
   } catch (e) {
-    console.error("sendMail failed (non-fatal):", e)
+    console.error(`sendMail failed (non-fatal) — sender=${SENDER_EMAIL}:`, e)
     return false
   }
 }

@@ -1,4 +1,5 @@
-// Affiliate withdrawal emails (Thai). Two events:
+// Affiliate withdrawal emails (English — the audience is largely international).
+// Two events:
 //   1. Affiliate requests a withdrawal → email admins, CC the affiliate.
 //   2. Admin marks it paid          → email the affiliate, CC admins.
 // All sends are best-effort via lib/mailer (never break the request).
@@ -7,7 +8,7 @@ import { sendMail, getAdminEmails } from "@/lib/mailer"
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || ""
 
-const baht = (n: number) => `฿${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+const baht = (n: number) => `THB ${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 
@@ -24,7 +25,7 @@ function shell(title: string, bodyRows: string): string {
         <table style="width:100%;border-collapse:collapse;font-size:14px;color:#c3ccd9;">${bodyRows}</table>
       </div>
       <div style="padding:16px 24px;border-top:1px solid #2a3547;font-size:12px;color:#7d8899;">
-        อีเมลอัตโนมัติจากระบบนายหน้า A Class Store — กรุณาอย่าตอบกลับ
+        Automated message from the A Class Store affiliate system. Please do not reply.
       </div>
     </div>
   </div>`
@@ -50,20 +51,20 @@ export async function sendWithdrawRequestedEmail(input: RequestedInput): Promise
   const admins = await getAdminEmails()
   if (admins.length === 0) return
 
-  const html = shell("มีคำขอถอนเงินใหม่จากนายหน้า", [
-    row("นายหน้า", esc(input.affiliateName)),
-    input.affiliateEmail ? row("อีเมล", esc(input.affiliateEmail)) : "",
-    row("จำนวนเงิน", `<span style="color:#5b9bd5;font-size:16px;">${baht(input.amount)}</span>`),
-    input.method ? row("ช่องทางรับเงิน", esc(input.method)) : "",
-    input.detail ? row("รายละเอียดบัญชี", esc(input.detail)) : "",
+  const html = shell("New affiliate withdrawal request", [
+    row("Affiliate", esc(input.affiliateName)),
+    input.affiliateEmail ? row("Email", esc(input.affiliateEmail)) : "",
+    row("Amount", `<span style="color:#5b9bd5;font-size:16px;">${baht(input.amount)}</span>`),
+    input.method ? row("Payout method", esc(input.method)) : "",
+    input.detail ? row("Account details", esc(input.detail)) : "",
   ].join("") + `<tr><td colspan="2" style="padding-top:16px;">
-      <a href="${APP_URL}/admin/affiliates" style="display:inline-block;background:#5b9bd5;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:600;">ไปที่หน้าจัดการคำขอ</a>
+      <a href="${APP_URL}/admin/affiliates" style="display:inline-block;background:#5b9bd5;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:600;">Review request</a>
     </td></tr>`)
 
   await sendMail({
     to: admins,
     cc: input.affiliateEmail ?? undefined,
-    subject: `[นายหน้า] คำขอถอนเงิน ${baht(input.amount)} จาก ${input.affiliateName}`,
+    subject: `[Affiliate] Withdrawal request ${baht(input.amount)} from ${input.affiliateName}`,
     html,
   })
 }
@@ -80,18 +81,18 @@ export async function sendWithdrawPaidEmail(input: PaidInput): Promise<void> {
   if (!input.affiliateEmail) return
   const admins = await getAdminEmails()
 
-  const html = shell("การถอนเงินของคุณได้รับการอนุมัติแล้ว", [
-    row("สถานะ", `<span style="color:#4ade80;">โอนเงินแล้ว ✓</span>`),
-    row("จำนวนเงิน", `<span style="color:#5b9bd5;font-size:16px;">${baht(input.amount)}</span>`),
-    input.method ? row("ช่องทาง", esc(input.method)) : "",
+  const html = shell("Your withdrawal has been approved", [
+    row("Status", `<span style="color:#4ade80;">Paid</span>`),
+    row("Amount", `<span style="color:#5b9bd5;font-size:16px;">${baht(input.amount)}</span>`),
+    input.method ? row("Method", esc(input.method)) : "",
   ].join("") + `<tr><td colspan="2" style="padding-top:16px;color:#c3ccd9;">
-      ระบบได้โอนเงินให้คุณเรียบร้อยแล้ว ขอบคุณที่เป็นส่วนหนึ่งของ A Class Store 🎉
+      Your withdrawal has been transferred. Thank you for being part of A Class Store.
     </td></tr>`)
 
   await sendMail({
     to: input.affiliateEmail,
     cc: admins.length ? admins : undefined,
-    subject: `[นายหน้า] การถอนเงิน ${baht(input.amount)} ได้รับการอนุมัติแล้ว`,
+    subject: `[Affiliate] Your withdrawal ${baht(input.amount)} has been approved`,
     html,
   })
 }
