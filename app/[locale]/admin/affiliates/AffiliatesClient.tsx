@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { motion, AnimatePresence } from "framer-motion"
 import { Link } from "@/i18n/routing"
+import AffiliatesOverview from "./AffiliatesOverview"
 
 type ListRow = {
   user_id: string
@@ -53,6 +54,7 @@ export default function AffiliatesClient() {
   const [requests, setRequests] = useState<Req[]>([])
   const [minWithdraw, setMinWithdraw] = useState<number>(0)
   const [reqBusy, setReqBusy] = useState(false)
+  const [tab, setTab] = useState<"manage" | "overview">("manage")
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -97,13 +99,32 @@ export default function AffiliatesClient() {
           <h1 className="text-[22px] sm:text-[26px] font-bold">{t("title")}</h1>
           <p className="text-text-muted text-[12px] sm:text-[13px] mt-1">{t("subtitle")}</p>
         </div>
-        <button
-          onClick={() => setShowCreate((v) => !v)}
-          className="px-4 py-2 rounded-xl bg-accent text-white text-[13px] font-medium hover:bg-accent/90 active:scale-95 transition-all self-start sm:self-auto"
-        >
-          {showCreate ? t("cancel") : t("new_affiliate")}
-        </button>
+        {tab === "manage" && (
+          <button
+            onClick={() => setShowCreate((v) => !v)}
+            className="px-4 py-2 rounded-xl bg-accent text-white text-[13px] font-medium hover:bg-accent/90 active:scale-95 transition-all self-start sm:self-auto"
+          >
+            {showCreate ? t("cancel") : t("new_affiliate")}
+          </button>
+        )}
       </div>
+
+      {/* ── Tabs ── */}
+      <div className="flex gap-1 border-b border-white/5">
+        {(["manage", "overview"] as const).map((key) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors ${
+              tab === key ? "border-accent text-accent-light" : "border-transparent text-text-muted hover:text-text-base"
+            }`}
+          >
+            {t(key === "manage" ? "tab_manage" : "tab_overview")}
+          </button>
+        ))}
+      </div>
+
+      {tab === "overview" ? <AffiliatesOverview /> : <>
 
       {showCreate && <CreateForm onDone={() => { setShowCreate(false); load() }} t={t} />}
 
@@ -192,6 +213,7 @@ export default function AffiliatesClient() {
           </table>
         </div>
       </section>
+      </>}
 
       <AnimatePresence>
         {openId && (
