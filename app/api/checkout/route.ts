@@ -177,6 +177,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { evaluateDiscount, countUserRedemptions, releaseOrderDiscount } from "@/lib/discountCodes"
+import { resolveReferralCodeId } from "@/lib/affiliateEarnings"
 import { getPaymentConfig, computeFeeAmount } from "@/lib/paymentConfig"
 import type { discount_codes } from "@prisma/client"
 import Stripe from "stripe"
@@ -191,7 +192,7 @@ export async function POST(req: Request) {
     }
 
     // 1. รับค่า isPremium เพิ่มเข้ามา
-    const { productId, variantId, paymentMethod, locale = "en", whitelistUsername, isPremium, discountCode } = await req.json()
+    const { productId, variantId, paymentMethod, locale = "en", whitelistUsername, isPremium, discountCode, refCode } = await req.json()
 
     if (!whitelistUsername?.trim()) {
       return NextResponse.json({ error: "In-game username is required" }, { status: 400 })
@@ -297,6 +298,10 @@ export async function POST(req: Request) {
     const sessionExpiryMinutes = 1440
     const expiresAt = new Date(Date.now() + sessionExpiryMinutes * 60 * 1000)
 
+    // Affiliate referral from the /r/<code> link — stored on the order so the
+    // affiliate can earn on their allowed game even if the discount wasn't used.
+    const referralCodeId = await resolveReferralCodeId(refCode, product.id)
+
     // 5. เช็ค pending order เดิม + reserve discount slot ใน transaction
     // ใช้ atomic update กัน race condition: ถ้าคนกดพร้อมกัน 100 คน โค้ดที่ used_count
     // ถึง limit จะ updateMany คืน count = 0 และเรา throw → rollback ทั้ง txn
@@ -346,6 +351,7 @@ export async function POST(req: Request) {
           expires_at: expiresAt,
           discount_code_id: discountCodeRow && discountAmount > 0 ? discountCodeRow.id : null,
           discount_amount: discountAmount > 0 ? discountAmount : null,
+          referral_code_id: referralCodeId,
         }
 
         const saved = existing

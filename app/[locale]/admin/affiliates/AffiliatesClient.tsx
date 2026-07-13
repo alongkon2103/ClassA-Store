@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { motion, AnimatePresence } from "framer-motion"
+import { Link } from "@/i18n/routing"
 
 type ListRow = {
   user_id: string
@@ -175,7 +176,11 @@ export default function AffiliatesClient() {
                       {r.is_active ? t("active") : t("paused")}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <Link href={`/admin/affiliates/${r.user_id}`}
+                      className="text-[12px] px-3 py-1.5 rounded-lg text-text-muted hover:text-accent-light hover:bg-white/5 transition-all mr-1">
+                      {t("stats")}
+                    </Link>
                     <button onClick={() => setOpenId(r.user_id)}
                       className="text-[12px] px-3 py-1.5 rounded-lg bg-accent/10 text-accent-light hover:bg-accent/20 active:scale-95 transition-all">
                       {t("manage")}

@@ -39,28 +39,68 @@ type EarningOrderInput = {
   id: string
   user_id: string | null
   discount_code_id: string | null
+  referral_code_id: string | null
+  product_id: string
   amount: Prisma.Decimal | number
   payment_method: string | null
   order_type: string
 }
 
+// Resolve a /r/<code> referral into a code id to store on the order — ONLY when
+// it's an active affiliate code whose product scope allows this product (the
+// "allowed games": null scope = all products). Returns null otherwise. Called at
+// checkout so referral attribution survives even when the discount isn't applied.
+export async function resolveReferralCodeId(
+  refCode: string | null | undefined,
+  productId: string,
+): Promise<string | null> {
+  if (!refCode || typeof refCode !== "string") return null
+  const code = await prisma.discount_codes.findUnique({
+    where: { code: refCode.trim().toUpperCase() },
+    select: { id: true, owner_user_id: true, product_id: true, is_active: true },
+  })
+  if (!code || !code.owner_user_id || code.is_active === false) return null
+  if (!(code.product_id === null || code.product_id === productId)) return null
+  return code.id
+}
+
 // Compute the frozen earning row for an order, or null if it earns nothing.
 // Pure reads (code owner, profile, fee config) — safe to run BEFORE opening the
 // fulfillment transaction, then feed the returned data into that transaction.
+//
+// Attribution order: (1) the applied discount code IF it belongs to an affiliate;
+// (2) else the referral code from the buyer's /r/<code> link, IF its product
+// scope allows this product. This lets an affiliate earn on their allowed
+// game(s) even when the customer didn't use the discount.
 export async function prepareAffiliateEarning(
   order: EarningOrderInput,
 ): Promise<Prisma.affiliate_earningsCreateManyInput | null> {
-  if (!order.discount_code_id) return null
   if (order.order_type === "TRIAL") return null // ฿0 giveaways never earn
 
   const amount = Number(order.amount)
   if (!(amount > 0)) return null
 
-  const code = await prisma.discount_codes.findUnique({
-    where: { id: order.discount_code_id },
-    select: { owner_user_id: true, commission_pct: true },
-  })
-  if (!code?.owner_user_id) return null // not an affiliate code
+  type CodeRow = { id: string; owner_user_id: string | null; commission_pct: Prisma.Decimal | null; product_id: string | null }
+  let code: CodeRow | null = null
+
+  // 1) Applied discount code, if it's an affiliate code.
+  if (order.discount_code_id) {
+    const dc = await prisma.discount_codes.findUnique({
+      where: { id: order.discount_code_id },
+      select: { id: true, owner_user_id: true, commission_pct: true, product_id: true },
+    })
+    if (dc?.owner_user_id) code = dc
+  }
+  // 2) Fall back to the referral code, scope-checked against this product.
+  if (!code && order.referral_code_id) {
+    const rc = await prisma.discount_codes.findUnique({
+      where: { id: order.referral_code_id },
+      select: { id: true, owner_user_id: true, commission_pct: true, product_id: true },
+    })
+    if (rc?.owner_user_id && (rc.product_id === null || rc.product_id === order.product_id)) code = rc
+  }
+  if (!code?.owner_user_id) return null // no affiliate attribution
+
   // Self-purchase: affiliate keeps the discount but earns no commission.
   if (order.user_id && code.owner_user_id === order.user_id) return null
 
@@ -88,7 +128,7 @@ export async function prepareAffiliateEarning(
   return {
     affiliate_user_id: code.owner_user_id,
     order_id: order.id,
-    discount_code_id: order.discount_code_id,
+    discount_code_id: code.id, // the code that earned (applied discount OR referral)
     base_amount: base,
     commission_pct: pct,
     commission_amount: commission,

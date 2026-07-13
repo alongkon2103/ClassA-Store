@@ -672,6 +672,10 @@ export default function ProductModal({ product, onClose }: any) {
           whitelistUsername: whitelistUsername.trim(),
           isPremium: isPremiumSelected,
           discountCode: appliedDiscount?.code || undefined,
+          // Affiliate referral from the /r/<code> link — sent even when the
+          // discount isn't applied, so the affiliate can still earn on their
+          // allowed game(s). Server validates the code + product scope.
+          refCode: (() => { try { return sessionStorage.getItem("aff_ref") || undefined } catch { return undefined } })(),
         }),
       })
       const data = await res.json()

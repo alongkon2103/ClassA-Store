@@ -61,8 +61,15 @@ export default function AffiliateDashboard() {
       .then((data) => { if (data?.rate) setUsdRate(data.rate) })
       .catch(() => { })
   }, [])
-  // "≈ $X.XX" estimate for a THB amount, or "" when the rate isn't loaded.
-  const usd = (thb: number) => (usdRate ? `≈ $${(thb * usdRate).toFixed(2)}` : "")
+  const fmtUsd = (thb: number) => `$${(thb * (usdRate ?? 0)).toFixed(2)}`
+  // Primary amount follows the UI language: THB for Thai, USD for English
+  // (falls back to THB if the rate hasn't loaded yet).
+  const money = (thb: number) => (locale !== "th" && usdRate ? fmtUsd(thb) : baht(thb))
+  // The OTHER currency, shown small underneath. "" when the rate is missing.
+  const moneyAlt = (thb: number) => {
+    if (!usdRate) return ""
+    return locale === "th" ? `≈ ${fmtUsd(thb)}` : `≈ ${baht(thb)}`
+  }
 
   const savePayout = async (method: string, info: Record<string, string>) => {
     setBusy(true)
@@ -83,14 +90,14 @@ export default function AffiliateDashboard() {
 
   const requestWithdraw = async () => {
     const amt = d?.totals.pending ?? 0
-    if (!confirm(t("withdraw_confirm", { amount: `${baht(amt)}${usdRate ? ` (${usd(amt)})` : ""}` }))) return
+    if (!confirm(t("withdraw_confirm", { amount: `${money(amt)}${moneyAlt(amt) ? ` (${moneyAlt(amt)})` : ""}` }))) return
     setBusy(true)
     const res = await fetch("/api/affiliate/withdraw", { method: "POST" })
     setBusy(false)
     if (res.ok) { await load(); return }
     const j = await res.json().catch(() => ({}))
     const map: Record<string, string> = {
-      NO_PAYOUT_INFO: t("err_no_payout_info"), BELOW_MIN: t("err_below_min", { min: baht(j.min ?? d?.withdraw.min ?? 0) }),
+      NO_PAYOUT_INFO: t("err_no_payout_info"), BELOW_MIN: t("err_below_min", { min: money(j.min ?? d?.withdraw.min ?? 0) }),
       ALREADY_REQUESTED: t("err_already_requested"), NO_PENDING: t("err_no_pending"),
     }
     alert(map[j.errorCode] || t("error"))
@@ -136,9 +143,9 @@ export default function AffiliateDashboard() {
           <>
             {/* ── KPIs ── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Kpi icon={<WalletIcon />} label={t("pending")} value={baht(d.totals.pending)} sub={usd(d.totals.pending)} tone="amber" />
-              <Kpi icon={<ClockIcon />} label={t("requested")} value={baht(d.totals.requested)} sub={usd(d.totals.requested)} tone="blue" />
-              <Kpi icon={<CheckIcon />} label={t("paid")} value={baht(d.totals.paid)} sub={usd(d.totals.paid)} tone="green" />
+              <Kpi icon={<WalletIcon />} label={t("pending")} value={money(d.totals.pending)} sub={moneyAlt(d.totals.pending)} tone="amber" />
+              <Kpi icon={<ClockIcon />} label={t("requested")} value={money(d.totals.requested)} sub={moneyAlt(d.totals.requested)} tone="blue" />
+              <Kpi icon={<CheckIcon />} label={t("paid")} value={money(d.totals.paid)} sub={moneyAlt(d.totals.paid)} tone="green" />
             </div>
 
             {/* ── Money zone: Withdraw | Payout info ── */}
@@ -155,8 +162,8 @@ export default function AffiliateDashboard() {
                         {t("cancel_withdraw")}
                       </button>
                     </div>
-                    <p className="text-[28px] font-bold text-blue-300 leading-tight mt-2">{baht(d.withdraw.open_request.amount)}</p>
-                    {usd(d.withdraw.open_request.amount) && <p className="text-[12px] text-blue-300/70 mt-0.5">{usd(d.withdraw.open_request.amount)}</p>}
+                    <p className="text-[28px] font-bold text-blue-300 leading-tight mt-2">{money(d.withdraw.open_request.amount)}</p>
+                    {moneyAlt(d.withdraw.open_request.amount) && <p className="text-[12px] text-blue-300/70 mt-0.5">{moneyAlt(d.withdraw.open_request.amount)}</p>}
                     {d.withdraw.open_request.eta_from && d.withdraw.open_request.eta_to && (
                       <p className="text-[13px] text-text-base mt-1">
                         {t("eta", { from: fmtDay(d.withdraw.open_request.eta_from), to: fmtDay(d.withdraw.open_request.eta_to) })}
@@ -166,9 +173,9 @@ export default function AffiliateDashboard() {
                 ) : (
                   <div>
                     <p className="text-[11px] text-text-muted uppercase tracking-wider">{t("withdrawable")}</p>
-                    <p className="text-[30px] font-bold text-amber-400 leading-tight mt-0.5">{baht(d.totals.pending)}</p>
-                    {usd(d.totals.pending) && <p className="text-[12px] text-text-muted mt-0.5">{usd(d.totals.pending)}</p>}
-                    <p className="text-[11px] text-text-muted mt-1">{t("min_note", { min: `${baht(d.withdraw.min)}${usdRate ? ` (${usd(d.withdraw.min)})` : ""}` })}</p>
+                    <p className="text-[30px] font-bold text-amber-400 leading-tight mt-0.5">{money(d.totals.pending)}</p>
+                    {moneyAlt(d.totals.pending) && <p className="text-[12px] text-text-muted mt-0.5">{moneyAlt(d.totals.pending)}</p>}
+                    <p className="text-[11px] text-text-muted mt-1">{t("min_note", { min: `${money(d.withdraw.min)}${moneyAlt(d.withdraw.min) ? ` (${moneyAlt(d.withdraw.min)})` : ""}` })}</p>
                     <button onClick={requestWithdraw} disabled={busy || !d.withdraw.can_request}
                       className="w-full mt-4 px-5 py-3 rounded-xl bg-accent text-white text-[14px] font-semibold shadow-lg shadow-accent/20 hover:bg-accent/90 hover:shadow-accent/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none">
                       {t("request_withdraw")}
@@ -297,10 +304,10 @@ export default function AffiliateDashboard() {
                       <tr key={e.id} className="hover:bg-accent/[0.04] transition-colors">
                         <td className="px-5 py-2.5 text-text-muted">{new Date(e.created_at).toLocaleDateString()}</td>
                         <td className="px-4 py-2.5">{e.product_name ?? "—"}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-text-muted">{baht(e.base_amount)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-text-muted">{money(e.base_amount)}</td>
                         <td className="px-4 py-2.5 text-right font-mono font-semibold">
-                          {baht(e.commission_amount)}
-                          {usd(e.commission_amount) && <span className="block text-[10px] text-text-muted font-normal">{usd(e.commission_amount)}</span>}
+                          {money(e.commission_amount)}
+                          {moneyAlt(e.commission_amount) && <span className="block text-[10px] text-text-muted font-normal">{moneyAlt(e.commission_amount)}</span>}
                         </td>
                         <td className="px-4 py-2.5">
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
@@ -332,8 +339,8 @@ export default function AffiliateDashboard() {
                             {date ? new Date(date).toLocaleDateString() : "—"}{p.method ? ` · ${p.method}` : ""}
                           </span>
                           <span className="flex items-center gap-2">
-                            <span className="font-mono font-semibold text-green-400/90">{baht(p.amount)}</span>
-                            {usd(p.amount) && <span className="font-mono text-[11px] text-text-muted">{usd(p.amount)}</span>}
+                            <span className="font-mono font-semibold text-green-400/90">{money(p.amount)}</span>
+                            {moneyAlt(p.amount) && <span className="font-mono text-[11px] text-text-muted">{moneyAlt(p.amount)}</span>}
                             <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                               p.status === "paid" ? "bg-green-500/15 text-green-400"
                               : p.status === "rejected" ? "bg-red-500/15 text-red-400"

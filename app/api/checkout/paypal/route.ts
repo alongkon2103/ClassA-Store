@@ -13,6 +13,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { evaluateDiscount, countUserRedemptions, releaseOrderDiscount } from "@/lib/discountCodes"
+import { resolveReferralCodeId } from "@/lib/affiliateEarnings"
 import { createPayPalOrder, getThbToUsdRate, convertThbToUsd } from "@/lib/paypal"
 import { getPaymentConfig, computeFeeAmount } from "@/lib/paymentConfig"
 import type { discount_codes } from "@prisma/client"
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { productId, variantId, locale = "en", whitelistUsername, isPremium, discountCode } = await req.json()
+    const { productId, variantId, locale = "en", whitelistUsername, isPremium, discountCode, refCode } = await req.json()
 
     if (!whitelistUsername?.trim()) {
       return NextResponse.json({ error: "In-game username is required" }, { status: 400 })
@@ -111,6 +112,9 @@ export async function POST(req: Request) {
     // own order so abandoned PayPal sessions don't hold a discount slot forever.
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
 
+    // Affiliate referral (/r/<code>) — stored even without an applied discount.
+    const referralCodeId = await resolveReferralCodeId(refCode, product.id)
+
     let order
     try {
       order = await prisma.$transaction(
@@ -153,6 +157,7 @@ export async function POST(req: Request) {
             expires_at: expiresAt,
             discount_code_id: discountCodeRow && discountAmount > 0 ? discountCodeRow.id : null,
             discount_amount: discountAmount > 0 ? discountAmount : null,
+            referral_code_id: referralCodeId,
           }
 
           const saved = existing
