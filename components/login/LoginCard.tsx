@@ -34,7 +34,7 @@ export default function LoginCard({ callbackUrl = "/" }: LoginCardProps) {
 
         {/* Discord */}
         <button
-          onClick={() => signIn("discord", { callbackUrl: "https://aclassstore.com/th" })}
+          onClick={() => signIn("discord", { callbackUrl })}
           className="btn-provider w-full flex items-center justify-center gap-3 text-white text-on-accent font-medium text-[15px] px-6 py-3.5 rounded-xl transition-all"
           style={{
             background: "var(--color-discord)",
@@ -47,7 +47,7 @@ export default function LoginCard({ callbackUrl = "/" }: LoginCardProps) {
 
         {/* Google */}
         <button
-          onClick={() => signIn("google", { callbackUrl: "https://aclassstore.com/th" })}
+          onClick={() => signIn("google", { callbackUrl })}
           className="btn-provider-outline w-full flex items-center justify-center gap-3 font-medium text-[15px] px-6 py-3.5 rounded-xl transition-all"
           style={{
             background: "rgba(255,255,255,0.05)",
@@ -116,7 +116,7 @@ export default function LoginCard({ callbackUrl = "/" }: LoginCardProps) {
         })}
 
         {process.env.NODE_ENV === "development" && (
-          <button onClick={() => signIn("dev-admin", { callbackUrl: "/" })}>
+          <button onClick={() => signIn("dev-admin", { callbackUrl })}>
             🛠️ Dev Admin Login
           </button>
         )}

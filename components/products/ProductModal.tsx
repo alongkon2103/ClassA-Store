@@ -34,7 +34,11 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         </div>
         <h2 className="text-text-base text-[18px] font-bold">{t("login_required")}</h2>
         <p className="text-[13px] text-text-muted text-center">{t("login_required_desc")}</p>
-        <button onClick={() => router.push("/login")}
+        <button onClick={() => {
+            // Return to the exact page they were on after signing in.
+            const cb = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/"
+            router.push(`/login?callbackUrl=${encodeURIComponent(cb)}`)
+          }}
           className="w-full py-3 rounded-xl font-semibold text-white bg-accent hover:opacity-90 active:scale-95 transition">
           {t("login_button")}
         </button>

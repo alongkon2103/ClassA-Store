@@ -36,7 +36,7 @@ export async function GET() {
       select: {
         code: true, type: true, value: true, commission_pct: true,
         is_active: true, used_count: true, max_uses: true,
-        product: { select: { name_en: true } },
+        product: { select: { name_en: true, slug: true } },
       },
     }),
     prisma.affiliate_earnings.findMany({
@@ -114,6 +114,7 @@ export async function GET() {
       used_count: c.used_count,
       max_uses: c.max_uses,
       product_name: c.product?.name_en ?? null,
+      product_slug: c.product?.slug ?? null,
     })),
     earnings: earnings.map((e) => ({
       id: e.id,

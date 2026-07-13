@@ -13,7 +13,7 @@ import { prisma } from "@/lib/prisma"
 import { releaseOrderDiscount } from "@/lib/discountCodes"
 
 export const PAYPAL_ME_CURRENCY = "USD" // default currency when none is configured
-export const PAYPAL_ME_EXPIRY_MS = 30 * 60 * 1000 // order is payable for 30 minutes
+export const PAYPAL_ME_EXPIRY_MS = 24 * 60 * 60 * 1000 // order is payable for 24 hours
 export const PAYPAL_ME_RECYCLE_BUFFER_MS = 24 * 60 * 60 * 1000 // keep an amount reserved 24h past expiry
 
 export type PayPalMeCurrency = "USD" | "THB"

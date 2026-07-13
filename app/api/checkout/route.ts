@@ -290,10 +290,11 @@ export async function POST(req: Request) {
     const cardFee = computeFeeAmount(currentSubtotal, paymentConfig[methodKey].fee_pct)
     const totalPrice = currentSubtotal + cardFee
 
-    // ✅ FIX: PromptPay requires at least 10 minutes, but give more runway to avoid
-    // race conditions between order creation and Stripe receiving the request.
-    // Card sessions can be shorter; PromptPay sessions must be 10–1440 minutes.
-    const sessionExpiryMinutes = paymentMethod === "promptpay" ? 60 : 30
+    // Pending window = 24h for both card and PromptPay. 1440 min is Stripe's
+    // maximum Checkout Session lifetime (PromptPay sessions must be 10–1440 min),
+    // so this is the longest runway Stripe allows. (The PromptPay QR itself may
+    // still expire earlier on Stripe's side.)
+    const sessionExpiryMinutes = 1440
     const expiresAt = new Date(Date.now() + sessionExpiryMinutes * 60 * 1000)
 
     // 5. เช็ค pending order เดิม + reserve discount slot ใน transaction

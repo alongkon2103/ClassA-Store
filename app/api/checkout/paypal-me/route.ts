@@ -4,7 +4,7 @@
 //   - converts the THB total to USD once (frozen — the live rate can drift later
 //     without breaking the amount-based match)
 //   - appends a unique random cent offset (pickUniqueExpectedAmount)
-//   - stores expected_amount/expected_currency + a 30-min expiry
+//   - stores expected_amount/expected_currency + a 24-hour expiry
 //   - returns { orderId } so the client can render the pay page
 // Fulfillment happens later when the Gmail worker matches the incoming email.
 

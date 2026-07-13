@@ -1,4 +1,4 @@
-// Cron: expire stale PayPal.me orders. A paypal_me order is payable for 30 min
+// Cron: expire stale PayPal.me orders. A paypal_me order is payable for 24h
 // (see PAYPAL_ME_EXPIRY_MS). Once past expires_at with no payment, we flip it to
 // status="expired" and release any discount it was holding so the code frees up.
 //

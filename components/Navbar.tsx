@@ -48,6 +48,8 @@ export default function Navbar() {
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>(cachedFlags ?? {})
 
   const isActive = (href: string) => pathname === href
+  // After login, come back to the page the user was on (not the home page).
+  const loginHref = `/login?callbackUrl=${encodeURIComponent(pathname || "/")}`
 
   useEffect(() => { setMenuOpen(false) }, [pathname])
 
@@ -175,7 +177,7 @@ export default function Navbar() {
           <div className="hidden lg:block">
             {!session ? (
               <Link
-                href="/login"
+                href={loginHref}
                 className="flex items-center gap-2 text-white text-on-accent text-[13px] font-medium px-5 py-2 rounded-lg no-underline transition-all hover:opacity-90 hover:scale-105 active:scale-95"
                 style={{ background: "var(--color-accent)" }}
               >
@@ -293,7 +295,7 @@ export default function Navbar() {
               <div className="px-4 py-5 border-t" style={{ borderColor: "var(--color-border-soft)" }}>
                 {!session ? (
                   <Link
-                    href="/login"
+                    href={loginHref}
                     onClick={() => setMenuOpen(false)}
                     className="w-full flex items-center justify-center gap-2 text-white text-on-accent text-[13px] font-medium px-5 py-3 rounded-xl no-underline transition-all hover:opacity-90 active:scale-95"
                     style={{ background: "var(--color-accent)" }}

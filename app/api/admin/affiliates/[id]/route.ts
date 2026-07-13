@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       orderBy: { created_at: "desc" },
       select: {
         id: true, code: true, type: true, value: true, commission_pct: true,
-        is_active: true, used_count: true, max_uses: true, product_id: true,
+        is_active: true, used_count: true, max_uses: true, product_id: true, per_user_limit: true,
         product: { select: { name_en: true } },
       },
     }),

@@ -22,7 +22,7 @@ type Data = {
   }
   codes: {
     code: string; type: string; value: number; commission_pct: number | null
-    is_active: boolean; used_count: number; max_uses: number | null; product_name: string | null
+    is_active: boolean; used_count: number; max_uses: number | null; product_name: string | null; product_slug: string | null
   }[]
   earnings: {
     id: string; base_amount: number; commission_pct: number; commission_amount: number
@@ -53,6 +53,17 @@ export default function AffiliateDashboard() {
       .catch(() => setLoading(false))
   useEffect(() => { load() }, [])
 
+  // THB→USD rate (same source as checkout) so amounts can show a USD estimate.
+  const [usdRate, setUsdRate] = useState<number | null>(null)
+  useEffect(() => {
+    fetch("/api/public/exchange-rate")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data?.rate) setUsdRate(data.rate) })
+      .catch(() => { })
+  }, [])
+  // "≈ $X.XX" estimate for a THB amount, or "" when the rate isn't loaded.
+  const usd = (thb: number) => (usdRate ? `≈ $${(thb * usdRate).toFixed(2)}` : "")
+
   const savePayout = async (method: string, info: Record<string, string>) => {
     setBusy(true)
     const res = await fetch("/api/affiliate/me", {
@@ -71,7 +82,8 @@ export default function AffiliateDashboard() {
   }
 
   const requestWithdraw = async () => {
-    if (!confirm(t("withdraw_confirm", { amount: baht(d?.totals.pending ?? 0) }))) return
+    const amt = d?.totals.pending ?? 0
+    if (!confirm(t("withdraw_confirm", { amount: `${baht(amt)}${usdRate ? ` (${usd(amt)})` : ""}` }))) return
     setBusy(true)
     const res = await fetch("/api/affiliate/withdraw", { method: "POST" })
     setBusy(false)
@@ -124,9 +136,9 @@ export default function AffiliateDashboard() {
           <>
             {/* ── KPIs ── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Kpi icon={<WalletIcon />} label={t("pending")} value={baht(d.totals.pending)} tone="amber" />
-              <Kpi icon={<ClockIcon />} label={t("requested")} value={baht(d.totals.requested)} tone="blue" />
-              <Kpi icon={<CheckIcon />} label={t("paid")} value={baht(d.totals.paid)} tone="green" />
+              <Kpi icon={<WalletIcon />} label={t("pending")} value={baht(d.totals.pending)} sub={usd(d.totals.pending)} tone="amber" />
+              <Kpi icon={<ClockIcon />} label={t("requested")} value={baht(d.totals.requested)} sub={usd(d.totals.requested)} tone="blue" />
+              <Kpi icon={<CheckIcon />} label={t("paid")} value={baht(d.totals.paid)} sub={usd(d.totals.paid)} tone="green" />
             </div>
 
             {/* ── Money zone: Withdraw | Payout info ── */}
@@ -144,6 +156,7 @@ export default function AffiliateDashboard() {
                       </button>
                     </div>
                     <p className="text-[28px] font-bold text-blue-300 leading-tight mt-2">{baht(d.withdraw.open_request.amount)}</p>
+                    {usd(d.withdraw.open_request.amount) && <p className="text-[12px] text-blue-300/70 mt-0.5">{usd(d.withdraw.open_request.amount)}</p>}
                     {d.withdraw.open_request.eta_from && d.withdraw.open_request.eta_to && (
                       <p className="text-[13px] text-text-base mt-1">
                         {t("eta", { from: fmtDay(d.withdraw.open_request.eta_from), to: fmtDay(d.withdraw.open_request.eta_to) })}
@@ -154,7 +167,8 @@ export default function AffiliateDashboard() {
                   <div>
                     <p className="text-[11px] text-text-muted uppercase tracking-wider">{t("withdrawable")}</p>
                     <p className="text-[30px] font-bold text-amber-400 leading-tight mt-0.5">{baht(d.totals.pending)}</p>
-                    <p className="text-[11px] text-text-muted mt-1">{t("min_note", { min: baht(d.withdraw.min) })}</p>
+                    {usd(d.totals.pending) && <p className="text-[12px] text-text-muted mt-0.5">{usd(d.totals.pending)}</p>}
+                    <p className="text-[11px] text-text-muted mt-1">{t("min_note", { min: `${baht(d.withdraw.min)}${usdRate ? ` (${usd(d.withdraw.min)})` : ""}` })}</p>
                     <button onClick={requestWithdraw} disabled={busy || !d.withdraw.can_request}
                       className="w-full mt-4 px-5 py-3 rounded-xl bg-accent text-white text-[14px] font-semibold shadow-lg shadow-accent/20 hover:bg-accent/90 hover:shadow-accent/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none">
                       {t("request_withdraw")}
@@ -209,7 +223,17 @@ export default function AffiliateDashboard() {
             {/* ── Product-link generator ── */}
             {d.codes.length > 0 && d.products.length > 0 && (() => {
               const codeVal = linkCode || d.codes[0].code
-              const slugVal = linkSlug || d.products[0].slug
+              const selectedCode = d.codes.find((c) => c.code === codeVal) ?? d.codes[0]
+              // A code scoped to one product locks the link to that product;
+              // an "all products" code lets the affiliate pick any.
+              const scopedSlug = selectedCode.product_slug
+              const productOptions = scopedSlug
+                ? (() => {
+                    const inList = d.products.find((p) => p.slug === scopedSlug)
+                    return [{ slug: scopedSlug, name: inList ? (locale === "th" ? inList.name_th : inList.name_en) : (selectedCode.product_name ?? scopedSlug) }]
+                  })()
+                : d.products.map((p) => ({ slug: p.slug, name: locale === "th" ? p.name_th : p.name_en }))
+              const slugVal = scopedSlug ?? (linkSlug && productOptions.some((o) => o.slug === linkSlug) ? linkSlug : productOptions[0]?.slug ?? "")
               const link = `${origin}/products/${slugVal}?ref=${codeVal}`
               const copyLink = () => {
                 navigator.clipboard?.writeText(link)
@@ -221,19 +245,23 @@ export default function AffiliateDashboard() {
                   <SectionHeader icon={<LinkIcon />} title={t("product_link_title")} />
                   <p className="text-[12px] text-text-muted mb-3">{t("product_link_hint")}</p>
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <select value={slugVal} onChange={(e) => setLinkSlug(e.target.value)}
-                      className="flex-1 bg-bg-base border border-white/10 rounded-xl px-3 py-2.5 text-[13px] focus:border-accent/40 outline-none">
-                      {d.products.map((p) => (
-                        <option key={p.slug} value={p.slug}>{locale === "th" ? p.name_th : p.name_en}</option>
-                      ))}
-                    </select>
                     <select value={codeVal} onChange={(e) => setLinkCode(e.target.value)}
-                      className="sm:w-40 bg-bg-base border border-white/10 rounded-xl px-3 py-2.5 text-[13px] font-mono focus:border-accent/40 outline-none">
+                      className="sm:w-44 bg-bg-base border border-white/10 rounded-xl px-3 py-2.5 text-[13px] font-mono focus:border-accent/40 outline-none">
                       {d.codes.map((c) => (
                         <option key={c.code} value={c.code}>{c.code}</option>
                       ))}
                     </select>
+                    <select value={slugVal} onChange={(e) => setLinkSlug(e.target.value)}
+                      disabled={!!scopedSlug}
+                      className="flex-1 bg-bg-base border border-white/10 rounded-xl px-3 py-2.5 text-[13px] focus:border-accent/40 outline-none disabled:opacity-60 disabled:cursor-not-allowed">
+                      {productOptions.map((o) => (
+                        <option key={o.slug} value={o.slug}>{o.name}</option>
+                      ))}
+                    </select>
                   </div>
+                  {scopedSlug && (
+                    <p className="text-[11px] text-text-muted mt-2">{t("code_scoped_hint")}</p>
+                  )}
                   <div className="flex items-center gap-2 mt-3 bg-bg-base border border-white/5 rounded-xl px-3.5 py-2.5">
                     <span className="min-w-0 flex-1 truncate text-[12px] text-text-muted font-mono">{link}</span>
                     <button onClick={copyLink}
@@ -270,7 +298,10 @@ export default function AffiliateDashboard() {
                         <td className="px-5 py-2.5 text-text-muted">{new Date(e.created_at).toLocaleDateString()}</td>
                         <td className="px-4 py-2.5">{e.product_name ?? "—"}</td>
                         <td className="px-4 py-2.5 text-right font-mono text-text-muted">{baht(e.base_amount)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono font-semibold">{baht(e.commission_amount)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono font-semibold">
+                          {baht(e.commission_amount)}
+                          {usd(e.commission_amount) && <span className="block text-[10px] text-text-muted font-normal">{usd(e.commission_amount)}</span>}
+                        </td>
                         <td className="px-4 py-2.5">
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                             e.status === "paid" ? "bg-green-500/15 text-green-400"
@@ -302,6 +333,7 @@ export default function AffiliateDashboard() {
                           </span>
                           <span className="flex items-center gap-2">
                             <span className="font-mono font-semibold text-green-400/90">{baht(p.amount)}</span>
+                            {usd(p.amount) && <span className="font-mono text-[11px] text-text-muted">{usd(p.amount)}</span>}
                             <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                               p.status === "paid" ? "bg-green-500/15 text-green-400"
                               : p.status === "rejected" ? "bg-red-500/15 text-red-400"
@@ -354,7 +386,7 @@ const TONES = {
   green: { text: "text-green-400", chip: "bg-green-500/12 text-green-400" },
 } as const
 
-function Kpi({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string; tone: keyof typeof TONES }) {
+function Kpi({ icon, label, value, sub, tone }: { icon: React.ReactNode; label: string; value: string; sub?: string; tone: keyof typeof TONES }) {
   const c = TONES[tone]
   return (
     <div className="bg-bg-card border border-accent/10 rounded-2xl p-5 transition-all duration-200 hover:border-accent/25 hover:-translate-y-0.5">
@@ -363,6 +395,7 @@ function Kpi({ icon, label, value, tone }: { icon: React.ReactNode; label: strin
         <p className="text-[11px] tracking-widest text-text-muted uppercase">{label}</p>
       </div>
       <p className={`text-[26px] font-bold leading-none ${c.text}`}>{value}</p>
+      {sub && <p className="text-[12px] text-text-muted mt-1.5">{sub}</p>}
     </div>
   )
 }

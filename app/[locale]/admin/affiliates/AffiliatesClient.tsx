@@ -24,6 +24,7 @@ type CodeRow = {
   id: string; code: string; type: string; value: number
   commission_pct: number | null; is_active: boolean
   used_count: number; max_uses: number | null; product_id: string | null; product_name: string | null
+  per_user_limit: number | null
 }
 type ProductOpt = { id: string; name: string }
 
@@ -514,6 +515,7 @@ function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, on
   const [value, setValue] = useState(String(code.value))
   const [comm, setComm] = useState(code.commission_pct === null ? "" : String(code.commission_pct))
   const [productId, setProductId] = useState(code.product_id ?? "")
+  const [perUser, setPerUser] = useState<"1" | "unlimited">(code.per_user_limit == null ? "unlimited" : "1")
   const [active, setActive] = useState(code.is_active)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -526,6 +528,7 @@ function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, on
         code: c, type, value: Number(value),
         commission_pct: comm === "" ? null : Number(comm),
         product_id: productId || null, is_active: active,
+        per_user_limit: perUser === "unlimited" ? null : 1,
       }),
     })
     setSaving(false)
@@ -536,7 +539,7 @@ function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, on
   if (editing) {
     return (
       <div className="bg-bg-base border border-accent/25 rounded-lg p-3 space-y-2.5">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
           <div>
             <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_code")}</label>
             <input value={c} onChange={(e) => setC(e.target.value.toUpperCase())} className={`${fieldInput} uppercase`} />
@@ -561,6 +564,13 @@ function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, on
             <select value={productId} onChange={(e) => setProductId(e.target.value)} className={fieldInput}>
               <option value="">{t("all_products")}</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_per_user")}</label>
+            <select value={perUser} onChange={(e) => setPerUser(e.target.value as "1" | "unlimited")} className={fieldInput}>
+              <option value="1">{t("per_user_once")}</option>
+              <option value="unlimited">{t("per_user_unlimited")}</option>
             </select>
           </div>
         </div>
@@ -589,6 +599,7 @@ function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, on
         <span className="text-text-muted">−{code.type === "fixed" ? `฿${code.value}` : `${code.value}%`}</span>
         <span className="text-amber-400/80">· {t("comm")} {code.commission_pct ?? defaultPct}%</span>
         <span className="text-text-muted truncate">· {code.product_name ?? t("all_products")}</span>
+        {code.per_user_limit == null && <span className="text-green-400/80 shrink-0">· {t("per_user_unlimited_badge")}</span>}
         {!code.is_active && <span className="text-text-muted">· {t("inactive")}</span>}
       </div>
       <div className="shrink-0 flex items-center gap-3">
@@ -612,6 +623,7 @@ function CreateCode({ userId, products, defaultPct, onDone, t }: { userId: strin
   const [type, setType] = useState<"percent" | "fixed">("percent")
   const [comm, setComm] = useState("")
   const [productId, setProductId] = useState("")
+  const [perUser, setPerUser] = useState<"1" | "unlimited">("1")
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -622,18 +634,18 @@ function CreateCode({ userId, products, defaultPct, onDone, t }: { userId: strin
       body: JSON.stringify({
         code: code || undefined, type, value: Number(value),
         owner_user_id: userId, commission_pct: comm === "" ? null : Number(comm),
-        product_id: productId || null, per_user_limit: 1, max_uses: null,
+        product_id: productId || null, per_user_limit: perUser === "unlimited" ? null : 1, max_uses: null,
       }),
     })
     setBusy(false)
     if (!res.ok) { setErr((await res.json()).error || t("error_save")); return }
-    setCode(""); setComm(""); setValue("10"); setProductId(""); onDone()
+    setCode(""); setComm(""); setValue("10"); setProductId(""); setPerUser("1"); onDone()
   }
 
   return (
     <div className="mt-3 border-t border-white/10 pt-4">
       <p className="text-[11px] uppercase tracking-wider text-text-muted mb-3 font-bold">{t("add_code_title")}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
         <div>
           <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_code")}</label>
           <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder={t("code_ph")}
@@ -660,6 +672,13 @@ function CreateCode({ userId, products, defaultPct, onDone, t }: { userId: strin
           <select value={productId} onChange={(e) => setProductId(e.target.value)} className={fieldInput}>
             <option value="">{t("all_products")}</option>
             {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_per_user")}</label>
+          <select value={perUser} onChange={(e) => setPerUser(e.target.value as "1" | "unlimited")} className={fieldInput}>
+            <option value="1">{t("per_user_once")}</option>
+            <option value="unlimited">{t("per_user_unlimited")}</option>
           </select>
         </div>
         <div className="flex items-end">
