@@ -440,7 +440,7 @@ function DetailModal({ userId, onClose, onChanged, t }: { userId: string; onClos
         ) : (
           <div className="overflow-y-auto p-4 space-y-5">
             {/* Profile edit */}
-            <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <Field label={t("field_rate")}>
                 <input type="number" defaultValue={d.profile.default_commission_pct}
                   onBlur={(e) => patchProfile({ default_commission_pct: Number(e.target.value) })}
@@ -566,7 +566,7 @@ function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, on
   if (editing) {
     return (
       <div className="bg-bg-base border border-accent/25 rounded-lg p-3 space-y-2.5">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
           <div>
             <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_code")}</label>
             <input value={c} onChange={(e) => setC(e.target.value.toUpperCase())} className={`${fieldInput} uppercase`} />
@@ -620,16 +620,16 @@ function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, on
   }
 
   return (
-    <div className={`flex items-center justify-between bg-bg-base border rounded-lg px-3 py-2 text-[12px] transition-all duration-200 hover:border-accent/25 ${code.is_active ? "border-white/5" : "border-white/5 opacity-50"}`}>
-      <div className="flex items-center gap-2 min-w-0">
+    <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 bg-bg-base border rounded-lg px-3 py-2.5 text-[12px] transition-all duration-200 hover:border-accent/25 ${code.is_active ? "border-white/5" : "border-white/5 opacity-50"}`}>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
         <span className="font-mono font-semibold">{code.code}</span>
         <span className="text-text-muted">−{code.type === "fixed" ? `฿${code.value}` : `${code.value}%`}</span>
         <span className="text-amber-400/80">· {t("comm")} {code.commission_pct ?? defaultPct}%</span>
-        <span className="text-text-muted truncate">· {code.product_name ?? t("all_products")}</span>
+        <span className="text-text-muted truncate max-w-[140px]">· {code.product_name ?? t("all_products")}</span>
         {code.per_user_limit == null && <span className="text-green-400/80 shrink-0">· {t("per_user_unlimited_badge")}</span>}
         {!code.is_active && <span className="text-text-muted">· {t("inactive")}</span>}
       </div>
-      <div className="shrink-0 flex items-center gap-3">
+      <div className="shrink-0 flex items-center gap-3 ml-auto">
         <button onClick={() => setEditing(true)} className="text-[11px] text-accent-light hover:underline">{t("edit")}</button>
         <button onClick={onCopy} className="text-[11px] text-accent-light hover:underline">{t("copy_link")}</button>
         <button onClick={onDelete} disabled={busy} title={t("delete_code")}
@@ -670,9 +670,9 @@ function CreateCode({ userId, products, defaultPct, onDone, t }: { userId: strin
   }
 
   return (
-    <div className="mt-3 border-t border-white/10 pt-4">
+    <div className="mt-4 bg-bg-base/40 border border-white/5 rounded-xl p-4">
       <p className="text-[11px] uppercase tracking-wider text-text-muted mb-3 font-bold">{t("add_code_title")}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <div>
           <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_code")}</label>
           <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder={t("code_ph")}
@@ -708,15 +708,15 @@ function CreateCode({ userId, products, defaultPct, onDone, t }: { userId: strin
             <option value="unlimited">{t("per_user_unlimited")}</option>
           </select>
         </div>
-        <div className="flex items-end">
-          <button onClick={submit} disabled={busy}
-            className="w-full px-3 py-2 rounded-lg bg-accent text-white text-[13px] font-medium hover:bg-accent/90 disabled:opacity-50">
-            {busy ? t("saving") : t("add_code")}
-          </button>
-        </div>
       </div>
-      <p className="text-[11px] text-text-muted mt-2 leading-relaxed">{t("add_code_hint", { pct: defaultPct })}</p>
-      {err && <p className="text-[12px] text-red-400 mt-1">{err}</p>}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mt-3">
+        <p className="text-[11px] text-text-muted leading-relaxed sm:max-w-[70%]">{t("add_code_hint", { pct: defaultPct })}</p>
+        <button onClick={submit} disabled={busy}
+          className="shrink-0 px-5 py-2 rounded-lg bg-accent text-white text-[13px] font-medium hover:bg-accent/90 active:scale-95 transition-all disabled:opacity-50">
+          {busy ? t("saving") : t("add_code")}
+        </button>
+      </div>
+      {err && <p className="text-[12px] text-red-400 mt-2">{err}</p>}
     </div>
   )
 }
