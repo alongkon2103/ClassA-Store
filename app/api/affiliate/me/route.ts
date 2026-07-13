@@ -24,7 +24,10 @@ export async function GET() {
 
   const profile = await prisma.affiliate_profiles.findUnique({
     where: { user_id: userId },
-    select: { default_commission_pct: true, payout_method: true, payout_info: true, payout_detail: true, display_name: true, is_active: true },
+    select: {
+      default_commission_pct: true, payout_method: true, payout_info: true, payout_detail: true, display_name: true, is_active: true,
+      api_enabled: true, api_key_prefix: true, api_key_created_at: true,
+    },
   })
   // Not an affiliate → 403 (the page redirects too, this guards the API).
   if (!profile) return NextResponse.json({ error: "Not an affiliate" }, { status: 403 })
@@ -136,6 +139,11 @@ export async function GET() {
       paid_at: p.paid_at?.toISOString() ?? null,
     })),
     products: products.map((p) => ({ slug: p.slug, name_th: p.name_th, name_en: p.name_en })),
+    api: {
+      enabled: profile.api_enabled,
+      prefix: profile.api_key_prefix,
+      created_at: profile.api_key_created_at?.toISOString() ?? null,
+    },
   })
 }
 

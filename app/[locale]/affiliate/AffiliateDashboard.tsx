@@ -30,6 +30,7 @@ type Data = {
   }[]
   payouts: { id: string; amount: number; method: string | null; status: string; reject_reason: string | null; requested_at: string | null; paid_at: string | null }[]
   products: { slug: string; name_th: string; name_en: string }[]
+  api: { enabled: boolean; prefix: string | null; created_at: string | null }
 }
 
 const baht = (n: number) => `฿${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
@@ -45,6 +46,21 @@ export default function AffiliateDashboard() {
   const [linkCode, setLinkCode] = useState("")
   const [linkSlug, setLinkSlug] = useState("")
   const [linkCopied, setLinkCopied] = useState(false)
+  // API key management (self-serve; admin gates access via api.enabled)
+  const [newKey, setNewKey] = useState<string | null>(null)
+  const [apiBusy, setApiBusy] = useState(false)
+  const [keyCopied, setKeyCopied] = useState(false)
+
+  const generateKey = async () => {
+    if (d?.api.prefix && !confirm(t("api_regen_confirm"))) return
+    setApiBusy(true)
+    const res = await fetch("/api/affiliate/api-key", { method: "POST" })
+    setApiBusy(false)
+    if (!res.ok) { alert(t("error")); return }
+    const j = await res.json()
+    setNewKey(j.key)
+    await load()
+  }
 
   const load = () =>
     fetch("/api/affiliate/me")
@@ -359,6 +375,46 @@ export default function AffiliateDashboard() {
                 </div>
               </SectionCard>
             )}
+
+            {/* ── Developer API (only when admin has enabled it) ── */}
+            {d.api.enabled && (
+              <SectionCard>
+                <SectionHeader icon={<ApiIcon />} title={t("api_title")} />
+                <p className="text-[12px] text-text-muted mb-3">{t("api_desc")}</p>
+
+                <div className="bg-bg-base border border-white/5 rounded-xl px-3.5 py-2.5 mb-3">
+                  <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">{t("api_endpoint")}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 truncate text-[12px] font-mono">{origin}/api/affiliate/public/v1/dashboard</span>
+                    <button onClick={() => navigator.clipboard?.writeText(`${origin}/api/affiliate/public/v1/dashboard`)}
+                      className="shrink-0 text-[12px] px-2.5 py-1 rounded-lg bg-accent/15 text-accent-light hover:bg-accent/25 transition-all">{t("copy_link")}</button>
+                  </div>
+                </div>
+
+                {newKey ? (
+                  <div className="bg-green-500/[0.06] border border-green-500/25 rounded-xl p-3.5 mb-3">
+                    <p className="text-[11px] text-green-400 mb-1.5">{t("api_key_once")}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 truncate text-[12px] font-mono">{newKey}</span>
+                      <button onClick={() => { navigator.clipboard?.writeText(newKey); setKeyCopied(true); setTimeout(() => setKeyCopied(false), 1500) }}
+                        className="shrink-0 text-[12px] px-2.5 py-1 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-all">{keyCopied ? t("copied") : t("copy_link")}</button>
+                    </div>
+                  </div>
+                ) : d.api.prefix ? (
+                  <p className="text-[12px] text-text-muted mb-3">{t("api_current_key")}: <span className="font-mono text-text-base">{d.api.prefix}…</span>{d.api.created_at ? ` · ${fmtDay(d.api.created_at)}` : ""}</p>
+                ) : (
+                  <p className="text-[12px] text-text-muted mb-3">{t("api_no_key")}</p>
+                )}
+
+                <button onClick={generateKey} disabled={apiBusy}
+                  className="px-4 py-2 rounded-xl bg-accent text-white text-[13px] font-medium hover:bg-accent/90 active:scale-95 transition-all disabled:opacity-50">
+                  {apiBusy ? t("loading") : d.api.prefix ? t("api_regenerate") : t("api_generate")}
+                </button>
+
+                <p className="text-[11px] text-text-muted mt-3 leading-relaxed">{t("api_docs_hint")}</p>
+                <pre className="mt-2 bg-bg-base border border-white/5 rounded-lg p-3 text-[11px] font-mono overflow-x-auto text-text-muted">curl -H &quot;Authorization: Bearer YOUR_KEY&quot; {origin}/api/affiliate/public/v1/dashboard</pre>
+              </SectionCard>
+            )}
           </>
         )}
       </main>
@@ -417,6 +473,7 @@ function TagIcon() { return <svg {...iconProps}><path d="M20.59 13.41 13.42 20.5
 function ListIcon() { return <svg {...iconProps}><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg> }
 function HistoryIcon() { return <svg {...iconProps}><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><polyline points="12 7 12 12 15 14" /></svg> }
 function LinkIcon() { return <svg {...iconProps}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg> }
+function ApiIcon() { return <svg {...iconProps}><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg> }
 
 // Structured payout-info form: pick a channel, fill its fields, save once. The
 // channel definitions + labels come from lib/affiliatePayout so form and server

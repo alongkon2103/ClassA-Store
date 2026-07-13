@@ -20,6 +20,9 @@ type ListRow = {
   pending_amount: number
   paid_amount: number
   pending_count: number
+  api_enabled?: boolean
+  api_key_prefix?: string | null
+  api_key_created_at?: string | null
 }
 
 type CodeRow = {
@@ -504,6 +507,36 @@ function DetailModal({ userId, onClose, onChanged, t }: { userId: string; onClos
                     </span>
                   </div>
                 ))}
+              </div>
+            </section>
+
+            {/* API access */}
+            <section>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] uppercase tracking-wider text-text-muted font-bold">{t("api_access")}</p>
+                <button onClick={() => patchProfile({ api_enabled: !d.profile.api_enabled })} disabled={busy}
+                  className={`text-[11px] px-2.5 py-1 rounded-lg font-medium ${d.profile.api_enabled ? "bg-green-500/15 text-green-400" : "bg-white/10 text-text-muted"}`}>
+                  {d.profile.api_enabled ? t("api_on") : t("api_off")}
+                </button>
+              </div>
+              <div className="bg-bg-base/40 border border-white/5 rounded-xl p-3.5 text-[12px] space-y-1.5">
+                {d.profile.api_enabled ? (
+                  <>
+                    {d.profile.api_key_prefix ? (
+                      <p>{t("api_key_label")}: <span className="font-mono text-text-base">{d.profile.api_key_prefix}…</span>
+                        {d.profile.api_key_created_at ? <span className="text-text-muted"> · {new Date(d.profile.api_key_created_at).toLocaleDateString()}</span> : null}</p>
+                    ) : (
+                      <p className="text-text-muted">{t("api_no_key")}</p>
+                    )}
+                    <p className="text-text-muted leading-relaxed">{t("api_admin_hint")}</p>
+                    {d.profile.api_key_prefix && (
+                      <button onClick={() => { if (confirm(t("api_revoke_confirm"))) patchProfile({ revoke_api_key: true }) }} disabled={busy}
+                        className="text-[11px] text-red-400 hover:underline disabled:opacity-40">{t("api_revoke")}</button>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-text-muted leading-relaxed">{t("api_off_hint")}</p>
+                )}
               </div>
             </section>
 

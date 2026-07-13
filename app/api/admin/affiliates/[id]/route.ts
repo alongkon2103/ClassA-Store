@@ -68,6 +68,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
       payout_detail: profile.payout_detail,
       display_name: profile.display_name,
       is_active: profile.is_active,
+      api_enabled: profile.api_enabled,
+      api_key_prefix: profile.api_key_prefix,
+      api_key_created_at: profile.api_key_created_at?.toISOString() ?? null,
     },
     codes: codes.map((c) => ({
       ...c,
@@ -112,6 +115,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       payout_detail?: string | null
       display_name?: string | null
       is_active?: boolean
+      api_enabled?: boolean
+      api_key_hash?: string | null
+      api_key_prefix?: string | null
+      api_key_created_at?: Date | null
       updated_at?: Date
     } = {}
 
@@ -126,6 +133,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (body.payout_detail !== undefined) data.payout_detail = body.payout_detail?.trim() || null
     if (body.display_name !== undefined) data.display_name = body.display_name?.trim() || null
     if (body.is_active !== undefined) data.is_active = Boolean(body.is_active)
+    if (body.api_enabled !== undefined) data.api_enabled = Boolean(body.api_enabled)
+    // Admin can revoke the key outright (clears it + disables API access).
+    if (body.revoke_api_key === true) {
+      data.api_key_hash = null
+      data.api_key_prefix = null
+      data.api_key_created_at = null
+      data.api_enabled = false
+    }
 
     const updated = await prisma.affiliate_profiles.update({ where: { user_id: id }, data })
     return NextResponse.json({ ok: true, user_id: updated.user_id })
