@@ -50,6 +50,7 @@ export default async function AnalyticsPage({
     netRevenue,
     productVariantBreakdown,
     revenueBySource,
+    affiliateCost,
   ] = await Promise.all([
 
     // ── Revenue Over Time (single unified series) ──
@@ -289,6 +290,20 @@ export default async function AnalyticsPage({
         ${createdAtFilter}
       GROUP BY source
     `,
+
+    // ── Affiliate commission cost (accrual, aligned to o.paid_at) ──
+    // Store bears this cost; excludes reversed earnings. Split committed vs paid.
+    prisma.$queryRaw<{ committed: number; paid_out: number }[]>`
+      SELECT
+        COALESCE(SUM(CASE WHEN ae.status IN ('pending','requested') THEN ae.commission_amount ELSE 0 END), 0)::float AS committed,
+        COALESCE(SUM(CASE WHEN ae.status = 'paid' THEN ae.commission_amount ELSE 0 END), 0)::float                   AS paid_out
+      FROM affiliate_earnings ae
+      JOIN orders o ON o.id = ae.order_id
+      WHERE ae.status <> 'reversed'
+        AND o.status = 'paid'
+        AND o.order_type <> 'TRIAL'
+        ${paidAtFilter}
+    `,
   ])
 
   return (
@@ -338,7 +353,19 @@ export default async function AnalyticsPage({
         ordersByPayment,
         topVariants,
         totalStats: totalStats[0],
-        netRevenue: netRevenue[0],
+        netRevenue: (() => {
+          const nr = netRevenue[0]
+          const committed = Number(affiliateCost[0]?.committed ?? 0)
+          const paid = Number(affiliateCost[0]?.paid_out ?? 0)
+          const affiliate_total = Math.round((committed + paid) * 100) / 100
+          return {
+            ...nr,
+            affiliate_committed: Math.round(committed * 100) / 100,
+            affiliate_paid: Math.round(paid * 100) / 100,
+            affiliate_total,
+            net_after_affiliate: Math.round(((nr?.total_net ?? 0) - affiliate_total) * 100) / 100,
+          }
+        })(),
         productVariantBreakdown,
       }}
     />

@@ -92,5 +92,22 @@ export async function GET(req: NextRequest) {
   }).filter(p => p.partners.length > 0)
     .sort((a, b) => b.gross_revenue - a.gross_revenue)
 
-  return NextResponse.json(processed)
+  // Store-wide affiliate commission for the same period (accrual, order.paid_at).
+  // The store bears this cost — partner shares above are unchanged. Excludes
+  // reversed earnings; split committed (pending+requested) vs already paid out.
+  const affRows = await prisma.affiliate_earnings.groupBy({
+    by: ["status"],
+    where: {
+      status: { not: "reversed" },
+      order: { status: "paid", order_type: { not: "TRIAL" }, ...dateFilter },
+    },
+    _sum: { commission_amount: true },
+  })
+  const affSum = (st: string) => Number(affRows.find((r) => r.status === st)?._sum.commission_amount ?? 0)
+  const r2 = (n: number) => Math.round(n * 100) / 100
+  const affCommitted = affSum("pending") + affSum("requested")
+  const affPaid = affSum("paid")
+  const affiliate = { committed: r2(affCommitted), paid: r2(affPaid), total: r2(affCommitted + affPaid) }
+
+  return NextResponse.json({ products: processed, affiliate })
 }

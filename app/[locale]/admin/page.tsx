@@ -30,6 +30,8 @@ export default async function AdminDashboard({
     topSellingProducts,
     recentOrders,
     dailyRevenue,
+    todayAffiliate,
+    monthAffiliate,
   ] = await Promise.all([
     // Today's Sales (total)
     prisma.orders.aggregate({
@@ -165,7 +167,38 @@ export default async function AdminDashboard({
       },
       select: { paid_at: true, amount: true },
     }),
+
+    // Affiliate commission cost — accrual, aligned to order.paid_at (same window
+    // as revenue). Excludes reversed (clawed-back) earnings. Grouped by status so
+    // we can split committed (pending+requested) vs already paid out.
+    prisma.affiliate_earnings.groupBy({
+      by: ["status"],
+      where: {
+        status: { not: "reversed" },
+        order: { status: "paid", paid_at: { gte: todayStart }, NOT: { order_type: "TRIAL" } },
+      },
+      _sum: { commission_amount: true },
+    }),
+    prisma.affiliate_earnings.groupBy({
+      by: ["status"],
+      where: {
+        status: { not: "reversed" },
+        order: { status: "paid", paid_at: { gte: monthStart }, NOT: { order_type: "TRIAL" } },
+      },
+      _sum: { commission_amount: true },
+    }),
   ])
+
+  // Roll a grouped-by-status earning result into { total, committed, paid }.
+  type AffGroup = { status: string; _sum: { commission_amount: unknown } }
+  const affSummary = (rows: AffGroup[]) => {
+    const s = (st: string) => Number(rows.find((r) => r.status === st)?._sum.commission_amount ?? 0)
+    const committed = s("pending") + s("requested")
+    const paid = s("paid")
+    return { total: Math.round((committed + paid) * 100) / 100, committed: Math.round(committed * 100) / 100, paid: Math.round(paid * 100) / 100 }
+  }
+  const todayAff = affSummary(todayAffiliate)
+  const monthAff = affSummary(monthAffiliate)
 
   // Group the last-7-days orders by Bangkok calendar day (driver-corrected
   // timestamps, same read path as the cards — so chart and cards ALWAYS agree).
@@ -183,6 +216,11 @@ export default async function AdminDashboard({
     monthRevenue: Number(monthRevenue._sum.amount ?? 0),
     monthManualRevenue: Number(monthManualRevenue._sum.amount ?? 0),
     monthManualCount: monthManualRevenue._count,
+    // Affiliate commission cost (accrual) + store net after it.
+    todayAffiliate: todayAff,
+    monthAffiliate: monthAff,
+    todayNet: Math.round((Number(todayRevenue._sum.amount ?? 0) - todayAff.total) * 100) / 100,
+    monthNet: Math.round((Number(monthRevenue._sum.amount ?? 0) - monthAff.total) * 100) / 100,
     pendingOrders,
     totalOrders,
     totalProducts,

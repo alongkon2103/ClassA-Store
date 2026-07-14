@@ -28,6 +28,43 @@ type RecentOrder = {
 }
 
 // ── Stat Card ──────────────────────────────────────────
+// Waterfall: gross → −affiliate commission → net (with committed/paid split).
+function AffiliateNet({ label, gross, aff, net, t }: {
+    label: string
+    gross: number
+    aff: { total: number; committed: number; paid: number }
+    net: number
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    t: any
+}) {
+    const baht = (n: number) => `฿${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+    return (
+        <div className="bg-bg-base/40 border border-white/5 rounded-xl p-4">
+            <p className="text-[11px] uppercase tracking-wider text-text-muted mb-2.5">{label}</p>
+            <div className="space-y-1.5 text-[13px]">
+                <div className="flex justify-between">
+                    <span className="text-text-muted">{t("gross_revenue")}</span>
+                    <span className="font-mono">{baht(gross)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-text-muted">{t("affiliate_commission")}</span>
+                    <span className="font-mono text-red-400">−{baht(aff.total)}</span>
+                </div>
+                {aff.total > 0 && (
+                    <p className="text-[11px] text-text-muted/80 text-right">
+                        {t("committed")} {baht(aff.committed)} · {t("paid_out")} {baht(aff.paid)}
+                    </p>
+                )}
+                <div className="border-t border-white/5 !my-2" />
+                <div className="flex justify-between items-center">
+                    <span className="font-semibold">{t("net_revenue")}</span>
+                    <span className="font-mono font-bold text-green-400 text-[15px]">{baht(net)}</span>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 function StatCard({
     label, value, sub, color = "accent",
 }: {
@@ -149,6 +186,15 @@ export default function DashboardClient({ data }: { data: any }) {
                     color="green"
                 />
             </div>
+
+            {/* Net revenue after affiliate commission (accrual) */}
+            <section className="bg-bg-card border border-accent/10 rounded-2xl p-5">
+                <h2 className="text-[14px] font-semibold mb-4">{t("net_after_affiliate")}</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <AffiliateNet label={t("today")} gross={data.todayRevenue} aff={data.todayAffiliate} net={data.todayNet} t={t} />
+                    <AffiliateNet label={t("this_month")} gross={data.monthRevenue} aff={data.monthAffiliate} net={data.monthNet} t={t} />
+                </div>
+            </section>
 
             {/* Quick Links / Tools */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

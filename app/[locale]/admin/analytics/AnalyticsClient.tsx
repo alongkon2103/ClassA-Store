@@ -91,6 +91,10 @@ type AnalyticsData = {
     total_gross: number
     total_net: number
     total_payout: number
+    affiliate_committed: number
+    affiliate_paid: number
+    affiliate_total: number
+    net_after_affiliate: number
   } | null
   topProducts: TopProduct[]
   topVariants: TopVariant[]
@@ -694,12 +698,21 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
         <StatCard label={t("conversion_rate")}  value={`${conversionRate}%`} sub={`${totalPaid} / ${data.totalStats?.total_orders ?? 0}`} color="text-yellow-400" />
       </div>
 
-      {/* ── Row 2: Net Revenue ── */}
+      {/* ── Row 2: Net Revenue (gross → −consignment → −affiliate = net) ── */}
       {data.netRevenue && (
-        <div className="grid grid-cols-3 gap-3">
-          <StatCard label={t("gross_revenue")}    value={fmt(data.netRevenue.total_gross)}  sub={t("before_commission")} color="text-text-base" />
-          <StatCard label={t("net_revenue")}      value={fmt(data.netRevenue.total_net)}    sub={t("after_commission")}  color="text-green-400" />
-          <StatCard label={t("owner_payout_due")} value={fmt(data.netRevenue.total_payout)} sub={t("consignment_owners")} color="text-orange-400" />
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <StatCard label={t("gross_revenue")}    value={fmt(data.netRevenue.total_gross)}  sub={t("before_commission")} color="text-text-base" />
+            <StatCard label={t("store_net_consignment")} value={fmt(data.netRevenue.total_net)} sub={t("after_commission")}  color="text-text-base" />
+            <StatCard label={t("owner_payout_due")} value={fmt(data.netRevenue.total_payout)} sub={t("consignment_owners")} color="text-orange-400" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <StatCard label={t("affiliate_commission")} value={`−${fmt(data.netRevenue.affiliate_total)}`}
+              sub={`${t("committed")} ${fmt(data.netRevenue.affiliate_committed)} · ${t("paid_out")} ${fmt(data.netRevenue.affiliate_paid)}`}
+              color="text-red-400" />
+            <StatCard label={t("net_after_affiliate")} value={fmt(data.netRevenue.net_after_affiliate)}
+              sub={t("net_revenue")} color="text-green-400" />
+          </div>
         </div>
       )}
 

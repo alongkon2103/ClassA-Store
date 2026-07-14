@@ -159,6 +159,7 @@ export default function PartnershipEarningsPage() {
   const months = getLast12Months()
   const [selectedMonth, setSelectedMonth] = useState("")
   const [data, setData] = useState<ProductRow[]>([])
+  const [affiliate, setAffiliate] = useState<{ committed: number; paid: number; total: number }>({ committed: 0, paid: 0, total: 0 })
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -169,7 +170,11 @@ export default function PartnershipEarningsPage() {
       : `/api/admin/partnership-earnings`
     fetch(url)
       .then(r => r.json())
-      .then(d => { setData(d); setLoading(false) })
+      .then(d => {
+        setData(d.products ?? [])
+        setAffiliate(d.affiliate ?? { committed: 0, paid: 0, total: 0 })
+        setLoading(false)
+      })
   }, [selectedMonth])
 
   const totalGross = data.reduce((acc, r) => acc + r.gross_revenue, 0)
@@ -243,6 +248,24 @@ export default function PartnershipEarningsPage() {
           <p className="text-[24px] font-bold text-accent-light">{data.length} {t("active_products_unit")}</p>
         </div>
       </div>
+
+      {/* Affiliate commission — store-wide expense for the same period. Partner
+          shares above stay on gross; this is a separate store cost. */}
+      {affiliate.total > 0 && (
+        <div className="bg-bg-card border border-red-400/20 rounded-2xl px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] tracking-widest text-text-muted uppercase mb-1">{t("affiliate_commission_storewide")}</p>
+              <p className="text-[11px] text-text-muted">
+                {t("committed")} ฿{affiliate.committed.toLocaleString(undefined, { minimumFractionDigits: 2 })} · {t("paid_out")} ฿{affiliate.paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <p className="text-[22px] font-bold text-red-400">
+              −฿{affiliate.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+        </div>
+      )}
 
       {totalManualRevenue > 0 && (
         <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl px-5 py-3">
