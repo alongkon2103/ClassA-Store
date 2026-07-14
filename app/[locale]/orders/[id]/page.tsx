@@ -6,6 +6,7 @@ import { format } from "date-fns"
 import Image from "next/image"
 import { Link, useRouter } from "@/i18n/routing"
 import { setRequestLocale, getTranslations } from "next-intl/server"
+import { getStoreDiscordInvite } from "@/lib/discordInvite"
 import OrderStatusPoller from "@/components/orders/OrderStatusPoller"
 import AssetThumbnailCard from "@/components/orders/AssetThumbnailCard"
 import PayPalRetryBanner from "@/components/orders/PayPalRetryBanner"
@@ -15,7 +16,8 @@ import { getImageUrl } from "@/lib/getImageUrl"
 export const dynamic = "force-dynamic"
 
 // Store community Discord invite (same as the homepage / contact page).
-const STORE_DISCORD_URL = "https://discord.gg/vCuPy8H9ub"
+const STORE_DISCORD_CODE = "vCuPy8H9ub"
+const STORE_DISCORD_URL = `https://discord.gg/${STORE_DISCORD_CODE}`
 
 export default async function OrderPage({
     params,
@@ -30,6 +32,8 @@ export default async function OrderPage({
     const t = await getTranslations("Orders")
     const tLive = await getTranslations("LiveGen")
     const featureFlags = await getFeatureFlags()
+    // Live Discord server name + member counts (cached 1h; null on failure).
+    const discord = await getStoreDiscordInvite(STORE_DISCORD_CODE)
 
     const order = await prisma.orders.findUnique({
         where: { id },
@@ -182,8 +186,15 @@ export default async function OrderPage({
                                     <DiscordIcon size={26} />
                                 </span>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-[15px] md:text-[16px] font-bold text-text-base">{t("discord_title")}</p>
-                                    <p className="text-[12px] md:text-[13px] text-text-muted leading-relaxed mt-0.5">{t("discord_desc")}</p>
+                                    <p className="text-[15px] md:text-[16px] font-bold text-text-base truncate">{discord?.name || t("discord_title")}</p>
+                                    {discord ? (
+                                        <p className="text-[12px] md:text-[13px] text-text-muted mt-0.5 flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block shrink-0" />
+                                            {t("discord_members", { online: discord.online.toLocaleString(), members: discord.members.toLocaleString() })}
+                                        </p>
+                                    ) : (
+                                        <p className="text-[12px] md:text-[13px] text-text-muted leading-relaxed mt-0.5">{t("discord_desc")}</p>
+                                    )}
                                 </div>
                                 <span className="flex items-center justify-center gap-1.5 shrink-0 bg-[#5865F2]/15 text-[#8b9dff] hover:bg-[#5865F2]/25 text-[13px] font-semibold px-4 py-2.5 rounded-xl transition-colors">
                                     {t("discord_button")}

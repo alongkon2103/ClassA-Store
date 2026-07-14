@@ -922,6 +922,7 @@
     "back_to_inventory": "Back to Inventory",
     "discord_title": "Join our Discord",
     "discord_desc": "Get news, updates, exclusive deals, and fast help from our team.",
+    "discord_members": "{online} online · {members} members",
     "discord_button": "Join",
     "standard_version": "Standard Version",
     "pay_now": "Pay Now",

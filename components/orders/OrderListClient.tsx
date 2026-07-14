@@ -233,7 +233,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="relative bg-bg-card border border-accent/20 rounded-2xl md:rounded-[32px] w-full max-w-xl overflow-hidden shadow-2xl overflow-y-auto max-h-[95vh]"
+              className="relative bg-bg-card border border-accent/20 rounded-2xl md:rounded-[32px] w-full max-w-xl overflow-hidden shadow-2xl overflow-y-auto max-h-[95vh] custom-scrollbar"
             >
               {/* Modal Header */}
               <div className="relative h-24 md:h-40 flex items-end p-4 md:p-8">

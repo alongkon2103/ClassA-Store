@@ -331,3 +331,29 @@ body {
 .fade-in {
   animation: fadeIn .2s ease both;
 }
+
+/* Thin, theme-friendly scrollbar. Applied via the `custom-scrollbar` class on
+   scroll containers (modals, sidebars, dropdowns) so the default chunky OS
+   scrollbar doesn't clash with the dark UI. The neutral grey works on both
+   light and dark themes. */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(140, 145, 160, 0.35) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(140, 145, 160, 0.35);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 145, 160, 0.6);
+  background-clip: content-box;
+}

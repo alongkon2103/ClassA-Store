@@ -925,6 +925,7 @@
     "back_to_inventory": "กลับไปยังคลังสินค้า",
     "discord_title": "เข้าร่วม Discord ของร้าน",
     "discord_desc": "รับข่าวสาร อัปเดต ดีลพิเศษ และความช่วยเหลือรวดเร็วจากทีมงาน",
+    "discord_members": "{online} ออนไลน์ · สมาชิก {members} คน",
     "discord_button": "เข้าร่วม",
     "standard_version": "เวอร์ชันมาตรฐาน",
     "pay_now": "ชำระเงินตอนนี้",
