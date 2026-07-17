@@ -72,26 +72,21 @@ async function reservedAmounts(
   return new Set(rows.map((r) => Number(r.expected_amount).toFixed(2)))
 }
 
-// The valid amount window for a given displayed price: from the price itself up
-// to (but not including) the next whole dollar. So $16.57 → [16.57 .. 16.99].
-// This guarantees the charged amount is NEVER below what the customer saw and
-// NEVER crosses into the next dollar, while still leaving unique cent slots.
-export function amountWindow(baseUsd: number): { floor: number; startCents: number } {
-  const floor = Math.floor(baseUsd)
-  const startCents = Math.round((baseUsd - floor) * 100) // e.g. 57 for 16.57
-  return { floor, startCents }
-}
-
 // True if a frozen amount is still valid for the current displayed price:
-// at least the price and below the next whole dollar.
+// at least the price and no more than ~$0.99 above it. (Widened from the old
+// "same whole dollar" rule so high-cent prices like $27.98 still have a full
+// 100-slot pool — the old rule left only 2 slots and exhausted under the 24h
+// order lifetime, breaking checkout.)
 export function isAmountInWindow(amount: number, baseUsd: number): boolean {
-  return amount >= baseUsd - 0.001 && amount < Math.floor(baseUsd) + 1
+  const base = round2(baseUsd)
+  return amount >= base - 0.001 && amount < base + 1
 }
 
-// Pick a unique amount in [baseAmount .. floor(baseAmount)+0.99] for the given
-// currency. Starts from a random cent in that window so amounts don't cluster.
-// Throws PAYPAL_ME_NO_UNIQUE_AMOUNT if every slot is taken (practically
-// impossible at this volume) so the caller can surface a "try again shortly".
+// Pick a unique amount in [price .. price+$0.99] for the given currency — a full
+// 100 cent-slot window that crosses the whole-dollar boundary when needed, so
+// there are ALWAYS plenty of unique slots regardless of the price's cents. The
+// amount is never below the displayed price; it may be up to ~$0.99 above.
+// Throws PAYPAL_ME_NO_UNIQUE_AMOUNT only if all 100 slots are taken.
 export async function pickUniqueExpectedAmount(
   tx: Prisma.TransactionClient,
   baseAmount: number,
@@ -99,12 +94,11 @@ export async function pickUniqueExpectedAmount(
   excludeOrderId?: string,
 ): Promise<number> {
   const taken = await reservedAmounts(tx, currency, excludeOrderId)
-  const { floor, startCents } = amountWindow(baseAmount)
-  const span = 100 - startCents // cents from startCents..99 (>= price, < next dollar)
+  const startCents = Math.round(round2(baseAmount) * 100) // exact price in cents (never undercharge)
+  const span = 100
   const offset = Math.floor(Math.random() * span)
   for (let i = 0; i < span; i++) {
-    const cents = startCents + ((offset + i) % span)
-    const candidate = round2(floor + cents / 100)
+    const candidate = round2((startCents + ((offset + i) % span)) / 100)
     if (!taken.has(candidate.toFixed(2))) return candidate
   }
   throw new Error("PAYPAL_ME_NO_UNIQUE_AMOUNT")
