@@ -51,8 +51,23 @@ export async function GET(req: Request) {
       select: {
         base_amount: true, commission_pct: true, commission_amount: true, status: true,
         created_at: true, paid_at: true,
-        order: { select: { products: { select: { name_en: true } } } },
-      },
+        order: {
+          select: {
+            products: {
+              select: {
+                name_en: true,
+              },
+            },
+
+            whitelisted_username:true,
+            users: {
+              select: {
+                email: true,
+              },
+            },
+          },
+        },
+      }
     }),
     prisma.affiliate_payouts.findMany({
       where: { affiliate_user_id: userId },
@@ -98,6 +113,9 @@ export async function GET(req: Request) {
     sales: earnings.map((e) => ({
       date: e.created_at.toISOString(),
       product: e.order?.products?.name_en ?? null,
+      whitelisted_username : e.order?.whitelisted_username ?? null,
+      email: e.order?.users?.email ?? null,
+
       sale_amount: Number(e.base_amount),
       commission_pct: Number(e.commission_pct),
       commission: Number(e.commission_amount),
