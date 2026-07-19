@@ -25,6 +25,7 @@ type RecentOrder = {
     created_at: string | Date
     users?: { avatar: string | null; username: string | null } | null
     products?: { name_th: string | null; name_en: string | null } | null
+    affiliate?: { code: string; name: string | null; via: string } | null
 }
 
 // ── Stat Card ──────────────────────────────────────────
@@ -389,11 +390,12 @@ export default function DashboardClient({ data }: { data: any }) {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-[13px]">
+                    <table className="w-full text-[13px] min-w-[640px]">
                         <thead>
                             <tr className="text-left text-[11px] text-text-muted border-b border-white/5">
                                 <th className="pb-3 font-medium">{t("user")}</th>
                                 <th className="pb-3 font-medium">{t("product")}</th>
+                                <th className="pb-3 font-medium">{t("affiliate")}</th>
                                 <th className="pb-3 font-medium">{t("amount")}</th>
                                 <th className="pb-3 font-medium">{t("status")}</th>
                                 <th className="pb-3 font-medium">{t("date")}</th>
@@ -416,6 +418,13 @@ export default function DashboardClient({ data }: { data: any }) {
                                     </td>
                                     <td className="py-3 text-text-muted line-clamp-1 max-w-[160px]">
                                         {locale === "th" ? o.products?.name_th : o.products?.name_en ?? "—"}
+                                    </td>
+                                    <td className="py-3">
+                                        {o.affiliate ? (
+                                            <span className="text-[11px] font-mono text-accent-light bg-accent/10 px-2 py-0.5 rounded whitespace-nowrap">{o.affiliate.code}</span>
+                                        ) : (
+                                            <span className="text-text-muted">—</span>
+                                        )}
                                     </td>
                                     <td className="py-3 font-semibold text-accent-light">
                                         ฿{o.amount.toLocaleString()}

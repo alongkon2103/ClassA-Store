@@ -67,6 +67,7 @@ type RecentOrder = {
   users?: { avatar?: string | null; username?: string | null } | null
   products?: { name_th?: string | null; name_en?: string | null } | null
   product_variants?: { label_th?: string | null; label_en?: string | null } | null
+  affiliate?: { code: string; name: string | null; via: string } | null
 }
 
 type AnalyticsData = {
@@ -243,7 +244,7 @@ function TopProductsTable({ products, locale, t }: { products: TopProduct[]; loc
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[13px]">
+      <table className="w-full text-[13px] min-w-[560px]">
         <thead>
           <tr className="text-left text-[11px] border-b border-white/5 bg-white/[0.02]">
             <th className="px-5 py-3 font-medium text-text-muted w-6">#</th>
@@ -701,12 +702,12 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
       {/* ── Row 2: Net Revenue (gross → −consignment → −affiliate = net) ── */}
       {data.netRevenue && (
         <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <StatCard label={t("gross_revenue")}    value={fmt(data.netRevenue.total_gross)}  sub={t("before_commission")} color="text-text-base" />
             <StatCard label={t("store_net_consignment")} value={fmt(data.netRevenue.total_net)} sub={t("after_commission")}  color="text-text-base" />
             <StatCard label={t("owner_payout_due")} value={fmt(data.netRevenue.total_payout)} sub={t("consignment_owners")} color="text-orange-400" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <StatCard label={t("affiliate_commission")} value={`−${fmt(data.netRevenue.affiliate_total)}`}
               sub={`${t("committed")} ${fmt(data.netRevenue.affiliate_committed)} · ${t("paid_out")} ${fmt(data.netRevenue.affiliate_paid)}`}
               color="text-red-400" />
@@ -717,7 +718,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
       )}
 
       {/* ── Row 3: Order Status ── */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-bg-card border border-green-500/20  rounded-2xl p-4 text-center">
           <p className="text-[11px] text-text-muted uppercase tracking-widest mb-1">Paid</p>
           <p className="text-[28px] font-bold text-green-400">{totalPaid}</p>
@@ -930,12 +931,13 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
           </Link>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[13px] min-w-[820px]">
             <thead>
               <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-white/[0.02]">
                 <th className="px-5 py-3 font-medium">{t("user")}</th>
                 <th className="px-4 py-3 font-medium">{t("product")}</th>
                 <th className="px-4 py-3 font-medium">{t("variant")}</th>
+                <th className="px-4 py-3 font-medium">{t("affiliate")}</th>
                 <th className="px-4 py-3 font-medium">{t("amount")}</th>
                 <th className="px-4 py-3 font-medium">{t("method")}</th>
                 <th className="px-4 py-3 font-medium">{t("status")}</th>
@@ -974,6 +976,11 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
                   </td>
                   <td className="px-4 py-3 text-text-muted">
                     {locale === "th" ? o.product_variants?.label_th : o.product_variants?.label_en ?? "—"}
+                  </td>
+                  <td className="px-4 py-3">
+                    {o.affiliate ? (
+                      <span className="text-[11px] font-mono text-accent-light bg-accent/10 px-2 py-0.5 rounded whitespace-nowrap">{o.affiliate.code}</span>
+                    ) : <span className="text-text-muted">—</span>}
                   </td>
                   <td className="px-4 py-3 font-semibold text-accent-light">{fmt(o.amount)}</td>
                   <td className="px-4 py-3">

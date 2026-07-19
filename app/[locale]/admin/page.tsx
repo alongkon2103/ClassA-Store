@@ -151,6 +151,10 @@ export default async function AdminDashboard({
             name_en: true,
           },
         },
+        // Affiliate attribution: the applied discount code (if it belongs to an
+        // affiliate) or the /r/ referral code, with the affiliate's name.
+        discount_code: { select: { code: true, owner_user_id: true, owner: { select: { username: true, affiliate_profile: { select: { display_name: true } } } } } },
+        referral_code: { select: { code: true, owner_user_id: true, owner: { select: { username: true, affiliate_profile: { select: { display_name: true } } } } } },
       },
     }),
 
@@ -230,12 +234,24 @@ export default async function AdminDashboard({
       salesCount: p._count.orders,
     })),
 
-    recentOrders: recentOrders.map((o) => ({
-      ...o,
-      amount: Number(o.amount),
-      discount_amount: o.discount_amount === null ? null : Number(o.discount_amount),
-      expected_amount: o.expected_amount === null ? null : Number(o.expected_amount),
-    })),
+    recentOrders: recentOrders.map((o) => {
+      // Prefer the applied discount code IF it's an affiliate code; else the
+      // referral code from the buyer's /r/ link.
+      const affCode = o.discount_code?.owner_user_id ? o.discount_code : (o.referral_code?.owner_user_id ? o.referral_code : null)
+      return {
+        ...o,
+        amount: Number(o.amount),
+        discount_amount: o.discount_amount === null ? null : Number(o.discount_amount),
+        expected_amount: o.expected_amount === null ? null : Number(o.expected_amount),
+        affiliate: affCode
+          ? {
+              code: affCode.code,
+              name: affCode.owner?.affiliate_profile?.display_name || affCode.owner?.username || null,
+              via: o.discount_code?.owner_user_id ? "code" : "referral",
+            }
+          : null,
+      }
+    }),
 
     // Chart-ready: exactly 7 rows keyed by Bangkok calendar day ("YYYY-MM-DD"),
     // zero-filled. Matching by day KEY (not timestamp) means the viewer's

@@ -144,6 +144,9 @@ export default async function AnalyticsPage({
         product_variants: { select: { label_en: true, label_th: true } },
         game_keys: { select: { key_value: true } },
         recorded_by: { select: { username: true, avatar: true } },
+        // Affiliate attribution — applied affiliate code or /r/ referral code.
+        discount_code: { select: { code: true, owner_user_id: true, owner: { select: { username: true, affiliate_profile: { select: { display_name: true } } } } } },
+        referral_code: { select: { code: true, owner_user_id: true, owner: { select: { username: true, affiliate_profile: { select: { display_name: true } } } } } },
       },
     }),
 
@@ -341,14 +344,24 @@ export default async function AnalyticsPage({
         })(),
         topProducts,
         revenueBySource,
-        recentOrders: recentOrders.map((o) => ({
-          ...o,
-          amount: Number(o.amount),
-          discount_amount: o.discount_amount === null ? null : Number(o.discount_amount),
-          expected_amount: o.expected_amount === null ? null : Number(o.expected_amount),
-          created_at: o.created_at?.toISOString() ?? null,
-          paid_at: o.paid_at?.toISOString() ?? null,
-        })),
+        recentOrders: recentOrders.map((o) => {
+          const affCode = o.discount_code?.owner_user_id ? o.discount_code : (o.referral_code?.owner_user_id ? o.referral_code : null)
+          return {
+            ...o,
+            amount: Number(o.amount),
+            discount_amount: o.discount_amount === null ? null : Number(o.discount_amount),
+            expected_amount: o.expected_amount === null ? null : Number(o.expected_amount),
+            created_at: o.created_at?.toISOString() ?? null,
+            paid_at: o.paid_at?.toISOString() ?? null,
+            affiliate: affCode
+              ? {
+                  code: affCode.code,
+                  name: affCode.owner?.affiliate_profile?.display_name || affCode.owner?.username || null,
+                  via: o.discount_code?.owner_user_id ? "code" : "referral",
+                }
+              : null,
+          }
+        }),
         ordersByStatus,
         ordersByPayment,
         topVariants,
