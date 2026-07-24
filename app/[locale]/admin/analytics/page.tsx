@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { Prisma } from "@prisma/client"
 import AnalyticsClient from "./AnalyticsClient"
 import { parseBangkokDay, bangkokBucketStart, zeroFillBuckets, type BangkokGranularity } from "@/lib/bangkokTz"
+import { stripeFeeWhere, summarizeStripeFees } from "@/lib/stripeFees"
 
 type Granularity = BangkokGranularity
 
@@ -51,6 +52,7 @@ export default async function AnalyticsPage({
     productVariantBreakdown,
     revenueBySource,
     affiliateCost,
+    feeGroups,
   ] = await Promise.all([
 
     // ── Revenue Over Time (single unified series) ──
@@ -307,7 +309,21 @@ export default async function AnalyticsPage({
         AND o.order_type <> 'TRIAL'
         ${paidAtFilter}
     `,
+
+    // Stripe processing fees for the same window, grouped by method × card
+    // country so the per-order ฿10 card fee stays exact. See lib/stripeFees.ts.
+    prisma.orders.groupBy({
+      by: ["payment_method", "card_country"],
+      where: {
+        ...stripeFeeWhere,
+        ...(from || to ? { paid_at: { ...(from && { gte: from }), ...(to && { lte: to }) } } : {}),
+      },
+      _sum: { amount: true },
+      _count: { _all: true },
+    }),
   ])
+
+  const fees = summarizeStripeFees(feeGroups)
 
   return (
     <AnalyticsClient
@@ -366,6 +382,7 @@ export default async function AnalyticsPage({
         ordersByPayment,
         topVariants,
         totalStats: totalStats[0],
+        stripeFees: fees,
         netRevenue: (() => {
           const nr = netRevenue[0]
           const committed = Number(affiliateCost[0]?.committed ?? 0)
@@ -376,7 +393,9 @@ export default async function AnalyticsPage({
             affiliate_committed: Math.round(committed * 100) / 100,
             affiliate_paid: Math.round(paid * 100) / 100,
             affiliate_total,
-            net_after_affiliate: Math.round(((nr?.total_net ?? 0) - affiliate_total) * 100) / 100,
+            stripe_fee: fees.fee,
+            // Store keeps (after consignment) − Stripe fees − affiliate commission.
+            net_after_affiliate: Math.round(((nr?.total_net ?? 0) - fees.fee - affiliate_total) * 100) / 100,
           }
         })(),
         productVariantBreakdown,

@@ -160,6 +160,10 @@ export default function PartnershipEarningsPage() {
   const [selectedMonth, setSelectedMonth] = useState("")
   const [data, setData] = useState<ProductRow[]>([])
   const [affiliate, setAffiliate] = useState<{ committed: number; paid: number; total: number }>({ committed: 0, paid: 0, total: 0 })
+  const [stripeFees, setStripeFees] = useState<{
+    gross: number; fee: number; net: number; orders: number; unknownCountry: number
+    byMethod: { method: string; orders: number; gross: number; fee: number; net: number; unknownCountry: number }[]
+  }>({ gross: 0, fee: 0, net: 0, orders: 0, unknownCountry: 0, byMethod: [] })
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -173,6 +177,7 @@ export default function PartnershipEarningsPage() {
       .then(d => {
         setData(d.products ?? [])
         setAffiliate(d.affiliate ?? { committed: 0, paid: 0, total: 0 })
+        setStripeFees(d.stripeFees ?? { gross: 0, fee: 0, net: 0, orders: 0, unknownCountry: 0, byMethod: [] })
         setLoading(false)
       })
   }, [selectedMonth])
@@ -248,6 +253,38 @@ export default function PartnershipEarningsPage() {
           <p className="text-[24px] font-bold text-accent-light">{data.length} {t("active_products_unit")}</p>
         </div>
       </div>
+
+      {/* Stripe processing fee — store-wide cost for the same period, broken
+          down per method so the number is auditable. */}
+      {stripeFees.fee > 0 && (
+        <div className="bg-bg-card border border-orange-400/20 rounded-2xl px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <div>
+              <p className="text-[11px] tracking-widest text-text-muted uppercase mb-1">{t("stripe_fee_storewide")}</p>
+              <p className="text-[11px] text-text-muted">{t("stripe_fee_rates")}</p>
+            </div>
+            <p className="text-[22px] font-bold text-orange-400">
+              −฿{stripeFees.fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+          <div className="space-y-1 border-t border-white/5 pt-2.5">
+            {stripeFees.byMethod.map(m => (
+              <div key={m.method} className="flex justify-between text-[12px]">
+                <span className="text-text-muted capitalize">
+                  {m.method} · {m.orders} {t("orders_unit")}
+                  {m.unknownCountry > 0 && (
+                    <span className="text-amber-500/80 ml-1.5">{t("unknown_country_note", { n: m.unknownCountry })}</span>
+                  )}
+                </span>
+                <span className="font-mono">
+                  <span className="text-text-muted">฿{m.gross.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="text-orange-400 ml-2">−฿{m.fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Affiliate commission — store-wide expense for the same period. Partner
           shares above stay on gross; this is a separate store cost. */}

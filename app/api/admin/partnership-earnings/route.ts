@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 import { parseBangkokDay } from "@/lib/bangkokTz"
 import { paypalSettlementFromAmounts } from "@/lib/paypalSettlement"
+import { stripeFeeWhere, summarizeStripeFees } from "@/lib/stripeFees"
 
 export async function GET(req: NextRequest) {
   const admin = await validateAdmin(["admin"])
@@ -109,5 +110,14 @@ export async function GET(req: NextRequest) {
   const affPaid = affSum("paid")
   const affiliate = { committed: r2(affCommitted), paid: r2(affPaid), total: r2(affCommitted + affPaid) }
 
-  return NextResponse.json({ products: processed, affiliate })
+  // Stripe processing fees for the same period (store-wide, card + promptpay).
+  const feeGroups = await prisma.orders.groupBy({
+    by: ["payment_method", "card_country"],
+    where: { ...stripeFeeWhere, ...dateFilter },
+    _sum: { amount: true },
+    _count: { _all: true },
+  })
+  const stripeFees = summarizeStripeFees(feeGroups)
+
+  return NextResponse.json({ products: processed, affiliate, stripeFees })
 }

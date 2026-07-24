@@ -29,10 +29,12 @@ type RecentOrder = {
 }
 
 // ── Stat Card ──────────────────────────────────────────
-// Waterfall: gross → −affiliate commission → net (with committed/paid split).
-function AffiliateNet({ label, gross, aff, net, t }: {
+// Waterfall: gross → −Stripe fee → −affiliate commission → net.
+// Each deduction shows its own breakdown so the number is auditable.
+function AffiliateNet({ label, gross, fees, aff, net, t }: {
     label: string
     gross: number
+    fees: { fee: number; gross: number; orders: number; unknownCountry: number; byMethod: { method: string; orders: number; gross: number; fee: number }[] }
     aff: { total: number; committed: number; paid: number }
     net: number
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,6 +49,26 @@ function AffiliateNet({ label, gross, aff, net, t }: {
                     <span className="text-text-muted">{t("gross_revenue")}</span>
                     <span className="font-mono">{baht(gross)}</span>
                 </div>
+
+                {/* Stripe processing fee */}
+                <div className="flex justify-between">
+                    <span className="text-text-muted">{t("stripe_fee")}</span>
+                    <span className="font-mono text-orange-400">−{baht(fees.fee)}</span>
+                </div>
+                {fees.byMethod.length > 0 && (
+                    <div className="text-[11px] text-text-muted/80 text-right space-y-0.5">
+                        {fees.byMethod.map((m) => (
+                            <p key={m.method}>
+                                {m.method} · {t("orders_n", { n: m.orders })} · {baht(m.gross)} → −{baht(m.fee)}
+                            </p>
+                        ))}
+                        {fees.unknownCountry > 0 && (
+                            <p className="text-amber-500/80">{t("unknown_country_note", { n: fees.unknownCountry })}</p>
+                        )}
+                    </div>
+                )}
+
+                {/* Affiliate commission */}
                 <div className="flex justify-between">
                     <span className="text-text-muted">{t("affiliate_commission")}</span>
                     <span className="font-mono text-red-400">−{baht(aff.total)}</span>
@@ -56,6 +78,7 @@ function AffiliateNet({ label, gross, aff, net, t }: {
                         {t("committed")} {baht(aff.committed)} · {t("paid_out")} {baht(aff.paid)}
                     </p>
                 )}
+
                 <div className="border-t border-white/5 !my-2" />
                 <div className="flex justify-between items-center">
                     <span className="font-semibold">{t("net_revenue")}</span>
@@ -190,10 +213,10 @@ export default function DashboardClient({ data }: { data: any }) {
 
             {/* Net revenue after affiliate commission (accrual) */}
             <section className="bg-bg-card border border-accent/10 rounded-2xl p-5">
-                <h2 className="text-[14px] font-semibold mb-4">{t("net_after_affiliate")}</h2>
+                <h2 className="text-[14px] font-semibold mb-4">{t("net_after_costs")}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <AffiliateNet label={t("today")} gross={data.todayRevenue} aff={data.todayAffiliate} net={data.todayNet} t={t} />
-                    <AffiliateNet label={t("this_month")} gross={data.monthRevenue} aff={data.monthAffiliate} net={data.monthNet} t={t} />
+                    <AffiliateNet label={t("today")} gross={data.todayRevenue} fees={data.todayFees} aff={data.todayAffiliate} net={data.todayNet} t={t} />
+                    <AffiliateNet label={t("this_month")} gross={data.monthRevenue} fees={data.monthFees} aff={data.monthAffiliate} net={data.monthNet} t={t} />
                 </div>
             </section>
 

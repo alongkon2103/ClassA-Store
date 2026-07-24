@@ -95,7 +95,16 @@ type AnalyticsData = {
     affiliate_committed: number
     affiliate_paid: number
     affiliate_total: number
+    stripe_fee: number
     net_after_affiliate: number
+  } | null
+  stripeFees?: {
+    gross: number
+    fee: number
+    net: number
+    orders: number
+    unknownCountry: number
+    byMethod: { method: string; orders: number; gross: number; fee: number; net: number; unknownCountry: number }[]
   } | null
   topProducts: TopProduct[]
   topVariants: TopVariant[]
@@ -707,13 +716,61 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
             <StatCard label={t("store_net_consignment")} value={fmt(data.netRevenue.total_net)} sub={t("after_commission")}  color="text-text-base" />
             <StatCard label={t("owner_payout_due")} value={fmt(data.netRevenue.total_payout)} sub={t("consignment_owners")} color="text-orange-400" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <StatCard label={t("stripe_fee")} value={`−${fmt(data.netRevenue.stripe_fee)}`}
+              sub={data.stripeFees ? t("orders_n", { n: data.stripeFees.orders }) : undefined}
+              color="text-orange-400" />
             <StatCard label={t("affiliate_commission")} value={`−${fmt(data.netRevenue.affiliate_total)}`}
               sub={`${t("committed")} ${fmt(data.netRevenue.affiliate_committed)} · ${t("paid_out")} ${fmt(data.netRevenue.affiliate_paid)}`}
               color="text-red-400" />
             <StatCard label={t("net_after_affiliate")} value={fmt(data.netRevenue.net_after_affiliate)}
               sub={t("net_revenue")} color="text-green-400" />
           </div>
+
+          {/* Stripe fee breakdown per payment method — makes the deduction auditable */}
+          {data.stripeFees && data.stripeFees.byMethod.length > 0 && (
+            <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+              <SectionTitle title={t("stripe_fee_breakdown")} sub={t("stripe_fee_rates")} />
+              <div className="overflow-x-auto">
+                <table className="w-full text-[12.5px] min-w-[520px]">
+                  <thead>
+                    <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-white/[0.015]">
+                      <th className="px-5 py-2.5 font-medium">{t("method")}</th>
+                      <th className="px-4 py-2.5 font-medium text-right">{t("orders")}</th>
+                      <th className="px-4 py-2.5 font-medium text-right">{t("gross_revenue")}</th>
+                      <th className="px-4 py-2.5 font-medium text-right">{t("stripe_fee")}</th>
+                      <th className="px-4 py-2.5 font-medium text-right">{t("net_revenue")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {data.stripeFees.byMethod.map((m) => (
+                      <tr key={m.method} className="hover:bg-accent/[0.04] transition-colors">
+                        <td className="px-5 py-2.5">
+                          <span className="capitalize">{m.method}</span>
+                          {m.unknownCountry > 0 && (
+                            <span className="text-[10px] text-amber-500/80 ml-2">
+                              {t("unknown_country_note", { n: m.unknownCountry })}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-mono text-text-muted">{m.orders.toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-text-muted">{fmt(m.gross)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-orange-400">−{fmt(m.fee)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono font-semibold">{fmt(m.net)}</td>
+                      </tr>
+                    ))}
+                    <tr className="bg-white/[0.02] font-semibold">
+                      <td className="px-5 py-2.5">{t("total")}</td>
+                      <td className="px-4 py-2.5 text-right font-mono">{data.stripeFees.orders.toLocaleString()}</td>
+                      <td className="px-4 py-2.5 text-right font-mono">{fmt(data.stripeFees.gross)}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-orange-400">−{fmt(data.stripeFees.fee)}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-green-400">{fmt(data.stripeFees.net)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

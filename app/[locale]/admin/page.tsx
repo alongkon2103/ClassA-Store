@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import DashboardClient from "./DashboardClient"
 import { setRequestLocale } from "next-intl/server"
 import { bangkokDayStart, bangkokMonthStart, bangkokDayKey } from "@/lib/bangkokTz"
+import { stripeFeeWhere, summarizeStripeFees } from "@/lib/stripeFees"
 
 export default async function AdminDashboard({
   params,
@@ -32,6 +33,8 @@ export default async function AdminDashboard({
     dailyRevenue,
     todayAffiliate,
     monthAffiliate,
+    todayFeeGroups,
+    monthFeeGroups,
   ] = await Promise.all([
     // Today's Sales (total)
     prisma.orders.aggregate({
@@ -191,7 +194,25 @@ export default async function AdminDashboard({
       },
       _sum: { commission_amount: true },
     }),
+
+    // Stripe processing fees — grouped so the per-order ฿10 card fee is exact
+    // without pulling every row. See lib/stripeFees.ts for the rate model.
+    prisma.orders.groupBy({
+      by: ["payment_method", "card_country"],
+      where: { ...stripeFeeWhere, paid_at: { gte: todayStart } },
+      _sum: { amount: true },
+      _count: { _all: true },
+    }),
+    prisma.orders.groupBy({
+      by: ["payment_method", "card_country"],
+      where: { ...stripeFeeWhere, paid_at: { gte: monthStart } },
+      _sum: { amount: true },
+      _count: { _all: true },
+    }),
   ])
+
+  const todayFees = summarizeStripeFees(todayFeeGroups)
+  const monthFees = summarizeStripeFees(monthFeeGroups)
 
   // Roll a grouped-by-status earning result into { total, committed, paid }.
   type AffGroup = { status: string; _sum: { commission_amount: unknown } }
@@ -220,11 +241,13 @@ export default async function AdminDashboard({
     monthRevenue: Number(monthRevenue._sum.amount ?? 0),
     monthManualRevenue: Number(monthManualRevenue._sum.amount ?? 0),
     monthManualCount: monthManualRevenue._count,
-    // Affiliate commission cost (accrual) + store net after it.
+    // Cost stack: gross → −Stripe fee → −affiliate commission → net.
     todayAffiliate: todayAff,
     monthAffiliate: monthAff,
-    todayNet: Math.round((Number(todayRevenue._sum.amount ?? 0) - todayAff.total) * 100) / 100,
-    monthNet: Math.round((Number(monthRevenue._sum.amount ?? 0) - monthAff.total) * 100) / 100,
+    todayFees,
+    monthFees,
+    todayNet: Math.round((Number(todayRevenue._sum.amount ?? 0) - todayFees.fee - todayAff.total) * 100) / 100,
+    monthNet: Math.round((Number(monthRevenue._sum.amount ?? 0) - monthFees.fee - monthAff.total) * 100) / 100,
     pendingOrders,
     totalOrders,
     totalProducts,
