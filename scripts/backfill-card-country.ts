@@ -34,6 +34,10 @@ async function main() {
   const orders = await prisma.orders.findMany({
     where: {
       card_country: null,
+      // Only PAID orders can have a charge. Pending/expired sessions were never
+      // completed, so Stripe has no card details for them — querying those just
+      // burns API calls and prints noise.
+      status: "paid",
       OR: [{ stripe_session_id: { not: null } }, { stripe_payment_intent: { not: null } }],
     },
     orderBy: { created_at: "desc" },
