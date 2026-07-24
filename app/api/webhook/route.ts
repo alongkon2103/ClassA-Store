@@ -5,6 +5,7 @@ import { headers } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import { releaseOrderDiscount } from "@/lib/discountCodes"
 import { prepareAffiliateEarning, reverseAffiliateEarning } from "@/lib/affiliateEarnings"
+import { fetchStripeCardCountry } from "@/lib/stripeCardCountry"
 import { notify } from "@/lib/notifications"
 import { NextRequest } from "next/server"
 
@@ -161,6 +162,13 @@ export async function POST(req: NextRequest) {
     // promptpay sale would miss its commission. Added to the paid txn = atomic.
     const earning = await prepareAffiliateEarning(order)
 
+    // Issuing country of the card (best-effort, null for PromptPay) — stored so
+    // we can compute the real Stripe fee tier per order later.
+    const cardCountry = await fetchStripeCardCountry(stripe, {
+      sessionId: session.id,
+      paymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : null,
+    })
+
     await prisma.$transaction([
       // 1. update order
       prisma.orders.update({
@@ -168,6 +176,7 @@ export async function POST(req: NextRequest) {
         data: {
           status:           "paid",
           paid_at:          new Date(),
+          card_country:     cardCountry,
           // Overwrite the Stripe-session expiry (set at checkout, ~30–60 min)
           // with the actual subscription expiry. Without this, paid orders look
           // expired within an hour and disappear from the active orders list.
