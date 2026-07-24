@@ -126,7 +126,7 @@
 "use client"
 import { Fragment, useEffect, useState } from "react"
 import { useTranslations, useLocale } from "next-intl"
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { PAYPAL_FEE_PCT, PAYPAL_FIXED_FEE_USD } from "@/lib/paypalSettlement"
 
 type Partner = { name: string; contact: string; share: number; payout: number; payout_net?: number }
@@ -134,10 +134,15 @@ type ProductRow = {
   id: string; name_en: string; name_th: string;
   total_orders: number; gross_revenue: number; net_revenue?: number;
   manual_orders?: number; manual_revenue?: number;
+  // Per-product cost breakdown behind net_revenue.
+  stripe_fee?: number; stripe_orders?: number; stripe_unknown_country?: number;
+  paypal_fee?: number; affiliate_cost?: number;
   paypal_orders?: number; paypal_revenue?: number;
   paypal_amount_usd?: number; paypal_net_usd?: number; paypal_net_thb?: number;
   partners: Partner[]
 }
+
+const baht = (n: number) => `฿${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 function getLast12Months() {
   const months = []
@@ -150,8 +155,6 @@ function getLast12Months() {
   }
   return months
 }
-
-const COLORS = ["#7c6af7", "#a78bfa", "#c4b5fd", "#6d28d9", "#4c1d95"]
 
 export default function PartnershipEarningsPage() {
   const t = useTranslations("PartnershipEarnings")
@@ -185,10 +188,20 @@ export default function PartnershipEarningsPage() {
   const totalGross = data.reduce((acc, r) => acc + r.gross_revenue, 0)
   const totalPayout = data.reduce((acc, r) =>
     acc + r.partners.reduce((s, p) => s + p.payout, 0), 0)
-  // Same shares applied to PayPal-net revenue — what the payout would be if
-  // computed on money that actually lands in the account.
+  // Same shares applied to TRUE net revenue — what the payout would be if
+  // computed on the money actually left after every cost.
   const totalPayoutNet = data.reduce((acc, r) =>
     acc + r.partners.reduce((s, p) => s + (p.payout_net ?? p.payout), 0), 0)
+
+  // Cost waterfall for the partner products only (the store-wide cards further
+  // down cover EVERY product, including ones with no partner — different scope
+  // on purpose, so both are labelled).
+  const prodStripeFee = data.reduce((acc, r) => acc + (r.stripe_fee ?? 0), 0)
+  const prodPaypalFee = data.reduce((acc, r) => acc + (r.paypal_fee ?? 0), 0)
+  const prodAffiliate = data.reduce((acc, r) => acc + (r.affiliate_cost ?? 0), 0)
+  const prodUnknownCountry = data.reduce((acc, r) => acc + (r.stripe_unknown_country ?? 0), 0)
+  const totalNet = data.reduce((acc, r) => acc + (r.net_revenue ?? r.gross_revenue), 0)
+  const netMarginPct = totalGross > 0 ? (totalNet / totalGross) * 100 : 0
   const totalManualRevenue = data.reduce((acc, r) => acc + (r.manual_revenue ?? 0), 0)
   const totalManualOrders = data.reduce((acc, r) => acc + (r.manual_orders ?? 0), 0)
   const totalPaypalRevenue = data.reduce((acc, r) => acc + (r.paypal_revenue ?? 0), 0)
@@ -198,15 +211,18 @@ export default function PartnershipEarningsPage() {
   const totalPaypalNetThb = data.reduce((acc, r) => acc + (r.paypal_net_thb ?? 0), 0)
   const paypalFeeThb = totalPaypalRevenue - totalPaypalNetThb
 
-  // รวม payout ต่อพาร์ทเนอร์ข้ามทุกสินค้า
-  const partnerMap: Record<string, number> = {}
+  // รวม payout ต่อพาร์ทเนอร์ข้ามทุกสินค้า — เก็บทั้ง gross และ net
+  const partnerMap: Record<string, { payout: number; payout_net: number }> = {}
   data.forEach(r => {
     r.partners.forEach(p => {
-      partnerMap[p.name] = (partnerMap[p.name] || 0) + p.payout
+      const cur = partnerMap[p.name] ?? { payout: 0, payout_net: 0 }
+      cur.payout += p.payout
+      cur.payout_net += p.payout_net ?? p.payout
+      partnerMap[p.name] = cur
     })
   })
   const chartData = Object.entries(partnerMap)
-    .map(([name, payout]) => ({ name, payout }))
+    .map(([name, v]) => ({ name, payout: v.payout, payout_net: v.payout_net }))
     .sort((a, b) => b.payout - a.payout)
 
   return (
@@ -234,17 +250,17 @@ export default function PartnershipEarningsPage() {
         <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
           <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{t("total_gross")}</p>
           <p className="text-[24px] font-bold text-text-base">
-            ฿{totalGross.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            {baht(totalGross)}
           </p>
         </div>
         <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
           <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{t("total_payout")}</p>
           <p className="text-[24px] font-bold text-red-400">
-            ฿{totalPayout.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            {baht(totalPayout)}
           </p>
           {totalPayoutNet < totalPayout - 0.005 && (
             <p className="text-[11px] text-blue-300/90 mt-1 font-mono">
-              {t("total_payout_net_hint")} ฿{totalPayoutNet.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {t("total_payout_net_hint")} {baht(totalPayoutNet)}
             </p>
           )}
         </div>
@@ -253,6 +269,69 @@ export default function PartnershipEarningsPage() {
           <p className="text-[24px] font-bold text-accent-light">{data.length} {t("active_products_unit")}</p>
         </div>
       </div>
+
+      {/* TRUE net waterfall for the partner products in view. Scope differs from
+          the store-wide cards below (those cover every product) — both are
+          labelled so the two totals are never read as the same number. */}
+      {!loading && data.length > 0 && (
+        <div className="bg-bg-card border border-emerald-400/20 rounded-2xl p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+            <div>
+              <p className="text-[11px] tracking-widest text-text-muted uppercase mb-1">{t("net_title")}</p>
+              <p className="text-[11px] text-text-muted">{t("net_sub", { count: data.length })}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[26px] font-bold text-emerald-400 leading-none">{baht(totalNet)}</p>
+              <p className="text-[11px] text-emerald-300/70 mt-1 font-mono">
+                {t("net_margin", { pct: netMarginPct.toFixed(1) })}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-1.5 text-[13px]">
+            <div className="flex items-center justify-between gap-4 py-1">
+              <span className="text-text-muted">{t("net_row_gross")}</span>
+              <span className="font-mono font-bold">{baht(totalGross)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-4 py-1">
+              <span className="text-text-muted">
+                {t("net_row_stripe")}
+                {prodUnknownCountry > 0 && (
+                  <span className="ml-2 text-[10px] text-yellow-500/80">
+                    {t("unknown_country_note", { n: prodUnknownCountry })}
+                  </span>
+                )}
+              </span>
+              <span className="font-mono text-orange-400">−{baht(prodStripeFee)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-4 py-1">
+              <span className="text-text-muted">{t("net_row_paypal")}</span>
+              <span className="font-mono text-blue-300">−{baht(prodPaypalFee)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-4 py-1">
+              <span className="text-text-muted">{t("net_row_affiliate")}</span>
+              <span className="font-mono text-red-400">−{baht(prodAffiliate)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-4 pt-2.5 mt-1 border-t border-white/10">
+              <span className="font-bold">{t("net_row_final")}</span>
+              <span className="font-mono font-bold text-emerald-400 text-[15px]">{baht(totalNet)}</span>
+            </div>
+          </div>
+
+          {/* Same shares, applied to gross (the agreement) vs net (reality). */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/5">
+            <div className="bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3">
+              <p className="text-[10px] tracking-wider text-text-muted uppercase mb-1">{t("col_payout")}</p>
+              <p className="font-mono font-bold text-red-400 text-[16px]">{baht(totalPayout)}</p>
+            </div>
+            <div className="bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3">
+              <p className="text-[10px] tracking-wider text-text-muted uppercase mb-1">{t("col_payout_net")}</p>
+              <p className="font-mono font-bold text-emerald-400 text-[16px]">{baht(totalPayoutNet)}</p>
+            </div>
+          </div>
+          <p className="text-[10px] text-text-muted mt-2.5 leading-relaxed">{t("payout_net_note")}</p>
+        </div>
+      )}
 
       {/* Stripe processing fee — store-wide cost for the same period, broken
           down per method so the number is auditable. */}
@@ -264,7 +343,7 @@ export default function PartnershipEarningsPage() {
               <p className="text-[11px] text-text-muted">{t("stripe_fee_rates")}</p>
             </div>
             <p className="text-[22px] font-bold text-orange-400">
-              −฿{stripeFees.fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              −{baht(stripeFees.fee)}
             </p>
           </div>
           <div className="space-y-1 border-t border-white/5 pt-2.5">
@@ -277,8 +356,8 @@ export default function PartnershipEarningsPage() {
                   )}
                 </span>
                 <span className="font-mono">
-                  <span className="text-text-muted">฿{m.gross.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  <span className="text-orange-400 ml-2">−฿{m.fee.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="text-text-muted">{baht(m.gross)}</span>
+                  <span className="text-orange-400 ml-2">−{baht(m.fee)}</span>
                 </span>
               </div>
             ))}
@@ -294,11 +373,11 @@ export default function PartnershipEarningsPage() {
             <div>
               <p className="text-[11px] tracking-widest text-text-muted uppercase mb-1">{t("affiliate_commission_storewide")}</p>
               <p className="text-[11px] text-text-muted">
-                {t("committed")} ฿{affiliate.committed.toLocaleString(undefined, { minimumFractionDigits: 2 })} · {t("paid_out")} ฿{affiliate.paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {t("committed")} {baht(affiliate.committed)} · {t("paid_out")} {baht(affiliate.paid)}
               </p>
             </div>
             <p className="text-[22px] font-bold text-red-400">
-              −฿{affiliate.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              −{baht(affiliate.total)}
             </p>
           </div>
         </div>
@@ -309,7 +388,7 @@ export default function PartnershipEarningsPage() {
           <p className="text-[12px] text-yellow-500/90 font-medium">{t("manual_included_label")}</p>
           <p className="text-[11px] text-text-muted mt-0.5">
             {t("manual_included_sub", {
-              amount: totalManualRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+              amount: totalManualRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
               count: totalManualOrders,
             })}
           </p>
@@ -341,10 +420,10 @@ export default function PartnershipEarningsPage() {
                 {t("paypal_gross")}
               </p>
               <p className="text-[16px] font-bold text-text-base font-mono">
-                ฿{totalPaypalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {baht(totalPaypalRevenue)}
               </p>
               <p className="text-[10px] text-text-muted font-mono mt-0.5">
-                ≈ ${totalPaypalAmountUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })} USD
+                ≈ ${totalPaypalAmountUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
               </p>
             </div>
             <div>
@@ -352,7 +431,7 @@ export default function PartnershipEarningsPage() {
                 {t("paypal_fee")}
               </p>
               <p className="text-[16px] font-bold text-red-400 font-mono">
-                −฿{paypalFeeThb.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                −{baht(paypalFeeThb)}
               </p>
               <p className="text-[10px] text-text-muted font-mono mt-0.5">
                 {totalPaypalOrders} × ${PAYPAL_FIXED_FEE_USD.toFixed(2)} + {PAYPAL_FEE_PCT}%
@@ -363,10 +442,10 @@ export default function PartnershipEarningsPage() {
                 {t("paypal_net")}
               </p>
               <p className="text-[18px] font-bold text-blue-300 font-mono">
-                ฿{totalPaypalNetThb.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {baht(totalPaypalNetThb)}
               </p>
               <p className="text-[10px] text-blue-400/60 font-mono mt-0.5">
-                ≈ ${totalPaypalNetUsd.toLocaleString(undefined, { minimumFractionDigits: 2 })} USD
+                ≈ ${totalPaypalNetUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
               </p>
             </div>
           </div>
@@ -377,7 +456,7 @@ export default function PartnershipEarningsPage() {
       {!loading && chartData.length > 0 && (
         <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
           <p className="text-[11px] tracking-widest text-text-muted uppercase mb-4">{t("chart_title")}</p>
-          <ResponsiveContainer width="100%" height={240}>
+          <ResponsiveContainer width="100%" height={272}>
             <BarChart
               data={chartData}
               margin={{ top: 4, right: 16, left: 8, bottom: 4 }}
@@ -386,6 +465,10 @@ export default function PartnershipEarningsPage() {
                 <linearGradient id="payoutGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#5b91cb" />
                   <stop offset="100%" stopColor="#427ab5" />
+                </linearGradient>
+                <linearGradient id="payoutNetGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#34d399" />
+                  <stop offset="100%" stopColor="#059669" />
                 </linearGradient>
               </defs>
 
@@ -413,24 +496,32 @@ export default function PartnershipEarningsPage() {
                   color: "#e2e8f0",
                   boxShadow: "0 8px 24px rgba(66,122,181,0.15)",
                 }}
-                formatter={(value) => [
-                  `฿${Number(value ?? 0).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
-                  t("col_payout"),
-                ]}
+                formatter={(value, name) => [baht(Number(value ?? 0)), name]}
                 labelStyle={{
                   color: "#cbd5e1",
                   fontWeight: 600,
                 }}
               />
 
+              <Legend
+                wrapperStyle={{ fontSize: 11, color: "#94a3b8", paddingTop: 8 }}
+                iconType="circle"
+                iconSize={8}
+              />
+
               <Bar
                 dataKey="payout"
+                name={t("chart_gross_label")}
                 fill="url(#payoutGradient)"
                 radius={[8, 8, 0, 0]}
-                maxBarSize={64}
+                maxBarSize={48}
+              />
+              <Bar
+                dataKey="payout_net"
+                name={t("chart_net_label")}
+                fill="url(#payoutNetGradient)"
+                radius={[8, 8, 0, 0]}
+                maxBarSize={48}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -440,21 +531,23 @@ export default function PartnershipEarningsPage() {
       {/* Table */}
       <div className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[13px] min-w-[820px]">
             <thead>
               <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-white/[0.02]">
                 <th className="px-5 py-3.5 font-medium">{t("col_product")}</th>
                 <th className="px-4 py-3.5 font-medium text-right">{t("col_orders")}</th>
                 <th className="px-4 py-3.5 font-medium text-right">{t("col_revenue")}</th>
+                <th className="px-4 py-3.5 font-medium text-right">{t("net_row_final")}</th>
                 <th className="px-4 py-3.5 font-medium text-right">{t("col_payout")}</th>
+                <th className="px-4 py-3.5 font-medium text-right">{t("col_payout_net")}</th>
                 <th className="px-4 py-3.5 font-medium text-right">{t("col_detail")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {loading ? (
-                <tr><td colSpan={5} className="text-center py-12 text-text-muted">{t("loading")}</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-text-muted">{t("loading")}</td></tr>
               ) : data.length === 0 ? (
-                <tr><td colSpan={5} className="text-center py-12 text-text-muted">{t("no_data")}</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-text-muted">{t("no_data")}</td></tr>
               ) : data.map((r) => (
                 // Fragment needs the key (not the inner <tr>) — it's the
                 // direct child of the map.
@@ -471,80 +564,97 @@ export default function PartnershipEarningsPage() {
                     </td>
                     <td className="px-4 py-4 text-right font-mono text-text-muted">{r.total_orders}</td>
                     <td className="px-4 py-4 text-right font-mono font-bold">
-                      ฿{r.gross_revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      {baht(r.gross_revenue)}
                       {r.manual_revenue && r.manual_revenue > 0 ? (
                         <p className="text-[10px] text-yellow-500/80 mt-0.5 font-normal">
-                          {t("manual_short")} ฿{r.manual_revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {t("manual_short")} {baht(r.manual_revenue)}
                         </p>
                       ) : null}
                     </td>
+                    <td className="px-4 py-4 text-right font-mono font-bold text-emerald-400">
+                      {baht(r.net_revenue ?? r.gross_revenue)}
+                      <p className="text-[10px] text-text-muted mt-0.5 font-normal">
+                        −{baht((r.stripe_fee ?? 0) + (r.paypal_fee ?? 0) + (r.affiliate_cost ?? 0))}
+                      </p>
+                    </td>
                     <td className="px-4 py-4 text-right font-mono font-bold text-red-400">
-                      ฿{r.partners.reduce((s, p) => s + p.payout, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      {(() => {
-                        const rowNet = r.partners.reduce((s, p) => s + (p.payout_net ?? p.payout), 0)
-                        const rowGross = r.partners.reduce((s, p) => s + p.payout, 0)
-                        return rowNet < rowGross - 0.005 ? (
-                          <p className="text-[10px] text-blue-300/80 mt-0.5 font-normal">
-                            {t("total_payout_net_hint")} ฿{rowNet.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                          </p>
-                        ) : null
-                      })()}
+                      {baht(r.partners.reduce((s, p) => s + p.payout, 0))}
+                    </td>
+                    <td className="px-4 py-4 text-right font-mono font-bold text-emerald-400">
+                      {baht(r.partners.reduce((s, p) => s + (p.payout_net ?? p.payout), 0))}
                     </td>
                     <td className="px-4 py-4 text-right text-text-muted text-[11px]">
                       {expandedId === r.id ? t("hide") : t("show")}
                     </td>
                   </tr>
                   {expandedId === r.id && (() => {
-                    // Split a partner's payout into the two settlement channels:
-                    //   - Normal: Stripe + manual orders (lands as THB directly)
-                    //   - PayPal Net: pre-computed by the API per-order so the
-                    //     $0.39 fixed fee is applied per transaction, not once.
-                    // Total = Normal + PayPal Net — equals p.payout MINUS the
-                    // partner's share of PayPal fees.
-                    const paypalRev = r.paypal_revenue ?? 0
-                    const normalRev = r.gross_revenue - paypalRev
-                    const paypalNetRev = r.paypal_net_thb ?? 0
+                    // Per-product waterfall — the same three costs as the card at
+                    // the top, restricted to this product's orders.
+                    const stripeFee = r.stripe_fee ?? 0
+                    const paypalFee = r.paypal_fee ?? 0
+                    const affCost = r.affiliate_cost ?? 0
+                    const net = r.net_revenue ?? r.gross_revenue
+                    const costRow = (label: string, value: number, tone: string, note?: string) =>
+                      value > 0.005 ? (
+                        <div className="flex items-center justify-between gap-4 py-1">
+                          <span className="text-text-muted">
+                            {label}
+                            {note && <span className="ml-2 text-[10px] text-yellow-500/80">{note}</span>}
+                          </span>
+                          <span className={`font-mono ${tone}`}>−{baht(value)}</span>
+                        </div>
+                      ) : null
                     return (
                       <tr key={`${r.id}-detail`} className="bg-white/[0.01]">
-                        <td colSpan={5} className="px-5 py-4">
-                          <div className="space-y-2">
-                            {r.partners.map((p, i) => {
-                              const shareFrac = p.share / 100
-                              const payoutNormal = normalRev * shareFrac
-                              const payoutPaypal = paypalNetRev * shareFrac
-                              const hasPaypal = paypalRev > 0
-                              return (
+                        <td colSpan={7} className="px-5 py-4">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {/* Cost breakdown */}
+                            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
+                              <p className="text-[10px] tracking-widest text-text-muted uppercase mb-3">{t("net_detail_title")}</p>
+                              <div className="space-y-0.5 text-[12px]">
+                                <div className="flex items-center justify-between gap-4 py-1">
+                                  <span className="text-text-muted">{t("net_row_gross")}</span>
+                                  <span className="font-mono font-bold">{baht(r.gross_revenue)}</span>
+                                </div>
+                                {costRow(
+                                  t("net_row_stripe"),
+                                  stripeFee,
+                                  "text-orange-400",
+                                  (r.stripe_unknown_country ?? 0) > 0
+                                    ? t("unknown_country_note", { n: r.stripe_unknown_country ?? 0 })
+                                    : undefined,
+                                )}
+                                {costRow(t("net_row_paypal"), paypalFee, "text-blue-300")}
+                                {costRow(t("net_row_affiliate"), affCost, "text-red-400")}
+                                <div className="flex items-center justify-between gap-4 pt-2 mt-1 border-t border-white/10">
+                                  <span className="font-bold">{t("net_row_final")}</span>
+                                  <span className="font-mono font-bold text-emerald-400 text-[14px]">{baht(net)}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Per-partner: agreement (gross) vs net */}
+                            <div className="space-y-2">
+                              {r.partners.map((p, i) => (
                                 <div key={i} className="bg-white/[0.03] border border-white/5 rounded-xl p-3 flex justify-between items-center gap-4">
                                   <div className="min-w-0">
                                     <p className="font-bold text-text-base truncate">{p.name}</p>
                                     <p className="text-[11px] text-text-muted truncate">{p.contact}</p>
+                                    <p className="text-[10px] bg-accent/10 text-accent-light px-1.5 py-0.5 rounded inline-block mt-1.5">{p.share}%</p>
                                   </div>
-                                  <div className="text-right shrink-0">
-                                    <p className="text-[10px] bg-accent/10 text-accent-light px-1.5 py-0.5 rounded inline-block mb-1.5">{p.share}%</p>
-                                    {hasPaypal ? (
-                                      <div className="space-y-1">
-                                        <div className="flex items-baseline justify-end gap-2">
-                                          <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("payout_normal")}</span>
-                                          <span className="font-mono font-bold text-green-400 text-[13px]">
-                                            ฿{payoutNormal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                          </span>
-                                        </div>
-                                        <div className="flex items-baseline justify-end gap-2">
-                                          <span className="text-[10px] text-blue-400/80 uppercase tracking-wider">{t("payout_paypal_net")}</span>
-                                          <span className="font-mono font-bold text-blue-300 text-[13px]">
-                                            ฿{payoutPaypal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <p className="font-mono font-bold text-green-400 text-[14px]">
-                                        ฿{p.payout.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                      </p>
-                                    )}
+                                  <div className="text-right shrink-0 space-y-1">
+                                    <div className="flex items-baseline justify-end gap-2">
+                                      <span className="text-[10px] text-text-muted uppercase tracking-wider">{t("chart_gross_label")}</span>
+                                      <span className="font-mono font-bold text-red-400 text-[13px]">{baht(p.payout)}</span>
+                                    </div>
+                                    <div className="flex items-baseline justify-end gap-2">
+                                      <span className="text-[10px] text-emerald-400/80 uppercase tracking-wider">{t("chart_net_label")}</span>
+                                      <span className="font-mono font-bold text-emerald-400 text-[13px]">{baht(p.payout_net ?? p.payout)}</span>
+                                    </div>
                                   </div>
                                 </div>
-                              )
-                            })}
+                              ))}
+                            </div>
                           </div>
                         </td>
                       </tr>

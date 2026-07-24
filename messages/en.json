@@ -1428,7 +1428,21 @@
     "paypal_net": "Net to Bank",
     "payout_normal": "Normal",
     "payout_paypal_net": "PayPal (net)",
-    "total_payout_net_hint": "After PayPal fees:"
+    "total_payout_net_hint": "After all costs:",
+    "net_title": "Net revenue — partner products, this period",
+    "net_sub": "Every cost deducted from the {count} products listed below",
+    "net_row_gross": "Gross revenue",
+    "net_row_stripe": "Stripe fees",
+    "net_row_paypal": "PayPal fees",
+    "net_row_affiliate": "Affiliate commission",
+    "net_row_final": "Actual net revenue",
+    "net_margin": "{pct}% of gross kept",
+    "net_detail_title": "Cost breakdown",
+    "col_payout_net": "Payout (on net)",
+    "chart_gross_label": "Payout on gross",
+    "chart_net_label": "Payout on net",
+    "payout_net_note": "Agreement pays partners on GROSS — the net figures show what the same share would be if costs were shared.",
+    "no_stripe_orders": "No Stripe orders"
   },
   "PayPalMe": {
     "step": "Step 2 of 2",

@@ -1431,7 +1431,21 @@
     "paypal_net": "ยอดเข้าบัญชีจริง",
     "payout_normal": "ยอดปกติ",
     "payout_paypal_net": "PayPal (สุทธิ)",
-    "total_payout_net_hint": "หลังหักค่าธรรมเนียม PayPal:"
+    "total_payout_net_hint": "หลังหักต้นทุนทั้งหมด:",
+    "net_title": "รายได้สุทธิจริง — เฉพาะสินค้าที่มีพาร์ทเนอร์ งวดนี้",
+    "net_sub": "หักต้นทุนครบทุกอย่างจากสินค้า {count} รายการด้านล่าง",
+    "net_row_gross": "รายได้รวม (gross)",
+    "net_row_stripe": "ค่าธรรมเนียม Stripe",
+    "net_row_paypal": "ค่าธรรมเนียม PayPal",
+    "net_row_affiliate": "ค่าคอมนายหน้า",
+    "net_row_final": "รายได้สุทธิที่เหลือจริง",
+    "net_margin": "เหลือ {pct}% ของยอดขาย",
+    "net_detail_title": "แจกแจงต้นทุน",
+    "col_payout_net": "ส่วนแบ่งจากสุทธิ",
+    "chart_gross_label": "ส่วนแบ่งจากยอดขาย",
+    "chart_net_label": "ส่วนแบ่งจากสุทธิ",
+    "payout_net_note": "ตามข้อตกลงจ่ายพาร์ทเนอร์จากยอดขาย (gross) — ตัวเลขสุทธิคือถ้าคิดส่วนแบ่งเดียวกันหลังหักต้นทุนแล้ว",
+    "no_stripe_orders": "ไม่มีออเดอร์ผ่าน Stripe"
   },
   "PayPalMe": {
     "step": "ขั้นตอนที่ 2 จาก 2",

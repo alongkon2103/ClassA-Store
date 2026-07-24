@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 import { parseBangkokDay } from "@/lib/bangkokTz"
 import { paypalSettlementFromAmounts } from "@/lib/paypalSettlement"
-import { stripeFeeWhere, summarizeStripeFees } from "@/lib/stripeFees"
+import { stripeFeeForOrder, stripeFeeWhere, summarizeStripeFees } from "@/lib/stripeFees"
+
+const r2 = (n: number) => Math.round(n * 100) / 100
 
 export async function GET(req: NextRequest) {
   const admin = await validateAdmin(["admin"])
@@ -40,7 +42,15 @@ export async function GET(req: NextRequest) {
         // TRIAL orders are ฿0 giveaways — they must not inflate the order
         // counts partners see on this page.
         where: { status: "paid", order_type: { not: "TRIAL" }, ...dateFilter },
-        select: { amount: true, recorded_by_id: true, paid_at: true, payment_method: true }
+        select: {
+          amount: true, recorded_by_id: true, paid_at: true, payment_method: true,
+          // Needed to price the Stripe fee per order (Thai vs foreign card).
+          card_country: true,
+          // Affiliate commission this order generated — a real cost of the sale,
+          // so it belongs in the per-product net. `order_id` is UNIQUE on
+          // affiliate_earnings, hence the singular relation.
+          affiliate_earning: { select: { commission_amount: true, status: true } },
+        }
       }
     }
   })
@@ -61,10 +71,43 @@ export async function GET(req: NextRequest) {
     )
     const paypalAmounts = paypalOrders.map((o) => Number(o.amount))
     const paypalSettle = paypalSettlementFromAmounts(paypalAmounts)
-    // Revenue after the PayPal fees we can compute exactly. Stripe fees are
-    // not tracked per-order, so this is "net of PayPal" — the closest honest
-    // net figure without inventing Stripe rates.
-    const netRevenue = grossRevenue - paypalSettle.amount_thb + paypalSettle.net_thb
+    const paypalFee = r2(paypalSettle.amount_thb - paypalSettle.net_thb)
+
+    // Stripe fee, per order (the ฿10 is per transaction, so never aggregate
+    // first). Non-Stripe methods return 0 — see lib/stripeFees.ts.
+    const stripeFee = r2(
+      p.orders.reduce(
+        (sum, o) =>
+          sum +
+          stripeFeeForOrder({
+            amount: Number(o.amount),
+            payment_method: o.payment_method,
+            card_country: o.card_country,
+          }),
+        0,
+      ),
+    )
+    const stripeOrders = p.orders.filter(
+      (o) => o.payment_method === "card" || o.payment_method === "promptpay",
+    )
+    const stripeUnknownCountry = stripeOrders.filter(
+      (o) => o.payment_method === "card" && o.card_country === null,
+    ).length
+
+    // Affiliate commission earned on this product's orders. Reversed earnings
+    // cost nothing, so they're excluded; pending/requested/paid all count
+    // (accrual — the money is owed the moment the sale lands).
+    const affiliateCost = r2(
+      p.orders.reduce((sum, o) => {
+        const e = o.affiliate_earning
+        if (!e || e.status === "reversed") return sum
+        return sum + Number(e.commission_amount)
+      }, 0),
+    )
+
+    // TRUE net: everything the store actually loses on these sales.
+    //   gross − Stripe fee − PayPal fee − affiliate commission
+    const netRevenue = r2(grossRevenue - stripeFee - paypalFee - affiliateCost)
     return {
       id: p.id,
       name_en: p.name_en,
@@ -74,6 +117,13 @@ export async function GET(req: NextRequest) {
       net_revenue: netRevenue,
       manual_orders: manualOrders.length,
       manual_revenue: manualRevenue,
+      // Cost breakdown behind net_revenue, so the UI can show the waterfall
+      // instead of an unexplained smaller number.
+      stripe_fee: stripeFee,
+      stripe_orders: stripeOrders.length,
+      stripe_unknown_country: stripeUnknownCountry,
+      paypal_fee: paypalFee,
+      affiliate_cost: affiliateCost,
       paypal_orders: paypalOrders.length,
       paypal_revenue: paypalSettle.amount_thb,
       paypal_amount_usd: paypalSettle.amount_usd,
@@ -84,10 +134,10 @@ export async function GET(req: NextRequest) {
         contact: s.partners.contact,
         share: Number(s.share_pct),
         // Headline payout stays gross-based (existing agreement with
-        // partners); payout_net shows the same share on PayPal-net revenue
-        // for comparison.
-        payout: (grossRevenue * Number(s.share_pct)) / 100,
-        payout_net: (netRevenue * Number(s.share_pct)) / 100
+        // partners); payout_net applies the same share to TRUE net revenue —
+        // what the split would be if fees and commission were shared.
+        payout: r2((grossRevenue * Number(s.share_pct)) / 100),
+        payout_net: r2((netRevenue * Number(s.share_pct)) / 100)
       }))
     }
   }).filter(p => p.partners.length > 0)
@@ -105,7 +155,6 @@ export async function GET(req: NextRequest) {
     _sum: { commission_amount: true },
   })
   const affSum = (st: string) => Number(affRows.find((r) => r.status === st)?._sum.commission_amount ?? 0)
-  const r2 = (n: number) => Math.round(n * 100) / 100
   const affCommitted = affSum("pending") + affSum("requested")
   const affPaid = affSum("paid")
   const affiliate = { committed: r2(affCommitted), paid: r2(affPaid), total: r2(affCommitted + affPaid) }
