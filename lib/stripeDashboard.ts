@@ -81,12 +81,20 @@ export async function getStripeReport(fromMs: number, toMs: number, fresh = fals
   const hit = cache.get(key)
   if (!fresh && hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.data
 
-  const txns = await stripe.balanceTransactions
+  // autoPagingToArray caps `limit` at 10,000; use autoPagingEach to iterate
+  // every page with no such cap, guarded by a safety ceiling so a pathological
+  // range can never OOM the web process.
+  const SAFETY_CAP = 100_000
+  const txns: BalanceTxnInput[] = []
+  await stripe.balanceTransactions
     .list({
       created: { gte: Math.floor(fromMs / 1000), lte: Math.floor(toMs / 1000) },
       limit: 100,
     })
-    .autoPagingToArray({ limit: 20_000 })
+    .autoPagingEach((tx) => {
+      txns.push(tx)
+      if (txns.length >= SAFETY_CAP) return false // stop paging
+    })
 
   const data = aggregateBalanceTxns(txns, fromMs, toMs)
   cache.set(key, { at: Date.now(), data })
