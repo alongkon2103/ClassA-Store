@@ -461,7 +461,8 @@
     "ppr_history_heading": "Recently resolved",
     "ppr_col_amount": "Amount",
     "ppr_col_status": "Status",
-    "ppr_col_when": "When"
+    "ppr_col_when": "When",
+    "stripe": "Stripe"
   },
   "AdminDiscountCodes": {
     "title": "Discount Codes",
@@ -1508,5 +1509,41 @@
     "minutes_ago": "{n}m ago",
     "hours_ago": "{n}h ago",
     "days_ago": "{n}d ago"
+  },
+  "AdminStripe": {
+    "title": "Stripe",
+    "subtitle": "Live revenue, real fees, net, refunds & payouts — straight from Stripe.",
+    "current_month": "This month",
+    "refresh": "Refresh",
+    "loading": "Loading Stripe data…",
+    "load_error": "Could not load Stripe data.",
+    "load_error_hint": "Check the STRIPE_SECRET_KEY and that this environment can reach Stripe.",
+    "live_note": "Live from Stripe · updated {time}",
+    "today": "Today",
+    "this_month": "This month",
+    "gross": "Gross",
+    "fee": "Stripe fee",
+    "net": "Net",
+    "refunds": "Refunds",
+    "orders": "Orders",
+    "actual_fee": "actual, per transaction",
+    "margin": "{pct}% of gross kept",
+    "n_orders": "{n} charges",
+    "n_refunds": "{n} refunds",
+    "balance": "Stripe balance",
+    "balance_available": "Available",
+    "balance_pending": "Pending (clearing)",
+    "balance_hint": "Available = ready to pay out. Pending = still clearing (usually settles in a few days).",
+    "daily_chart": "Daily (net + fee = gross)",
+    "stack_note": "bar height = gross",
+    "no_data": "No transactions in this period.",
+    "payouts": "Bank payouts",
+    "payouts_sub": "Money Stripe has sent (or is sending) to your bank account.",
+    "no_payouts": "No payouts yet.",
+    "payout_created": "Initiated",
+    "payout_arrival": "Bank arrival",
+    "payout_amount": "Amount",
+    "payout_method": "Method",
+    "payout_status": "Status"
   }
 }

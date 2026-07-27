@@ -464,7 +464,8 @@
     "ppr_history_heading": "ประวัติที่ดำเนินการล่าสุด",
     "ppr_col_amount": "ยอดเงิน",
     "ppr_col_status": "สถานะ",
-    "ppr_col_when": "เวลา"
+    "ppr_col_when": "เวลา",
+    "stripe": "Stripe"
   },
   "AdminDiscountCodes": {
     "title": "โค้ดส่วนลด",
@@ -1511,5 +1512,41 @@
     "minutes_ago": "{n} นาทีที่แล้ว",
     "hours_ago": "{n} ชม.ที่แล้ว",
     "days_ago": "{n} วันที่แล้ว"
+  },
+  "AdminStripe": {
+    "title": "Stripe",
+    "subtitle": "รายได้สด ค่าธรรมเนียมจริง net คืนเงิน และการโอนเข้าบัญชี — ดึงตรงจาก Stripe",
+    "current_month": "เดือนนี้",
+    "refresh": "รีเฟรช",
+    "loading": "กำลังโหลดข้อมูล Stripe…",
+    "load_error": "โหลดข้อมูล Stripe ไม่สำเร็จ",
+    "load_error_hint": "ตรวจ STRIPE_SECRET_KEY และว่าเซิร์ฟเวอร์นี้ต่อ Stripe ได้",
+    "live_note": "ข้อมูลสดจาก Stripe · อัปเดต {time}",
+    "today": "วันนี้",
+    "this_month": "เดือนนี้",
+    "gross": "ยอดรวม (gross)",
+    "fee": "ค่าธรรมเนียม Stripe",
+    "net": "สุทธิ (net)",
+    "refunds": "คืนเงิน",
+    "orders": "ออเดอร์",
+    "actual_fee": "ค่าจริง ต่อรายการ",
+    "margin": "เหลือ {pct}% ของยอดรวม",
+    "n_orders": "{n} รายการ",
+    "n_refunds": "คืน {n} รายการ",
+    "balance": "ยอดเงินใน Stripe",
+    "balance_available": "พร้อมโอนออก",
+    "balance_pending": "รอเคลียร์",
+    "balance_hint": "พร้อมโอนออก = โอนเข้าบัญชีได้เลย · รอเคลียร์ = ยังไม่ครบกำหนด (ปกติไม่กี่วัน)",
+    "daily_chart": "รายวัน (สุทธิ + ค่าธรรมเนียม = ยอดรวม)",
+    "stack_note": "ความสูงแท่ง = ยอดรวม",
+    "no_data": "ไม่มีรายการในช่วงนี้",
+    "payouts": "การโอนเข้าบัญชี",
+    "payouts_sub": "เงินที่ Stripe โอน (หรือกำลังโอน) เข้าบัญชีธนาคารของคุณ",
+    "no_payouts": "ยังไม่มีการโอน",
+    "payout_created": "เริ่มโอน",
+    "payout_arrival": "เข้าบัญชี",
+    "payout_amount": "จำนวน",
+    "payout_method": "วิธี",
+    "payout_status": "สถานะ"
   }
 }
