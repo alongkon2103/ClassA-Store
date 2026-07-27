@@ -12,7 +12,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getAffiliateMinWithdraw } from "@/lib/affiliateConfig"
+import { getAffiliateMinWithdraw, getAffiliateWithdrawWaitDays, withdrawAvailableAt } from "@/lib/affiliateConfig"
 import { sendWithdrawRequestedEmail } from "@/lib/affiliateMail"
 
 export const runtime = "nodejs"
@@ -32,7 +32,7 @@ export async function POST() {
     return NextResponse.json({ error: "NO_PAYOUT_INFO", errorCode: "NO_PAYOUT_INFO" }, { status: 400 })
   }
 
-  const minWithdraw = await getAffiliateMinWithdraw()
+  const [minWithdraw, waitDays] = await Promise.all([getAffiliateMinWithdraw(), getAffiliateWithdrawWaitDays()])
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -46,6 +46,21 @@ export async function POST() {
       })
       const total = Math.round(pending.reduce((s, e) => s + Number(e.commission_amount), 0) * 100) / 100
       if (pending.length === 0 || total <= 0) return { ok: false as const, code: "NO_PENDING" }
+
+      // Onboarding maturity gate (one-time): the affiliate's first-ever earning
+      // must be at least `waitDays` old. Anchor on the earliest earning of ANY
+      // status so it never resets after a withdrawal. pending>0 here guarantees
+      // at least one earning row exists.
+      const first = await tx.affiliate_earnings.findFirst({
+        where: { affiliate_user_id: userId },
+        orderBy: { created_at: "asc" },
+        select: { created_at: true },
+      })
+      const availableAt = withdrawAvailableAt(first?.created_at ?? null, waitDays)
+      if (availableAt !== null && Date.now() < availableAt) {
+        return { ok: false as const, code: "WAITING_PERIOD", availableAt: new Date(availableAt).toISOString(), waitDays }
+      }
+
       if (total < minWithdraw) return { ok: false as const, code: "BELOW_MIN", min: minWithdraw }
 
       const request = await tx.affiliate_payouts.create({
@@ -72,7 +87,10 @@ export async function POST() {
 
     if (!result.ok) {
       const status = result.code === "NO_PENDING" ? 400 : 409
-      return NextResponse.json({ error: result.code, errorCode: result.code, min: result.min }, { status })
+      return NextResponse.json(
+        { error: result.code, errorCode: result.code, min: result.min, availableAt: result.availableAt, waitDays: result.waitDays },
+        { status },
+      )
     }
 
     // Notify admins of the new request, CC the affiliate (best-effort).

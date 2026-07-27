@@ -91,7 +91,15 @@
     "eta": "Estimated arrival {from} – {to}",
     "cancel_withdraw": "Cancel request",
     "cancel_withdraw_confirm": "Cancel this withdrawal request? The amount goes back to your pending balance.",
-    "reject_reason_label": "Reason"
+    "reject_reason_label": "Reason",
+    "err_waiting_period": "New affiliates must wait until {date} before the first withdrawal ({days}-day hold after your first sale).",
+    "withdraw_locked_until": "Withdrawals unlock on {date}",
+    "withdraw_wait_note": "New affiliates can withdraw {days} days after their first sale.",
+    "countdown_prefix": "Unlocks in",
+    "cd_d": "d",
+    "cd_h": "h",
+    "cd_m": "m",
+    "cd_s": "s"
   },
   "Contact": {
     "eyebrow": "Get in touch",
@@ -637,7 +645,10 @@
     "confirm_reject": "Confirm reject",
     "delete_affiliate": "Remove",
     "delete_confirm": "Revoke this person's affiliate status? Their codes will be disabled and they revert to a normal user (commission/payout history is kept).",
-    "delete_pending": "Still owes {amount} in pending commission — click \"Pay pending\" first before removing."
+    "delete_pending": "Still owes {amount} in pending commission — click \"Pay pending\" first before removing.",
+    "wait_days_label": "Withdrawal hold for new affiliates",
+    "wait_days_hint": "Days an affiliate must wait after their first sale before the first withdrawal. 0 = off.",
+    "wait_days_unit": "days"
   },
   "AdminWhitelist": {
     "title": "Whitelist Management",

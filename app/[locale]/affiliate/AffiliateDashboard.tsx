@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useTranslations, useLocale } from "next-intl"
 import Navbar from "@/components/Navbar"
 import { PAYOUT_CHANNELS, getChannel } from "@/lib/affiliatePayout"
@@ -17,6 +17,9 @@ type Data = {
   totals: { pending: number; requested: number; paid: number; sales_count: number }
   withdraw: {
     min: number
+    wait_days: number
+    available_at: string | null
+    matured: boolean
     can_request: boolean
     open_request: { id: string; amount: number; requested_at: string | null; eta_from: string | null; eta_to: string | null } | null
   }
@@ -115,6 +118,10 @@ export default function AffiliateDashboard() {
     const map: Record<string, string> = {
       NO_PAYOUT_INFO: t("err_no_payout_info"), BELOW_MIN: t("err_below_min", { min: money(j.min ?? d?.withdraw.min ?? 0) }),
       ALREADY_REQUESTED: t("err_already_requested"), NO_PENDING: t("err_no_pending"),
+      WAITING_PERIOD: t("err_waiting_period", {
+        date: j.availableAt ? fmtDay(j.availableAt) : "",
+        days: j.waitDays ?? d?.withdraw.wait_days ?? 0,
+      }),
     }
     alert(map[j.errorCode] || t("error"))
   }
@@ -192,6 +199,25 @@ export default function AffiliateDashboard() {
                     <p className="text-[30px] font-bold text-amber-400 leading-tight mt-0.5">{money(d.totals.pending)}</p>
                     {moneyAlt(d.totals.pending) && <p className="text-[12px] text-text-muted mt-0.5">{moneyAlt(d.totals.pending)}</p>}
                     <p className="text-[11px] text-text-muted mt-1">{t("min_note", { min: `${money(d.withdraw.min)}${moneyAlt(d.withdraw.min) ? ` (${moneyAlt(d.withdraw.min)})` : ""}` })}</p>
+
+                    {/* Onboarding maturity gate — locked until the first sale is
+                        `wait_days` old (a one-time hold for new affiliates). Live
+                        countdown; when it hits zero we reload so the server
+                        re-evaluates `matured` and unlocks the button. */}
+                    {!d.withdraw.matured && d.withdraw.available_at && (
+                      <div className="mt-3 flex items-start gap-2.5 bg-amber-500/[0.07] border border-amber-500/25 rounded-xl px-3.5 py-3">
+                        <span className="text-amber-400 mt-0.5 shrink-0"><LockIcon /></span>
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-semibold text-amber-300 tabular-nums">
+                            <WithdrawCountdown target={d.withdraw.available_at} onReady={load} locale={locale} t={t} />
+                          </p>
+                          <p className="text-[11px] text-text-muted mt-0.5">
+                            {t("withdraw_locked_until", { date: fmtDay(d.withdraw.available_at) })} · {t("withdraw_wait_note", { days: d.withdraw.wait_days })}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     <button onClick={requestWithdraw} disabled={busy || !d.withdraw.can_request}
                       className="w-full mt-4 px-5 py-3 rounded-xl bg-accent text-white text-[14px] font-semibold shadow-lg shadow-accent/20 hover:bg-accent/90 hover:shadow-accent/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none">
                       {t("request_withdraw")}
@@ -463,6 +489,45 @@ function Kpi({ icon, label, value, sub, tone }: { icon: React.ReactNode; label: 
   )
 }
 
+// Live "unlocks in 2d 5h 12m" countdown. Ticks every second; when it reaches
+// zero it calls onReady() once (parent reloads → server unlocks the button).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function WithdrawCountdown({ target, onReady, locale, t }: { target: string; onReady: () => void; locale: string; t: any }) {
+  const [, force] = useState(0)
+  // Ref so the 1s effect never restarts when the parent re-creates `load`.
+  const readyRef = useRef(onReady)
+  readyRef.current = onReady
+  const firedRef = useRef(false)
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      force((x) => x + 1)
+      if (new Date(target).getTime() - Date.now() <= 0 && !firedRef.current) {
+        firedRef.current = true
+        clearInterval(id)
+        readyRef.current()
+      }
+    }, 1000)
+    return () => clearInterval(id)
+  }, [target])
+
+  const rem = Math.max(0, new Date(target).getTime() - Date.now())
+  const totalSec = Math.floor(rem / 1000)
+  const d = Math.floor(totalSec / 86400)
+  const h = Math.floor((totalSec % 86400) / 3600)
+  const m = Math.floor((totalSec % 3600) / 60)
+  const s = totalSec % 60
+  const sep = locale === "th" ? " " : ""
+  const unit = (n: number, u: string) => `${n}${sep}${u}`
+  // Show the two–three most significant, non-zero-leading units so it always
+  // feels live but never noisy (days hide seconds; final minute shows seconds).
+  const parts =
+    d > 0 ? [unit(d, t("cd_d")), unit(h, t("cd_h")), unit(m, t("cd_m"))]
+      : h > 0 ? [unit(h, t("cd_h")), unit(m, t("cd_m")), unit(s, t("cd_s"))]
+        : [unit(m, t("cd_m")), unit(s, t("cd_s"))]
+  return <>{t("countdown_prefix")} {parts.join(" ")}</>
+}
+
 // ── Icons (18px, stroke) ──────────────────────────────────────────────────────
 const iconProps = { width: 15, height: 15, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }
 function WalletIcon() { return <svg {...iconProps}><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" /><path d="M4 6v12a2 2 0 0 0 2 2h14v-4" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg> }
@@ -474,6 +539,7 @@ function ListIcon() { return <svg {...iconProps}><line x1="8" y1="6" x2="21" y2=
 function HistoryIcon() { return <svg {...iconProps}><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><polyline points="12 7 12 12 15 14" /></svg> }
 function LinkIcon() { return <svg {...iconProps}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg> }
 function ApiIcon() { return <svg {...iconProps}><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg> }
+function LockIcon() { return <svg {...iconProps}><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> }
 
 // Structured payout-info form: pick a channel, fill its fields, save once. The
 // channel definitions + labels come from lib/affiliatePayout so form and server

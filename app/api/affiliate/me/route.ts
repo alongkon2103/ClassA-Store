@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getAffiliateMinWithdraw } from "@/lib/affiliateConfig"
+import { getAffiliateMinWithdraw, getAffiliateWithdrawWaitDays, withdrawAvailableAt } from "@/lib/affiliateConfig"
 import { sanitizePayoutInfo, summarizePayout, validatePayout } from "@/lib/affiliatePayout"
 
 export const dynamic = "force-dynamic"
@@ -32,7 +32,7 @@ export async function GET() {
   // Not an affiliate → 403 (the page redirects too, this guards the API).
   if (!profile) return NextResponse.json({ error: "Not an affiliate" }, { status: 403 })
 
-  const [codes, earnings, payouts, totals, products] = await Promise.all([
+  const [codes, earnings, payouts, totals, products, firstEarning] = await Promise.all([
     prisma.discount_codes.findMany({
       where: { owner_user_id: userId },
       orderBy: { created_at: "desc" },
@@ -70,10 +70,21 @@ export async function GET() {
       orderBy: [{ is_featured: "desc" }, { created_at: "desc" }],
       select: { slug: true, name_th: true, name_en: true },
     }),
+    // First-ever earning — anchors the one-time withdrawal maturity gate. Its
+    // own query (not derived from `earnings` above, which is capped at 200).
+    prisma.affiliate_earnings.findFirst({
+      where: { affiliate_user_id: userId },
+      orderBy: { created_at: "asc" },
+      select: { created_at: true },
+    }),
   ])
 
-  const minWithdraw = await getAffiliateMinWithdraw()
+  const [minWithdraw, waitDays] = await Promise.all([getAffiliateMinWithdraw(), getAffiliateWithdrawWaitDays()])
   const openRequest = payouts.find((p) => p.status === "requested") ?? null
+
+  // Onboarding maturity: null availableAt = gate passed or not applicable.
+  const availableAtMs = withdrawAvailableAt(firstEarning?.created_at ?? null, waitDays)
+  const matured = availableAtMs === null || Date.now() >= availableAtMs
 
   const sumFor = (s: string) => Number(totals.find((t) => t.status === s)?._sum.commission_amount ?? 0)
   const countFor = (s: string) => totals.find((t) => t.status === s)?._count._all ?? 0
@@ -97,7 +108,15 @@ export async function GET() {
     // from the request date (real dates the affiliate can read off).
     withdraw: {
       min: minWithdraw,
-      can_request: !openRequest && sumFor("pending") >= minWithdraw && !!(profile.payout_method && profile.payout_detail),
+      wait_days: waitDays,
+      // ISO instant the affiliate becomes eligible; null once matured / N/A.
+      available_at: !matured && availableAtMs !== null ? new Date(availableAtMs).toISOString() : null,
+      matured,
+      can_request:
+        !openRequest &&
+        matured &&
+        sumFor("pending") >= minWithdraw &&
+        !!(profile.payout_method && profile.payout_detail),
       open_request: openRequest
         ? {
             id: openRequest.id,

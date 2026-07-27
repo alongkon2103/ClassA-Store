@@ -56,6 +56,7 @@ export default function AffiliatesClient() {
   const [openId, setOpenId] = useState<string | null>(null)
   const [requests, setRequests] = useState<Req[]>([])
   const [minWithdraw, setMinWithdraw] = useState<number>(0)
+  const [waitDays, setWaitDays] = useState<number>(0)
   const [reqBusy, setReqBusy] = useState(false)
   const [tab, setTab] = useState<"manage" | "overview">("manage")
 
@@ -68,7 +69,7 @@ export default function AffiliatesClient() {
     ])
     setRows(a.ok ? await a.json() : [])
     setRequests(rq.ok ? await rq.json() : [])
-    if (st.ok) setMinWithdraw((await st.json()).min_withdraw ?? 0)
+    if (st.ok) { const s = await st.json(); setMinWithdraw(s.min_withdraw ?? 0); setWaitDays(s.withdraw_wait_days ?? 0) }
     setLoading(false)
   }, [])
   useEffect(() => { load() }, [load])
@@ -88,6 +89,14 @@ export default function AffiliatesClient() {
       method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ min_withdraw: v }),
     })
     if (res.ok) { const j = await res.json(); setMinWithdraw(j.min_withdraw ?? v) }
+    return res.ok
+  }
+
+  const saveWaitDays = async (v: number) => {
+    const res = await fetch("/api/admin/affiliates/settings", {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ withdraw_wait_days: v }),
+    })
+    if (res.ok) { const j = await res.json(); setWaitDays(j.withdraw_wait_days ?? v) }
     return res.ok
   }
 
@@ -158,8 +167,17 @@ export default function AffiliatesClient() {
         </section>
       )}
 
-      {/* ── Setting ── */}
-      <MinWithdrawSetting value={minWithdraw} onSave={saveMin} t={t} />
+      {/* ── Settings ── */}
+      <div className="space-y-2.5">
+        <NumberSetting
+          label={t("min_withdraw_label")} hint={t("min_withdraw_hint")}
+          value={minWithdraw} onSave={saveMin} prefix="฿" t={t}
+        />
+        <NumberSetting
+          label={t("wait_days_label")} hint={t("wait_days_hint")}
+          value={waitDays} onSave={saveWaitDays} suffix={t("wait_days_unit")} integer t={t}
+        />
+      </div>
 
       {/* ── Affiliates table ── */}
       <section className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
@@ -813,8 +831,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // Controlled min-withdrawal input. Syncs from the loaded value (fixes the old
 // uncontrolled input that always showed 0), saves on blur/Enter, and flashes a
 // "saved" confirmation so the admin knows it persisted.
+// Generic inline number setting (blur / Enter to save, "saved" flash). Used for
+// both the minimum-withdrawal amount and the onboarding wait-days.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function MinWithdrawSetting({ value, onSave, t }: { value: number; onSave: (v: number) => Promise<boolean>; t: any }) {
+function NumberSetting({ label, hint, value, onSave, prefix, suffix, integer, t }: {
+  label: string; hint: string; value: number; onSave: (v: number) => Promise<boolean>
+  prefix?: string; suffix?: string; integer?: boolean; t: any
+}) {
   const [val, setVal] = useState(String(value ?? 0))
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -822,9 +845,10 @@ function MinWithdrawSetting({ value, onSave, t }: { value: number; onSave: (v: n
   useEffect(() => { setVal(String(value ?? 0)) }, [value])
 
   const commit = async () => {
-    const n = Number(val)
+    let n = Number(val)
     if (!Number.isFinite(n) || n < 0) { setVal(String(value ?? 0)); return }
-    if (n === value) return
+    if (integer) n = Math.floor(n)
+    if (n === value) { setVal(String(value ?? 0)); return }
     setSaving(true)
     const okSave = await onSave(n)
     setSaving(false)
@@ -834,8 +858,8 @@ function MinWithdrawSetting({ value, onSave, t }: { value: number; onSave: (v: n
   return (
     <div className="bg-bg-card border border-accent/10 rounded-2xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
       <div>
-        <p className="text-[12px] font-medium">{t("min_withdraw_label")}</p>
-        <p className="text-[11px] text-text-muted">{t("min_withdraw_hint")}</p>
+        <p className="text-[12px] font-medium">{label}</p>
+        <p className="text-[11px] text-text-muted">{hint}</p>
       </div>
       <div className="flex items-center gap-2.5">
         {saved && (
@@ -845,7 +869,7 @@ function MinWithdrawSetting({ value, onSave, t }: { value: number; onSave: (v: n
           </span>
         )}
         <div className="flex items-center gap-1.5">
-          <span className="text-text-muted text-[13px]">฿</span>
+          {prefix && <span className="text-text-muted text-[13px]">{prefix}</span>}
           <input
             type="number"
             value={val}
@@ -855,6 +879,7 @@ function MinWithdrawSetting({ value, onSave, t }: { value: number; onSave: (v: n
             disabled={saving}
             className="w-24 bg-bg-base border border-accent/15 rounded-lg px-3 py-1.5 text-[13px] disabled:opacity-50"
           />
+          {suffix && <span className="text-text-muted text-[13px]">{suffix}</span>}
         </div>
       </div>
     </div>
