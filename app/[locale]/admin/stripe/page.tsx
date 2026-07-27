@@ -14,8 +14,18 @@ type Report = {
 }
 type Balance = { available: { amount: number; currency: string }[]; pending: { amount: number; currency: string }[] }
 type Payout = { id: string; amount: number; currency: string; status: string; method: string | null; created: string; arrival_date: string }
+type MethodRow = { key: "card_th" | "card_foreign" | "promptpay" | "other"; gross: number; fee: number; net: number; count: number; unknownCountry: number }
+type Risk = {
+  succeeded: { count: number; amount: number }
+  blocked: { count: number; amount: number }
+  failed: { count: number; amount: number }
+  successRate: number
+}
+type ChargeTxn = { id: string; created: string; amount: number; fee: number; net: number; method: string; brand: string | null; last4: string | null; country: string | null; status: string; blocked: boolean; refunded: number }
+type Dispute = { id: string; amount: number; currency: string; status: string; reason: string; created: string; charge: string | null }
 type Data = {
   today: Report; period: Report; balance: Balance; payouts: Payout[]
+  breakdown: MethodRow[]; risk: Risk | null; transactions: ChargeTxn[]; disputes: Dispute[]
   meta: { month: string | null; period_from: string; period_to: string; generated_at: string }
 }
 
@@ -206,6 +216,130 @@ export default function StripeDashboardPage() {
             </div>
           </section>
 
+          {/* ── METHOD / CARD-COUNTRY BREAKDOWN ── */}
+          {d.breakdown.length > 0 && (
+            <section className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-white/5">
+                <p className="text-[13px] font-semibold">{t("breakdown_title")}</p>
+                <p className="text-[11px] text-text-muted mt-0.5">{t("breakdown_sub")}</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px] min-w-[620px]">
+                  <thead>
+                    <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-white/[0.02]">
+                      <th className="px-5 py-3 font-medium">{t("bd_method")}</th>
+                      <th className="px-4 py-3 font-medium text-right">{t("bd_count")}</th>
+                      <th className="px-4 py-3 font-medium text-right">{t("gross")}</th>
+                      <th className="px-4 py-3 font-medium text-right">{t("fee")}</th>
+                      <th className="px-4 py-3 font-medium text-right">{t("bd_fee_pct")}</th>
+                      <th className="px-4 py-3 font-medium text-right">{t("net")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {d.breakdown.map((m) => (
+                      <tr key={m.key} className="hover:bg-white/[0.02] transition">
+                        <td className="px-5 py-3 font-medium">
+                          {pickLabel(METHOD_LABEL, m.key, locale)}
+                          {m.unknownCountry > 0 && <span className="ml-2 text-[10px] text-yellow-500/80">{t("bd_unknown", { n: m.unknownCountry })}</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono text-text-muted">{m.count}</td>
+                        <td className="px-4 py-3 text-right font-mono font-bold">{money(m.gross)}</td>
+                        <td className="px-4 py-3 text-right font-mono text-orange-400">−{money(m.fee)}</td>
+                        <td className="px-4 py-3 text-right font-mono text-text-muted">{m.gross > 0 ? `${((m.fee / m.gross) * 100).toFixed(2)}%` : "—"}</td>
+                        <td className="px-4 py-3 text-right font-mono font-bold text-green-400">{money(m.net)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {/* ── RISK: success / blocked / failed / disputes ── */}
+          {d.risk && (
+            <section>
+              <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2.5">{t("risk_title")}</p>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Kpi label={t("risk_success_rate")} value={`${d.risk.successRate.toFixed(1)}%`} sub={t("n_charges_short", { n: d.risk.succeeded.count })} tone="green" />
+                <Kpi label={t("risk_succeeded")} value={money(d.risk.succeeded.amount)} sub={t("n_charges_short", { n: d.risk.succeeded.count })} tone="base" />
+                <Kpi label={t("risk_blocked")} value={money(d.risk.blocked.amount)} sub={t("n_charges_short", { n: d.risk.blocked.count })} tone="orange" />
+                <Kpi label={t("risk_failed")} value={money(d.risk.failed.amount)} sub={t("n_charges_short", { n: d.risk.failed.count })} tone="red" />
+              </div>
+
+              {d.disputes.length > 0 && (
+                <div className="bg-red-500/[0.05] border border-red-500/25 rounded-2xl overflow-hidden mt-4">
+                  <div className="px-5 py-3.5 border-b border-red-500/15">
+                    <p className="text-[13px] font-semibold text-red-300">{t("disputes_title", { n: d.disputes.length })}</p>
+                    <p className="text-[11px] text-text-muted mt-0.5">{t("disputes_sub")}</p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[13px] min-w-[520px]">
+                      <thead>
+                        <tr className="text-left text-[11px] text-text-muted border-b border-white/5">
+                          <th className="px-5 py-2.5 font-medium">{t("dispute_date")}</th>
+                          <th className="px-4 py-2.5 font-medium text-right">{t("dispute_amount")}</th>
+                          <th className="px-4 py-2.5 font-medium">{t("dispute_reason")}</th>
+                          <th className="px-4 py-2.5 font-medium text-right">{t("dispute_status")}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {d.disputes.map((dp) => (
+                          <tr key={dp.id}>
+                            <td className="px-5 py-2.5 text-text-muted">{fmtDate(dp.created)}</td>
+                            <td className="px-4 py-2.5 text-right font-mono font-bold text-red-400">{money(dp.amount, dp.currency)}</td>
+                            <td className="px-4 py-2.5 text-text-muted">{dp.reason.replace(/_/g, " ")}</td>
+                            <td className="px-4 py-2.5 text-right"><span className="text-[11px] px-2 py-0.5 rounded-full bg-red-500/15 text-red-300 font-medium">{dp.status.replace(/_/g, " ")}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ── TRANSACTION DRILL-DOWN ── */}
+          {d.transactions.length > 0 && (
+            <section className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-white/5">
+                <p className="text-[13px] font-semibold">{t("txn_title")}</p>
+                <p className="text-[11px] text-text-muted mt-0.5">{t("txn_sub", { n: d.transactions.length })}</p>
+              </div>
+              <div className="overflow-x-auto max-h-[520px] overflow-y-auto">
+                <table className="w-full text-[13px] min-w-[720px]">
+                  <thead className="sticky top-0 bg-bg-card z-10">
+                    <tr className="text-left text-[11px] text-text-muted border-b border-white/5 bg-white/[0.02]">
+                      <th className="px-5 py-3 font-medium">{t("txn_date")}</th>
+                      <th className="px-4 py-3 font-medium">{t("txn_method")}</th>
+                      <th className="px-4 py-3 font-medium">{t("txn_country")}</th>
+                      <th className="px-4 py-3 font-medium text-right">{t("txn_amount")}</th>
+                      <th className="px-4 py-3 font-medium text-right">{t("fee")}</th>
+                      <th className="px-4 py-3 font-medium text-right">{t("net")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {d.transactions.map((tx) => (
+                      <tr key={tx.id} className="hover:bg-white/[0.02] transition">
+                        <td className="px-5 py-2.5 text-text-muted whitespace-nowrap">{fmtDate(tx.created)} · {fmtTime(tx.created)}</td>
+                        <td className="px-4 py-2.5">
+                          {tx.method === "card"
+                            ? <span className="capitalize">{tx.brand ?? "card"}{tx.last4 ? ` ·· ${tx.last4}` : ""}</span>
+                            : <span>{pickLabel(TXN_METHOD_LABEL, tx.method, locale)}</span>}
+                          {tx.refunded > 0 && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300">{t("txn_refunded")}</span>}
+                        </td>
+                        <td className="px-4 py-2.5 text-text-muted">{tx.country ? countryFlag(tx.country) + " " + tx.country : "—"}</td>
+                        <td className="px-4 py-2.5 text-right font-mono font-bold">{money(tx.amount)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-orange-400">−{money(tx.fee)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-green-400">{money(tx.net)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
           {/* ── PAYOUTS ── */}
           <section className="bg-bg-card border border-accent/10 rounded-2xl overflow-hidden">
             <div className="px-5 py-4 border-b border-white/5">
@@ -319,8 +453,26 @@ const PAYOUT_METHOD_LABEL: Record<string, { en: string; th: string }> = {
   standard: { en: "Standard", th: "ปกติ" },
   instant: { en: "Instant", th: "ทันที" },
 }
+const METHOD_LABEL: Record<string, { en: string; th: string }> = {
+  card_th: { en: "Card (Thai)", th: "บัตรไทย" },
+  card_foreign: { en: "Card (foreign)", th: "บัตรต่างชาติ" },
+  promptpay: { en: "PromptPay", th: "PromptPay" },
+  other: { en: "Other", th: "อื่นๆ" },
+}
+const TXN_METHOD_LABEL: Record<string, { en: string; th: string }> = {
+  promptpay: { en: "PromptPay", th: "PromptPay" },
+  card: { en: "Card", th: "บัตร" },
+  unknown: { en: "Unknown", th: "ไม่ทราบ" },
+}
 function pickLabel(map: Record<string, { en: string; th: string }>, key: string, locale: string): string {
   return map[key]?.[locale === "th" ? "th" : "en"] ?? key
+}
+
+/** ISO-3166 alpha-2 → regional-indicator flag emoji. Empty for bad input. */
+function countryFlag(cc: string): string {
+  if (!/^[A-Za-z]{2}$/.test(cc)) return ""
+  const up = cc.toUpperCase()
+  return String.fromCodePoint(0x1f1e6 + up.charCodeAt(0) - 65, 0x1f1e6 + up.charCodeAt(1) - 65)
 }
 
 function PayoutStatus({ status, locale }: { status: string; locale: string }) {

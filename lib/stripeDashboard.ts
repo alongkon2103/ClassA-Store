@@ -229,3 +229,172 @@ export async function getStripePayouts(limit = 12): Promise<StripePayout[]> {
     arrival_date: new Date(p.arrival_date * 1000).toISOString(),
   }))
 }
+
+// ── Charge-level detail: method / card-country breakdown, drill-down, risk ────
+// Balance transactions don't carry the payment method, so we pull the Charges
+// (with the balance_transaction expanded for the REAL fee/net) — Charges have
+// payment_method_details inline (type + card brand/last4/country).
+
+export type ChargeRow = {
+  id: string
+  created: string // ISO
+  amount: number // gross (major)
+  fee: number // real Stripe fee (major)
+  net: number // amount − fee (major)
+  method: string // 'card' | 'promptpay' | ...
+  brand: string | null // card brand
+  last4: string | null
+  country: string | null // card issuing country (ISO-2)
+  status: string // succeeded | failed | pending
+  blocked: boolean // Radar-blocked
+  refunded: number // amount refunded on this charge (major)
+}
+
+/** Bucket a charge into the fee-model's categories. */
+export function chargeMethodKey(method: string, country: string | null): "card_th" | "card_foreign" | "promptpay" | "other" {
+  if (method === "promptpay") return "promptpay"
+  if (method === "card") return country === "TH" ? "card_th" : "card_foreign"
+  return "other"
+}
+
+export type MethodBreakdownRow = {
+  key: "card_th" | "card_foreign" | "promptpay" | "other"
+  gross: number
+  fee: number
+  net: number
+  count: number
+  unknownCountry: number // card rows with no issuing country reported
+}
+
+export type StripeRisk = {
+  succeeded: { count: number; amount: number }
+  blocked: { count: number; amount: number }
+  failed: { count: number; amount: number }
+  successRate: number // 0–100, over succeeded+blocked+failed
+}
+
+export type ChargeSummary = {
+  byMethod: MethodBreakdownRow[]
+  risk: StripeRisk
+  transactions: ChargeRow[] // recent successful charges (already trimmed)
+}
+
+/**
+ * Pure aggregation of charge rows → method breakdown + risk + a recent-txn list.
+ * Split from the fetch so the classification/rollup is unit-testable.
+ * `txnLimit` caps the drill-down list (most-recent successful first).
+ */
+export function summarizeCharges(rows: ChargeRow[], txnLimit = 50): ChargeSummary {
+  const per = new Map<MethodBreakdownRow["key"], MethodBreakdownRow>()
+  const risk: StripeRisk = {
+    succeeded: { count: 0, amount: 0 },
+    blocked: { count: 0, amount: 0 },
+    failed: { count: 0, amount: 0 },
+    successRate: 0,
+  }
+
+  for (const r of rows) {
+    if (r.blocked) { risk.blocked.count++; risk.blocked.amount += r.amount; continue }
+    if (r.status === "failed") { risk.failed.count++; risk.failed.amount += r.amount; continue }
+    if (r.status !== "succeeded") continue // pending/other: not counted in risk or revenue
+
+    risk.succeeded.count++; risk.succeeded.amount += r.amount
+
+    const key = chargeMethodKey(r.method, r.country)
+    const row = per.get(key) ?? { key, gross: 0, fee: 0, net: 0, count: 0, unknownCountry: 0 }
+    row.gross += r.amount
+    row.fee += r.fee
+    row.net += r.net
+    row.count += 1
+    if (r.method === "card" && r.country === null) row.unknownCountry += 1
+    per.set(key, row)
+  }
+
+  const decided = risk.succeeded.count + risk.blocked.count + risk.failed.count
+  risk.successRate = decided > 0 ? round2((risk.succeeded.count / decided) * 100) : 0
+  risk.succeeded.amount = round2(risk.succeeded.amount)
+  risk.blocked.amount = round2(risk.blocked.amount)
+  risk.failed.amount = round2(risk.failed.amount)
+
+  const order: MethodBreakdownRow["key"][] = ["card_th", "card_foreign", "promptpay", "other"]
+  const byMethod = [...per.values()]
+    .map((r) => ({ ...r, gross: round2(r.gross), fee: round2(r.fee), net: round2(r.net) }))
+    .sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key))
+
+  const transactions = rows
+    .filter((r) => r.status === "succeeded" && !r.blocked)
+    .sort((a, b) => (a.created < b.created ? 1 : -1))
+    .slice(0, txnLimit)
+
+  return { byMethod, risk, transactions }
+}
+
+const chargeCache = new Map<string, { at: number; data: ChargeSummary }>()
+
+/** Fetch + summarize charges in [fromMs, toMs] (method breakdown, risk, table). */
+export async function getStripeChargeSummary(fromMs: number, toMs: number, fresh = false): Promise<ChargeSummary> {
+  const key = `${fromMs}:${toMs}`
+  const hit = chargeCache.get(key)
+  if (!fresh && hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.data
+
+  const SAFETY_CAP = 100_000
+  const rows: ChargeRow[] = []
+  await stripe.charges
+    .list({
+      created: { gte: Math.floor(fromMs / 1000), lte: Math.floor(toMs / 1000) },
+      limit: 100,
+      expand: ["data.balance_transaction"],
+    })
+    .autoPagingEach((c) => {
+      const bt = typeof c.balance_transaction === "object" && c.balance_transaction ? c.balance_transaction : null
+      const pmd = c.payment_method_details
+      const card = pmd?.card ?? null
+      const amount = stripeMajor(c.amount, c.currency)
+      rows.push({
+        id: c.id,
+        created: new Date(c.created * 1000).toISOString(),
+        amount,
+        fee: bt ? round2(stripeMajor(bt.fee, bt.currency)) : 0,
+        net: bt ? round2(stripeMajor(bt.net, bt.currency)) : 0,
+        method: pmd?.type ?? "unknown",
+        brand: card?.brand ?? null,
+        last4: card?.last4 ?? null,
+        country: card?.country ?? null,
+        status: c.status,
+        blocked: c.outcome?.type === "blocked",
+        refunded: round2(stripeMajor(c.amount_refunded, c.currency)),
+      })
+      if (rows.length >= SAFETY_CAP) return false
+    })
+
+  const data = summarizeCharges(rows)
+  chargeCache.set(key, { at: Date.now(), data })
+  return data
+}
+
+export type DisputeRow = {
+  id: string
+  amount: number // major
+  currency: string
+  status: string // needs_response | under_review | won | lost | warning_* ...
+  reason: string
+  created: string // ISO
+  charge: string | null
+}
+
+/** Card disputes / chargebacks opened in the range. */
+export async function getStripeDisputes(fromMs: number, toMs: number, limit = 50): Promise<DisputeRow[]> {
+  const res = await stripe.disputes.list({
+    created: { gte: Math.floor(fromMs / 1000), lte: Math.floor(toMs / 1000) },
+    limit,
+  })
+  return res.data.map((d) => ({
+    id: d.id,
+    amount: round2(stripeMajor(d.amount, d.currency)),
+    currency: d.currency,
+    status: d.status,
+    reason: d.reason,
+    created: new Date(d.created * 1000).toISOString(),
+    charge: typeof d.charge === "string" ? d.charge : d.charge?.id ?? null,
+  }))
+}

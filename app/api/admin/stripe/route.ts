@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { validateAdmin } from "@/lib/adminAuth"
 import { parseBangkokDay, bangkokDayStart, bangkokMonthStart } from "@/lib/bangkokTz"
-import { getStripeReport, getStripeBalance, getStripePayouts } from "@/lib/stripeDashboard"
+import { getStripeReport, getStripeBalance, getStripePayouts, getStripeChargeSummary, getStripeDisputes } from "@/lib/stripeDashboard"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -52,11 +52,15 @@ export async function GET(req: NextRequest) {
 
   const todayFrom = bangkokDayStart(now)
 
-  const [today, period, balance, payouts] = await Promise.all([
+  const [today, period, balance, payouts, chargeSummary, disputes] = await Promise.all([
     getStripeReport(todayFrom.getTime(), now.getTime(), fresh),
     getStripeReport(periodFrom.getTime(), periodTo.getTime(), fresh),
     getStripeBalance().catch(() => ({ available: [], pending: [] })),
     getStripePayouts(12).catch(() => []),
+    // Charge-level detail (method / country breakdown, risk, drill-down) for the
+    // selected period. Best-effort: a failure here must not blank the KPIs.
+    getStripeChargeSummary(periodFrom.getTime(), periodTo.getTime(), fresh).catch(() => null),
+    getStripeDisputes(periodFrom.getTime(), periodTo.getTime()).catch(() => []),
   ])
 
   return NextResponse.json({
@@ -64,6 +68,10 @@ export async function GET(req: NextRequest) {
     period,
     balance,
     payouts,
+    breakdown: chargeSummary?.byMethod ?? [],
+    risk: chargeSummary?.risk ?? null,
+    transactions: chargeSummary?.transactions ?? [],
+    disputes,
     meta: {
       month: monthParam && /^\d{4}-\d{2}$/.test(monthParam) ? monthParam : null,
       period_from: periodFrom.toISOString(),
