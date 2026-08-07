@@ -581,6 +581,46 @@ model users {
   affiliate_earnings   affiliate_earnings[]
   affiliate_payouts    affiliate_payouts[]
   notifications        notifications[]
+  desktop_auth_codes   desktop_auth_codes[]
+  desktop_tokens       desktop_tokens[]
+}
+
+// Desktop (Electron) sign-in — the brokered system-browser flow (RFC 8252):
+// the web app authenticates the user via the existing NextAuth Discord/Google
+// login, then mints these app-issued tokens for the desktop client. The desktop
+// app never holds provider secrets or the web session cookie.
+
+// One-time authorization code, redeemed once at /api/desktop/token. Short TTL,
+// PKCE-protected. Only the SHA-256 hash of the code is stored.
+model desktop_auth_codes {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code_hash      String   @unique @db.VarChar // sha256(code)
+  user_id        String   @db.Uuid
+  code_challenge String   @db.VarChar // PKCE S256 challenge (base64url)
+  expires_at     DateTime @db.Timestamptz(6)
+  used           Boolean  @default(false)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  users          users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_desktop_codes_user")
+}
+
+// Issued access + refresh token pair, bound to a single hwid (1 account =
+// 1 device). Only SHA-256 hashes are stored; `revoked` or hwid reset kills it.
+model desktop_tokens {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String    @db.Uuid
+  hwid               String    @db.VarChar
+  access_hash        String    @unique @db.VarChar // sha256(access token)
+  refresh_hash       String    @unique @db.VarChar // sha256(refresh token) — rotated
+  access_expires_at  DateTime  @db.Timestamptz(6)
+  refresh_expires_at DateTime  @db.Timestamptz(6)
+  revoked            Boolean   @default(false)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  last_used_at       DateTime? @db.Timestamptz(6)
+  users              users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_desktop_tokens_user")
 }
 
 // In-app notifications (bell + badge). Generic per-user feed; currently used by

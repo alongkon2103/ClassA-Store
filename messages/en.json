@@ -1570,5 +1570,18 @@
     "txn_country": "Card country",
     "txn_amount": "Amount",
     "txn_refunded": "refunded"
+  },
+  "DesktopLogin": {
+    "title": "Sign in to the app",
+    "subtitle": "Authorize the A Class desktop app to sign in with this account.",
+    "your_account": "Your account",
+    "consent": "The app will get access tied to this account on this computer only.",
+    "authorize": "Authorize",
+    "authorizing": "Authorizing…",
+    "returning": "Returning you to the app…",
+    "close_hint": "You can close this tab and go back to the app.",
+    "not_you": "Not you? Switch account from the login page.",
+    "bad_request": "Invalid or expired sign-in link. Please start again from the app.",
+    "error": "Something went wrong. Please try again."
   }
 }

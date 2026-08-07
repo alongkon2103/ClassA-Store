@@ -12,10 +12,13 @@ export async function POST(
 
   const { id } = await params
 
-  const user = await prisma.users.update({
-    where: { id },
-    data: { hwid: null },
-  })
+  // Unbind the device AND kill any active desktop sessions so the old machine
+  // can't keep using its tokens (verifyAccessToken also rejects on the hwid
+  // mismatch, but revoking makes the intent explicit and clears the UI).
+  const [user] = await prisma.$transaction([
+    prisma.users.update({ where: { id }, data: { hwid: null, isOnlineDesktop: false } }),
+    prisma.desktop_tokens.updateMany({ where: { user_id: id, revoked: false }, data: { revoked: true } }),
+  ])
 
   revalidatePath("/admin/desktop/users")
   return NextResponse.json(user)
