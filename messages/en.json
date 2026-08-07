@@ -462,7 +462,21 @@
     "ppr_col_amount": "Amount",
     "ppr_col_status": "Status",
     "ppr_col_when": "When",
-    "stripe": "Stripe"
+    "stripe": "Stripe",
+    "wl_col": "Whitelist",
+    "wl_set": "Set plan…",
+    "wl_30d": "30 days",
+    "wl_permanent": "Permanent",
+    "wl_revoke": "Revoke",
+    "wl_none": "No access",
+    "wl_expired": "Expired",
+    "wl_kicked": "Kicked",
+    "wl_until": "Until {date}",
+    "wl_grant": "Grant",
+    "wl_bad_email": "Enter a valid email.",
+    "wl_add_title": "Pre-authorize by email",
+    "wl_add_hint": "Whitelist an email before they log in — applied automatically on their first login.",
+    "wl_pending_title": "Pending — not logged in yet ({n})"
   },
   "AdminDiscountCodes": {
     "title": "Discount Codes",
@@ -1582,6 +1596,7 @@
     "close_hint": "You can close this tab and go back to the app.",
     "not_you": "Not you? Switch account from the login page.",
     "bad_request": "Invalid or expired sign-in link. Please start again from the app.",
-    "error": "Something went wrong. Please try again."
+    "error": "Something went wrong. Please try again.",
+    "switch_account": "Use a different account (Discord / Google)"
   }
 }

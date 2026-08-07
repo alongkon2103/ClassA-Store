@@ -109,6 +109,20 @@ export const authOptions: AuthOptions = {
                     })
                 }
 
+                // Apply a pre-authorized desktop whitelist grant for this email
+                // (buyer was whitelisted before their first login). One-shot:
+                // move the plan onto the user, then drop the pending row.
+                if (email) {
+                    const grant = await prisma.desktop_whitelist_grants.findUnique({ where: { email } })
+                    if (grant) {
+                        await prisma.users.update({
+                            where: { id: dbUser.id },
+                            data: { nativeExpiry: grant.expires_at },
+                        })
+                        await prisma.desktop_whitelist_grants.delete({ where: { email } }).catch(() => {})
+                    }
+                }
+
                 user.id = dbUser.id
                 return true
 

@@ -585,6 +585,18 @@ model users {
   desktop_tokens       desktop_tokens[]
 }
 
+// Pre-authorized desktop whitelist grants keyed by EMAIL, for buyers who haven't
+// logged into the program yet (no users row). Applied + deleted on their next
+// login (see lib/auth.ts signIn). Once a users row exists, the grant lives on
+// users.nativeExpiry instead, so this table only holds not-yet-claimed emails.
+model desktop_whitelist_grants {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email      String   @unique @db.VarChar
+  expires_at DateTime @db.Timestamptz(6) // 30-day date OR year-9999 (permanent)
+  granted_by String?  @db.Uuid // admin user id (audit)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
 // Desktop (Electron) sign-in — the brokered system-browser flow (RFC 8252):
 // the web app authenticates the user via the existing NextAuth Discord/Google
 // login, then mints these app-issued tokens for the desktop client. The desktop

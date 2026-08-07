@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { signOut } from "next-auth/react"
 import { useTranslations } from "next-intl"
 
 type Props = {
@@ -38,6 +39,13 @@ export default function DesktopLoginClient({ ok, state, port, challenge, account
       setErr(t("error"))
       setStatus("error")
     }
+  }
+
+  // Sign out of the web session and come straight back to this consent page —
+  // which, now session-less, bounces to the provider chooser (Discord/Google).
+  const switchAccount = () => {
+    const back = `/desktop/login?${new URLSearchParams({ state, port, challenge }).toString()}`
+    signOut({ callbackUrl: back })
   }
 
   return (
@@ -83,7 +91,13 @@ export default function DesktopLoginClient({ ok, state, port, challenge, account
 
             {err && <p className="text-[12px] text-red-300 mt-3">{err}</p>}
 
-            <p className="text-[11px] text-text-muted mt-4">{t("not_you")}</p>
+            <button
+              onClick={switchAccount}
+              disabled={status === "authorizing"}
+              className="text-[11px] text-text-muted mt-4 underline underline-offset-2 hover:text-text-base transition-colors disabled:opacity-50"
+            >
+              {t("switch_account")}
+            </button>
           </>
         )}
       </div>
