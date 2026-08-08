@@ -48,6 +48,7 @@ const groups = [
     items: [
       { href: "/admin/desktop", key: "desktop_dashboard", roles: ["admin"] },
       { href: "/admin/desktop/users", key: "user_monitor", roles: ["admin"] },
+      { href: "/admin/desktop/plugin", key: "plugin_manage", roles: ["admin"] },
       { href: "/admin/desktop/announcements", key: "announcements", roles: ["admin"] },
     ]
   },

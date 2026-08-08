@@ -476,7 +476,22 @@
     "wl_bad_email": "Enter a valid email.",
     "wl_add_title": "Pre-authorize by email",
     "wl_add_hint": "Whitelist an email before they log in — applied automatically on their first login.",
-    "wl_pending_title": "Pending — not logged in yet ({n})"
+    "wl_pending_title": "Pending — not logged in yet ({n})",
+    "plugin_manage": "Plugin",
+    "plugin_sub": "Upload the ACPigPanic.jar the desktop app downloads after login. Each user gets a watermarked copy.",
+    "plugin_current": "Current plugin",
+    "plugin_none": "No plugin uploaded yet — the app will show \"no plugin\" until you upload one.",
+    "plugin_version": "Version",
+    "plugin_size": "Size",
+    "plugin_uploaded": "Uploaded",
+    "plugin_upload": "Upload new version",
+    "plugin_upload_hint": "Replacing the jar regenerates every user’s watermarked copy on next download.",
+    "plugin_file": "Jar file (.jar)",
+    "plugin_upload_btn": "Upload",
+    "plugin_uploading": "Uploading…",
+    "plugin_need_both": "Choose a jar file and enter a version.",
+    "plugin_upload_ok": "Uploaded ✓",
+    "plugin_upload_fail": "Upload failed. Please try again."
   },
   "AdminDiscountCodes": {
     "title": "Discount Codes",

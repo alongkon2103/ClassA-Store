@@ -479,7 +479,22 @@
     "wl_bad_email": "กรอกอีเมลให้ถูกต้อง",
     "wl_add_title": "ให้สิทธิ์ล่วงหน้าด้วยอีเมล",
     "wl_add_hint": "ใส่อีเมลก่อนผู้ใช้ login ครั้งแรก — จะได้สิทธิ์อัตโนมัติทันทีที่ login",
-    "wl_pending_title": "รอผู้ใช้ login ({n})"
+    "wl_pending_title": "รอผู้ใช้ login ({n})",
+    "plugin_manage": "ปลั๊กอิน",
+    "plugin_sub": "อัป ACPigPanic.jar ที่โปรแกรมโหลดหลัง login — ผู้ใช้แต่ละคนได้ไฟล์ที่ฝังลายน้ำของตัวเอง",
+    "plugin_current": "ปลั๊กอินปัจจุบัน",
+    "plugin_none": "ยังไม่ได้อัปปลั๊กอิน — โปรแกรมจะขึ้นว่ายังไม่มีปลั๊กอินจนกว่าจะอัป",
+    "plugin_version": "เวอร์ชัน",
+    "plugin_size": "ขนาด",
+    "plugin_uploaded": "อัปเมื่อ",
+    "plugin_upload": "อัปเวอร์ชันใหม่",
+    "plugin_upload_hint": "อัปทับแล้วไฟล์ลายน้ำของผู้ใช้ทุกคนจะถูกสร้างใหม่ตอนโหลดครั้งถัดไป",
+    "plugin_file": "ไฟล์ jar (.jar)",
+    "plugin_upload_btn": "อัปโหลด",
+    "plugin_uploading": "กำลังอัป…",
+    "plugin_need_both": "เลือกไฟล์ jar และกรอกเวอร์ชัน",
+    "plugin_upload_ok": "อัปแล้ว ✓",
+    "plugin_upload_fail": "อัปไม่สำเร็จ ลองใหม่อีกครั้ง"
   },
   "AdminDiscountCodes": {
     "title": "โค้ดส่วนลด",
