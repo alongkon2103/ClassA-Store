@@ -491,7 +491,12 @@
     "plugin_uploading": "Uploading…",
     "plugin_need_both": "Choose a jar file and enter a version.",
     "plugin_upload_ok": "Uploaded ✓",
-    "plugin_upload_fail": "Upload failed. Please try again."
+    "plugin_upload_fail": "Upload failed. Please try again.",
+    "plugin_no_programs": "No desktop programs yet. Create a product with type = desktop_program first.",
+    "plugin_none_short": "No jar",
+    "wl_program": "Program",
+    "wl_no_programs": "No desktop programs yet. Create a product with type = desktop_program.",
+    "wl_pick_program": "Pick a program first."
   },
   "AdminDiscountCodes": {
     "title": "Discount Codes",
@@ -1115,7 +1120,11 @@
     "add_partner": "Add Partner",
     "owner_name_label": "Owner Name",
     "payout_share_label": "Payout Share (%)",
-    "total_share_warning": "Total share must be 100%. Current: {total}%"
+    "total_share_warning": "Total share must be 100%. Current: {total}%",
+    "label_product_type": "Product type",
+    "type_roblox": "Roblox (whitelist)",
+    "type_desktop": "Desktop program",
+    "label_program_key": "Program key"
   },
   "Login": {
     "title": "Login",

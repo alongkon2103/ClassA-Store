@@ -11,9 +11,13 @@ import path from "node:path"
 import crypto from "node:crypto"
 
 const PLUGIN_DIR = process.env.DESKTOP_PLUGIN_DIR || path.join(process.cwd(), "storage", "plugin")
-const baseJarPath = () => path.join(PLUGIN_DIR, "base.jar")
-const metaPath = () => path.join(PLUGIN_DIR, "meta.json")
-const cacheDir = () => path.join(PLUGIN_DIR, "cache")
+// Everything is scoped to a program_key subdir so each desktop program has its
+// own jar / version / per-account cache.
+const safe = (s: string) => s.replace(/[^\w.-]/g, "_")
+const programDir = (programKey: string) => path.join(PLUGIN_DIR, safe(programKey))
+const baseJarPath = (programKey: string) => path.join(programDir(programKey), "base.jar")
+const metaPath = (programKey: string) => path.join(programDir(programKey), "meta.json")
+const cacheDir = (programKey: string) => path.join(programDir(programKey), "cache")
 
 const DOWNLOAD_TTL_MS = 5 * 60 * 1000 // signed download link: 5 minutes
 const SIGN_SECRET = () => process.env.NEXTAUTH_SECRET || ""
@@ -21,10 +25,10 @@ const SIGN_SECRET = () => process.env.NEXTAUTH_SECRET || ""
 // ── metadata ─────────────────────────────────────────────────────────────────
 export type PluginMeta = { version: string; sha256: string; size: number; uploaded_at: string }
 
-export function getBasePlugin(): PluginMeta | null {
+export function getBasePlugin(programKey: string): PluginMeta | null {
   try {
-    if (!fs.existsSync(baseJarPath())) return null
-    const meta = JSON.parse(fs.readFileSync(metaPath(), "utf8")) as PluginMeta
+    if (!fs.existsSync(baseJarPath(programKey))) return null
+    const meta = JSON.parse(fs.readFileSync(metaPath(programKey), "utf8")) as PluginMeta
     if (!meta || !meta.version) return null
     return meta
   } catch {
@@ -33,46 +37,45 @@ export function getBasePlugin(): PluginMeta | null {
 }
 
 /** Store a freshly-uploaded base jar + version, and drop stale per-account caches. */
-export function saveBasePlugin(jar: Buffer, version: string): PluginMeta {
-  fs.mkdirSync(PLUGIN_DIR, { recursive: true })
-  fs.writeFileSync(baseJarPath(), jar)
+export function saveBasePlugin(programKey: string, jar: Buffer, version: string): PluginMeta {
+  fs.mkdirSync(programDir(programKey), { recursive: true })
+  fs.writeFileSync(baseJarPath(programKey), jar)
   const meta: PluginMeta = {
     version: version.trim(),
     sha256: sha256(jar),
     size: jar.length,
     uploaded_at: new Date().toISOString(),
   }
-  fs.writeFileSync(metaPath(), JSON.stringify(meta, null, 2))
+  fs.writeFileSync(metaPath(programKey), JSON.stringify(meta, null, 2))
   // base changed → every per-account watermarked copy is stale
-  try { fs.rmSync(cacheDir(), { recursive: true, force: true }) } catch { /* nothing to clear */ }
+  try { fs.rmSync(cacheDir(programKey), { recursive: true, force: true }) } catch { /* nothing to clear */ }
   return meta
 }
 
 // ── per-account watermarked build (cached) ───────────────────────────────────
-const safe = (s: string) => s.replace(/[^\w.-]/g, "_")
-
 export type BuiltJar = { buffer: Buffer; sha256: string }
 
 /**
- * The watermarked jar for (account, version). Built once and cached on disk;
- * cache key includes the version so a new upload regenerates it. Returns null if
- * no base plugin is uploaded yet.
+ * The watermarked jar for (program, account, version). Built once and cached on
+ * disk; cache key includes the version so a new upload regenerates it. Returns
+ * null if no base plugin is uploaded for this program yet.
  */
-export function buildWatermarkedJar(account: string, email: string | null): BuiltJar | null {
-  const meta = getBasePlugin()
+export function buildWatermarkedJar(programKey: string, account: string, email: string | null): BuiltJar | null {
+  const meta = getBasePlugin(programKey)
   if (!meta) return null
 
-  fs.mkdirSync(cacheDir(), { recursive: true })
-  const cacheFile = path.join(cacheDir(), `${safe(account)}-${safe(meta.version)}.jar`)
+  fs.mkdirSync(cacheDir(programKey), { recursive: true })
+  const cacheFile = path.join(cacheDir(programKey), `${safe(account)}-${safe(meta.version)}.jar`)
 
   if (fs.existsSync(cacheFile)) {
     const buf = fs.readFileSync(cacheFile)
     return { buffer: buf, sha256: sha256(buf) }
   }
 
-  const base = fs.readFileSync(baseJarPath())
+  const base = fs.readFileSync(baseJarPath(programKey))
   const watermark = Buffer.from(
     `account=${account}\n` +
+    `program=${programKey}\n` +
     `issued-to=${email ?? "unknown"}\n` +
     `issued-at=${new Date().toISOString().slice(0, 10)}\n`,
     "utf8",
@@ -82,15 +85,15 @@ export function buildWatermarkedJar(account: string, email: string | null): Buil
   return { buffer: out, sha256: sha256(out) }
 }
 
-// ── short-lived signed download URL (HMAC, account-bound) ─────────────────────
-export function signDownload(account: string, version: string): { exp: number; sig: string } {
+// ── short-lived signed download URL (HMAC, account + program bound) ───────────
+export function signDownload(account: string, programKey: string, version: string): { exp: number; sig: string } {
   const exp = Date.now() + DOWNLOAD_TTL_MS
-  return { exp, sig: signature(account, version, exp) }
+  return { exp, sig: signature(account, programKey, version, exp) }
 }
 
-export function verifyDownload(account: string, version: string, exp: number, sig: string): boolean {
+export function verifyDownload(account: string, programKey: string, version: string, exp: number, sig: string): boolean {
   if (!Number.isFinite(exp) || exp < Date.now()) return false
-  const expected = signature(account, version, exp)
+  const expected = signature(account, programKey, version, exp)
   if (expected.length !== sig.length) return false
   try {
     return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))
@@ -99,9 +102,9 @@ export function verifyDownload(account: string, version: string, exp: number, si
   }
 }
 
-function signature(account: string, version: string, exp: number): string {
+function signature(account: string, programKey: string, version: string, exp: number): string {
   return crypto.createHmac("sha256", SIGN_SECRET())
-    .update(`desktop-plugin\n${account}\n${version}\n${exp}`)
+    .update(`desktop-plugin\n${account}\n${programKey}\n${version}\n${exp}`)
     .digest("hex")
 }
 

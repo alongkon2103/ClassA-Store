@@ -40,10 +40,21 @@ export async function POST(req: NextRequest) {
   if (!admin.isValid) return admin.response
 
   const body = await req.json()
-  const { name_en, name_th, slug, description_en, description_th, price, is_active, is_featured, isLower, youtube_url, videos, tutorial_video_url, preview_video_url } = body
+  const { name_en, name_th, slug, description_en, description_th, price, is_active, is_featured, isLower, youtube_url, videos, tutorial_video_url, preview_video_url, type, program_key } = body
 
   if (!name_en || !name_th || !slug || !price) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+  }
+
+  // Product delivery type. desktop_program requires a unique program_key.
+  const productType = type === "desktop_program" ? "desktop_program" : "roblox_whitelist"
+  const programKey = productType === "desktop_program" ? String(program_key ?? "").trim() : null
+  if (productType === "desktop_program" && !/^[a-z0-9_]{2,40}$/.test(programKey ?? "")) {
+    return NextResponse.json({ error: "program_key required (a-z0-9_, 2–40 chars)" }, { status: 400 })
+  }
+  if (programKey) {
+    const dup = await prisma.products.findFirst({ where: { program_key: programKey } })
+    if (dup) return NextResponse.json({ error: "program_key already exists" }, { status: 400 })
   }
 
   // Normalize the YouTube video list; keep the legacy single youtube_url in sync
@@ -65,6 +76,8 @@ export async function POST(req: NextRequest) {
       is_active:   is_active   ?? true,
       is_featured: is_featured ?? false,
       isLower:     isLower     ?? false,
+      type:        productType,
+      program_key: programKey,
       youtube_url: vids[0] ?? null,
       tutorial_video_url: tutorial_video_url ?? null,
       preview_video_url: preview_video_url ?? null,

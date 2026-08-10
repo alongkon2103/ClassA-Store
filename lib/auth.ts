@@ -109,17 +109,20 @@ export const authOptions: AuthOptions = {
                     })
                 }
 
-                // Apply a pre-authorized desktop whitelist grant for this email
-                // (buyer was whitelisted before their first login). One-shot:
-                // move the plan onto the user, then drop the pending row.
+                // Apply any pre-authorized desktop program grants for this email
+                // (buyer was whitelisted before their first login). One-shot per
+                // product: move each onto user_program_access, then drop the rows.
                 if (email) {
-                    const grant = await prisma.desktop_whitelist_grants.findUnique({ where: { email } })
-                    if (grant) {
-                        await prisma.users.update({
-                            where: { id: dbUser.id },
-                            data: { nativeExpiry: grant.expires_at },
+                    const grants = await prisma.desktop_whitelist_grants.findMany({ where: { email } })
+                    for (const grant of grants) {
+                        await prisma.user_program_access.upsert({
+                            where: { user_id_product_id: { user_id: dbUser.id, product_id: grant.product_id } },
+                            create: { user_id: dbUser.id, product_id: grant.product_id, expires_at: grant.expires_at, status: "ACTIVE" },
+                            update: { expires_at: grant.expires_at, status: "ACTIVE", updated_at: new Date() },
                         })
-                        await prisma.desktop_whitelist_grants.delete({ where: { email } }).catch(() => {})
+                    }
+                    if (grants.length > 0) {
+                        await prisma.desktop_whitelist_grants.deleteMany({ where: { email } }).catch(() => {})
                     }
                 }
 

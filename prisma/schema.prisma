@@ -399,6 +399,14 @@ model products {
   is_active      Boolean? @default(true)
   is_featured    Boolean? @default(false)
 
+  // Product delivery type — decides how a purchase is fulfilled and how access
+  // is checked. "roblox_whitelist" (default, all existing products) writes
+  // user_whitelist_access by ign; "desktop_program" grants user_program_access
+  // to the buyer and delivers a plugin jar + licence. program_key identifies the
+  // Electron program for desktop_program products (e.g. "ac_pig_panic").
+  type           String   @default("roblox_whitelist") @db.VarChar
+  program_key    String?  @unique @db.VarChar
+
   // New Discount Toggle
   has_limited_discount Boolean? @default(false)
 
@@ -431,6 +439,7 @@ model products {
   created_by            users?                  @relation("ProductCreator", fields: [created_by_id], references: [id])
   user_whitelist_access user_whitelist_access[]
   user_livegen_drafts   user_livegen_drafts[]
+  user_program_access   user_program_access[]
 
   @@index([is_consignment], map: "idx_products_consignment")
   @@index([created_by_id], map: "idx_products_creator")
@@ -483,6 +492,27 @@ model user_whitelist_access {
 
   @@unique([ign, product_id])
   @@index([ign], map: "idx_uwa_ign")
+}
+
+// Per-(user, product) entitlement for desktop_program products — replaces the
+// single users.nativeExpiry flag so a user can own program A but not B. Written
+// by fulfillPaidOrder on purchase and by the admin grant flow. Access = a row
+// with expires_at in the future (year-9999 sentinel = permanent), AND the user's
+// account isn't KICKED (users.nativeStatus stays a global ban).
+model user_program_access {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  product_id String   @db.Uuid
+  status     String   @default("ACTIVE") @db.VarChar
+  expires_at DateTime @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products   products @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, product_id])
+  @@index([user_id], map: "idx_upa_user")
+  @@index([product_id], map: "idx_upa_product")
 }
 
 model premium_upgrades {
@@ -583,6 +613,7 @@ model users {
   notifications        notifications[]
   desktop_auth_codes   desktop_auth_codes[]
   desktop_tokens       desktop_tokens[]
+  user_program_access  user_program_access[]
 }
 
 // Pre-authorized desktop whitelist grants keyed by EMAIL, for buyers who haven't
@@ -591,10 +622,13 @@ model users {
 // users.nativeExpiry instead, so this table only holds not-yet-claimed emails.
 model desktop_whitelist_grants {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email      String   @unique @db.VarChar
+  email      String   @db.VarChar
+  product_id String   @db.Uuid // which desktop_program this pre-auth is for
   expires_at DateTime @db.Timestamptz(6) // 30-day date OR year-9999 (permanent)
   granted_by String?  @db.Uuid // admin user id (audit)
   created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([email, product_id])
 }
 
 // Desktop (Electron) sign-in — the brokered system-browser flow (RFC 8252):

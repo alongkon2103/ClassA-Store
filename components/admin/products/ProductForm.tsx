@@ -40,6 +40,10 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
         description_th: product?.description_th ?? "",
         price: product?.price ?? "",
 
+        // Delivery type: roblox_whitelist (default) or desktop_program.
+        type: product?.type ?? "roblox_whitelist",
+        program_key: product?.program_key ?? "",
+
         is_active: product?.is_active ?? true,
         is_featured: product?.is_featured ?? false,
         isLower: product?.isLower ?? false,
@@ -144,6 +148,9 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
         const submissionData = {
             ...form,
             price: Number(form.price),
+            // Only desktop_program products carry a program_key; roblox → null so
+            // empty strings never collide on the unique index.
+            program_key: form.type === "desktop_program" ? String(form.program_key || "").trim() : null,
             commission_pct: form.is_consignment ? Number(form.commission_pct || 0) : 0,
             consignments: form.is_consignment ? form.consignments : [],
             partnership_shares: form.is_consignment ? [] : form.partnership_shares,
@@ -229,6 +236,20 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
                         <input value={form.slug} onChange={(e) => set("slug", e.target.value)}
                             placeholder="roblox-live-map-1" className={input} />
                     </Field>
+
+                    <Field label={t("label_product_type")}>
+                        <select value={form.type} onChange={(e) => set("type", e.target.value)} className={input}>
+                            <option value="roblox_whitelist">{t("type_roblox")}</option>
+                            <option value="desktop_program">{t("type_desktop")}</option>
+                        </select>
+                    </Field>
+
+                    {form.type === "desktop_program" && (
+                        <Field label={t("label_program_key")} required>
+                            <input value={form.program_key} onChange={(e) => set("program_key", e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                                placeholder="ac_pig_panic" className={input} />
+                        </Field>
+                    )}
 
                     <Field label={t("label_price")} required>
                         <input type="number" value={form.price} 

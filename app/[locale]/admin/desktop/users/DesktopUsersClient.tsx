@@ -18,17 +18,20 @@ type DesktopUser = {
   lastSeen: string | null
   isOnlineDesktop: boolean
   nativeStatus: string
-  nativeExpiry: string | null
 }
 
-type PendingGrant = { id: string; email: string; expires_at: string; created_at: string }
+type PendingGrant = { id: string; email: string; product_id: string; expires_at: string; created_at: string }
+type Program = { id: string; name_en: string; name_th: string; program_key: string | null }
+type Access = { user_id: string; product_id: string; status: string; expires_at: string }
 
 // Is an expiry the year-9999 permanent sentinel?
 function isPermanent(iso: string): boolean {
   return new Date(iso).getUTCFullYear() > new Date().getUTCFullYear() + 50
 }
 
-export default function DesktopUsersClient({ users, pendingGrants }: { users: DesktopUser[]; pendingGrants: PendingGrant[] }) {
+export default function DesktopUsersClient({ users, pendingGrants, programs, access }: {
+  users: DesktopUser[]; pendingGrants: PendingGrant[]; programs: Program[]; access: Access[]
+}) {
   const t = useTranslations("Admin")
   const locale = useLocale()
   const dateLocale = locale === "th" ? th : enUS
@@ -40,23 +43,34 @@ export default function DesktopUsersClient({ users, pendingGrants }: { users: De
   const [wlBusy, setWlBusy] = useState<string | null>(null)
   const [email, setEmail] = useState("")
   const [emailPlan, setEmailPlan] = useState<"30d" | "permanent">("30d")
+  const [programId, setProgramId] = useState<string>(programs[0]?.id ?? "")
 
   const fmtDay = (iso: string) => format(new Date(iso), "dd MMM yyyy", { locale: dateLocale })
 
-  // Whitelist verdict for display (mirrors lib/desktopEntitlement on the server).
+  // userId → entitlement for the selected program.
+  const accessByUser = useMemo(() => {
+    const m = new Map<string, Access>()
+    for (const a of access) if (a.product_id === programId) m.set(a.user_id, a)
+    return m
+  }, [access, programId])
+  const pendingForProgram = useMemo(() => pendingGrants.filter((g) => g.product_id === programId), [pendingGrants, programId])
+
+  // Whitelist verdict per user for the selected program (mirrors the server).
   const wlOf = (u: DesktopUser): { label: string; tone: "green" | "red" | "muted" } => {
     if (u.nativeStatus === "KICKED") return { label: t("wl_kicked"), tone: "red" }
-    if (!u.nativeExpiry) return { label: t("wl_none"), tone: "muted" }
-    if (isPermanent(u.nativeExpiry)) return { label: t("wl_permanent"), tone: "green" }
-    const ok = new Date(u.nativeExpiry).getTime() > Date.now()
-    return ok ? { label: t("wl_until", { date: fmtDay(u.nativeExpiry) }), tone: "green" } : { label: t("wl_expired"), tone: "red" }
+    const a = accessByUser.get(u.id)
+    if (!a || a.status !== "ACTIVE") return { label: t("wl_none"), tone: "muted" }
+    if (isPermanent(a.expires_at)) return { label: t("wl_permanent"), tone: "green" }
+    const ok = new Date(a.expires_at).getTime() > Date.now()
+    return ok ? { label: t("wl_until", { date: fmtDay(a.expires_at) }), tone: "green" } : { label: t("wl_expired"), tone: "red" }
   }
 
   const grant = async (body: { userId?: string; email?: string; plan: string }, busyKey: string) => {
+    if (!programId) { alert(t("wl_pick_program")); return }
     setWlBusy(busyKey)
     try {
       const res = await fetch("/api/admin/desktop/whitelist", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, productId: programId }),
       })
       if (res.ok) router.refresh()
       else alert((await res.json().catch(() => ({}))).error || "error")
@@ -133,7 +147,27 @@ export default function DesktopUsersClient({ users, pendingGrants }: { users: De
           </h1>
           <p className="text-text-muted text-[13px] mt-0.5">{users.length} {t("total")}</p>
         </div>
+        {programs.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] text-text-muted">{t("wl_program")}</span>
+            <select
+              value={programId}
+              onChange={(e) => setProgramId(e.target.value)}
+              className="bg-bg-card border border-accent/15 rounded-xl px-4 py-2 text-[13px]"
+            >
+              {programs.map((p) => (
+                <option key={p.id} value={p.id}>{locale === "th" ? p.name_th : p.name_en}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
+
+      {programs.length === 0 && (
+        <div className="bg-amber-500/[0.06] border border-amber-500/25 rounded-2xl p-4 text-[13px] text-amber-300">
+          {t("wl_no_programs")}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
@@ -192,11 +226,11 @@ export default function DesktopUsersClient({ users, pendingGrants }: { users: De
           </button>
         </div>
 
-        {pendingGrants.length > 0 && (
+        {pendingForProgram.length > 0 && (
           <div className="mt-4 pt-4 border-t border-white/5">
-            <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{t("wl_pending_title", { n: pendingGrants.length })}</p>
+            <p className="text-[11px] tracking-widest text-text-muted uppercase mb-2">{t("wl_pending_title", { n: pendingForProgram.length })}</p>
             <div className="space-y-1.5">
-              {pendingGrants.map((g) => (
+              {pendingForProgram.map((g) => (
                 <div key={g.id} className="flex items-center justify-between gap-3 bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2">
                   <div className="min-w-0">
                     <p className="text-[12px] font-medium truncate">{g.email}</p>

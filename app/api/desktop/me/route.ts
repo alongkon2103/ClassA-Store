@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { verifyAccessToken, bearerFrom } from "@/lib/desktopAuth"
-import { whitelistState } from "@/lib/desktopEntitlement"
+import { resolveProgram, programAccessState } from "@/lib/desktopProgram"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   const user = await prisma.users.findUnique({
     where: { id: ctx.userId },
-    select: { id: true, username: true, email: true, avatar: true, role: true, hwid: true, nativeStatus: true, nativeExpiry: true },
+    select: { id: true, username: true, email: true, avatar: true, role: true, hwid: true, nativeStatus: true },
   })
   if (!user) return NextResponse.json({ error: "NO_USER", errorCode: "NO_USER" }, { status: 404 })
 
@@ -28,8 +28,9 @@ export async function GET(req: NextRequest) {
     prisma.desktop_tokens.update({ where: { id: ctx.tokenId }, data: { last_used_at: new Date() } }),
   ]).catch(() => {})
 
-  // Whitelist verdict the program gates the Minecraft server on.
-  const wl = whitelistState(user.nativeStatus, user.nativeExpiry)
+  // Whitelist verdict for the requesting program (the app passes its program_key).
+  const program = await resolveProgram(new URL(req.url).searchParams.get("program"))
+  const wl = program ? await programAccessState(user.id, program.id, user.nativeStatus) : null
 
   return NextResponse.json({
     user: {
@@ -40,12 +41,10 @@ export async function GET(req: NextRequest) {
       role: user.role,
       hwid: user.hwid,
       native_status: user.nativeStatus,
-      native_expiry: user.nativeExpiry?.toISOString() ?? null,
     },
-    whitelist: {
-      allowed: wl.allowed,
-      plan: wl.plan, // "permanent" | "timed" | null
-      expires_at: wl.expiresAt ? wl.expiresAt.toISOString() : null,
-    },
+    program: program ? { key: program.program_key, name: program.name_en } : null,
+    whitelist: wl
+      ? { allowed: wl.allowed, plan: wl.plan, expires_at: wl.expiresAt ? wl.expiresAt.toISOString() : null }
+      : null,
   })
 }

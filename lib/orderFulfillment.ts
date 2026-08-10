@@ -7,6 +7,7 @@
 //
 // Idempotent: if status is already "paid" we no-op so retries are safe.
 
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { prepareAffiliateEarning } from "@/lib/affiliateEarnings"
 import { notify } from "@/lib/notifications"
@@ -52,7 +53,26 @@ export async function fulfillPaidOrder(orderId: string, opts?: { isPremium?: boo
   // for non-affiliate codes, self-purchases, trials, and 0-commission codes.
   const earning = await prepareAffiliateEarning(order)
 
-  await prisma.$transaction([
+  // Entitlement write branches on product type:
+  //   roblox_whitelist → user_whitelist_access keyed by ign (unchanged)
+  //   desktop_program  → user_program_access for the buyer (needs a user_id)
+  const isDesktop = order.products.type === "desktop_program"
+  const entitlementOps: Prisma.PrismaPromise<unknown>[] =
+    isDesktop
+      ? (order.user_id
+          ? [prisma.user_program_access.upsert({
+              where: { user_id_product_id: { user_id: order.user_id, product_id: order.product_id } },
+              create: { user_id: order.user_id, product_id: order.product_id, expires_at: expiresAt, status: "ACTIVE" },
+              update: { expires_at: expiresAt, status: "ACTIVE", updated_at: new Date() },
+            })]
+          : [])
+      : [prisma.user_whitelist_access.upsert({
+          where: { ign_product_id: { ign: order.whitelisted_username || "unknown", product_id: order.product_id } },
+          create: { ign: order.whitelisted_username || "unknown", product_id: order.product_id, is_premium: isPremium, expires_at: expiresAt },
+          update: { product_id: order.product_id, is_premium: isPremium, expires_at: expiresAt, updated_at: new Date() },
+        })]
+
+  const ops: Prisma.PrismaPromise<unknown>[] = [
     prisma.orders.update({
       where: { id: orderId },
       data: {
@@ -63,36 +83,13 @@ export async function fulfillPaidOrder(orderId: string, opts?: { isPremium?: boo
         is_premium_order: isPremium,
       },
     }),
-    prisma.user_whitelist_access.upsert({
-      where: {
-        ign_product_id: {
-          ign: order.whitelisted_username || "unknown",
-          product_id: order.product_id,
-        },
-      },
-      create: {
-        ign: order.whitelisted_username || "unknown",
-        product_id: order.product_id,
-        is_premium: isPremium,
-        expires_at: expiresAt,
-      },
-      update: {
-        product_id: order.product_id,
-        is_premium: isPremium,
-        expires_at: expiresAt,
-        updated_at: new Date(),
-      },
-    }),
+    ...entitlementOps,
     ...(shouldIncrementDiscount
-      ? [
-          prisma.product_variants.update({
-            where: { id: order.variant_id! },
-            data: { discount_used: { increment: 1 } },
-          }),
-        ]
+      ? [prisma.product_variants.update({ where: { id: order.variant_id! }, data: { discount_used: { increment: 1 } } })]
       : []),
     ...(earning ? [prisma.affiliate_earnings.create({ data: earning })] : []),
-  ])
+  ]
+  await prisma.$transaction(ops)
 
   // Notify the affiliate of the new commission (best-effort, after commit).
   if (earning) {

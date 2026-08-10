@@ -494,7 +494,12 @@
     "plugin_uploading": "กำลังอัป…",
     "plugin_need_both": "เลือกไฟล์ jar และกรอกเวอร์ชัน",
     "plugin_upload_ok": "อัปแล้ว ✓",
-    "plugin_upload_fail": "อัปไม่สำเร็จ ลองใหม่อีกครั้ง"
+    "plugin_upload_fail": "อัปไม่สำเร็จ ลองใหม่อีกครั้ง",
+    "plugin_no_programs": "ยังไม่มีโปรแกรม desktop — สร้าง product ที่ type = desktop_program ก่อน",
+    "plugin_none_short": "ยังไม่มี jar",
+    "wl_program": "โปรแกรม",
+    "wl_no_programs": "ยังไม่มีโปรแกรม desktop — สร้าง product ที่ type = desktop_program ก่อน",
+    "wl_pick_program": "เลือกโปรแกรมก่อน"
   },
   "AdminDiscountCodes": {
     "title": "โค้ดส่วนลด",
@@ -1118,7 +1123,11 @@
     "add_partner": "เพิ่มผู้ร่วมหาร",
     "owner_name_label": "ชื่อเจ้าของ",
     "payout_share_label": "ส่วนแบ่งรายได้ (%)",
-    "total_share_warning": "ผลรวมส่วนแบ่งต้องเท่ากับ 100% (ปัจจุบัน: {total}%)"
+    "total_share_warning": "ผลรวมส่วนแบ่งต้องเท่ากับ 100% (ปัจจุบัน: {total}%)",
+    "label_product_type": "ประเภทสินค้า",
+    "type_roblox": "Roblox (whitelist)",
+    "type_desktop": "โปรแกรม desktop",
+    "label_program_key": "Program key"
   },
   "Login": {
     "title": "เข้าสู่ระบบ",
