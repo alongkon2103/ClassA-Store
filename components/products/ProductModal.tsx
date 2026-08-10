@@ -969,16 +969,12 @@ export default function ProductModal({ product, onClose }: any) {
             {/* Desktop programs: no in-game name — sign in with the account.
                 Otherwise the IN-GAME USERNAME field (hidden pre-login when trial on). */}
             {isDesktop ? (
-              <div className="space-y-2">
-                <p className="text-[11px] tracking-widest text-text-muted uppercase">{isTH ? "ดาวน์โหลดโปรแกรม" : "Download the app"}</p>
-                {product?.download_url ? (
-                  <a href={product.download_url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full bg-bg-base border border-accent/20 rounded-xl px-4 py-3 text-[13px] text-accent-light hover:border-accent/40 transition">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                    {isTH ? "ดาวน์โหลดตัวติดตั้ง" : "Download installer"}
-                  </a>
-                ) : null}
-                <p className="text-[11px] text-text-muted">{isTH ? "โปรแกรมนี้เข้าใช้ด้วยบัญชีที่ล็อกอิน ไม่ต้องกรอกชื่อในเกม" : "This program signs in with your account — no in-game name needed."}</p>
+              <div className="rounded-xl bg-bg-base/50 border border-accent/10 px-4 py-3">
+                <p className="text-[12px] text-text-muted leading-relaxed">
+                  {isTH
+                    ? "โปรแกรมนี้เข้าใช้ด้วยบัญชีที่ล็อกอิน ไม่ต้องกรอกชื่อในเกม · ลิงก์ดาวน์โหลดตัวติดตั้งจะขึ้นหลังชำระเงินสำเร็จ"
+                    : "This program signs in with your account — no in-game name needed. The installer download link appears after payment."}
+                </p>
               </div>
             ) : (!isTrialEnabled || session) ? (
               <div className="space-y-2">

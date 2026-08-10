@@ -70,6 +70,7 @@ export default async function OrderPage({
     }
 
     const mainImage = order.products.product_images[0]?.url || "/next.svg"
+    const isDesktopProduct = order.products.type === "desktop_program"
 
     return (
         <div className="min-h-screen bg-bg-base selection:bg-accent/30 selection:text-accent-light">
@@ -137,16 +138,35 @@ export default async function OrderPage({
                                     <div className="space-y-5">
                                         <div className="bg-bg-base/50 border border-accent/10 rounded-xl md:rounded-2xl p-5 md:p-6">
                                             <p className="text-[16px] md:text-[18px] font-semibold text-text-base mb-2">
-                                                Whitelist Purchase Completed
+                                                {isDesktopProduct
+                                                    ? (locale === "th" ? "ชำระเงินสำเร็จ" : "Purchase Completed")
+                                                    : (locale === "th" ? "ซื้อ Whitelist สำเร็จ" : "Whitelist Purchase Completed")}
                                             </p>
 
                                             <p className="text-[13px] text-text-muted leading-relaxed">
-                                                Your whitelist access has been successfully activated.
-                                                You can now join the server using the link below.
+                                                {isDesktopProduct
+                                                    ? (locale === "th"
+                                                        ? "สิทธิ์ใช้งานเปิดให้บัญชีนี้แล้ว — ดาวน์โหลดตัวติดตั้งด้านล่าง ติดตั้งแล้วเข้าสู่ระบบด้วยบัญชีเดียวกันนี้เพื่อใช้งาน"
+                                                        : "Access is now active on this account. Download the installer below, then sign in to the app with this same account.")
+                                                    : (locale === "th"
+                                                        ? "เปิดสิทธิ์ whitelist ให้แล้ว เข้าเซิร์ฟเวอร์ได้ผ่านลิงก์ด้านล่าง"
+                                                        : "Your whitelist access has been successfully activated. You can now join the server using the link below.")}
                                             </p>
                                         </div>
 
-                                        {order.products.info_page_url && (
+                                        {isDesktopProduct && order.products.download_url && (
+                                            <a
+                                                href={order.products.download_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-light text-white font-semibold text-[14px] py-3 rounded-xl transition"
+                                            >
+                                                <ExternalIcon size={16} />
+                                                {locale === "th" ? "ดาวน์โหลดตัวติดตั้ง" : "Download installer"}
+                                            </a>
+                                        )}
+
+                                        {!isDesktopProduct && order.products.info_page_url && (
                                             <a
                                                 href={
                                                     order.products.info_page_url.startsWith("http")
