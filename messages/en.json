@@ -1124,7 +1124,8 @@
     "label_product_type": "Product type",
     "type_roblox": "Roblox (whitelist)",
     "type_desktop": "Desktop program",
-    "label_program_key": "Program key"
+    "label_program_key": "Program key",
+    "label_download_url": "Installer download URL"
   },
   "Login": {
     "title": "Login",

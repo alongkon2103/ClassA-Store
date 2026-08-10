@@ -647,9 +647,17 @@ export default function ProductModal({ product, onClose }: any) {
     if (dx < -50) next()
   }
 
+  // desktop_program products have no in-game username — access is per logged-in
+  // account. We still send a non-empty value (the buyer's email) so the existing
+  // checkout routes' "username required" guard passes; fulfillment ignores it and
+  // grants by user_id. Roblox products are unchanged.
+  const isDesktop = product?.type === "desktop_program"
+  const effectiveUsername = () => (isDesktop ? (session?.user?.email || "desktop") : whitelistUsername.trim())
+
   const handleBuyClick = async () => {
     if (!session) { setShowLoginModal(true); return }
-    if (!selectedVariant || !whitelistUsername.trim()) { alert("Please enter your in-game username"); return }
+    if (!selectedVariant) { alert("Please choose an option"); return }
+    if (!isDesktop && !whitelistUsername.trim()) { alert("Please enter your in-game username"); return }
     setLoading(true)
     try {
       // Each provider has its own endpoint. PayPal (API) converts THB→USD and
@@ -669,7 +677,7 @@ export default function ProductModal({ product, onClose }: any) {
           variantId: selectedVariant.id,
           paymentMethod,
           locale,
-          whitelistUsername: whitelistUsername.trim(),
+          whitelistUsername: effectiveUsername(),
           isPremium: isPremiumSelected,
           discountCode: appliedDiscount?.code || undefined,
           // Affiliate referral from the /r/<code> link — sent even when the
@@ -694,7 +702,7 @@ export default function ProductModal({ product, onClose }: any) {
 
   const handleTrialClick = async () => {
     if (!session) { setShowLoginModal(true); return }
-    if (!whitelistUsername.trim()) { alert("Please enter your in-game username"); return }
+    if (!isDesktop && !whitelistUsername.trim()) { alert("Please enter your in-game username"); return }
     setLoadingTrial(true)
     try {
       const res = await fetch("/api/checkout/trial", {
@@ -702,7 +710,7 @@ export default function ProductModal({ product, onClose }: any) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId: product.id,
-          whitelistUsername: whitelistUsername.trim(),
+          whitelistUsername: effectiveUsername(),
         }),
       })
       const data = await res.json()
@@ -958,8 +966,21 @@ export default function ProductModal({ product, onClose }: any) {
               </div>
             )}
 
-            {/* IN-GAME USERNAME - Auth Guard: Hide if trial enabled but not logged in */}
-            {(!isTrialEnabled || session) ? (
+            {/* Desktop programs: no in-game name — sign in with the account.
+                Otherwise the IN-GAME USERNAME field (hidden pre-login when trial on). */}
+            {isDesktop ? (
+              <div className="space-y-2">
+                <p className="text-[11px] tracking-widest text-text-muted uppercase">{isTH ? "ดาวน์โหลดโปรแกรม" : "Download the app"}</p>
+                {product?.download_url ? (
+                  <a href={product.download_url} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full bg-bg-base border border-accent/20 rounded-xl px-4 py-3 text-[13px] text-accent-light hover:border-accent/40 transition">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                    {isTH ? "ดาวน์โหลดตัวติดตั้ง" : "Download installer"}
+                  </a>
+                ) : null}
+                <p className="text-[11px] text-text-muted">{isTH ? "โปรแกรมนี้เข้าใช้ด้วยบัญชีที่ล็อกอิน ไม่ต้องกรอกชื่อในเกม" : "This program signs in with your account — no in-game name needed."}</p>
+              </div>
+            ) : (!isTrialEnabled || session) ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("ingame_username")}</p>

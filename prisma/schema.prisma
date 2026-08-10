@@ -406,6 +406,7 @@ model products {
   // Electron program for desktop_program products (e.g. "ac_pig_panic").
   type           String   @default("roblox_whitelist") @db.VarChar
   program_key    String?  @unique @db.VarChar
+  download_url   String?  // desktop_program: installer (.exe) download link
 
   // New Discount Toggle
   has_limited_discount Boolean? @default(false)

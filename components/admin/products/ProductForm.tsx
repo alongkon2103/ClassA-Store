@@ -43,6 +43,7 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
         // Delivery type: roblox_whitelist (default) or desktop_program.
         type: product?.type ?? "roblox_whitelist",
         program_key: product?.program_key ?? "",
+        download_url: product?.download_url ?? "",
 
         is_active: product?.is_active ?? true,
         is_featured: product?.is_featured ?? false,
@@ -151,6 +152,7 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
             // Only desktop_program products carry a program_key; roblox → null so
             // empty strings never collide on the unique index.
             program_key: form.type === "desktop_program" ? String(form.program_key || "").trim() : null,
+            download_url: form.type === "desktop_program" ? (String(form.download_url || "").trim() || null) : null,
             commission_pct: form.is_consignment ? Number(form.commission_pct || 0) : 0,
             consignments: form.is_consignment ? form.consignments : [],
             partnership_shares: form.is_consignment ? [] : form.partnership_shares,
@@ -248,6 +250,13 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
                         <Field label={t("label_program_key")} required>
                             <input value={form.program_key} onChange={(e) => set("program_key", e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
                                 placeholder="ac_pig_panic" className={input} />
+                        </Field>
+                    )}
+
+                    {form.type === "desktop_program" && (
+                        <Field label={t("label_download_url")}>
+                            <input value={form.download_url} onChange={(e) => set("download_url", e.target.value)}
+                                placeholder="https://github.com/.../ACPigPanic-1.3.4-setup.exe" className={input} />
                         </Field>
                     )}
 
