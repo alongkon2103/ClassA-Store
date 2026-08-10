@@ -960,7 +960,10 @@
     "outer_padding": "ขอบรอบนอก",
     "bg_color": "สีพื้นหลัง",
     "transparent": "โปร่งใส",
-    "reset_layout": "รีเซ็ตการจัดวาง"
+    "reset_layout": "รีเซ็ตการจัดวาง",
+    "orientation": "แนวการจัด",
+    "orientation_vertical": "แนวตั้ง",
+    "orientation_horizontal": "แนวนอน"
   },
   "Orders": {
     "title": "ตั้งค่าเกม",

@@ -23,6 +23,8 @@ interface Order {
   products: {
     name_th: string
     name_en: string
+    type: string
+    download_url: string | null
     info_page_url: string | null
     product_images: { url: string | null }[]
     product_gifts: ProductGift[]
@@ -339,6 +341,34 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                       <polyline points="15 3 21 3 21 9" />
                       <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                  </a>
+                )}
+
+                {/* Download installer — desktop_program products only */}
+                {selectedOrder.products?.type === "desktop_program" && selectedOrder.products?.download_url && (
+                  <a
+                    href={selectedOrder.products.download_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group w-full flex items-center justify-between gap-3 bg-accent/8 hover:bg-accent/12 border border-accent/30 hover:border-accent/50 text-text-base px-4 py-3.5 rounded-xl transition active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 bg-accent/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                      </div>
+                      <div className="text-left min-w-0">
+                        <p className="text-[13px] font-semibold text-accent-light truncate">{locale === "th" ? "ดาวน์โหลดตัวติดตั้ง" : "Download installer"}</p>
+                        <p className="text-[11px] text-text-muted truncate">{locale === "th" ? "ติดตั้งแล้วล็อกอินด้วยบัญชีนี้" : "Install, then sign in with this account"}</p>
+                      </div>
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light flex-shrink-0 group-hover:translate-y-0.5 transition-transform">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <polyline points="19 12 12 19 5 12" />
                     </svg>
                   </a>
                 )}

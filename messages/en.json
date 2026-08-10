@@ -957,7 +957,10 @@
     "outer_padding": "Outer padding",
     "bg_color": "Background color",
     "transparent": "Transparent",
-    "reset_layout": "Reset layout"
+    "reset_layout": "Reset layout",
+    "orientation": "Orientation",
+    "orientation_vertical": "Vertical",
+    "orientation_horizontal": "Horizontal"
   },
   "Orders": {
     "title": "Game Settings",

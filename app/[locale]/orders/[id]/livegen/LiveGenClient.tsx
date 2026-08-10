@@ -97,6 +97,10 @@ export type LiveGenConfig = {
 }
 
 type LayoutState = {
+  // "vertical" = two side-by-side columns (default); "horizontal" = two stacked
+  // rows. column_gap is the gap BETWEEN the two sides; row_gap is the gap between
+  // cards WITHIN a side — both meanings hold in either orientation.
+  orientation: "vertical" | "horizontal"
   column_gap: number
   row_gap: number
   padding: number
@@ -108,6 +112,7 @@ type LayoutState = {
 }
 
 const DEFAULT_LAYOUT: LayoutState = {
+  orientation: "vertical",
   column_gap: 100,
   row_gap: 16,
   padding: 24,
@@ -403,6 +408,12 @@ export default function LiveGenClient({
     return { leftFns: left, rightFns: right }
   }, [allFunctions, tiles])
 
+  // Preview layout derived from orientation. tile_height comes from the aspect.
+  const isHorizontal = layout.orientation === "horizontal"
+  const previewPad = Math.min(layout.padding, 32)
+  const previewTileH = Math.round(layout.tile_width * layout.tile_aspect)
+  const previewRowGap = Math.min(layout.row_gap, 40) // within-side gap, capped for preview
+
   const updateTile = (fid: string, patch: Partial<TileState>) => {
     setTiles((prev) => ({ ...prev, [fid]: { ...prev[fid], ...patch } }))
   }
@@ -691,13 +702,21 @@ export default function LiveGenClient({
       const dpr = 2
       const tileW = layout.tile_width
       const tileH = Math.round(tileW * layout.tile_aspect)
-      const w = (tileW * 2 + layout.column_gap + layout.padding * 2) * dpr
-      const colHeight = (cnt: number) => tileH * cnt + layout.row_gap * Math.max(0, cnt - 1)
-      const maxColH = Math.max(
-        colHeight(leftFns.length) + Math.abs(layout.left_y_offset),
-        colHeight(rightFns.length) + Math.abs(layout.right_y_offset),
+      // "along" = the axis cards stack on within a side; "cross" = the axis that
+      // separates the two sides. Vertical: along=Y, cross=X; horizontal swaps them.
+      const isH = layout.orientation === "horizontal"
+      const alongTile = isH ? tileW : tileH
+      const crossTile = isH ? tileH : tileW
+      const alongGap = layout.row_gap
+      const crossGap = layout.column_gap
+      const lineExtent = (cnt: number) => alongTile * cnt + alongGap * Math.max(0, cnt - 1)
+      const maxAlong = Math.max(
+        lineExtent(leftFns.length) + Math.abs(layout.left_y_offset),
+        lineExtent(rightFns.length) + Math.abs(layout.right_y_offset),
       )
-      const h = (maxColH + layout.padding * 2) * dpr
+      const crossTotal = crossTile * 2 + crossGap
+      const w = ((isH ? maxAlong : crossTotal) + layout.padding * 2) * dpr
+      const h = ((isH ? crossTotal : maxAlong) + layout.padding * 2) * dpr
 
       const canvas = document.createElement("canvas")
       canvas.width = w
@@ -720,8 +739,10 @@ export default function LiveGenClient({
           const f = cols[i]
           const tile = tiles[f.id]
           if (!tile) continue  // defensive: skip any func without a tile state
-          const x = layout.padding + colIdx * (tileW + layout.column_gap)
-          const y = layout.padding + yOffset + i * (tileH + layout.row_gap)
+          const alongPos = layout.padding + yOffset + i * (alongTile + alongGap)
+          const crossPos = layout.padding + colIdx * (crossTile + crossGap)
+          const x = isH ? alongPos : crossPos
+          const y = isH ? crossPos : alongPos
 
           const charUrl = tile.character_image || f.image_url
           if (charUrl) {
@@ -879,6 +900,24 @@ export default function LiveGenClient({
         </button>
         {layoutOpen && (
           <div className="px-4 pb-4 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 border-t border-white/5">
+            {/* Orientation toggle — spans both columns */}
+            <div className="sm:col-span-2 flex items-center justify-between gap-3 py-1">
+              <span className="text-[12px] text-text-muted">{t("orientation")}</span>
+              <div className="flex gap-1 bg-bg-base border border-accent/15 rounded-lg p-1">
+                <button
+                  onClick={() => updateLayout({ orientation: "vertical" })}
+                  className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition ${layout.orientation === "vertical" ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"}`}
+                >
+                  {t("orientation_vertical")}
+                </button>
+                <button
+                  onClick={() => updateLayout({ orientation: "horizontal" })}
+                  className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition ${layout.orientation === "horizontal" ? "bg-accent/20 text-accent-light" : "text-text-muted hover:text-text-base"}`}
+                >
+                  {t("orientation_horizontal")}
+                </button>
+              </div>
+            </div>
             <Slider label={t("column_gap")} value={layout.column_gap} min={0} max={300} step={2} format={(v) => `${v}px`} onChange={(v) => updateLayout({ column_gap: v })} />
             <Slider label={t("row_gap")} value={layout.row_gap} min={0} max={150} step={2} format={(v) => `${v}px`} onChange={(v) => updateLayout({ row_gap: v })} />
             <Slider label={t("left_y_offset")} value={layout.left_y_offset} min={-300} max={300} step={4} format={(v) => `${v}px`} onChange={(v) => updateLayout({ left_y_offset: v })} />
@@ -945,33 +984,44 @@ export default function LiveGenClient({
         </div>
       ) : (
         <div
-          className="rounded-2xl overflow-hidden mx-auto"
+          className="rounded-2xl overflow-auto mx-auto"
           style={{
             background: layout.bg_color === "transparent" ? undefined : layout.bg_color,
-            padding: `${Math.min(layout.padding, 32)}px`,
-            width: `${layout.tile_width * 2 + layout.column_gap + Math.min(layout.padding, 32) * 2}px`,
+            padding: `${previewPad}px`,
             maxWidth: "100%",
+            ...(isHorizontal
+              ? { width: "max-content" }
+              : { width: `${layout.tile_width * 2 + layout.column_gap + previewPad * 2}px` }),
           }}
         >
-          {/* Side headers, sitting above the tile grid in their own columns */}
-          <div
-            className="grid mb-2"
-            style={{
-              gridTemplateColumns: `${layout.tile_width}px ${layout.tile_width}px`,
-              columnGap: `${layout.column_gap}px`,
-            }}
-          >
-            <div className="flex items-center gap-2 px-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-              <h2 className="text-[11px] font-bold uppercase tracking-wider text-green-400">{t("side_left")}</h2>
-              <span className="text-[10px] text-text-muted ml-auto">{leftFns.length}</span>
+          {/* Side headers — two columns (vertical) or two stacked labels (horizontal) */}
+          {isHorizontal ? (
+            <div className="flex items-center gap-4 mb-2 px-1">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                <h2 className="text-[11px] font-bold uppercase tracking-wider text-green-400">{t("side_left")}</h2>
+                <span className="text-[10px] text-text-muted">{leftFns.length}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                <h2 className="text-[11px] font-bold uppercase tracking-wider text-red-400">{t("side_right")}</h2>
+                <span className="text-[10px] text-text-muted">{rightFns.length}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 px-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-              <h2 className="text-[11px] font-bold uppercase tracking-wider text-red-400">{t("side_right")}</h2>
-              <span className="text-[10px] text-text-muted ml-auto">{rightFns.length}</span>
+          ) : (
+            <div className="grid mb-2" style={{ gridTemplateColumns: `${layout.tile_width}px ${layout.tile_width}px`, columnGap: `${layout.column_gap}px` }}>
+              <div className="flex items-center gap-2 px-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                <h2 className="text-[11px] font-bold uppercase tracking-wider text-green-400">{t("side_left")}</h2>
+                <span className="text-[10px] text-text-muted ml-auto">{leftFns.length}</span>
+              </div>
+              <div className="flex items-center gap-2 px-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                <h2 className="text-[11px] font-bold uppercase tracking-wider text-red-400">{t("side_right")}</h2>
+                <span className="text-[10px] text-text-muted ml-auto">{rightFns.length}</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Flat grid — every tile is a sibling positioned via gridColumn/Row.
               Changing tile.side or tile.order never changes the React parent,
@@ -979,25 +1029,38 @@ export default function LiveGenClient({
           <LayoutGroup id="livegen-tiles">
             <div
               className="grid"
-              style={{
-                gridTemplateColumns: `${layout.tile_width}px ${layout.tile_width}px`,
-                columnGap: `${layout.column_gap}px`,
-                rowGap: `${Math.min(layout.row_gap, 40)}px`,
-              }}
+              style={
+                isHorizontal
+                  ? {
+                      gridTemplateRows: `${previewTileH}px ${previewTileH}px`,
+                      gridAutoColumns: `${layout.tile_width}px`,
+                      gridAutoFlow: "column",
+                      columnGap: `${previewRowGap}px`,
+                      rowGap: `${layout.column_gap}px`,
+                    }
+                  : {
+                      gridTemplateColumns: `${layout.tile_width}px ${layout.tile_width}px`,
+                      columnGap: `${layout.column_gap}px`,
+                      rowGap: `${previewRowGap}px`,
+                    }
+              }
             >
               {allFunctions.map((f) => {
                 const tt = tiles[f.id]
                 if (!tt) return null
                 return (
                   <DraggableTile
-                    key={f.id}
+                    // Orientation is part of key + layoutId so a vertical↔horizontal
+                    // flip mounts fresh tiles instead of framer-motion animating the
+                    // "same" element from its old position (which left a stuck transform).
+                    key={`${f.id}-${layout.orientation}`}
                     f={f}
                     tile={tt}
                     aspect={layout.tile_aspect}
                     giftById={giftById}
                     resolveColor={resolveLabelColor}
-                    gridColumn={tt.side === "left" ? 1 : 2}
-                    gridRow={tt.order + 1}
+                    gridColumn={isHorizontal ? tt.order + 1 : (tt.side === "left" ? 1 : 2)}
+                    gridRow={isHorizontal ? (tt.side === "left" ? 1 : 2) : tt.order + 1}
                     isHoverTarget={hoverTargetId === f.id}
                     swapHere={t("swap_here")}
                     canRemove={true}
@@ -1017,8 +1080,8 @@ export default function LiveGenClient({
                   className="border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-[10px] text-text-muted p-4"
                   style={{
                     aspectRatio: `1 / ${layout.tile_aspect}`,
-                    gridColumn: leftFns.length === 0 ? 1 : 2,
-                    gridRow: 1,
+                    gridColumn: isHorizontal ? 1 : (leftFns.length === 0 ? 1 : 2),
+                    gridRow: isHorizontal ? (leftFns.length === 0 ? 1 : 2) : 1,
                   }}
                 >
                   {t("empty_side")}
@@ -1591,10 +1654,11 @@ function DraggableTile({
 
   return (
     <motion.div
-      layout
-      layoutId={f.id}
+      // No framer-motion `layout`/`layoutId` here: with a CSS-grid parent whose
+      // tracks flip on orientation change, the layout projection left stuck
+      // transforms that reverted the new placement. Tiles snap to their grid cell
+      // instead; active-drag following still works via the x/y motion values below.
       data-tile-id={f.id}
-      transition={{ layout: { duration: 0.18 } }}
       className={`relative bg-bg-card border-2 rounded-2xl overflow-hidden ${
         isHoverTarget ? "border-accent" : "border-accent/20 hover:border-accent/40"
       }`}
