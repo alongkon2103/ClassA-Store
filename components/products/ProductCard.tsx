@@ -22,6 +22,8 @@ type Props = {
   previewVideo?: string | null
   is_low: boolean
   is_featured: boolean
+  is_partner?: boolean
+  partner_name?: string
   onClick?: () => void
   product_variants?: Variant[]
 }
@@ -33,6 +35,7 @@ export default function ProductCard({
   previewVideo,
   product_variants,
   is_featured,
+  is_partner,
   onClick,
 }: Props) {
   const t = useTranslations("Common")
@@ -102,13 +105,17 @@ export default function ProductCard({
           />
         )}
 
-        {is_featured && (
+        {is_partner ? (
+          <span className="absolute top-2 right-2 bg-violet-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase z-10">
+            {t("partner")}
+          </span>
+        ) : is_featured && (
           <span className="absolute top-2 right-2 bg-gold text-gold-text text-[10px] font-bold px-2 py-0.5 rounded-full uppercase z-10">
             {t("hot")}
           </span>
         )}
 
-        {!hasVariants && (
+        {!is_partner && !hasVariants && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
             <span className="text-[11px] font-bold text-white/70 uppercase tracking-widest">
               Out of Stock

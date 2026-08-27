@@ -144,6 +144,14 @@
     "showing_all": "Show all products",
     "search_results": "Search results"
   },
+  "PartnerModal": {
+    "partner_product": "Partner product",
+    "full_price": "Full price",
+    "discount": "Discount",
+    "final_price": "Price after discount",
+    "buy_at_partner": "Buy at {name}",
+    "external_note": "You'll be taken to the partner's store to complete payment"
+  },
   "ProductModal": {
     "premium_warning_title": "Skip Premium?",
     "premium_warning_desc_1": "Without ",
@@ -320,6 +328,23 @@
     "view_all": "View all",
     "all_good": "All good",
     "product": "Product",
+    "partner_store": "Partner store",
+    "partner_store_desc": "Partner games shown in the storefront (buy links out to the partner's site)",
+    "sync_now": "Sync now",
+    "syncing": "Syncing...",
+    "sync_done": "Sync complete",
+    "sync_error": "Sync failed",
+    "last_synced": "Last synced",
+    "never_synced": "Never synced",
+    "plans": "Plans",
+    "visible": "Visible",
+    "hidden": "Hidden",
+    "buy_link": "Buy link",
+    "open": "Open",
+    "no_partner_products": "No products yet — click Sync now",
+    "set_env_hint": "Not synced yet. Set env:",
+    "commission": "Commission",
+    "price": "Price",
     "amount": "Amount",
     "date": "Date",
     "created_date": "Created",
@@ -1187,7 +1212,8 @@
     "available": "Available",
     "low": "Low",
     "price": "Price",
-    "hot": "HOT"
+    "hot": "HOT",
+    "partner": "Partner"
   },
   "Setting": {
     "back": "Back",

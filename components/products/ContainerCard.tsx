@@ -25,6 +25,8 @@ type ProductItem = {
   preview_video_url?: string | null
   isLower?: boolean
   is_featured?: boolean
+  is_partner?: boolean
+  partner_name?: string
   product_variants?: ProductVariant[]
 }
 
@@ -73,9 +75,15 @@ export default function ContainerCard({ products, onSelect }: {
                             is_low={item.isLower ?? false}
                             onClick={() => onSelect(item)}
                             is_featured={item.is_featured ?? false}
+                            is_partner={item.is_partner ?? false}
+                            partner_name={item.partner_name}
+                            // Partner variants already carry their fixed final price;
+                            // only OUR products get the per-shopper auto-discount.
                             product_variants={item.product_variants?.map((v) => ({
                                 ...v,
-                                discounted_price: bestDiscountedPrice(item.id, Number(v.price)),
+                                discounted_price: item.is_partner
+                                    ? v.discounted_price
+                                    : bestDiscountedPrice(item.id, Number(v.price)),
                             }))}
                         />
                     </motion.div>

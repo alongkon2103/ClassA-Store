@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import ContainerCard from "@/components/products/ContainerCard"
 import ProductModal from "@/components/products/ProductModal"
+import PartnerModal from "@/components/products/PartnerModal"
 import ShopHeads from "@/components/products/ShopHead"
 import Navbar from "@/components/Navbar"
 import { AnimatePresence } from "framer-motion"
@@ -13,6 +14,9 @@ type Product = {
   slug: string
   name_th: string
   name_en: string
+  is_partner?: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  partner?: any
 }
 
 export default function ProductsClient({ initialProducts }: { initialProducts: Product[] }) {
@@ -44,13 +48,20 @@ export default function ProductsClient({ initialProducts }: { initialProducts: P
         onSelect={(product: Product) => setSelected(product)}
       />
 
-      {/* POPUP */}
+      {/* POPUP — partner games use their own (external buy) modal */}
       <AnimatePresence>
         {selected && (
-          <ProductModal
-            product={selected}
-            onClose={() => setSelected(null)}
-          />
+          selected.is_partner ? (
+            <PartnerModal
+              product={selected}
+              onClose={() => setSelected(null)}
+            />
+          ) : (
+            <ProductModal
+              product={selected}
+              onClose={() => setSelected(null)}
+            />
+          )
         )}
       </AnimatePresence>
     </>

@@ -907,3 +907,59 @@ model paypal_payments {
   @@index([match_status], map: "idx_paypal_payments_match")
   @@index([created_at], map: "idx_paypal_payments_created")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Partner storefront — external games from another store (e.g. JudyGameStudio)
+// that we resell as an affiliate. Data is SYNCED from the partner's affiliate
+// API into these tables; the buy button links OUT to the partner's site with our
+// ref, so there is NO order / payment / whitelist in our system for these.
+// Kept fully separate from `products` so partner rows never touch checkout,
+// fulfillment, or admin product editing.
+// ─────────────────────────────────────────────────────────────────────────────
+model partner_stores {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key             String             @unique @db.VarChar // stable id e.g. "judygamestudio" (env key suffix)
+  display_name    String             @db.VarChar // shown on the Partner badge / label
+  api_base        String             @db.VarChar // e.g. https://judygamestudio.com
+  site_url        String?            @db.VarChar
+  ref_slug        String?            @db.VarChar // our affiliate ref (e.g. "aclassstore")
+  commission_pct  Decimal?           @db.Decimal(5, 2)
+  is_active       Boolean            @default(true) // master on/off for the whole partner
+  last_synced_at  DateTime?          @db.Timestamptz(6)
+  last_sync_error String?
+  created_at      DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?          @default(now()) @db.Timestamptz(6)
+  products        partner_products[]
+}
+
+model partner_products {
+  id                  String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partner_id          String         @db.Uuid
+  external_slug       String         @db.VarChar // slug on the partner's site (e.g. "judy-smooth")
+  name_en             String         @db.VarChar
+  name_th             String         @db.VarChar
+  short_desc_en       String?
+  short_desc_th       String?
+  description_html_en String?
+  description_html_th String?
+  badge               String?        @db.VarChar // partner-side badge, e.g. "HOT"
+  thumbnail_url       String?
+  ref_url             String // outbound buy URL incl. our ref
+  game_link_url       String?
+  price_from_thb      Decimal?       @db.Decimal(10, 2)
+  price_from_usd      Decimal?       @db.Decimal(10, 2)
+  plans               Json // [{label_en,label_th,duration_days,is_lifetime,list_price_thb,discount_thb,price_thb,price_usd,commission_thb,...}]
+  images              Json // ["url", ...]
+  videos              Json // [{video_id, embed_url, thumbnail_url, ...}]
+  commission_pct      Decimal?       @db.Decimal(5, 2)
+  coming_soon         Boolean        @default(false)
+  is_visible          Boolean        @default(true) // admin show/hide; PRESERVED across syncs
+  sort_order          Int            @default(0)
+  synced_at           DateTime       @db.Timestamptz(6)
+  created_at          DateTime?      @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?      @default(now()) @db.Timestamptz(6)
+  partner             partner_stores @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+
+  @@unique([partner_id, external_slug])
+  @@index([partner_id])
+}

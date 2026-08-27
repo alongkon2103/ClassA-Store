@@ -144,6 +144,14 @@
     "showing_all": "กำลังแสดงสินค้าทั้งหมด",
     "search_results": "ผลการค้นหา"
   },
+  "PartnerModal": {
+    "partner_product": "สินค้าจากพาร์ทเนอร์",
+    "full_price": "ราคาเต็ม",
+    "discount": "ส่วนลด",
+    "final_price": "ราคาหลังหักส่วนลด",
+    "buy_at_partner": "ซื้อที่ร้าน {name}",
+    "external_note": "จะพาไปที่หน้าร้านพาร์ทเนอร์เพื่อชำระเงิน"
+  },
   "ProductModal": {
     "premium_warning_title": "ไม่ซื้อ Premium?",
     "premium_warning_desc_1": "หากไม่ได้ซื้อ ",
@@ -323,6 +331,23 @@
     "view_all": "ดูทั้งหมด",
     "all_good": "เรียบร้อยดี",
     "product": "สินค้า",
+    "partner_store": "ร้านพาร์ทเนอร์",
+    "partner_store_desc": "เกมจากพาร์ทเนอร์ที่นำมาแสดงในหน้าร้าน (กดซื้อจะลิงก์ไปหน้าร้านพาร์ทเนอร์)",
+    "sync_now": "ดึงข้อมูลล่าสุด",
+    "syncing": "กำลังดึง...",
+    "sync_done": "ดึงข้อมูลสำเร็จ",
+    "sync_error": "ดึงข้อมูลไม่สำเร็จ",
+    "last_synced": "ดึงล่าสุด",
+    "never_synced": "ยังไม่เคยดึงข้อมูล",
+    "plans": "แพลน",
+    "visible": "แสดง",
+    "hidden": "ซ่อน",
+    "buy_link": "ลิงก์ซื้อ",
+    "open": "เปิด",
+    "no_partner_products": "ยังไม่มีสินค้า — กดดึงข้อมูลล่าสุด",
+    "set_env_hint": "ยังไม่ได้ดึงข้อมูล ตั้งค่า env:",
+    "commission": "ค่าคอม",
+    "price": "ราคา",
     "amount": "ยอดเงิน",
     "date": "วันที่",
     "created_date": "วันที่สร้าง",
@@ -1190,7 +1215,8 @@
     "available": "มีสินค้า",
     "low": "สินค้าใกล้หมด",
     "price": "ราคา",
-    "hot": "ยอดฮิต"
+    "hot": "ยอดฮิต",
+    "partner": "Partner"
   },
   "Setting": {
     "back": "ย้อนกลับ",
