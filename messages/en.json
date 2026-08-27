@@ -322,6 +322,8 @@
     "product": "Product",
     "amount": "Amount",
     "date": "Date",
+    "created_date": "Created",
+    "paid_date": "Paid",
     "this_month": "This month",
     "net_after_affiliate": "Net revenue after affiliate commission",
     "net_after_costs": "Net revenue after costs (fees + commission)",

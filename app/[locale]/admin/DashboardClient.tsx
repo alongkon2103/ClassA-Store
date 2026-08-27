@@ -23,6 +23,7 @@ type RecentOrder = {
     amount: number
     status: string
     created_at: string | Date
+    paid_at: string | Date | null
     users?: { avatar: string | null; username: string | null } | null
     products?: { name_th: string | null; name_en: string | null } | null
     affiliate?: { code: string; name: string | null; via: string } | null
@@ -413,7 +414,7 @@ export default function DashboardClient({ data }: { data: any }) {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-[13px] min-w-[640px]">
+                    <table className="w-full text-[13px] min-w-[740px]">
                         <thead>
                             <tr className="text-left text-[11px] text-text-muted border-b border-white/5">
                                 <th className="pb-3 font-medium">{t("user")}</th>
@@ -421,7 +422,8 @@ export default function DashboardClient({ data }: { data: any }) {
                                 <th className="pb-3 font-medium">{t("affiliate")}</th>
                                 <th className="pb-3 font-medium">{t("amount")}</th>
                                 <th className="pb-3 font-medium">{t("status")}</th>
-                                <th className="pb-3 font-medium">{t("date")}</th>
+                                <th className="pb-3 font-medium">{t("created_date")}</th>
+                                <th className="pb-3 font-medium">{t("paid_date")}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -457,6 +459,15 @@ export default function DashboardClient({ data }: { data: any }) {
                                     </td>
                                     <td className="py-3 text-text-muted whitespace-nowrap">
                                         {format(new Date(o.created_at), "dd MMM HH:mm", { locale: dateLocale })}
+                                    </td>
+                                    <td className="py-3 whitespace-nowrap">
+                                        {o.paid_at ? (
+                                            <span className="text-text-base">
+                                                {format(new Date(o.paid_at), "dd MMM HH:mm", { locale: dateLocale })}
+                                            </span>
+                                        ) : (
+                                            <span className="text-text-muted">—</span>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

@@ -137,7 +137,11 @@ export default async function AdminDashboard({
       where: {
         NOT: { order_type: "TRIAL" },
       },
-      take: 8,
+      // Candidate pool: fetch more than we show, then sort in JS by the
+      // "activity date" (paid_at ?? created_at) so a pending order that was paid
+      // a day later lines up with the day its revenue was counted. 40 covers the
+      // realistic pending→pay gap; a paid order surfaces near its pay date.
+      take: 40,
       orderBy: {
         created_at: "desc",
       },
@@ -257,24 +261,33 @@ export default async function AdminDashboard({
       salesCount: p._count.orders,
     })),
 
-    recentOrders: recentOrders.map((o) => {
-      // Prefer the applied discount code IF it's an affiliate code; else the
-      // referral code from the buyer's /r/ link.
-      const affCode = o.discount_code?.owner_user_id ? o.discount_code : (o.referral_code?.owner_user_id ? o.referral_code : null)
-      return {
-        ...o,
-        amount: Number(o.amount),
-        discount_amount: o.discount_amount === null ? null : Number(o.discount_amount),
-        expected_amount: o.expected_amount === null ? null : Number(o.expected_amount),
-        affiliate: affCode
-          ? {
-              code: affCode.code,
-              name: affCode.owner?.affiliate_profile?.display_name || affCode.owner?.username || null,
-              via: o.discount_code?.owner_user_id ? "code" : "referral",
-            }
-          : null,
-      }
-    }),
+    recentOrders: recentOrders
+      .map((o) => {
+        // Prefer the applied discount code IF it's an affiliate code; else the
+        // referral code from the buyer's /r/ link.
+        const affCode = o.discount_code?.owner_user_id ? o.discount_code : (o.referral_code?.owner_user_id ? o.referral_code : null)
+        return {
+          ...o,
+          amount: Number(o.amount),
+          discount_amount: o.discount_amount === null ? null : Number(o.discount_amount),
+          expected_amount: o.expected_amount === null ? null : Number(o.expected_amount),
+          affiliate: affCode
+            ? {
+                code: affCode.code,
+                name: affCode.owner?.affiliate_profile?.display_name || affCode.owner?.username || null,
+                via: o.discount_code?.owner_user_id ? "code" : "referral",
+              }
+            : null,
+        }
+      })
+      // Sort by activity date (paid_at when paid, else created_at) so paid orders
+      // align with the daily-revenue day and pending ones stay in creation order.
+      .sort((a, b) => {
+        const at = new Date(a.paid_at ?? a.created_at ?? 0).getTime()
+        const bt = new Date(b.paid_at ?? b.created_at ?? 0).getTime()
+        return bt - at
+      })
+      .slice(0, 8),
 
     // Chart-ready: exactly 7 rows keyed by Bangkok calendar day ("YYYY-MM-DD"),
     // zero-filled. Matching by day KEY (not timestamp) means the viewer's
