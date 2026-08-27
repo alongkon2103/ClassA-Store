@@ -2,6 +2,7 @@
 
 import Stripe from "stripe"
 import { headers } from "next/headers"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { releaseOrderDiscount } from "@/lib/discountCodes"
 import { prepareAffiliateEarning, reverseAffiliateEarning } from "@/lib/affiliateEarnings"
@@ -169,7 +170,26 @@ export async function POST(req: NextRequest) {
       paymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : null,
     })
 
-    await prisma.$transaction([
+    // Entitlement write branches on product type (mirrors lib/orderFulfillment):
+    //   desktop_program → user_program_access keyed by the buyer (user_id), which
+    //                     is what the desktop app checks via /api/desktop/me
+    //   everything else → user_whitelist_access keyed by ign (Roblox etc.)
+    // Before this branch existed, desktop buyers landed in user_whitelist_access
+    // (ign = email) and the program never saw their entitlement.
+    const isDesktop = order.products.type === "desktop_program"
+    const entitlementOp: Prisma.PrismaPromise<unknown> = isDesktop
+      ? prisma.user_program_access.upsert({
+          where:  { user_id_product_id: { user_id: order.user_id, product_id: order.product_id } },
+          create: { user_id: order.user_id, product_id: order.product_id, expires_at: expiresAt, status: "ACTIVE" },
+          update: { expires_at: expiresAt, status: "ACTIVE", updated_at: new Date() },
+        })
+      : prisma.user_whitelist_access.upsert({
+          where:  { ign_product_id: { ign: order.whitelisted_username || "unknown", product_id: order.product_id } },
+          create: { ign: order.whitelisted_username || "unknown", product_id: order.product_id, is_premium: isPremium, expires_at: expiresAt },
+          update: { product_id: order.product_id, is_premium: isPremium, expires_at: expiresAt, updated_at: new Date() },
+        })
+
+    const ops: Prisma.PrismaPromise<unknown>[] = [
       // 1. update order
       prisma.orders.update({
         where: { id: orderId },
@@ -186,27 +206,8 @@ export async function POST(req: NextRequest) {
         },
       }),
 
-      // 2. upsert access record
-      prisma.user_whitelist_access.upsert({
-        where: {
-          ign_product_id: {
-            ign:        order.whitelisted_username || "unknown",
-            product_id: order.product_id,
-          },
-        },
-        create: {
-          ign:        order.whitelisted_username || "unknown",
-          product_id: order.product_id,
-          is_premium: isPremium,
-          expires_at: expiresAt,
-        },
-        update: {
-          product_id: order.product_id,
-          is_premium: isPremium,
-          expires_at: expiresAt,
-          updated_at: new Date(),
-        },
-      }),
+      // 2. grant the entitlement (table depends on product type — see above)
+      entitlementOp,
 
       // 3. Increment discount quota if applicable
       ...(shouldIncrementDiscount ? [
@@ -218,7 +219,8 @@ export async function POST(req: NextRequest) {
 
       // 4. Freeze affiliate commission if this order carries an affiliate code
       ...(earning ? [prisma.affiliate_earnings.create({ data: earning })] : [])
-    ])
+    ]
+    await prisma.$transaction(ops)
 
     // Notify the affiliate of the new commission (best-effort, after commit).
     if (earning) {
