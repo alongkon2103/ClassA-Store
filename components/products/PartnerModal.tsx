@@ -47,8 +47,15 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
 
   const name = isTH ? data.name_th : data.name_en
   const descHtml = (isTH ? data.description_html_th : data.description_html_en) || ""
-  const money = (thb?: number, usd?: number) =>
-    isTH ? `฿${Number(thb ?? 0).toLocaleString()}` : `$${Number(usd ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+  // USD is derived from THB using the plan's own list ratio (list_usd/list_thb),
+  // which is how the partner's CHECKOUT converts — NOT the API's price_usd field,
+  // which uses a live FX and doesn't match what the buyer actually pays there.
+  const usdRate = (pl: Plan) =>
+    pl.list_price_usd && pl.list_price_thb ? pl.list_price_usd / pl.list_price_thb
+      : pl.price_usd && pl.price_thb ? pl.price_usd / pl.price_thb
+        : 0.03
+  const money = (thb: number, rate: number) =>
+    isTH ? `฿${thb.toLocaleString()}` : `$${(thb * rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   const videoThumb = video?.thumbnail_url || (video?.video_id ? `https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg` : "")
 
@@ -140,9 +147,8 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
           {/* PLANS — full price / discount / final price */}
           <div className="space-y-3">
             {data.plans.map((pl, i) => {
-              const list = isTH ? pl.list_price_thb : pl.list_price_usd
-              const final = isTH ? pl.price_thb : pl.price_usd
-              const hasDiscount = (pl.discount_thb ?? 0) > 0 && list != null && final != null && final < list
+              const rate = usdRate(pl)
+              const hasDiscount = (pl.discount_thb ?? 0) > 0 && (pl.list_price_thb ?? 0) > (pl.price_thb ?? 0)
               return (
                 <div key={i} className="bg-bg-base/50 border border-white/5 rounded-xl p-4">
                   <p className="text-[13px] font-semibold text-text-base mb-2">
@@ -152,18 +158,18 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
                     <div className="flex justify-between">
                       <span className="text-text-muted">{t("full_price")}</span>
                       <span className={hasDiscount ? "text-text-muted line-through" : "text-text-base font-semibold"}>
-                        {money(pl.list_price_thb, pl.list_price_usd)}
+                        {money(pl.list_price_thb ?? 0, rate)}
                       </span>
                     </div>
                     {hasDiscount && (
                       <div className="flex justify-between">
                         <span className="text-text-muted">{t("discount")}</span>
-                        <span className="text-red-400">- {money(pl.discount_thb, (pl.list_price_usd ?? 0) - (pl.price_usd ?? 0))}</span>
+                        <span className="text-red-400">- {money(pl.discount_thb ?? 0, rate)}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-baseline pt-1 border-t border-white/5">
                       <span className="text-text-base font-medium">{t("final_price")}</span>
-                      <span className="text-[18px] font-bold text-green-400">{money(pl.price_thb, pl.price_usd)}</span>
+                      <span className="text-[18px] font-bold text-green-400">{money(pl.price_thb ?? 0, rate)}</span>
                     </div>
                   </div>
                 </div>
