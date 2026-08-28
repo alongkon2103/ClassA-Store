@@ -52,9 +52,46 @@ type ApiProduct = {
   commission_pct?: number; thumbnail_url?: string
   images?: ApiImage[]; videos?: ApiVideo[]; plans?: ApiPlan[]
 }
+// Earnings side of the dashboard. Shapes are defensive: the live sales/per_game
+// arrays are empty until the partner has sales, so exact keys are read with
+// fallbacks and the raw payload is stored verbatim (dashboard_json) so the
+// mapping can be corrected later without re-syncing.
+type ApiPerGame = {
+  slug?: string; product_slug?: string; game?: string; game_slug?: string; name?: string
+  sales_count?: number; count?: number
+  commission?: number; commission_thb?: number
+  pending?: number; pending_thb?: number; commission_pending_thb?: number
+  paid?: number; paid_thb?: number; commission_paid_thb?: number
+}
 type ApiResponse = {
   profile?: { display_name?: string; commission_pct?: number; ref_slug?: string; site_url?: string }
   products?: ApiProduct[]
+  totals?: unknown
+  per_game?: ApiPerGame[]
+  sales?: unknown[]
+  payouts?: unknown[]
+  fx?: unknown
+}
+
+const num = (...vals: Array<number | undefined | null>): number | null => {
+  for (const v of vals) if (typeof v === "number" && !Number.isNaN(v)) return v
+  return null
+}
+
+// Pull the commission this game earned us out of one per_game entry. Kept in one
+// place, tolerant of key naming, so it's trivial to fix once real data lands.
+function readPerGame(g: ApiPerGame) {
+  const slug = g.slug || g.product_slug || g.game_slug || g.game || null
+  const pending = num(g.pending_thb, g.commission_pending_thb, g.pending)
+  const paid = num(g.paid_thb, g.commission_paid_thb, g.paid)
+  // Some APIs report a single lump "commission" instead of pending/paid split.
+  const lump = num(g.commission_thb, g.commission)
+  return {
+    slug,
+    pending: pending ?? (paid == null ? lump : null),
+    paid,
+    count: num(g.sales_count, g.count),
+  }
 }
 
 export type SyncResult = { ok: true; synced: number; removed: number } | { ok: false; error: string }
@@ -93,7 +130,8 @@ export async function syncPartner(key: string): Promise<SyncResult> {
     return { ok: false, error: msg }
   }
 
-  // Keep store metadata (ref/commission/site) fresh from the profile.
+  // Keep store metadata (ref/commission/site) fresh from the profile, and store
+  // the raw earnings payload verbatim for auditing / mapping fixes.
   const profile = data.profile ?? {}
   await prisma.partner_stores.update({
     where: { id: store.id },
@@ -101,8 +139,21 @@ export async function syncPartner(key: string): Promise<SyncResult> {
       site_url: profile.site_url ?? null,
       ref_slug: profile.ref_slug ?? null,
       commission_pct: profile.commission_pct ?? null,
+      dashboard_json: {
+        totals: data.totals ?? null,
+        per_game: data.per_game ?? [],
+        sales: data.sales ?? [],
+        payouts: data.payouts ?? [],
+      } as object,
     },
   })
+
+  // Per-game commission, keyed by slug, from the dashboard's per_game breakdown.
+  const perGame = new Map<string, { pending: number | null; paid: number | null; count: number | null }>()
+  for (const g of Array.isArray(data.per_game) ? data.per_game : []) {
+    const r = readPerGame(g)
+    if (r.slug) perGame.set(r.slug, { pending: r.pending, paid: r.paid, count: r.count })
+  }
 
   const products = Array.isArray(data.products) ? data.products : []
   const now = new Date()
@@ -117,6 +168,7 @@ export async function syncPartner(key: string): Promise<SyncResult> {
     const images = (p.images ?? []).map((i) => i.url).filter((u): u is string => !!u)
     const videos = (p.videos ?? []).filter((v) => v.video_id || v.embed_url)
     const plans = (p.plans ?? []).filter((pl) => pl.price_thb != null || pl.list_price_thb != null)
+    const earn = perGame.get(slug)
 
     const content = {
       name_en: p.name_en ?? slug,
@@ -136,6 +188,10 @@ export async function syncPartner(key: string): Promise<SyncResult> {
       videos,
       commission_pct: p.commission_pct ?? null,
       coming_soon: !!p.coming_soon,
+      // Earnings for this game (null when the partner reports none yet).
+      commission_pending_thb: earn?.pending ?? null,
+      commission_paid_thb: earn?.paid ?? null,
+      sales_count: earn?.count ?? null,
       synced_at: now,
       updated_at: now,
     }

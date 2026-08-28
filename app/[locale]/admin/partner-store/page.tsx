@@ -10,10 +10,18 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
   const { locale } = await params
   setRequestLocale(locale)
 
-  const stores = await prisma.partner_stores.findMany({
-    orderBy: { created_at: "asc" },
-    include: { products: { orderBy: { sort_order: "asc" } } },
-  })
+  const [stores, partners] = await Promise.all([
+    prisma.partner_stores.findMany({
+      orderBy: { created_at: "asc" },
+      include: {
+        products: {
+          orderBy: { sort_order: "asc" },
+          include: { splits: { select: { partner_id: true, pct: true } } },
+        },
+      },
+    }),
+    prisma.partners.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+  ])
 
   const safe = stores.map((s) => ({
     id: s.id,
@@ -37,6 +45,10 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
       plans_count: Array.isArray(p.plans) ? p.plans.length : 0,
       is_visible: p.is_visible,
       sort_order: p.sort_order,
+      commission_pending_thb: p.commission_pending_thb == null ? 0 : Number(p.commission_pending_thb),
+      commission_paid_thb: p.commission_paid_thb == null ? 0 : Number(p.commission_paid_thb),
+      sales_count: p.sales_count ?? 0,
+      splits: p.splits.map((s) => ({ partner_id: s.partner_id, pct: Number(s.pct) })),
     })),
   }))
 
@@ -44,5 +56,5 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
   // present) — so the admin knows what env key to set.
   const configuredKeys = PARTNERS.map((p) => ({ key: p.key, display_name: p.display_name, envKey: p.envKey }))
 
-  return <PartnerStoreClient stores={safe} configured={configuredKeys} />
+  return <PartnerStoreClient stores={safe} configured={configuredKeys} partners={partners} />
 }

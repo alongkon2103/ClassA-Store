@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations, useLocale } from "next-intl"
 
+type Split = { partner_id: string; pct: number }
 type PartnerProduct = {
   id: string
   external_slug: string
@@ -16,6 +17,10 @@ type PartnerProduct = {
   plans_count: number
   is_visible: boolean
   sort_order: number
+  commission_pending_thb: number
+  commission_paid_thb: number
+  sales_count: number
+  splits: Split[]
 }
 type Store = {
   id: string
@@ -30,54 +35,61 @@ type Store = {
   products: PartnerProduct[]
 }
 type Configured = { key: string; display_name: string; envKey: string }
+type Partner = { id: string; name: string }
 
-export default function PartnerStoreClient({ stores, configured }: { stores: Store[]; configured: Configured[] }) {
+const baht = (n: number) => `฿${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+
+export default function PartnerStoreClient({
+  stores, configured, partners,
+}: { stores: Store[]; configured: Configured[]; partners: Partner[] }) {
   const t = useTranslations("Admin")
   const locale = useLocale()
   const router = useRouter()
   const [syncing, setSyncing] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  const [editing, setEditing] = useState<string | null>(null)
 
+  const partnerName = (id: string) => partners.find((p) => p.id === id)?.name ?? "—"
   const syncedKeys = new Set(stores.map((s) => s.key))
   const notSynced = configured.filter((c) => !syncedKeys.has(c.key))
 
+  // Earnings summary per person: their share of every game's commission.
+  const summary = useMemo(() => {
+    const m = new Map<string, { paid: number; pending: number }>()
+    for (const s of stores) for (const p of s.products) for (const sp of p.splits) {
+      const cur = m.get(sp.partner_id) ?? { paid: 0, pending: 0 }
+      cur.paid += (p.commission_paid_thb * sp.pct) / 100
+      cur.pending += (p.commission_pending_thb * sp.pct) / 100
+      m.set(sp.partner_id, cur)
+    }
+    return m
+  }, [stores])
+
   const runSync = async (key?: string) => {
-    setSyncing(key ?? "all")
-    setMsg(null)
+    setSyncing(key ?? "all"); setMsg(null)
     try {
       const r = await fetch("/api/admin/partner-store/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(key ? { key } : {}),
       })
       const data = await r.json().catch(() => null)
-      if (!r.ok) {
-        const err = data?.result ? JSON.stringify(data.result) : `HTTP ${r.status}`
-        setMsg(`❌ ${t("sync_error")}: ${err}`)
-      } else {
-        setMsg(`✅ ${t("sync_done")}`)
-        router.refresh()
-      }
+      if (!r.ok) setMsg(`❌ ${t("sync_error")}: ${data?.result ? JSON.stringify(data.result) : r.status}`)
+      else { setMsg(`✅ ${t("sync_done")}`); router.refresh() }
     } catch (e) {
       setMsg(`❌ ${e instanceof Error ? e.message : "sync failed"}`)
-    } finally {
-      setSyncing(null)
-    }
+    } finally { setSyncing(null) }
   }
 
   const toggleVisible = async (p: PartnerProduct) => {
     setBusy(p.id)
     try {
       const r = await fetch(`/api/admin/partner-store/products/${p.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_visible: !p.is_visible }),
       })
       if (r.ok) router.refresh()
-    } finally {
-      setBusy(null)
-    }
+    } finally { setBusy(null) }
   }
 
   return (
@@ -88,6 +100,22 @@ export default function PartnerStoreClient({ stores, configured }: { stores: Sto
       </div>
 
       {msg && <div className="text-[13px] px-4 py-2 rounded-lg bg-bg-card border border-accent/10">{msg}</div>}
+
+      {/* Earnings summary per person */}
+      {summary.size > 0 && (
+        <div className="bg-bg-card border border-accent/10 rounded-2xl p-5">
+          <p className="text-[13px] font-semibold text-text-base mb-3">{t("earnings_summary")}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[...summary.entries()].map(([pid, v]) => (
+              <div key={pid} className="bg-bg-base/50 border border-white/5 rounded-xl p-3">
+                <p className="text-[13px] font-medium text-text-base truncate">{partnerName(pid)}</p>
+                <p className="text-[17px] font-bold text-green-400 mt-1">{baht(v.paid)}</p>
+                <p className="text-[11px] text-text-muted">{t("pending")}: {baht(v.pending)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Configured-but-not-synced partners */}
       {notSynced.map((c) => (
@@ -118,9 +146,7 @@ export default function PartnerStoreClient({ stores, configured }: { stores: Sto
                   ? `${t("last_synced")}: ${new Date(store.last_synced_at).toLocaleString(locale === "th" ? "th-TH" : "en-US")}`
                   : t("never_synced")}
               </p>
-              {store.last_sync_error && (
-                <p className="text-[12px] text-red-400 mt-1">⚠ {t("sync_error")}: {store.last_sync_error}</p>
-              )}
+              {store.last_sync_error && <p className="text-[12px] text-red-400 mt-1">⚠ {t("sync_error")}: {store.last_sync_error}</p>}
             </div>
             <button onClick={() => runSync(store.key)} disabled={syncing !== null}
               className="px-4 py-2 rounded-lg bg-accent text-white text-[13px] font-semibold hover:opacity-90 disabled:opacity-50">
@@ -131,60 +157,136 @@ export default function PartnerStoreClient({ stores, configured }: { stores: Sto
           {store.products.length === 0 ? (
             <p className="p-5 text-[13px] text-text-muted">{t("no_partner_products")}</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13px] min-w-[560px]">
-                <thead>
-                  <tr className="text-left text-[11px] text-text-muted border-b border-white/5">
-                    <th className="px-5 py-3 font-medium">{t("product")}</th>
-                    <th className="px-3 py-3 font-medium">{t("price")}</th>
-                    <th className="px-3 py-3 font-medium">{t("plans")}</th>
-                    <th className="px-3 py-3 font-medium text-center">{t("visible")}</th>
-                    <th className="px-5 py-3 font-medium text-right">{t("buy_link")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {store.products.map((p) => (
-                    <tr key={p.id} className={`hover:bg-white/[0.02] ${p.is_visible ? "" : "opacity-50"}`}>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          {p.thumbnail_url ? (
-                            <img src={p.thumbnail_url} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-lg bg-accent/20 flex-shrink-0" />
-                          )}
-                          <div className="min-w-0">
-                            <p className="text-text-base font-medium line-clamp-1">{locale === "th" ? p.name_th : p.name_en}</p>
-                            <p className="text-[11px] text-text-muted">{p.external_slug}{p.badge ? ` · ${p.badge}` : ""}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-accent-light font-semibold">
-                        {p.price_from_thb != null ? `฿${p.price_from_thb.toLocaleString()}` : "—"}
-                      </td>
-                      <td className="px-3 py-3 text-text-muted">{p.plans_count}</td>
-                      <td className="px-3 py-3 text-center">
-                        <button
-                          onClick={() => toggleVisible(p)}
-                          disabled={busy === p.id}
-                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${p.is_visible ? "bg-green-500" : "bg-white/15"} disabled:opacity-50`}
-                          title={p.is_visible ? t("visible") : t("hidden")}
-                        >
-                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${p.is_visible ? "translate-x-4" : "translate-x-0.5"}`} />
-                        </button>
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <a href={p.ref_url} target="_blank" rel="noopener noreferrer" className="text-[12px] text-accent-light hover:underline">
-                          {t("open")} ↗
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="divide-y divide-white/5">
+              {store.products.map((p) => (
+                <div key={p.id} className={p.is_visible ? "" : "opacity-60"}>
+                  <div className="px-5 py-3 flex items-center gap-3 flex-wrap">
+                    {p.thumbnail_url
+                      ? <img src={p.thumbnail_url} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                      : <div className="w-10 h-10 rounded-lg bg-accent/20 flex-shrink-0" />}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] text-text-base font-medium line-clamp-1">{locale === "th" ? p.name_th : p.name_en}</p>
+                      <p className="text-[11px] text-text-muted">
+                        {p.external_slug} · {t("commission")} {t("realized")}: <span className="text-green-400">{baht(p.commission_paid_thb)}</span>
+                        {" · "}{t("pending")}: {baht(p.commission_pending_thb)}
+                      </p>
+                    </div>
+
+                    <button onClick={() => setEditing(editing === p.id ? null : p.id)}
+                      className="text-[12px] px-3 py-1.5 rounded-lg border border-accent/30 text-accent-light hover:bg-accent/10">
+                      {t("split_commission")}{p.splits.length ? ` (${p.splits.length})` : ""}
+                    </button>
+
+                    <button onClick={() => toggleVisible(p)} disabled={busy === p.id}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${p.is_visible ? "bg-green-500" : "bg-white/15"} disabled:opacity-50`}
+                      title={p.is_visible ? t("visible") : t("hidden")}>
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${p.is_visible ? "translate-x-4" : "translate-x-0.5"}`} />
+                    </button>
+                  </div>
+
+                  {editing === p.id && (
+                    <SplitEditor
+                      product={p} partners={partners} t={t}
+                      onSaved={() => { setEditing(null); router.refresh() }}
+                    />
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
       ))}
+
+      {partners.length === 0 && (
+        <p className="text-[12px] text-text-muted">{t("no_partners_hint")}</p>
+      )}
+    </div>
+  )
+}
+
+// ── Split editor ─────────────────────────────────────────────────────────────
+function SplitEditor({
+  product, partners, t, onSaved,
+}: {
+  product: PartnerProduct
+  partners: Partner[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t: any
+  onSaved: () => void
+}) {
+  const [rows, setRows] = useState<Split[]>(
+    product.splits.length ? product.splits.map((s) => ({ ...s })) : [{ partner_id: "", pct: 0 }]
+  )
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const sum = rows.reduce((a, r) => a + (Number(r.pct) || 0), 0)
+  const clean = rows.filter((r) => r.partner_id && Number(r.pct) > 0)
+  const dupes = new Set(clean.map((r) => r.partner_id)).size !== clean.length
+  const okToSave = clean.length === 0 || (Math.abs(sum - 100) < 0.01 && !dupes)
+
+  const setRow = (i: number, patch: Partial<Split>) =>
+    setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)))
+  const addRow = () => setRows((rs) => [...rs, { partner_id: "", pct: 0 }])
+  const removeRow = (i: number) => setRows((rs) => rs.filter((_, idx) => idx !== i))
+
+  const save = async () => {
+    setSaving(true); setErr(null)
+    try {
+      const r = await fetch(`/api/admin/partner-store/products/${product.id}/splits`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ splits: clean }),
+      })
+      const data = await r.json().catch(() => null)
+      if (!r.ok) { setErr(data?.error === "must_sum_100" ? t("total_must_100") : (data?.error ?? `HTTP ${r.status}`)); return }
+      onSaved()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "save failed")
+    } finally { setSaving(false) }
+  }
+
+  const base = product.commission_paid_thb
+
+  return (
+    <div className="px-5 pb-5 pt-1 bg-bg-base/40 border-t border-white/5">
+      <p className="text-[12px] text-text-muted mb-3">{t("split_hint")}</p>
+      <div className="space-y-2">
+        {rows.map((r, i) => {
+          const share = base * (Number(r.pct) || 0) / 100
+          return (
+            <div key={i} className="flex items-center gap-2 flex-wrap">
+              <select value={r.partner_id} onChange={(e) => setRow(i, { partner_id: e.target.value })}
+                className="flex-1 min-w-[140px] bg-bg-card border border-white/10 rounded-lg px-3 py-2 text-[13px] text-text-base">
+                <option value="">— {t("person")} —</option>
+                {partners.map((pp) => <option key={pp.id} value={pp.id}>{pp.name}</option>)}
+              </select>
+              <div className="flex items-center gap-1">
+                <input type="number" min={0} max={100} step={0.5} value={r.pct}
+                  onChange={(e) => setRow(i, { pct: parseFloat(e.target.value) || 0 })}
+                  className="w-20 bg-bg-card border border-white/10 rounded-lg px-3 py-2 text-[13px] text-text-base text-right" />
+                <span className="text-text-muted text-[13px]">%</span>
+              </div>
+              <span className="text-[12px] text-green-400 w-24 text-right">{baht(share)}</span>
+              <button onClick={() => removeRow(i)} className="text-text-muted hover:text-red-400 text-[16px] px-1" title={t("remove")}>×</button>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
+        <button onClick={addRow} className="text-[12px] text-accent-light hover:underline">+ {t("add_person")}</button>
+        <div className="flex items-center gap-3">
+          <span className={`text-[13px] font-semibold ${clean.length === 0 || Math.abs(sum - 100) < 0.01 ? "text-text-muted" : "text-red-400"}`}>
+            {t("sum")}: {sum}%
+          </span>
+          <button onClick={save} disabled={!okToSave || saving}
+            className="px-4 py-2 rounded-lg bg-accent text-white text-[13px] font-semibold hover:opacity-90 disabled:opacity-40">
+            {saving ? "..." : t("save")}
+          </button>
+        </div>
+      </div>
+      {err && <p className="text-[12px] text-red-400 mt-2">{err}</p>}
+      {!okToSave && clean.length > 0 && <p className="text-[12px] text-yellow-400 mt-2">{t("total_must_100")}</p>}
     </div>
   )
 }

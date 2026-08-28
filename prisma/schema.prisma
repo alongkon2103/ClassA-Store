@@ -455,6 +455,7 @@ model partners {
   created_at     DateTime?        @default(now()) @db.Timestamptz(6)
   updated_at     DateTime?        @default(now()) @db.Timestamptz(6)
   product_shares product_shares[]
+  partner_commission_splits partner_commission_splits[]
 }
 
 model product_shares {
@@ -927,6 +928,10 @@ model partner_stores {
   is_active       Boolean            @default(true) // master on/off for the whole partner
   last_synced_at  DateTime?          @db.Timestamptz(6)
   last_sync_error String?
+  // Raw earnings snapshot from the last sync (dashboard sales/per_game/totals/
+  // payouts). Kept verbatim so the commission mapping can be corrected without a
+  // re-sync, and for audit. { totals, per_game, sales, payouts, as_of }.
+  dashboard_json  Json?
   created_at      DateTime?          @default(now()) @db.Timestamptz(6)
   updated_at      DateTime?          @default(now()) @db.Timestamptz(6)
   products        partner_products[]
@@ -955,11 +960,36 @@ model partner_products {
   coming_soon         Boolean        @default(false)
   is_visible          Boolean        @default(true) // admin show/hide; PRESERVED across syncs
   sort_order          Int            @default(0)
+  // Commission this game earned us (synced from the partner's per-game earnings).
+  // The base that gets split among partner_commission_splits. THB.
+  commission_pending_thb Decimal?    @db.Decimal(10, 2)
+  commission_paid_thb    Decimal?    @db.Decimal(10, 2)
+  sales_count            Int?
   synced_at           DateTime       @db.Timestamptz(6)
   created_at          DateTime?      @default(now()) @db.Timestamptz(6)
   updated_at          DateTime?      @default(now()) @db.Timestamptz(6)
   partner             partner_stores @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+  splits              partner_commission_splits[]
 
   @@unique([partner_id, external_slug])
+  @@index([partner_id])
+}
+
+// How one partner game's commission is split among our internal `partners`
+// (the team). pct is a percent of THAT game's commission; the app enforces the
+// active rows summing to 100 per game. Editing splits never touches the synced
+// commission — only how it's divided.
+model partner_commission_splits {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partner_product_id String           @db.Uuid
+  partner_id         String           @db.Uuid // FK to internal `partners` (the person)
+  pct                Decimal          @db.Decimal(5, 2)
+  created_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  partner_product    partner_products @relation(fields: [partner_product_id], references: [id], onDelete: Cascade)
+  partner            partners         @relation(fields: [partner_id], references: [id], onDelete: Cascade)
+
+  @@unique([partner_product_id, partner_id])
+  @@index([partner_product_id])
   @@index([partner_id])
 }
