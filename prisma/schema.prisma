@@ -398,6 +398,9 @@ model products {
   price          Decimal  @db.Decimal(10, 2)
   is_active      Boolean? @default(true)
   is_featured    Boolean? @default(false)
+  // Manual storefront position (shared scale with partner_products.display_order).
+  // Lower = earlier. null = unordered (falls to the end, after ordered items).
+  display_order  Int?
 
   // Product delivery type — decides how a purchase is fulfilled and how access
   // is checked. "roblox_whitelist" (default, all existing products) writes
@@ -959,7 +962,10 @@ model partner_products {
   commission_pct      Decimal?       @db.Decimal(5, 2)
   coming_soon         Boolean        @default(false)
   is_visible          Boolean        @default(true) // admin show/hide; PRESERVED across syncs
-  sort_order          Int            @default(0)
+  sort_order          Int            @default(0) // default order from the partner API
+  // Manual storefront position (shared scale with products.display_order).
+  // Lower = earlier. null = unordered. PRESERVED across syncs.
+  display_order       Int?
   // Commission this game earned us (synced from the partner's per-game earnings).
   // The base that gets split among partner_commission_splits. THB.
   commission_pending_thb Decimal?    @db.Decimal(10, 2)

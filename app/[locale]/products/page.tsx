@@ -65,11 +65,28 @@ export default async function Page({
     })
     const partnerItems = partnerRows.map((pp) => normalizePartner(pp))
 
-    // Merge: partner games sit right after our featured products so they get
-    // prominent placement without pushing the rest of the catalog down far.
-    const featured = safeProducts.filter((p) => p.is_featured)
-    const rest = safeProducts.filter((p) => !p.is_featured)
-    const merged = [...featured, ...partnerItems, ...rest]
+    // Unified storefront order. Items the admin placed (display_order != null)
+    // come first in that order — real and partner games freely interleaved.
+    // Everything else falls to the end in a sensible default: our featured
+    // products, then the rest of our catalog (newest first), then partner games.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const all: any[] = [...safeProducts, ...partnerItems]
+    const ordered = all
+      .filter((x) => x.display_order != null)
+      .sort((a, b) => (a.display_order as number) - (b.display_order as number))
+    const unordered = all
+      .filter((x) => x.display_order == null)
+      .sort((a, b) => {
+        // our products before partner games
+        if (!!a.is_partner !== !!b.is_partner) return a.is_partner ? 1 : -1
+        if (!a.is_partner) {
+          // featured first, then newest
+          if (!!a.is_featured !== !!b.is_featured) return a.is_featured ? -1 : 1
+          return new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
+        }
+        return (a.sort_order ?? 0) - (b.sort_order ?? 0)
+      })
+    const merged = [...ordered, ...unordered]
 
     // Suspense is required because ProductsClient reads useSearchParams() for
     // the ?slug=… deep link. Without it, prerendering (ISR) bails with an
@@ -103,6 +120,8 @@ function normalizePartner(pp: any) {
         is_featured: false,
         isLower: false,
         is_partner: true,
+        display_order: pp.display_order ?? null,
+        sort_order: pp.sort_order ?? 0,
         partner_name: pp.partner?.display_name ?? "Partner",
         product_images: pp.thumbnail_url ? [{ url: pp.thumbnail_url }] : images.slice(0, 1).map((url) => ({ url })),
         preview_video_url: null,
