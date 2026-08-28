@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import ProductsClient from "./ProductsClient"
 import { prisma } from "@/lib/prisma"
+import { getThbToUsdRate } from "@/lib/paypal"
 import { setRequestLocale } from "next-intl/server";
 
 // ISR cache the catalog page for 60s. Stock counts may be slightly stale, but
@@ -37,6 +38,10 @@ export default async function Page({
         ],
     })
 
+    // Our THB→USD rate (same cached rate the modal/checkout use) so the card can
+    // show "฿850 / $X". Partner games carry their OWN rate instead (see below).
+    const ourRate = await getThbToUsdRate()
+
     // Strikethrough preview prices are computed CLIENT-side (per shopper, via
     // useAutoDiscounts) so each user sees the best code THEY can still use —
     // the server render is shared/ISR-cached and can't be personalised.
@@ -52,6 +57,7 @@ export default async function Page({
             premium_addon_price: Number(v.premium_addon_price ?? 0),
             discount_pct: Number(v.discount_pct ?? 0),
             stock: v._count.game_keys, // stock per variant
+            usd_rate: ourRate, // THB × usd_rate = USD (rate fixed; THB may change with auto-discount)
         })),
     }))
 
@@ -63,7 +69,7 @@ export default async function Page({
         include: { partner: { select: { display_name: true } } },
         orderBy: { sort_order: "asc" },
     })
-    const partnerItems = partnerRows.map((pp) => normalizePartner(pp))
+    const partnerItems = partnerRows.map((pp) => normalizePartner(pp, ourRate))
 
     // Unified storefront order. Items the admin placed (display_order != null)
     // come first in that order — real and partner games freely interleaved.
@@ -107,9 +113,15 @@ type PartnerPlan = {
     price_thb?: number; price_usd?: number
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function normalizePartner(pp: any) {
+function normalizePartner(pp: any, fallbackRate: number) {
     const plans: PartnerPlan[] = Array.isArray(pp.plans) ? pp.plans : []
     const images: string[] = Array.isArray(pp.images) ? pp.images : []
+    // Each partner plan carries its own USD rate = list_usd / list_thb (the same
+    // ratio the partner's checkout uses), so our card shows what they'll pay there.
+    const planRate = (pl: PartnerPlan) =>
+        pl.list_price_usd && pl.list_price_thb ? pl.list_price_usd / pl.list_price_thb
+            : pl.price_usd && pl.price_thb ? pl.price_usd / pl.price_thb
+                : fallbackRate
     return {
         id: `partner:${pp.id}`,
         slug: pp.external_slug,
@@ -134,6 +146,7 @@ function normalizePartner(pp: any) {
             discounted_price: Number(pl.price_thb ?? pl.list_price_thb ?? 0),
             is_active: true,
             variant_type: "normal",
+            usd_rate: planRate(pl),
         })),
         // Everything the PartnerModal renders.
         partner: {

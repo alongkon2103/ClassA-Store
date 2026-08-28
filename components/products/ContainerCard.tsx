@@ -13,6 +13,7 @@ type ProductVariant = {
   is_active: boolean
   variant_type?: string
   discounted_price?: number | null
+  usd_rate?: number | null
 }
 
 type ProductItem = {

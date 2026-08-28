@@ -13,6 +13,8 @@ type Variant = {
   variant_type?: string
   // Set by the server when an auto-select code lowers this variant's price.
   discounted_price?: number | null
+  // THB × usd_rate = USD. Our games use our rate; partner games use theirs.
+  usd_rate?: number | null
 }
 
 type Props = {
@@ -44,6 +46,10 @@ export default function ProductCard({
   const variants = (product_variants ?? []).filter(
     (v) => v.is_active === true && v.variant_type !== "premium"
   )
+
+  // "฿850 / $28.33" — appended after the THB price when a rate is known.
+  const usd = (thb: number, rate?: number | null) =>
+    rate ? ` / $${(thb * rate).toFixed(2)}` : ""
 
   const hasVariants = variants.length > 0
 
@@ -146,11 +152,13 @@ export default function ProductCard({
                       </span>
                       <span className="font-bold text-red-400">
                         ฿{Number(v.discounted_price).toLocaleString()}
+                        <span className="font-normal text-text-muted">{usd(Number(v.discounted_price), v.usd_rate)}</span>
                       </span>
                     </span>
                   ) : (
                     <span className="font-semibold text-accent-light">
                       ฿{Number(v.price).toLocaleString()}
+                      <span className="font-normal text-text-muted">{usd(Number(v.price), v.usd_rate)}</span>
                     </span>
                   )}
                 </div>
