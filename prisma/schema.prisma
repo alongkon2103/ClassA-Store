@@ -966,6 +966,9 @@ model partner_products {
   // Manual storefront position (shared scale with products.display_order).
   // Lower = earlier. null = unordered. PRESERVED across syncs.
   display_order       Int?
+  // Admin-uploaded hover-preview clip (like our products' preview_video_url).
+  // The partner API doesn't provide one, so it's ours to set. PRESERVED across syncs.
+  preview_video_url   String?
   // Commission this game earned us (synced from the partner's per-game earnings).
   // The base that gets split among partner_commission_splits. THB.
   commission_pending_thb Decimal?    @db.Decimal(10, 2)

@@ -136,7 +136,7 @@ function normalizePartner(pp: any, fallbackRate: number) {
         sort_order: pp.sort_order ?? 0,
         partner_name: pp.partner?.display_name ?? "Partner",
         product_images: pp.thumbnail_url ? [{ url: pp.thumbnail_url }] : images.slice(0, 1).map((url) => ({ url })),
-        preview_video_url: null,
+        preview_video_url: pp.preview_video_url ?? null,
         // Card display: full (list) price with the final price as the "deal".
         product_variants: plans.map((pl, idx) => ({
             id: `${pp.id}-plan-${idx}`,

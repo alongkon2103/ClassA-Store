@@ -45,6 +45,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
       plans_count: Array.isArray(p.plans) ? p.plans.length : 0,
       is_visible: p.is_visible,
       sort_order: p.sort_order,
+      preview_video_url: p.preview_video_url ?? null,
       commission_pending_thb: p.commission_pending_thb == null ? 0 : Number(p.commission_pending_thb),
       commission_paid_thb: p.commission_paid_thb == null ? 0 : Number(p.commission_paid_thb),
       sales_count: p.sales_count ?? 0,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations, useLocale } from "next-intl"
 
@@ -17,6 +17,7 @@ type PartnerProduct = {
   plans_count: number
   is_visible: boolean
   sort_order: number
+  preview_video_url: string | null
   commission_pending_thb: number
   commission_paid_thb: number
   sales_count: number
@@ -172,6 +173,8 @@ export default function PartnerStoreClient({
                       </p>
                     </div>
 
+                    <VideoCell product={p} t={t} onDone={() => router.refresh()} />
+
                     <button onClick={() => setEditing(editing === p.id ? null : p.id)}
                       className="text-[12px] px-3 py-1.5 rounded-lg border border-accent/30 text-accent-light hover:bg-accent/10">
                       {t("split_commission")}{p.splits.length ? ` (${p.splits.length})` : ""}
@@ -287,6 +290,69 @@ function SplitEditor({
       </div>
       {err && <p className="text-[12px] text-red-400 mt-2">{err}</p>}
       {!okToSave && clean.length > 0 && <p className="text-[12px] text-yellow-400 mt-2">{t("total_must_100")}</p>}
+    </div>
+  )
+}
+
+// ── Hover-preview video upload (per partner game) ────────────────────────────
+// Uploads a clip via the shared /api/admin/upload (type=video) — same flow as our
+// own products — then saves its URL to the partner game. PRESERVED across syncs.
+function VideoCell({
+  product, t, onDone,
+}: {
+  product: PartnerProduct
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t: any
+  onDone: () => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const has = !!product.preview_video_url
+
+  const patch = async (url: string | null) => {
+    const r = await fetch(`/api/admin/partner-store/products/${product.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preview_video_url: url }),
+    })
+    if (r.ok) onDone()
+    else setErr(`HTTP ${r.status}`)
+  }
+
+  const upload = async (file: File) => {
+    setBusy(true); setErr(null)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+      fd.append("type", "video")
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) { setErr(data?.error ?? "upload failed"); return }
+      await patch(data.url)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "failed")
+    } finally { setBusy(false) }
+  }
+
+  const remove = async () => { setBusy(true); try { await patch(null) } finally { setBusy(false) } }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <input ref={inputRef} type="file" accept="video/*" hidden
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = "" }} />
+      {has ? (
+        <>
+          <span className="text-[11px] text-green-400 whitespace-nowrap">● {t("hover_video")}</span>
+          <button onClick={() => inputRef.current?.click()} disabled={busy} className="text-[11px] text-accent-light hover:underline disabled:opacity-50">{t("change")}</button>
+          <button onClick={remove} disabled={busy} title={t("remove")} className="text-[13px] text-text-muted hover:text-red-400 leading-none">×</button>
+        </>
+      ) : (
+        <button onClick={() => inputRef.current?.click()} disabled={busy}
+          className="text-[12px] px-3 py-1.5 rounded-lg border border-white/10 text-text-muted hover:bg-white/5 disabled:opacity-50 whitespace-nowrap">
+          {busy ? "..." : t("upload_hover_video")}
+        </button>
+      )}
+      {err && <span className="text-[10px] text-red-400">{err}</span>}
     </div>
   )
 }
