@@ -15,7 +15,8 @@
     "contact": "Contact",
     "rules": "Rules",
     "livegen": "Live Image",
-    "affiliate": "Affiliate"
+    "affiliate": "Affiliate",
+    "faq": "FAQ"
   },
   "Affiliate": {
     "title": "Affiliate Dashboard",
@@ -151,7 +152,22 @@
     "buy_short": "Buy"
   },
   "Footer": {
-    "rights": "© 2026 A Class Store · Payments secured by Stripe"
+    "rights": "© 2026 A Class Store · Payments secured by Stripe",
+    "tagline": "Quality games for Roblox streamers — rent or buy, first at our store",
+    "col_info": "Information",
+    "col_contact": "Contact",
+    "col_newsletter": "News & Promotions",
+    "link_products": "All products",
+    "link_terms": "Terms of use",
+    "link_faq": "FAQ",
+    "link_contact": "Contact us",
+    "newsletter_desc": "Never miss news and great deals",
+    "newsletter_placeholder": "Enter your email",
+    "newsletter_button": "Subscribe",
+    "newsletter_done": "You're subscribed!",
+    "newsletter_error": "Invalid email, please try again",
+    "made_with": "Made with",
+    "made_for": "for Thai gamers"
   },
   "Shop": {
     "title": "All Interactive Games",
@@ -1694,5 +1710,85 @@
     "bad_request": "Invalid or expired sign-in link. Please start again from the app.",
     "error": "Something went wrong. Please try again.",
     "switch_account": "Use a different account (Discord / Google)"
+  },
+  "Faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Got a question? Find the answer you need here",
+    "search_placeholder": "Search questions… e.g. how to buy, payment",
+    "tab_all": "All",
+    "no_result": "No questions match your search",
+    "help_discord_title": "Still can't find an answer?",
+    "help_discord_desc": "Our support team is available 24/7 on Discord",
+    "help_discord_btn": "Contact on Discord",
+    "help_mail_title": "Email us",
+    "help_mail_desc": "storeaclass@gmail.com — we reply within 24 hours",
+    "help_mail_btn": "Send email",
+    "popular": "Popular questions",
+    "sections": [
+      {
+        "icon": "cart",
+        "title": "Buying",
+        "items": [
+          {
+            "q": "How do I receive my purchase?",
+            "a": "Access is granted immediately after payment and appears under \"My Orders\". For Roblox games access is tied to the Roblox username you entered at checkout. For desktop programs, the installer download button is on the order page."
+          },
+          {
+            "q": "What's the difference between renting and buying?",
+            "a": "Rent — access for the period you choose; renew when it expires. Buy forever — permanent access with no expiry, including free updates."
+          },
+          {
+            "q": "Can I get a refund?",
+            "a": "Refunds aren't available because access is granted immediately after payment, and digital goods can't be returned. However, if the product doesn't work within 24 hours of purchase, contact us on Discord or at storeaclass@gmail.com and we'll fix it."
+          }
+        ]
+      },
+      {
+        "icon": "card",
+        "title": "Payment",
+        "items": [
+          {
+            "q": "Which payment methods are supported?",
+            "a": "Three methods: PromptPay (no fee), credit/debit card (+6% fee) and PayPal (+8% fee). The exact amount you'll pay is always shown before you confirm."
+          },
+          {
+            "q": "I paid but haven't received anything",
+            "a": "Access is normally granted instantly. If nothing arrives within 15 minutes, check \"My Orders\" first, then contact support on Discord — we're available 24/7."
+          },
+          {
+            "q": "How do discount codes work?",
+            "a": "Enter the code in the \"Discount code\" field at checkout and the discount is applied automatically. Each code has its own conditions and expiry date."
+          }
+        ]
+      },
+      {
+        "icon": "game",
+        "title": "Using the games",
+        "items": [
+          {
+            "q": "How do I play a Roblox game?",
+            "a": "After purchase, access is tied to the Roblox username you entered — just log in with that account. You'll need Roblox installed, and the username must match exactly. If you can't get in, contact support on Discord anytime."
+          },
+          {
+            "q": "How do I install a desktop program?",
+            "a": "Go to \"My Orders\", open your order and click the installer download button. After installing, sign in with the same account you bought with and the program verifies your access automatically (one account per device)."
+          }
+        ]
+      },
+      {
+        "icon": "user",
+        "title": "Account",
+        "items": [
+          {
+            "q": "Is signing up free?",
+            "a": "Yes, completely free. You can sign in with Google or Discord right away."
+          },
+          {
+            "q": "Can I move the program to another computer?",
+            "a": "Yes, but one account is bound to one device. To move, contact us on Discord and we'll reset the device binding for you."
+          }
+        ]
+      }
+    ]
   }
 }

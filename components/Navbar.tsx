@@ -16,6 +16,7 @@ const navItems = [
   { href: "/orders", labelKey: "orders", auth: true, flag: null },
   { href: "/contact", labelKey: "contact", auth: false, flag: null },
   { href: "/rules", labelKey: "rules", auth: false, flag: null },
+  { href: "/faq", labelKey: "faq", auth: false, flag: null },
   { href: "/affiliate", labelKey: "affiliate", auth: "affiliate", flag: null },
   { href: "/admin", labelKey: "admin", auth: "admin_or_partnership", flag: null },
 ]
@@ -88,23 +89,30 @@ export default function Navbar() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="sticky top-0 z-50 flex items-center justify-between gap-3 px-5 sm:px-6 lg:px-10 py-4 border-b backdrop-blur-md"
+        className="sticky top-0 z-50 border-b backdrop-blur-xl"
         style={{
           borderColor: "var(--color-border-soft)",
           background: "var(--color-navbar-bg)"
         }}
       >
+      <div className="max-w-[1248px] mx-auto px-6 h-16 flex items-center justify-between gap-3">
         {/* LOGO */}
         <Link
           href="/"
-          className="font-display text-[18px] sm:text-[20px] font-bold tracking-wide text-text-base no-underline whitespace-nowrap shrink-0"
+          className="flex items-center gap-2.5 text-[1.1rem] font-extrabold tracking-[-0.02em] text-text-base no-underline whitespace-nowrap shrink-0"
         >
-          A Class <span className="text-accent-light">Store</span>
+          <span
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-[0.72rem] font-black text-white shadow-[0_2px_12px_rgba(37,99,235,0.3)]"
+            style={{ background: "linear-gradient(135deg,var(--color-accent),var(--color-accent-lighter))" }}
+          >
+            AC
+          </span>
+          A CLASS STORE
         </Link>
 
         {/* NAV LINKS — desktop (lg+). Below lg (incl. iPad portrait 768px) the
             hamburger menu is used so the row never overflows. */}
-        <ul className="hidden lg:flex items-center gap-0.5 xl:gap-1.5 list-none m-0 p-0">
+        <ul className="hidden lg:flex items-center gap-1 list-none m-0 p-0">
           {visibleItems.map((item) => (
             <li key={item.href}>
               <Link
@@ -113,8 +121,8 @@ export default function Navbar() {
                     ? "/admin/products"
                     : item.href
                 }
-                className={`text-[13px] xl:text-[13.5px] px-2.5 xl:px-3 py-1.5 rounded-lg transition-colors no-underline whitespace-nowrap ${isActive(item.href)
-                  ? "font-medium text-accent-light bg-accent/5"
+                className={`text-[0.85rem] font-medium px-3.5 py-[7px] rounded-lg transition-colors no-underline whitespace-nowrap ${isActive(item.href)
+                  ? "text-accent-light bg-accent/10"
                   : "text-text-muted hover:text-text-base hover:bg-white/[0.04]"
                   }`}
               >
@@ -135,7 +143,7 @@ export default function Navbar() {
           {/* THEME TOGGLE */}
           <button
             onClick={toggleTheme}
-            className="w-9 h-9 flex items-center justify-center rounded-lg border border-accent/20 text-text-muted hover:text-accent-light hover:bg-accent/5 transition-all"
+            className="w-[38px] h-[38px] flex items-center justify-center rounded-[10px] border border-border-soft text-text-muted hover:text-text-base hover:border-border-light hover:bg-white/[0.03] transition-all"
             aria-label="Toggle theme"
           >
             <AnimatePresence mode="wait" initial={false}>
@@ -178,8 +186,7 @@ export default function Navbar() {
             {!session ? (
               <Link
                 href={loginHref}
-                className="flex items-center gap-2 text-white text-on-accent text-[13px] font-medium px-5 py-2 rounded-lg no-underline transition-all hover:opacity-90 hover:scale-105 active:scale-95"
-                style={{ background: "var(--color-accent)" }}
+                className="flex items-center gap-2 text-white text-on-accent text-[0.85rem] font-semibold px-[22px] py-2 rounded-lg no-underline transition-all hover:bg-accent-light hover:shadow-[0_4px_20px_rgba(37,99,235,0.4)] active:scale-95 shadow-[0_2px_12px_rgba(37,99,235,0.25)] bg-accent"
               >
                 <LoginIcon />
                 {t("login")}
@@ -217,6 +224,7 @@ export default function Navbar() {
             />
           </button>
         </div>
+      </div>
       </motion.nav>
 
       {/* ── MOBILE MENU ── */}
