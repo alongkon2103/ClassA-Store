@@ -138,7 +138,7 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
         </div>
 
-        <div className="relative z-10 max-w-[1248px] mx-auto px-6 py-8 md:py-12">
+        <div className="relative z-10 w-full px-5 sm:px-7 lg:px-10 py-8 md:py-12">
           <header className="mb-8 md:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <div className="flex items-center gap-[18px]">

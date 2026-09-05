@@ -54,7 +54,7 @@ export default function Footer() {
 
   return (
     <footer className="border-t border-border-soft pt-12" style={{ background: "linear-gradient(180deg,var(--color-bg-base),#040710)" }}>
-      <div className="max-w-[1248px] mx-auto px-6 pb-11 grid gap-12 grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.3fr]">
+      <div className="w-full px-5 sm:px-7 lg:px-10 pb-11 grid gap-12 grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.3fr]">
         {/* แบรนด์ */}
         <div>
           <h3 className="text-[1.05rem] font-extrabold mb-3 flex items-center gap-2">
@@ -122,7 +122,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="max-w-[1248px] mx-auto px-6 py-5 border-t border-border-soft flex flex-wrap justify-between items-center gap-2 text-[0.72rem] text-text-dim">
+      <div className="w-full px-5 sm:px-7 lg:px-10 py-5 border-t border-border-soft flex flex-wrap justify-between items-center gap-2 text-[0.72rem] text-text-dim">
         <span>{t("rights")}</span>
         <span>{t("made_with")} <span className="text-hot">♥</span> {t("made_for")}</span>
       </div>

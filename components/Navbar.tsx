@@ -95,7 +95,7 @@ export default function Navbar() {
           background: "var(--color-navbar-bg)"
         }}
       >
-      <div className="max-w-[1248px] mx-auto px-6 h-16 flex items-center justify-between gap-3">
+      <div className="w-full px-5 sm:px-7 lg:px-10 h-16 flex items-center justify-between gap-3">
         {/* LOGO */}
         <Link
           href="/"
@@ -134,6 +134,17 @@ export default function Navbar() {
 
         {/* RIGHT SIDE */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* ปุ่มค้นหา — พาไปหน้าสินค้าซึ่งมีช่องค้นหาจริง */}
+          <Link
+            href="/products"
+            aria-label={t("shop")}
+            className="hidden sm:flex w-[38px] h-[38px] items-center justify-center rounded-[10px] border border-border-soft text-text-muted hover:text-text-base hover:border-border-light hover:bg-white/[0.03] transition-all"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </Link>
+
           {/* NOTIFICATION BELL (affiliates only) */}
           <NotificationBell />
 

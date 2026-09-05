@@ -177,8 +177,8 @@
     "search_results": "Search results",
     "subtitle": "Find the game that's right for you",
     "home": "Home",
-    "featured_title": "Choose a package",
-    "featured_sub": "Pick your game — buy forever or rent monthly, playable instantly",
+    "featured_title": "Recommended for streamers",
+    "featured_sub": "The toolkit that turns TikTok LIVE gifts into real actions in your game and streaming app",
     "from_price": "from",
     "buy_now": "View details",
     "category": "Category",
@@ -196,7 +196,15 @@
     "sort_price_desc": "Price: High → Low",
     "sort_name": "Name: A → Z",
     "result_count": "{count} results",
-    "no_result": "No products match your filters"
+    "no_result": "No products match your filters",
+    "tikkies_name": "Tikkies — TikTok LIVE Toolkit",
+    "tikkies_tag": "Made by us",
+    "tikkies_desc": "Connect TikTok LIVE gifts to your game and streaming app — build your own rules from gifts, chat, likes, follows and shares to press keys in-game, switch scenes in your streaming app, spin a wheel or read chat aloud. Includes overlays (prize wheel, gift jar, supporter leaderboard), a full-keyboard soundboard and ready-made presets for popular games.",
+    "tikkies_unit": "30 days",
+    "tikkies_price_sub": "from ฿99 (7 days) · one-time payment, no auto-billing",
+    "tikkies_cta": "View details",
+    "view_grid": "Grid view",
+    "view_list": "List view"
   },
   "PartnerModal": {
     "partner_product": "Partner product",
@@ -1812,5 +1820,24 @@
         ]
       }
     ]
+  },
+  "Reviews": {
+    "loading": "Loading reviews…",
+    "empty": "No reviews yet — be the first to review this product",
+    "count": "{count} reviews",
+    "write_title": "Write your review",
+    "edit_title": "Edit your review",
+    "placeholder": "Tell others about your experience (optional)",
+    "submit": "Submit review",
+    "delete": "Delete review",
+    "saved": "Review saved",
+    "error": "Couldn't save, please try again",
+    "login_first": "Please sign in first",
+    "must_purchase": "Only customers who purchased this product can write a review",
+    "you": "You",
+    "tab_detail": "Details",
+    "tab_reviews": "Reviews",
+    "tab_faq": "FAQ",
+    "no_rating": "No ratings yet"
   }
 }

@@ -444,6 +444,7 @@ model products {
   user_whitelist_access user_whitelist_access[]
   user_livegen_drafts   user_livegen_drafts[]
   user_program_access   user_program_access[]
+  product_reviews       product_reviews[]
 
   @@index([is_consignment], map: "idx_products_consignment")
   @@index([created_by_id], map: "idx_products_creator")
@@ -619,6 +620,7 @@ model users {
   desktop_auth_codes   desktop_auth_codes[]
   desktop_tokens       desktop_tokens[]
   user_program_access  user_program_access[]
+  product_reviews       product_reviews[]
 }
 
 // Pre-authorized desktop whitelist grants keyed by EMAIL, for buyers who haven't
@@ -1010,4 +1012,22 @@ model newsletter_subscribers {
   email      String    @unique @db.VarChar
   locale     String?   @db.VarChar
   created_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+// รีวิว/ให้ดาวสินค้า — 1 คนต่อ 1 สินค้าได้รีวิวเดียว (แก้ไขทับได้)
+// เขียนรีวิวได้เฉพาะคนที่ "ซื้อจริงและจ่ายเงินแล้ว" เท่านั้น (ตรวจที่ API)
+// เพื่อไม่ให้เกิดรีวิวปลอมบนร้านที่ขายจริง
+model product_reviews {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id String    @db.Uuid
+  user_id    String    @db.Uuid
+  rating     Int       // 1-5 ดาว
+  comment    String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  products   products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([product_id, user_id])
+  @@index([product_id])
 }

@@ -7,6 +7,7 @@ import { AnimatePresence } from "framer-motion"
 import { Link } from "@/i18n/routing"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
+import ProductReviews from "@/components/products/ProductReviews"
 import ProductModal from "@/components/products/ProductModal"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { useAutoDiscounts } from "@/lib/useAutoDiscounts"
@@ -47,9 +48,17 @@ function youtubeEmbed(url: string): string | null {
   return m ? `https://www.youtube.com/embed/${m[1]}` : null
 }
 
-export default function ProductPageClient({ product, related }: { product: Product; related: Related[] }) {
+export default function ProductPageClient({
+  product, related, reviewSummary,
+}: {
+  product: Product
+  related: Related[]
+  reviewSummary?: { average: number; count: number }
+}) {
   const t = useTranslations("ProductPage")
   const tc = useTranslations("Common")
+  const tr = useTranslations("Reviews")
+  const tFaq = useTranslations("Faq")
   const locale = useLocale()
   const isTH = locale === "th"
   const searchParams = useSearchParams()
@@ -68,6 +77,7 @@ export default function ProductPageClient({ product, related }: { product: Produ
 
   const [buyOpen, setBuyOpen] = useState(false)
   const [imgIdx, setImgIdx] = useState(0)
+  const [tab, setTab] = useState<"detail" | "reviews" | "faq">("detail")
   const [copied, setCopied] = useState(false)
 
   const name = isTH ? product.name_th : product.name_en
@@ -142,6 +152,26 @@ export default function ProductPageClient({ product, related }: { product: Produ
           <div>
             <h1 className="text-[1.5rem] sm:text-[2rem] font-black tracking-tight leading-tight mb-1">{name}</h1>
 
+            {/* คะแนนรีวิวจริงจากลูกค้าที่ซื้อแล้ว */}
+            <button onClick={() => setTab("reviews")} className="flex items-center gap-2 mb-2 text-left">
+              <span className="inline-flex gap-0.5">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <svg key={n} width="15" height="15" viewBox="0 0 24 24" fill="currentColor"
+                       className={n <= Math.round(reviewSummary?.average ?? 0) ? "text-gold" : "text-border-light"}>
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                ))}
+              </span>
+              {reviewSummary && reviewSummary.count > 0 ? (
+                <span className="text-[0.8rem] text-text-muted">
+                  <span className="font-bold text-text-base">{reviewSummary.average.toFixed(1)}</span>{" "}
+                  ({tr("count", { count: reviewSummary.count })})
+                </span>
+              ) : (
+                <span className="text-[0.8rem] text-text-dim">{tr("no_rating")}</span>
+              )}
+            </button>
+
             <div className="flex items-end flex-wrap gap-x-3 gap-y-1.5 mt-4">
               <span className="text-[32px] font-bold text-accent-light leading-none">{baht(headlineNow)}</span>
               {headlineWas != null && (
@@ -209,9 +239,54 @@ export default function ProductPageClient({ product, related }: { product: Produ
           </div>
         </div>
 
+        {/* ── แท็บ: รายละเอียด / รีวิว / คำถามที่พบบ่อย ── */}
+        <div className="mt-12 border-t border-border-soft">
+          <div className="flex gap-1 overflow-x-auto">
+            {([
+              { k: "detail", label: tr("tab_detail") },
+              { k: "reviews", label: `${tr("tab_reviews")}${reviewSummary?.count ? ` (${reviewSummary.count})` : ""}` },
+              { k: "faq", label: tr("tab_faq") },
+            ] as const).map((x) => (
+              <button
+                key={x.k}
+                onClick={() => setTab(x.k)}
+                className={`px-5 sm:px-7 py-[18px] text-[0.88rem] font-semibold whitespace-nowrap relative transition-colors ${
+                  tab === x.k ? "text-accent-light" : "text-text-dim hover:text-text-muted"
+                }`}
+              >
+                {x.label}
+                {tab === x.k && <span className="absolute left-0 right-0 bottom-0 h-[2px] bg-accent-light rounded-full" />}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {tab === "reviews" && (
+          <section className="mt-8">
+            <ProductReviews slug={product.slug} />
+          </section>
+        )}
+
+        {tab === "faq" && (
+          <section className="mt-8 max-w-3xl">
+            {(tFaq.raw("sections") as { title: string; items: { q: string; a: string }[] }[])
+              .flatMap((sec) => sec.items)
+              .slice(0, 6)
+              .map((it, i) => (
+                <details key={i} className="border-b border-border-soft py-4 group">
+                  <summary className="cursor-pointer list-none flex items-center justify-between gap-4 text-[0.92rem] font-medium">
+                    {it.q}
+                    <span className="text-text-muted group-open:text-accent-light transition-colors">+</span>
+                  </summary>
+                  <p className="mt-3 text-[0.86rem] text-text-muted leading-[1.85]">{it.a}</p>
+                </details>
+              ))}
+          </section>
+        )}
+
         {/* ── Description ── */}
-        {desc && (
-          <section className="mt-12">
+        {tab === "detail" && desc && (
+          <section className="mt-8">
             <h2 className="text-[18px] font-bold mb-4">{t("description_title")}</h2>
             <div
               className="prose-product max-w-none text-[14px] text-text-muted leading-relaxed [&_img]:rounded-xl [&_a]:text-accent-light [&_h1]:text-text-base [&_h2]:text-text-base [&_h3]:text-text-base [&_strong]:text-text-base"
@@ -221,7 +296,7 @@ export default function ProductPageClient({ product, related }: { product: Produ
         )}
 
         {/* ── Videos (YouTube only) ── */}
-        {ytEmbeds.length > 0 && (
+        {tab === "detail" && ytEmbeds.length > 0 && (
           <section className="mt-12">
             <h2 className="text-[18px] font-bold mb-4">{t("videos_title")}</h2>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -235,7 +310,7 @@ export default function ProductPageClient({ product, related }: { product: Produ
         )}
 
         {/* ── Related ── */}
-        {related.length > 0 && (
+        {tab === "detail" && related.length > 0 && (
           <section className="mt-12">
             <h2 className="text-[18px] font-bold mb-4">{t("related_title")}</h2>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

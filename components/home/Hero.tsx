@@ -63,7 +63,7 @@ export default function Hero({
   const baht = (n: number) => `฿${Number(n).toLocaleString()}`
 
   return (
-    <div className="max-w-[1248px] mx-auto px-6 pt-6">
+    <div className="w-full px-5 sm:px-7 lg:px-10 pt-6">
       <section
         className="relative overflow-hidden rounded-2xl min-h-[420px] flex items-center"
         style={{ background: "linear-gradient(135deg,#0c1225 0%,#111d3a 40%,#162550 80%,#1a2d5c 100%)" }}

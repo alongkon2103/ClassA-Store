@@ -138,6 +138,17 @@ export default async function Page({ params }: Params) {
     }
   })
 
+  // สรุปคะแนนรีวิว (ค่าเฉลี่ย + จำนวน) — แสดงใต้ชื่อสินค้าและบนแท็บรีวิว
+  const ratingAgg = await prisma.product_reviews.aggregate({
+    where: { product_id: product.id },
+    _avg: { rating: true },
+    _count: { _all: true },
+  })
+  const reviewSummary = {
+    average: Math.round((ratingAgg._avg.rating ?? 0) * 10) / 10,
+    count: ratingAgg._count._all,
+  }
+
   // Product JSON-LD for rich results (server-rendered into initial HTML).
   const isTH = locale === "th"
   const name = isTH ? product.name_th : product.name_en
@@ -164,7 +175,7 @@ export default async function Page({ params }: Params) {
       {/* Suspense: ProductPageClient reads useSearchParams() for ?ref=CODE.
           Without it, ISR prerender bails with a CSR-bailout error. */}
       <Suspense fallback={null}>
-        <ProductPageClient product={safeProduct} related={related} />
+        <ProductPageClient product={safeProduct} related={related} reviewSummary={reviewSummary} />
       </Suspense>
     </>
   )

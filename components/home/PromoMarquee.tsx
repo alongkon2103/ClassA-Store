@@ -14,7 +14,7 @@ export default function PromoMarquee() {
   const loop = [...items, ...items]
 
   return (
-    <div className="max-w-[1248px] mx-auto px-6">
+    <div className="w-full px-5 sm:px-7 lg:px-10">
       <div
         className="promo-wrap relative overflow-hidden rounded-xl border border-border-soft mb-8"
         style={{ background: "linear-gradient(90deg,var(--color-bg-surface),#0f1830,var(--color-bg-surface))" }}

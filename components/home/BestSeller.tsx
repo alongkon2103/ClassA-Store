@@ -17,6 +17,7 @@ type Variant = {
 
 export type Product = {
   id: string
+  slug: string
   name_th: string
   name_en: string
   description_th?: string | null
@@ -50,7 +51,7 @@ export default function BestSeller({ products, onSelect, usdRate }: Props) {
   const { bestDiscountedPrice } = useAutoDiscounts()
 
   return (
-    <section className="max-w-[1248px] mx-auto px-6 mb-12">
+    <section className="w-full px-5 sm:px-7 lg:px-10 mb-12">
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-[1.25rem] font-extrabold">{t("best_selling_keys")}</h2>
         <Link href="/products" className="group text-accent-light text-[0.85rem] font-semibold inline-flex items-center gap-1.5 hover:gap-2.5 transition-all">
@@ -91,7 +92,7 @@ export default function BestSeller({ products, onSelect, usdRate }: Props) {
                   oldPrice={hasDeal ? base : null}
                   usdRate={usdRate}
                   buyLabel={t("buy_short")}
-                  onClick={() => onSelect?.(p)}
+                  href={`/products/${p.slug}`}
                 />
               </motion.div>
             )
