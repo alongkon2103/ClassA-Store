@@ -1175,7 +1175,22 @@
     "upgradeNote": "การอัปเกรดจะมีผลทันทีหลังชำระเงิน",
     "game_settings_title": "ตั้งค่าเกม",
     "game_settings_subtitle": "ตั้งค่า function → gift",
-    "settings_short": "ตั้งค่า"
+    "settings_short": "ตั้งค่า",
+    "member": "สมาชิก",
+    "affiliate": "นายหน้า",
+    "logout": "ออกจากระบบ",
+    "tab_all": "ทั้งหมด",
+    "tab_pending": "ที่ต้องชำระ",
+    "tab_paid": "สำเร็จ",
+    "tab_cancelled": "ยกเลิก",
+    "showing": "แสดง {shown} จาก {total} รายการ",
+    "kind_all": "ทั้งหมด",
+    "kind_rent": "เช่าเกม",
+    "kind_lifetime": "ซื้อถาวร",
+    "referral_title": "แนะนำเพื่อน",
+    "referral_amount": "รับค่าคอม",
+    "referral_sub": "เมื่อเพื่อนซื้อผ่านลิงก์ของคุณ",
+    "referral_cta": "ดูรายละเอียด"
   },
   "AdminProductForm": {
     "edit": "แก้ไข — {name}",
@@ -1651,7 +1666,11 @@
     "videos_title": "วิดีโอ",
     "related_title": "สินค้าที่เกี่ยวข้อง",
     "share": "แชร์ / คัดลอกลิงก์",
-    "link_copied": "คัดลอกลิงก์แล้ว"
+    "link_copied": "คัดลอกลิงก์แล้ว",
+    "like": "กดใจ",
+    "favorite": "รายการโปรด",
+    "login_to_use": "เข้าสู่ระบบก่อนใช้งาน",
+    "functions_count": "{count} ฟังก์ชัน"
   },
   "Notifications": {
     "title": "การแจ้งเตือน",

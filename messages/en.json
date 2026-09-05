@@ -1172,7 +1172,22 @@
     "upgradeNote": "Upgrade takes effect immediately after payment",
     "game_settings_title": "Game Settings",
     "game_settings_subtitle": "Configure function → gift",
-    "settings_short": "Settings"
+    "settings_short": "Settings",
+    "member": "Member",
+    "affiliate": "Affiliate",
+    "logout": "Sign out",
+    "tab_all": "All",
+    "tab_pending": "To pay",
+    "tab_paid": "Completed",
+    "tab_cancelled": "Cancelled",
+    "showing": "Showing {shown} of {total}",
+    "kind_all": "All types",
+    "kind_rent": "Rental",
+    "kind_lifetime": "Lifetime",
+    "referral_title": "Refer a friend",
+    "referral_amount": "Earn commission",
+    "referral_sub": "When a friend buys via your link",
+    "referral_cta": "Learn more"
   },
   "AdminProductForm": {
     "edit": "Edit — {name}",
@@ -1648,7 +1663,11 @@
     "videos_title": "Videos",
     "related_title": "Related products",
     "share": "Share / copy link",
-    "link_copied": "Link copied"
+    "link_copied": "Link copied",
+    "like": "Like",
+    "favorite": "Favorite",
+    "login_to_use": "Sign in to use",
+    "functions_count": "{count} functions"
   },
   "Notifications": {
     "title": "Notifications",

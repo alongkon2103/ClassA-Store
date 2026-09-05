@@ -6,7 +6,7 @@ import { redirect } from "next/navigation"  // ✅ ใช้ next/navigation แ
 import { Link } from "@/i18n/routing"        // ✅ Link ยังใช้ i18n ได้
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
-import OrderListClient from "@/components/orders/OrderListClient"
+import OrdersDashboard from "@/components/orders/OrdersDashboard"
 import { setRequestLocale, getTranslations } from "next-intl/server"
 
 // Skip the static cache — admin feature toggles must reflect immediately.
@@ -139,56 +139,7 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
         </div>
 
         <div className="relative z-10 w-full px-5 sm:px-7 lg:px-10 py-8 md:py-12">
-          <header className="mb-8 md:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-[18px]">
-                <div className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center flex-shrink-0 shadow-[0_4px_20px_rgba(37,99,235,0.3)]"
-                     style={{ background: "linear-gradient(135deg,var(--color-accent),var(--color-accent-lighter))" }}>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-[1.4rem] sm:text-[1.8rem] font-black tracking-[-0.02em] text-text-base">{t("title")}</h1>
-                  <p className="text-text-muted text-[0.88rem] mt-0.5">{t("subtitle")}</p>
-                </div>
-              </div>
-              <div className="mt-4 text-[0.75rem] text-text-dim flex items-center gap-1.5">
-                <Link href="/" className="text-accent-light">{tShop("home")}</Link>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-                {t("title")}
-              </div>
-            </div>
-
-            <div className="bg-bg-card border border-accent/10 rounded-2xl px-4 py-2.5 flex items-center gap-4 shrink-0 self-start md:self-auto">
-              <div className="text-right border-r border-accent/10 pr-4">
-                <p className="text-[9px] text-text-muted uppercase font-bold tracking-wider">{t("total")}</p>
-                <p className="text-lg font-display font-bold text-text-base">{orders.length}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[9px] text-text-muted uppercase font-bold tracking-wider">{t("paid")}</p>
-                <p className="text-lg font-display font-bold text-accent-light">
-                  {orders.filter(o => o.status === 'paid').length}
-                </p>
-              </div>
-            </div>
-          </header>
-
-          {orders.length === 0 ? (
-            <div className="bg-bg-card border border-accent/10 rounded-3xl p-10 md:p-16 text-center shadow-xl">
-              <div className="w-12 h-12 bg-accent/5 rounded-2xl flex items-center justify-center mx-auto mb-6 opacity-30">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-              </div>
-              <h2 className="text-lg font-bold text-text-base mb-2">{t("empty_title")}</h2>
-              <Link href="/products" className="inline-flex items-center justify-center px-6 py-2.5 bg-accent hover:opacity-90 text-white text-[14px] font-bold rounded-xl transition">
-                {t("browse_products")}
-              </Link>
-            </div>
-          ) : (
-            <OrderListClient orders={orders} livegenEnabled={featureFlags.livegen_enabled} />
-          )}
+          <OrdersDashboard orders={orders} livegenEnabled={featureFlags.livegen_enabled} />
         </div>
       </main>
 

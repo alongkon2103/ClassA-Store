@@ -144,6 +144,12 @@ export default async function Page({ params }: Params) {
     _avg: { rating: true },
     _count: { _all: true },
   })
+  const functions = await prisma.product_functions.findMany({
+    where: { product_id: product.id },
+    orderBy: { sort_order: "asc" },
+    select: { id: true, name: true, label_th: true, label_en: true },
+  })
+
   const reviewSummary = {
     average: Math.round((ratingAgg._avg.rating ?? 0) * 10) / 10,
     count: ratingAgg._count._all,
@@ -175,7 +181,7 @@ export default async function Page({ params }: Params) {
       {/* Suspense: ProductPageClient reads useSearchParams() for ?ref=CODE.
           Without it, ISR prerender bails with a CSR-bailout error. */}
       <Suspense fallback={null}>
-        <ProductPageClient product={safeProduct} related={related} reviewSummary={reviewSummary} />
+        <ProductPageClient product={safeProduct} related={related} reviewSummary={reviewSummary} functions={functions} />
       </Suspense>
     </>
   )

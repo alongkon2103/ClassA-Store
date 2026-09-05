@@ -445,6 +445,7 @@ model products {
   user_livegen_drafts   user_livegen_drafts[]
   user_program_access   user_program_access[]
   product_reviews       product_reviews[]
+  product_favorites     product_favorites[]
 
   @@index([is_consignment], map: "idx_products_consignment")
   @@index([created_by_id], map: "idx_products_creator")
@@ -621,6 +622,7 @@ model users {
   desktop_tokens       desktop_tokens[]
   user_program_access  user_program_access[]
   product_reviews       product_reviews[]
+  product_favorites     product_favorites[]
 }
 
 // Pre-authorized desktop whitelist grants keyed by EMAIL, for buyers who haven't
@@ -1023,6 +1025,22 @@ model product_reviews {
   user_id    String    @db.Uuid
   rating     Int       // 1-5 ดาว
   comment    String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  products   products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([product_id, user_id])
+  @@index([product_id])
+}
+
+// ปุ่ม "กดใจ" และ "รายการโปรด" บนหน้าสินค้า (ตามดีไซน์) — 1 แถวต่อคนต่อสินค้า
+model product_favorites {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id String    @db.Uuid
+  user_id    String    @db.Uuid
+  liked      Boolean   @default(false)
+  saved      Boolean   @default(false)
   created_at DateTime? @default(now()) @db.Timestamptz(6)
   updated_at DateTime? @default(now()) @db.Timestamptz(6)
   products   products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)

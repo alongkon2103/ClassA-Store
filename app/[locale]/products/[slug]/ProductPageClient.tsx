@@ -49,11 +49,12 @@ function youtubeEmbed(url: string): string | null {
 }
 
 export default function ProductPageClient({
-  product, related, reviewSummary,
+  product, related, reviewSummary, functions = [],
 }: {
   product: Product
   related: Related[]
   reviewSummary?: { average: number; count: number }
+  functions?: { id: string; name: string; label_th: string | null; label_en: string | null }[]
 }) {
   const t = useTranslations("ProductPage")
   const tc = useTranslations("Common")
@@ -77,7 +78,9 @@ export default function ProductPageClient({
 
   const [buyOpen, setBuyOpen] = useState(false)
   const [imgIdx, setImgIdx] = useState(0)
-  const [tab, setTab] = useState<"detail" | "reviews" | "faq">("detail")
+  const [tab, setTab] = useState<"about" | "reviews" | "faq">("about")
+  const [pkgId, setPkgId] = useState<string | null>(null)
+  const [fav, setFav] = useState({ liked: false, saved: false, likes: 0, signedIn: false })
   const [copied, setCopied] = useState(false)
 
   const name = isTH ? product.name_th : product.name_en
@@ -105,252 +108,331 @@ export default function ProductPageClient({
   // YouTube-only video section — every valid URL becomes an embed.
   const ytEmbeds = (product.videos ?? []).map(youtubeEmbed).filter((u): u is string => !!u)
 
-  const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
-    } catch { /* clipboard blocked */ }
+  // เลือกแพ็กเกจ: ค่าเริ่มต้นเป็นตัวที่ "คุ้มสุด" (ราคาสูงสุด = lifetime ตามดีไซน์)
+  useEffect(() => {
+    if (!pkgId && displayVariants.length) {
+      const best = displayVariants.reduce((a, b) => (a.price >= b.price ? a : b))
+      setPkgId(best.id)
+    }
+  }, [displayVariants, pkgId])
+
+  // สถานะปุ่มกดใจ / รายการโปรด
+  useEffect(() => {
+    fetch(`/api/favorites/${product.slug}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setFav({ liked: d.liked, saved: d.saved, likes: d.likes, signedIn: d.signedIn }))
+      .catch(() => {})
+  }, [product.slug])
+
+  const toggleFav = async (key: "liked" | "saved") => {
+    if (!fav.signedIn) return
+    const next = !fav[key]
+    setFav((f) => ({ ...f, [key]: next })) // อัปเดตทันทีให้กดแล้วรู้สึกไว
+    const r = await fetch(`/api/favorites/${product.slug}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [key]: next }),
+    })
+    if (r.ok) { const d = await r.json(); setFav((f) => ({ ...f, liked: d.liked, saved: d.saved, likes: d.likes })) }
   }
+
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch { /* ไม่รองรับ */ }
+  }
+
+  // แท็บเลื่อนไปยัง section (ตามดีไซน์ ทุก section แสดงพร้อมกัน)
+  const goSection = (id: "about" | "reviews" | "faq") => {
+    setTab(id)
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  const selected = displayVariants.find((v) => v.id === pkgId) ?? null
+  const selectedPriced = priced.find((x) => x.v.id === pkgId) ?? null
+  const featureList = functions.map((f) => (isTH ? f.label_th : f.label_en) || f.label_en || f.label_th || f.name)
+  const typeChip = (product as unknown as { type?: string }).type === "desktop_program" ? "PC" : "Roblox"
 
   return (
     <>
       <Navbar />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 lg:pb-16">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-[12px] text-text-muted mb-5">
-          <Link href="/" className="hover:text-text-base transition-colors">{t("breadcrumb_home")}</Link>
-          <span className="opacity-40">/</span>
-          <Link href="/products" className="hover:text-text-base transition-colors">{t("breadcrumb_shop")}</Link>
-          <span className="opacity-40">/</span>
-          <span className="text-text-base truncate max-w-[160px] sm:max-w-none">{name}</span>
-        </nav>
-
-        <div className="grid lg:grid-cols-2 gap-6 lg:gap-10">
-          {/* ── Gallery ── */}
-          <div className="lg:sticky lg:top-24 lg:self-start">
-            <div className="relative aspect-video rounded-2xl overflow-hidden bg-bg-card border border-accent/10">
-              <img src={getImageUrl(images[imgIdx].url)} alt={name} className="w-full h-full object-cover" />
-            </div>
-            {images.length > 1 && (
-              <div className="grid grid-cols-6 gap-2 mt-3">
-                {images.map((im, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setImgIdx(i)}
-                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${i === imgIdx ? "border-accent" : "border-transparent opacity-60 hover:opacity-100"}`}
-                  >
-                    <img src={getImageUrl(im.url)} alt={`${name}-${i}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
+      <main className="pb-28 lg:pb-0">
+        {/* BREADCRUMB */}
+        <div className="w-full px-5 sm:px-7 lg:px-10">
+          <div className="py-5 text-xs text-text-dim flex items-center gap-1.5 flex-wrap">
+            <Link href="/products" className="text-accent-light">{t("breadcrumb_shop")}</Link>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+            <span className="text-accent-light">{typeChip}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+            <span className="truncate max-w-[180px] sm:max-w-none">{name}</span>
           </div>
+        </div>
 
-          {/* ── Buy box ── */}
-          <div>
-            <h1 className="text-[1.5rem] sm:text-[2rem] font-black tracking-tight leading-tight mb-1">{name}</h1>
+        {/* PRODUCT LAYOUT */}
+        <div className="w-full px-5 sm:px-7 lg:px-10">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-8 lg:gap-12 mb-12 items-start">
 
-            {/* คะแนนรีวิวจริงจากลูกค้าที่ซื้อแล้ว */}
-            <button onClick={() => setTab("reviews")} className="flex items-center gap-2 mb-2 text-left">
-              <span className="inline-flex gap-0.5">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <svg key={n} width="15" height="15" viewBox="0 0 24 24" fill="currentColor"
-                       className={n <= Math.round(reviewSummary?.average ?? 0) ? "text-gold" : "text-border-light"}>
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                ))}
-              </span>
-              {reviewSummary && reviewSummary.count > 0 ? (
-                <span className="text-[0.8rem] text-text-muted">
-                  <span className="font-bold text-text-base">{reviewSummary.average.toFixed(1)}</span>{" "}
-                  ({tr("count", { count: reviewSummary.count })})
-                </span>
-              ) : (
-                <span className="text-[0.8rem] text-text-dim">{tr("no_rating")}</span>
-              )}
-            </button>
-
-            <div className="flex items-end flex-wrap gap-x-3 gap-y-1.5 mt-4">
-              <span className="text-[32px] font-bold text-accent-light leading-none">{baht(headlineNow)}</span>
-              {headlineWas != null && (
-                <>
-                  <span className="text-[17px] text-text-muted/70 line-through decoration-red-400 decoration-2 mb-0.5">{baht(headlineWas)}</span>
-                  <span className="mb-1 px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 text-[12px] font-bold">
+            {/* ── GALLERY ── */}
+            <div className="flex flex-col gap-3">
+              <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border border-border-soft flex items-center justify-center"
+                   style={{ background: "linear-gradient(135deg,#0c1a3a,#111d3a)" }}>
+                <img src={getImageUrl(images[imgIdx].url)} alt={name} className="w-full h-full object-cover" />
+                {headlineWas != null && (
+                  <span className="absolute top-3.5 left-3.5 px-3.5 py-1 bg-hot text-white rounded-lg text-[0.7rem] font-bold z-10">
                     -{pct(headlineWas, headlineNow)}%
                   </span>
-                </>
+                )}
+                {ytEmbeds.length > 0 && (
+                  <button
+                    onClick={() => goSection("about")}
+                    aria-label={t("videos_title")}
+                    className="absolute w-[60px] h-[60px] rounded-full bg-black/45 border-2 border-white/25 flex items-center justify-center z-10 backdrop-blur-sm hover:scale-[1.08] hover:bg-accent/50 transition-transform"
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                  </button>
+                )}
+              </div>
+
+              {images.length > 1 && (
+                <div className="grid grid-cols-6 gap-2">
+                  {images.slice(0, 12).map((im, i) => (
+                    <button key={i} onClick={() => setImgIdx(i)}
+                      className={`h-[60px] rounded-lg border-2 overflow-hidden transition-colors ${i === imgIdx ? "border-accent-light" : "border-border-soft hover:border-accent-light/60"}`}>
+                      <img src={getImageUrl(im.url)} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
               )}
-              {displayVariants.length > 1 && <span className="text-[13px] text-text-muted mb-1">{t("from")}</span>}
+
+              {/* ปุ่ม กดใจ / รายการโปรด / แชร์ */}
+              <div className="flex gap-2 mt-1">
+                <button onClick={() => toggleFav("liked")} disabled={!fav.signedIn}
+                  title={fav.signedIn ? "" : t("login_to_use")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[10px] border bg-bg-card text-[0.8rem] font-semibold transition disabled:opacity-50 ${
+                    fav.liked ? "text-hot border-hot/30" : "border-border-soft text-text-muted hover:bg-white/[0.03] hover:border-border-light hover:text-text-base"}`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill={fav.liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                  <span>{t("like")}{fav.likes > 0 ? ` ${fav.likes}` : ""}</span>
+                </button>
+
+                <button onClick={() => toggleFav("saved")} disabled={!fav.signedIn}
+                  title={fav.signedIn ? "" : t("login_to_use")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[10px] border bg-bg-card text-[0.8rem] font-semibold transition disabled:opacity-50 ${
+                    fav.saved ? "text-gold border-gold/30" : "border-border-soft text-text-muted hover:bg-white/[0.03] hover:border-border-light hover:text-text-base"}`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill={fav.saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                  </svg>
+                  <span>{t("favorite")}</span>
+                </button>
+
+                <button onClick={copyLink}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-[10px] border border-border-soft bg-bg-card text-text-muted text-[0.8rem] font-semibold hover:bg-white/[0.03] hover:border-border-light hover:text-text-base transition">
+                  {copied ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
+                  )}
+                  <span>{copied ? t("link_copied") : t("share")}</span>
+                </button>
+              </div>
             </div>
 
-            {/* Variant list (display only — selection happens in the buy modal) */}
-            {displayVariants.length > 0 && (
-              <div className="mt-5 space-y-2">
-                <h3 className="text-base font-extrabold mb-1">{t("options")}</h3>
-                {/* Whitelist products have no key stock — never show "sold out",
-                    just the price (matching the shop cards + modal). */}
-                {priced.map(({ v, price, discounted }) => (
-                  <div
-                    key={v.id}
-                    className={`flex items-center justify-between px-4 py-3.5 rounded-xl border bg-bg-card transition-colors hover:border-accent/40 ${discounted != null ? "border-hot/30" : "border-border-soft"}`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span className="text-[14px] font-medium">{isTH ? v.label_th : v.label_en}</span>
-                      {discounted != null && (
-                        <span className="px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 text-[11px] font-bold leading-none">
-                          -{pct(price, discounted)}%
-                        </span>
-                      )}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      {discounted != null && <span className="text-[13px] text-text-muted/70 line-through decoration-red-400 decoration-2">{baht(price)}</span>}
-                      <span className={`text-[15px] font-bold ${discounted != null ? "text-red-400" : ""}`}>
-                        {baht(discounted ?? price)}
-                      </span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* ── PRODUCT INFO ── */}
+            <div className="flex flex-col">
+              <h1 className="text-[1.6rem] sm:text-[2rem] font-black tracking-tight mb-4 leading-tight">{name}</h1>
 
-            {/* CTA */}
-            <div className="mt-6 flex items-center gap-3">
-              <button
-                onClick={() => setBuyOpen(true)}
-                className="flex-1 py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2.5 hover:-translate-y-0.5 active:scale-[0.98] transition-all shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] bg-gradient-to-r from-accent to-accent-light"
-              >
-                {tc("buy_now")}
-              </button>
-              <button
-                onClick={copyLink}
-                aria-label={t("share")}
-                className="w-12 h-12 shrink-0 flex items-center justify-center rounded-xl border border-accent/20 text-text-muted hover:text-accent-light hover:bg-accent/5 transition-all"
-              >
-                {copied ? (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              <div className="flex gap-2 mb-4 flex-wrap">
+                <span className="px-4 py-1.5 rounded-lg text-[0.78rem] font-semibold bg-accent/[0.08] border border-accent/[0.12] text-accent-lighter">{typeChip}</span>
+                {featureList.length > 0 && (
+                  <span className="px-4 py-1.5 rounded-lg text-[0.78rem] font-semibold bg-accent/[0.08] border border-accent/[0.12] text-accent-lighter">
+                    {t("functions_count", { count: featureList.length })}
+                  </span>
+                )}
+              </div>
+
+              <button onClick={() => goSection("reviews")} className="flex items-center gap-2 mb-6 text-left">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-gold">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                {reviewSummary && reviewSummary.count > 0 ? (
+                  <>
+                    <span className="text-base font-extrabold">{reviewSummary.average.toFixed(1)}</span>
+                    <span className="text-text-dim text-sm">({tr("count", { count: reviewSummary.count })})</span>
+                  </>
                 ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
+                  <span className="text-text-dim text-sm">{tr("no_rating")}</span>
                 )}
               </button>
-            </div>
-            {copied && <p className="text-[12px] text-green-400 mt-2">{t("link_copied")}</p>}
-          </div>
-        </div>
 
-        {/* ── แท็บ: รายละเอียด / รีวิว / คำถามที่พบบ่อย ── */}
-        <div className="mt-12 border-t border-border-soft">
-          <div className="flex gap-1 overflow-x-auto">
-            {([
-              { k: "detail", label: tr("tab_detail") },
-              { k: "reviews", label: `${tr("tab_reviews")}${reviewSummary?.count ? ` (${reviewSummary.count})` : ""}` },
-              { k: "faq", label: tr("tab_faq") },
-            ] as const).map((x) => (
-              <button
-                key={x.k}
-                onClick={() => setTab(x.k)}
-                className={`px-5 sm:px-7 py-[18px] text-[0.88rem] font-semibold whitespace-nowrap relative transition-colors ${
-                  tab === x.k ? "text-accent-light" : "text-text-dim hover:text-text-muted"
-                }`}
-              >
-                {x.label}
-                {tab === x.k && <span className="absolute left-0 right-0 bottom-0 h-[2px] bg-accent-light rounded-full" />}
-              </button>
-            ))}
-          </div>
-        </div>
+              {featureList.length > 0 && (
+                <ul className="list-none flex flex-col gap-3 mb-7">
+                  {featureList.slice(0, 6).map((f, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm text-text-muted leading-relaxed">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-accent-light mt-0.5 shrink-0">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              )}
 
-        {tab === "reviews" && (
-          <section className="mt-8">
-            <ProductReviews slug={product.slug} />
-          </section>
-        )}
+              {/* เลือกแพ็กเกจ */}
+              {displayVariants.length > 0 && (
+                <div>
+                  <h3 className="text-base font-extrabold mb-3.5">{t("options")}</h3>
+                  <div className={`grid rounded-xl overflow-hidden border-2 border-border-soft mb-4 ${displayVariants.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                    {priced.map(({ v, price, discounted }, i) => {
+                      const on = v.id === pkgId
+                      return (
+                        <button key={v.id} onClick={() => setPkgId(v.id)}
+                          className={`flex flex-col items-center py-[18px] px-4 text-center transition-colors ${on ? "bg-accent/[0.08]" : "bg-bg-card hover:bg-white/[0.02]"} ${i === 0 && displayVariants.length > 1 ? "border-r border-border-soft" : ""}`}>
+                          <div className="text-[0.88rem] font-bold mb-0.5 flex items-center justify-center gap-2 flex-wrap">
+                            {isTH ? v.label_th : v.label_en}
+                            {discounted != null && (
+                              <span className="px-2 py-0.5 rounded bg-hot text-white text-[0.58rem] font-bold tracking-wide">-{pct(price, discounted)}%</span>
+                            )}
+                          </div>
+                          <div className="text-[1.3rem] font-black tracking-tight text-accent-lighter">
+                            {discounted != null && <span className="text-[0.8rem] text-text-dim line-through mr-1.5 font-semibold">฿{price.toLocaleString()}</span>}
+                            <span className="text-sm">฿</span>{(discounted ?? price).toLocaleString()}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
 
-        {tab === "faq" && (
-          <section className="mt-8 max-w-3xl">
-            {(tFaq.raw("sections") as { title: string; items: { q: string; a: string }[] }[])
-              .flatMap((sec) => sec.items)
-              .slice(0, 6)
-              .map((it, i) => (
-                <details key={i} className="border-b border-border-soft py-4 group">
-                  <summary className="cursor-pointer list-none flex items-center justify-between gap-4 text-[0.92rem] font-medium">
-                    {it.q}
-                    <span className="text-text-muted group-open:text-accent-light transition-colors">+</span>
-                  </summary>
-                  <p className="mt-3 text-[0.86rem] text-text-muted leading-[1.85]">{it.a}</p>
-                </details>
-              ))}
-          </section>
-        )}
-
-        {/* ── Description ── */}
-        {tab === "detail" && desc && (
-          <section className="mt-8">
-            <h2 className="text-[18px] font-bold mb-4">{t("description_title")}</h2>
-            <div
-              className="prose-product max-w-none text-[14px] text-text-muted leading-relaxed [&_img]:rounded-xl [&_a]:text-accent-light [&_h1]:text-text-base [&_h2]:text-text-base [&_h3]:text-text-base [&_strong]:text-text-base"
-              dangerouslySetInnerHTML={{ __html: desc }}
-            />
-          </section>
-        )}
-
-        {/* ── Videos (YouTube only) ── */}
-        {tab === "detail" && ytEmbeds.length > 0 && (
-          <section className="mt-12">
-            <h2 className="text-[18px] font-bold mb-4">{t("videos_title")}</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {ytEmbeds.map((src, i) => (
-                <div key={i} className="aspect-video rounded-2xl overflow-hidden border border-accent/10">
-                  <iframe src={src} title={`YouTube ${i + 1}`} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                  <button onClick={() => setBuyOpen(true)}
+                    className="w-full py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-2.5 hover:-translate-y-0.5 transition-all shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] mt-1 bg-gradient-to-r from-accent to-accent-light">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                    </svg>
+                    {tc("buy_now")}
+                    {selectedPriced && <span className="opacity-80 font-semibold">· {baht(selectedPriced.discounted ?? selectedPriced.price)}</span>}
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
-          </section>
-        )}
+          </div>
+        </div>
 
-        {/* ── Related ── */}
-        {tab === "detail" && related.length > 0 && (
-          <section className="mt-12">
-            <h2 className="text-[18px] font-bold mb-4">{t("related_title")}</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {related.map((r) => (
-                <Link
-                  key={r.slug}
-                  href={`/products/${r.slug}`}
-                  className="group bg-bg-card border border-accent/10 rounded-2xl overflow-hidden transition-all hover:border-accent/25 hover:-translate-y-0.5"
-                >
-                  <div className="aspect-video overflow-hidden bg-bg-base">
-                    <img src={getImageUrl(r.image || "/placeholder.png")} alt={isTH ? r.name_th : r.name_en} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                  </div>
-                  <div className="p-3">
-                    <p className="text-[13px] font-medium truncate">{isTH ? r.name_th : r.name_en}</p>
-                    <p className="text-[13px] text-accent-light font-semibold mt-1">{baht(r.min_price)}</p>
-                  </div>
-                </Link>
+        {/* ── TABS ── */}
+        <div className="w-full px-5 sm:px-7 lg:px-10">
+          <div className="border-t border-border-soft mb-12">
+            <div className="flex border-b border-border-soft overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {([
+                { k: "about", label: tr("tab_detail") },
+                { k: "reviews", label: `${tr("tab_reviews")}${reviewSummary?.count ? ` (${reviewSummary.count})` : ""}` },
+                { k: "faq", label: tr("tab_faq") },
+              ] as const).map((x) => (
+                <button key={x.k} onClick={() => goSection(x.k)}
+                  className={`px-5 sm:px-7 py-[18px] text-[0.88rem] font-semibold whitespace-nowrap relative transition-colors ${tab === x.k ? "text-accent-light" : "text-text-dim hover:text-text-muted"}`}>
+                  {x.label}
+                  {tab === x.k && <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-accent rounded-full" />}
+                </button>
               ))}
             </div>
-          </section>
-        )}
+
+            {/* เนื้อหา + sidebar */}
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-9 py-9">
+              <div className="flex flex-col gap-9 min-w-0">
+                {/* รายละเอียด */}
+                <div id="about" className="scroll-mt-24">
+                  <h3 className="text-lg font-extrabold mb-4">{t("description_title")}</h3>
+                  {desc ? (
+                    <div className="prose-product max-w-none text-[0.88rem] text-text-muted leading-[1.85] mb-6 [&_img]:rounded-xl [&_a]:text-accent-light [&_h1]:text-text-base [&_h2]:text-text-base [&_h3]:text-text-base [&_strong]:text-text-base"
+                         dangerouslySetInnerHTML={{ __html: desc }} />
+                  ) : <p className="text-[0.88rem] text-text-dim mb-6">—</p>}
+
+                  {featureList.length > 0 && (
+                    <ul className="list-none grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {featureList.map((f, i) => (
+                        <li key={i} className="flex items-center gap-2 text-[0.82rem] text-text-muted">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-accent-light shrink-0"><polyline points="20 6 9 17 4 12" /></svg>
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {ytEmbeds.length > 0 && (
+                    <div className="grid sm:grid-cols-2 gap-4 mt-6">
+                      {ytEmbeds.map((src, i) => (
+                        <div key={i} className="aspect-video rounded-2xl overflow-hidden border border-border-soft">
+                          <iframe src={src} title={`YouTube ${i + 1}`} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* รีวิว */}
+                <div id="reviews" className="scroll-mt-24">
+                  <h3 className="text-lg font-extrabold mb-4">
+                    {tr("tab_reviews")}{" "}
+                    {reviewSummary?.count ? <span className="text-[0.78rem] text-text-dim font-medium">({tr("count", { count: reviewSummary.count })})</span> : null}
+                  </h3>
+                  <ProductReviews slug={product.slug} />
+                </div>
+
+                {/* คำถามที่พบบ่อย */}
+                <div id="faq" className="scroll-mt-24">
+                  <h3 className="text-lg font-extrabold mb-4">{tr("tab_faq")}</h3>
+                  {(tFaq.raw("sections") as { title: string; items: { q: string; a: string }[] }[])
+                    .flatMap((sec) => sec.items).slice(0, 6)
+                    .map((it, i) => (
+                      <details key={i} className="border-b border-border-soft py-4 group">
+                        <summary className="cursor-pointer list-none flex items-center justify-between gap-4 text-[0.92rem] font-medium">
+                          {it.q}
+                          <span className="text-text-muted group-open:text-accent-light transition-colors text-lg leading-none">+</span>
+                        </summary>
+                        <p className="mt-3 text-[0.86rem] text-text-muted leading-[1.85]">{it.a}</p>
+                      </details>
+                    ))}
+                </div>
+              </div>
+
+              {/* SIDEBAR: สินค้าอื่นที่น่าสนใจ */}
+              {related.length > 0 && (
+                <aside>
+                  <h3 className="text-base font-extrabold mb-3.5">{t("related_title")}</h3>
+                  <div className="flex flex-col gap-2.5">
+                    {related.map((r) => (
+                      <Link key={r.slug} href={`/products/${r.slug}`}
+                        className="flex gap-3 p-3 bg-bg-card border border-border-soft rounded-xl hover:border-accent/30 hover:-translate-y-0.5 transition-all">
+                        <div className="w-[72px] h-[72px] rounded-lg overflow-hidden shrink-0" style={{ background: "linear-gradient(135deg,#141e36,#0d1526)" }}>
+                          <img src={getImageUrl(r.image || "/placeholder.png")} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 flex flex-col justify-center min-w-0">
+                          <h4 className="text-[0.82rem] font-bold mb-0.5 truncate">{isTH ? r.name_th : r.name_en}</h4>
+                          <div className="text-[0.68rem] text-text-dim mb-1">{t("from")}</div>
+                          <div className="text-sm font-extrabold text-accent-lighter">{baht(r.min_price)}</div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </aside>
+              )}
+            </div>
+          </div>
+        </div>
       </main>
 
-      {/* ── Sticky mobile buy bar ── */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-bg-card/95 backdrop-blur-md border-t border-accent/15 px-4 py-3 flex items-center gap-3">
-        <div className="min-w-0">
-          <p className="text-[11px] text-text-muted leading-none">{displayVariants.length > 1 ? t("from") : ""}</p>
-          <p className="text-[19px] font-bold text-accent-light leading-tight">{baht(headlineNow)}</p>
+      <Footer />
+
+      {/* แถบซื้อติดล่างจอ (มือถือ) */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-bg-surface/95 backdrop-blur border-t border-border-soft px-4 py-3 flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] text-text-dim">{t("from")}</p>
+          <p className="text-[17px] font-bold text-accent-light leading-none">{baht(headlineNow)}</p>
         </div>
-        <button
-          onClick={() => setBuyOpen(true)}
-          className="flex-1 py-3 rounded-xl bg-accent text-white font-semibold text-[15px] active:scale-[0.98] transition-all"
-        >
+        <button onClick={() => setBuyOpen(true)}
+          className="flex-1 py-3 rounded-xl text-white font-bold text-[15px] active:scale-[0.98] transition-all bg-gradient-to-r from-accent to-accent-light">
           {tc("buy_now")}
         </button>
       </div>
 
-      <Footer />
-
-      {/* Buy flow reuses the existing modal — no checkout logic duplicated. */}
+      {/* ขั้นตอนซื้อใช้ modal เดิม ไม่ทำ checkout ซ้ำ */}
       <AnimatePresence>
         {buyOpen && <ProductModal product={product} onClose={() => setBuyOpen(false)} />}
       </AnimatePresence>
