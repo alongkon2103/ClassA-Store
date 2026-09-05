@@ -302,7 +302,10 @@
     "paypal_me_label": "PayPal (โอนตรง)",
     "paypal_me_note": "โอนผ่านลิงก์ PayPal.me — ยืนยันอัตโนมัติ",
     "swap_to_paypal_me": "สลับเป็น PayPal (โอนตรง) — จ่ายยอดตรงเป๊ะผ่านลิงก์ PayPal.me",
-    "confirm_title": "ยืนยันการสั่งซื้อ"
+    "confirm_title": "ยืนยันการสั่งซื้อ",
+    "username_label": "ชื่อตัวละคร (Roblox Username)",
+    "username_hint": "ชื่อต้องตรงกับบัญชี Roblox เพื่อรับสินค้า · กดดูวิธีหาชื่อ",
+    "confirm_pay": "ยืนยันการชำระเงิน"
   },
   "Visitors": {
     "title": "สถิติผู้เข้าชมเว็บไซต์",

@@ -255,7 +255,7 @@ interface ProductImage {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function ProductModal({ product, onClose }: any) {
+export default function ProductModal({ product, onClose, initialVariantId }: any) {
   const { data: session } = useSession()
   const router = useRouter()
   const t = useTranslations("ProductModal")
@@ -457,7 +457,10 @@ export default function ProductModal({ product, onClose }: any) {
     if (premiumAddonPrice <= 0) setIsPremiumSelected(false)
   }, [premiumAddonPrice])
 
-  const [selectedVariant, setSelectedVariant] = useState(sortedVariants[0] || null)
+  // แพ็กเกจเริ่มต้น = ตัวที่ผู้ใช้เลือกไว้ในหน้าสินค้า (ถ้าไม่ส่งมาใช้ตัวแรก)
+  const [selectedVariant, setSelectedVariant] = useState(
+    sortedVariants.find((v: any) => v.id === initialVariantId) ?? sortedVariants[0] ?? null,
+  )
 
   const applyDiscountCode = async (codeRaw: string, source: DiscountSource = "typed") => {
     if (!codeRaw) return
@@ -791,139 +794,6 @@ export default function ProductModal({ product, onClose }: any) {
           </div>
 
           <div className="px-6 sm:px-7 py-6 space-y-5">
-            {/* Description is Tiptap-generated HTML — render through prose so
-                headings, lists, links, tables come out styled. Trusted source:
-                only admins can author it. */}
-            {productDesc ? (
-              <div
-                className="prose prose-sm max-w-none text-[14px]"
-                dangerouslySetInnerHTML={{ __html: productDesc }}
-              />
-            ) : (
-              <p className="text-sm text-text-muted leading-relaxed">{t("no_description")}</p>
-            )}
-
-            {/* TRY DEMO LINK */}
-            {product.info_page_url && (
-              <a
-                href={
-                  product.info_page_url.startsWith("http")
-                    ? product.info_page_url
-                    : `https://${product.info_page_url}`
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center justify-between gap-3 p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all active:scale-[0.98]"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
-                      <line x1="6" y1="11" x2="10" y2="11" />
-                      <line x1="8" y1="9" x2="8" y2="13" />
-                      <line x1="15" y1="12" x2="15.01" y2="12" />
-                      <line x1="18" y1="10" x2="18.01" y2="10" />
-                      <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-bold text-emerald-400 truncate">{t("try_demo_btn")}</p>
-                    <p className="text-[11px] text-text-muted truncate">{t("try_demo_desc")}</p>
-                  </div>
-                </div>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400 flex-shrink-0 group-hover:translate-x-0.5 transition-transform">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                  <polyline points="15 3 21 3 21 9" />
-                  <line x1="10" y1="14" x2="21" y2="3" />
-                </svg>
-              </a>
-            )}
-
-            {/* VARIANTS */}
-            <div className="space-y-2">
-              <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("select_option")}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {sortedVariants.map((v: ProductVariant) => {
-                  const vHasDiscount = !!(
-                    product.has_limited_discount &&
-                    v.discount_pct > 0 &&
-                    (v.discount_used ?? 0) < (v.discount_limit ?? 0)
-                  )
-                  const vDiscountPct = vHasDiscount ? Number(v.discount_pct) : 0
-                  const vPrice = Number(v.price)
-                  const vFinalPrice = vHasDiscount ? vPrice - (vPrice * (vDiscountPct / 100)) : vPrice
-
-                  return (
-                    <button key={v.id} onClick={() => setSelectedVariant(v)}
-                      className={`p-3 rounded-xl border text-left transition ${selectedVariant?.id === v.id ? "border-accent bg-accent/10" : "border-white/10 hover:border-accent/40"}`}>
-                      <div className="flex justify-between items-start gap-1">
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-medium truncate">{isTH ? v.label_th : v.label_en}</p>
-                          {vHasDiscount && (
-                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                              <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter">-{vDiscountPct}%</span>
-                              <span className="text-[9px] text-text-muted line-through opacity-70">฿{vPrice.toLocaleString()}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className={`text-[13px] font-bold ${vHasDiscount ? "text-green-400" : "text-accent-light"}`}>
-                            {isTH ? `฿${vFinalPrice.toLocaleString()}` : `$${toUSD(vFinalPrice) || '0.00'}`}
-                          </p>
-                          {usdRate && (
-                            <p className="text-[10px] text-text-muted mt-0.5 whitespace-nowrap">
-                              {isTH ? `≈ $${toUSD(vFinalPrice)}` : `฿${vFinalPrice.toLocaleString()}`}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      {vHasDiscount && (
-                        <div className="mt-2 flex items-center justify-between gap-2">
-                          <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
-                            <div className="h-full bg-green-400/40 rounded-full transition-all" style={{ width: `${Math.min(100, (v.discount_used / v.discount_limit) * 100)}%` }} />
-                          </div>
-                          <p className="text-[9px] font-bold text-text-muted/60 whitespace-nowrap uppercase tracking-widest">{t("left") || "Left"}: {v.discount_limit - v.discount_used}</p>
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* PREMIUM ADD-ON */}
-            {premiumAddonPrice > 0 && (
-              <div
-                onClick={() => {
-                  if (isPremiumSelected) {
-                    setShowPremiumWarning(true)
-                  } else {
-                    setIsPremiumSelected(true)
-                  }
-                }}
-                className={`cursor-pointer p-4 rounded-2xl border transition-all flex items-center justify-between ${isPremiumSelected ? "bg-yellow-500/10 border-yellow-500/50 shadow-lg" : "bg-white/5 border-white/10 hover:border-white/20"}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition ${isPremiumSelected ? "bg-yellow-500 border-yellow-500" : "border-white/20"}`}>
-                    {isPremiumSelected && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>}
-                  </div>
-                  <div>
-                    <p className={`text-[14px] font-bold ${isPremiumSelected ? "text-yellow-500" : "text-white"}`}>{t("upgrade_premium")}</p>
-                    <p className="text-[11px] text-text-muted">{t("upgrade_unlock")}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className={`text-[13px] font-bold ${isPremiumSelected ? "text-yellow-500" : "text-text-muted"}`}>
-                    {isTH ? `+฿${premiumAddonPrice.toLocaleString()}` : `+$${toUSD(premiumAddonPrice)}`}
-                  </p>
-                  {usdRate && (
-                    <p className="text-[10px] text-text-muted mt-0.5">
-                      {isTH ? `≈ $${toUSD(premiumAddonPrice)}` : `฿${premiumAddonPrice.toLocaleString()} THB`}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Desktop programs: no in-game name — sign in with the account.
                 Otherwise the IN-GAME USERNAME field (hidden pre-login when trial on). */}
             {isDesktop ? (
@@ -935,21 +805,21 @@ export default function ProductModal({ product, onClose }: any) {
                 </p>
               </div>
             ) : (!isTrialEnabled || session) ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("ingame_username")}</p>
-                  <button onClick={() => setShowUsernameHelp(true)} className="text-[11px] text-accent-light hover:opacity-80 transition flex items-center gap-1">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-                    {t("how_to_find")}
-                  </button>
-                </div>
+              <div>
+                <label className="text-[0.88rem] font-bold mb-3 block">{t("username_label")}</label>
                 <input ref={inputRef} value={whitelistUsername} onChange={(e) => setWhitelistUsername(e.target.value)}
                   onFocus={() => { if (!hasShownUsernameHelp.current) { hasShownUsernameHelp.current = true; setShowUsernameHelp(true) } }}
                   placeholder={t("ingame_username_placeholder")}
-                  className={`w-full bg-bg-base border rounded-xl px-4 py-3 text-[13px] outline-none transition ${robloxVerify === "valid" ? "border-green-500/50 focus:border-green-500/70" :
-                      robloxVerify === "invalid" ? "border-red-500/50 focus:border-red-500/70" :
-                        "border-accent/15 focus:border-accent/40"
-                    }`} />
+                  className={`w-full px-4 py-3 rounded-[10px] border bg-bg-base text-text-base text-sm outline-none transition placeholder:text-text-dim ${
+                    robloxVerify === "valid" ? "border-success/60 focus:border-success"
+                      : robloxVerify === "invalid" ? "border-hot/60 focus:border-hot"
+                        : "border-border-soft focus:border-accent"}`} />
+                {/* คำอธิบายใต้ช่อง — กดแล้วเปิดวิธีหาชื่อ (คงฟังก์ชันเดิม หน้าตาตามดีไซน์) */}
+                <button type="button" onClick={() => setShowUsernameHelp(true)}
+                  className="text-[0.68rem] text-text-dim mt-1.5 flex items-center gap-1 hover:text-accent-light transition text-left">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+                  {t("username_hint")}
+                </button>
 
                 {robloxVerify !== "idle" && (
                   <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/5 border border-white/5">
@@ -990,48 +860,6 @@ export default function ProductModal({ product, onClose }: any) {
               </div>
             ) : null}
 
-            {/* FREE TRIAL OPTION */}
-            {/*             
-            {isTrialEnabled && (
-              <div className="pt-2">
-                <button
-                  disabled={loadingTrial || !!(session && hasUsedTrial)}
-                  onClick={handleTrialClick}
-                  className={`w-full py-3.5 rounded-xl font-bold text-[14px] border transition-all flex items-center justify-center gap-2 ${(session && hasUsedTrial)
-                    ? "border-white/5 bg-white/5 text-text-muted cursor-not-allowed opacity-50"
-                    : "bg-violet-600/20 hover:bg-violet-600/30 border-violet-500/40 text-violet-400 active:scale-[0.98] shadow-lg shadow-violet-500/10"
-                    }`}
-                >
-                  {loadingTrial ? (
-                    <div className="w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                    </svg>
-                  )}
-                  {!session
-                    ? t("login_to_trial")
-                    : hasUsedTrial
-                      ? t("trial_limit_reached")
-                      : t("free_trial_btn", { duration: trialDuration ?? "..." })}
-                </button>
-                {(session && !hasUsedTrial) && (
-                  <p className="text-[11px] text-gray-400 font-medium text-center mt-3">
-                    {t("free_trial_limit")}
-                  </p>
-                )}
-              </div>
-            )} */}
-
-
-
-            <hr className="border-white/5 my-4" />
-
-            {/* PAYMENT METHOD — card displays the active method, swap button
-                cycles through enabled methods only (admin can disable any
-                method in /admin/settings). Fee label is read from settings,
-                not hardcoded, so a "+6%" Stripe badge becomes "+3%" the moment
-                the admin changes the value. */}
             {/* ช่องทางชำระเงิน — การ์ดเลือกได้ตามดีไซน์
                 แสดงเฉพาะช่องทางที่แอดมินเปิดไว้ และ % ค่าธรรมเนียมอ่านจาก settings
                 ไม่ได้ hardcode ถ้าแอดมินแก้เป็น 3% ป้ายจะเปลี่ยนตามทันที */}
@@ -1250,24 +1078,14 @@ export default function ProductModal({ product, onClose }: any) {
               })()}
             </div>
 
-            {/* TOTAL & BUY */}
-            <div className="flex items-center gap-3 pt-4 border-t border-white/10">
-              <div className="flex-1">
-                <p className="text-[11px] text-text-muted mb-0.5">{t("total")}</p>
-                <div className={`text-[26px] font-bold leading-none ${isPremiumSelected ? "text-yellow-500" : "text-accent-light"}`}>
-                  {isTH ? `฿${totalPrice.toLocaleString()}` : `$${totalPriceUSD || '0.00'}`}
-                </div>
-                {usdRate && (
-                  <p className="text-[11px] text-text-muted mt-1 font-medium">
-                    {isTH ? `≈ $${totalPriceUSD} USD` : `฿${totalPrice.toLocaleString()} THB`}
-                  </p>
-                )}
-              </div>
-              <button disabled={loading} onClick={handleBuyClick}
-                className={`w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2.5 shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 ${loading ? "opacity-60 cursor-not-allowed bg-accent text-white" : (isPremiumSelected ? "bg-yellow-500 text-black" : "bg-gradient-to-r from-accent to-accent-light text-white")}`}>
-                {loading ? "Processing..." : "Checkout"}
-              </button>
-            </div>
+            <button disabled={loading} onClick={handleBuyClick}
+              className={`w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2.5 shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 ${
+                loading ? "opacity-60 cursor-not-allowed bg-accent text-white" : "bg-gradient-to-r from-accent to-accent-light text-white"}`}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" />
+              </svg>
+              {loading ? t("loading") : t("confirm_pay")}
+            </button>
 
             <p className="text-[11px] text-text-muted text-center leading-relaxed">
               {t.rich("accept_rules", {

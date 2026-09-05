@@ -302,7 +302,10 @@
     "paypal_me_label": "PayPal (Direct)",
     "paypal_me_note": "Send via a PayPal.me link — auto-confirmed",
     "swap_to_paypal_me": "Switch to PayPal (Direct) — pay the exact amount via a PayPal.me link",
-    "confirm_title": "Confirm your order"
+    "confirm_title": "Confirm your order",
+    "username_label": "Character name (Roblox Username)",
+    "username_hint": "Must match your Roblox account to receive the item · tap for help",
+    "confirm_pay": "Confirm payment"
   },
   "Visitors": {
     "title": "Website Visitors",

@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useTheme } from "./ThemeContext"
 import { useTranslations } from "next-intl"
 import LanguageSwitcher from "./LanguageSwitcher"
+import NavSearch from "./NavSearch"
 import NotificationBell from "./NotificationBell"
 
 const navItems = [
@@ -134,16 +135,10 @@ export default function Navbar() {
 
         {/* RIGHT SIDE */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* ปุ่มค้นหา — พาไปหน้าสินค้าซึ่งมีช่องค้นหาจริง */}
-          <Link
-            href="/products"
-            aria-label={t("shop")}
-            className="hidden sm:flex w-[38px] h-[38px] items-center justify-center rounded-[10px] border border-border-soft text-text-muted hover:text-text-base hover:border-border-light hover:bg-white/[0.03] transition-all"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </Link>
+          {/* ค้นหา — กดแล้วกล่องพิมพ์เลื่อนออกมา พร้อมรายชื่อเกมให้กดเลย */}
+          <div className="hidden sm:block">
+            <NavSearch />
+          </div>
 
           {/* NOTIFICATION BELL (affiliates only) */}
           <NotificationBell />

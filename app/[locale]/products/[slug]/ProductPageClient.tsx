@@ -434,7 +434,7 @@ export default function ProductPageClient({
 
       {/* ขั้นตอนซื้อใช้ modal เดิม ไม่ทำ checkout ซ้ำ */}
       <AnimatePresence>
-        {buyOpen && <ProductModal product={product} onClose={() => setBuyOpen(false)} />}
+        {buyOpen && <ProductModal product={product} initialVariantId={pkgId ?? undefined} onClose={() => setBuyOpen(false)} />}
       </AnimatePresence>
     </>
   )
