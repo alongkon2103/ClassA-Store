@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { format } from "date-fns"
+import { th as thLocale, enUS } from "date-fns/locale"
 import Image from "next/image"
 import { Link, useRouter } from "@/i18n/routing"
 import { motion, AnimatePresence } from "framer-motion"
@@ -44,6 +45,8 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
   const router = useRouter()
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [payingId, setPayingId] = useState<string | null>(null)
+  // เวลาอ้างอิงสำหรับนับวันที่เหลือ — อ่านครั้งเดียวตอน mount (กัน render ไม่ pure)
+  const [now] = useState(() => Date.now())
   // Modal renders through a portal to document.body so it escapes the
   // `relative z-10` wrapper in orders/page.tsx. Without the portal, the modal's
   // z-[100] is capped by the parent's z-10 stacking context, which lets the
@@ -102,121 +105,168 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
 
   return (
     <>
-      <div className="space-y-2">
-        {orders.map((order) => {
-          const imageUrl = order.products.product_images[0]?.url || "/next.svg"
-          const isPaid = order.status === "paid" || order.status === "Admin Buy"
-          const isPending = order.status === "pending"
-          const isTrial = order.order_type === "TRIAL"
-          const isPaying = payingId === order.id
-          const hasFunctions = (order.products?.product_functions?.length ?? 0) > 0
+      {/* ตารางออเดอร์ตามดีไซน์ NewDesign/orders.html
+          จอใหญ่ = ตาราง 7 คอลัมน์ · จอเล็ก (<md) = แต่ละแถวกลายเป็นการ์ดซ้อนกัน (ตามต้นแบบ)
+          ปุ่มทั้งหมดของเดิมยังอยู่: ชำระเงิน / เล่นเกม / ดาวน์โหลด / ตั้งค่า / ดูรายละเอียด */}
+      <table className="w-full max-md:block border-separate [border-spacing:0_8px] max-md:[border-spacing:0]">
+        <thead className="max-md:hidden">
+          <tr className="text-left text-[0.72rem] font-semibold text-text-dim uppercase tracking-[0.04em]">
+            {[t("col_order"), t("col_product"), t("col_type"), t("col_price"), t("col_status"), t("col_date"), t("col_manage")].map((h) => (
+              <th key={h} className="px-3 pb-2 font-semibold">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="max-md:block">
+          {orders.map((order) => {
+            const imageUrl = order.products.product_images[0]?.url || "/placeholder.png"
+            const isPaid = order.status === "paid" || order.status === "Admin Buy"
+            const isPending = order.status === "pending"
+            const isTrial = order.order_type === "TRIAL"
+            const isPaying = payingId === order.id
+            const hasFunctions = (order.products?.product_functions?.length ?? 0) > 0
+            const isDesktop = order.products?.type === "desktop_program"
+            const name = locale === "th" ? order.products.name_th : order.products.name_en
+            const variantLabel = locale === "th"
+              ? (order.product_variants?.label_th || t("standard_version"))
+              : (order.product_variants?.label_en || t("standard_version"))
 
-          return (
-            <div
-              key={order.id}
-              onClick={() => isPaid && setSelectedOrder(order)}
-              className={`group bg-bg-card border border-accent/10 rounded-xl p-2.5 md:p-4 transition-all duration-300 flex items-center gap-3 md:gap-4 ${
-                isPaid ? "cursor-pointer hover:border-accent/30 hover:shadow-xl hover:shadow-accent/5" : "cursor-default"
-              } ${!isPaid && !isPending ? "opacity-70" : ""} ${isTrial ? "border-violet-500/20 bg-violet-500/5 shadow-lg shadow-violet-500/5" : ""}`}
-            >
-              {/* Thumbnail */}
-              <div className="w-10 h-10 md:w-16 md:h-16 relative rounded-lg overflow-hidden shrink-0 shadow-lg">
-                <Image
-                  src={getImageUrl(imageUrl)}
-                  alt={locale === "th" ? order.products.name_th : order.products.name_en}
-                  fill className="object-cover"
-                />
-                {isTrial && (
-                  <div className="absolute inset-0 bg-violet-500/10 flex items-center justify-center">
-                    <div className="bg-violet-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
-                      {t("trial_badge")}
+            // ประเภท: ถาวร ดูจาก variant ก่อน ไม่มีค่อยดูวันหมดอายุ (ปี 9999 = ถาวร)
+            const expiresAt = order.expires_at ? new Date(order.expires_at) : null
+            const isLifetime = order.product_variants?.duration_type === "permanent" || (expiresAt ? expiresAt.getFullYear() > 2900 : false)
+            const durationDays: number | null = order.product_variants?.duration_days ?? null
+            const daysLeft = expiresAt && !isLifetime ? Math.ceil((expiresAt.getTime() - now) / 86400000) : null
+
+            // ราคา: amount = ยอดที่จ่ายจริง (หักส่วนลดแล้ว) · ราคาเต็ม = amount + ส่วนลด
+            const amount = Number(order.amount)
+            const discount = Number(order.discount_amount ?? 0)
+            const created = order.created_at ? new Date(order.created_at) : null
+            const dateLocale = locale === "th" ? thLocale : enUS
+
+            const statusKind = isTrial ? "trial" : isPaid ? "paid" : isPending ? "pending" : "cancelled"
+            const badgeCls = {
+              paid: "bg-success/10 text-success border-success/15",
+              pending: "bg-accent/[0.12] text-accent-lighter border-accent/15",
+              cancelled: "bg-hot/10 text-hot border-hot/15",
+              trial: "bg-violet-500/10 text-violet-400 border-violet-500/20",
+            }[statusKind]
+            const statusLabel = { paid: t("status_paid"), pending: t("status_pending"), cancelled: order.status === "expired" ? t("status_expired") : t("status_cancelled"), trial: t("free_trial") }[statusKind]
+            const statusSub = isPaid
+              ? (daysLeft != null && daysLeft >= 0 && !isLifetime ? t("sub_days_left", { days: daysLeft }) : t("sub_received"))
+              : isPending ? t("sub_pending_pay") : isTrial ? t("trial_badge") : t("sub_expired")
+
+            // จอเล็ก: ช่องส่วนใหญ่เป็น block เต็มแถว ยกเว้น "ประเภท" กับ "ราคา" ที่วางเรียงกันในบรรทัดเดียว (ตามดีไซน์)
+            const tdBase = "px-3 py-3.5 bg-bg-card border-y border-border-soft max-md:bg-transparent max-md:border-0 max-md:py-1 max-md:px-0"
+            const td = `${tdBase} max-md:block max-md:w-full`
+            const tdInline = `${tdBase} max-md:inline-block max-md:w-auto max-md:align-top`
+            const btn = "px-3.5 py-[7px] rounded-lg text-[0.72rem] font-semibold text-center transition-colors max-md:flex-1"
+
+            return (
+              <tr key={order.id}
+                  className="max-md:block max-md:bg-bg-card max-md:border max-md:border-border-soft max-md:rounded-xl max-md:p-4 max-md:mb-3">
+                {/* ออเดอร์ */}
+                <td className={`${td} border-l rounded-l-[10px] max-md:rounded-none max-md:pb-3 max-md:mb-3 max-md:border-b max-md:border-border-soft`}>
+                  <span className="block text-[0.75rem] font-bold text-accent-light mb-0.5">#{order.id.slice(0, 8).toUpperCase()}</span>
+                  <Link href={`/orders/${order.id}`} className="text-[0.65rem] text-accent-light hover:underline">{t("order_details_link")} ›</Link>
+                </td>
+
+                {/* สินค้า */}
+                <td className={`${td} max-md:mb-2.5`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 relative" style={{ background: "linear-gradient(135deg,#141e36,#0d1526)" }}>
+                      <OrderThumb src={getImageUrl(imageUrl)} alt={name} />
+                      {isTrial && <span className="absolute bottom-1 left-1 bg-violet-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase">{t("trial_badge")}</span>}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-[0.82rem] font-bold mb-0.5 truncate">{name}</h4>
+                      <div className="text-[0.68rem] text-text-dim truncate">{isDesktop ? "PC" : "Roblox"} · {isTrial ? t("free_trial") : variantLabel}</div>
                     </div>
                   </div>
-                )}
-              </div>
+                </td>
 
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <h3 className={`text-[13px] md:text-[15px] font-bold transition-colors truncate ${isTrial ? "text-violet-400 group-hover:text-violet-300" : "text-text-base group-hover:text-accent-light"}`}>
-                    {locale === "th" ? order.products.name_th : order.products.name_en}
-                  </h3>
-                  {isTrial && (
-                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 text-[9px] font-bold border border-violet-500/20">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                      </svg>
-                      {t("free_trial")}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-[12px] text-text-muted flex-wrap">
-                  <span>
-                    {isTrial ? (order.is_premium_order ? "Premium Trial" : "Normal Trial") : (
-                      locale === "th"
-                        ? (order.product_variants?.label_th || t("standard_version"))
-                        : (order.product_variants?.label_en || t("standard_version"))
+                {/* ประเภท */}
+                <td className={`${tdInline} max-md:mr-3`}>
+                  <span className={`inline-block px-2.5 py-[3px] rounded-md text-[0.65rem] font-bold border ${
+                    isTrial ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
+                      : isLifetime ? "bg-success/10 text-success border-success/15"
+                        : "bg-accent/[0.12] text-accent-lighter border-accent/15"}`}>
+                    {isTrial ? t("free_trial") : isLifetime ? t("type_lifetime") : t("type_rent")}
+                  </span>
+                  <div className="text-[0.68rem] text-text-dim mt-[3px]">
+                    {isTrial ? "—" : isLifetime ? "Lifetime" : durationDays ? t("days", { days: durationDays }) : variantLabel}
+                  </div>
+                </td>
+
+                {/* ราคา */}
+                <td className={tdInline}>
+                  <div className="text-[0.88rem] font-extrabold">
+                    {isTrial ? "FREE" : `฿${amount.toLocaleString()}`}
+                    {!isTrial && discount > 0 && <span className="line-through text-text-dim text-[0.72rem] font-medium ml-1">฿{(amount + discount).toLocaleString()}</span>}
+                    {!isTrial && discount > 0 && <span className="block text-[0.65rem] text-success font-medium mt-0.5">{t("saved", { amount: discount.toLocaleString() })}</span>}
+                  </div>
+                </td>
+
+                {/* สถานะ */}
+                <td className={`${td} max-md:mt-2.5`}>
+                  <span className={`inline-block px-3 py-1 rounded-md text-[0.68rem] font-bold border ${badgeCls}`}>{statusLabel}</span>
+                  <span className="block text-[0.62rem] text-text-dim mt-[3px]">{statusSub}</span>
+                </td>
+
+                {/* วันที่ */}
+                <td className={`${td} max-md:mt-1`}>
+                  <div className="text-[0.75rem] text-text-muted whitespace-nowrap">
+                    {created ? format(created, "d MMM yyyy", { locale: dateLocale }) : "—"}
+                    <span className="block text-[0.68rem] text-text-dim">{created ? format(created, "HH:mm", { locale: dateLocale }) : ""}{created && locale === "th" ? " น." : ""}</span>
+                  </div>
+                </td>
+
+                {/* จัดการ */}
+                <td className={`${td} border-r rounded-r-[10px] max-md:rounded-none max-md:mt-3 max-md:pt-3 max-md:border-t max-md:border-border-soft`}>
+                  <div className="flex flex-col gap-1.5 min-w-[120px] max-md:flex-row max-md:flex-wrap">
+                    {isPending && (
+                      <button onClick={(e) => handlePay(e, order)} disabled={isPaying}
+                        className={`${btn} bg-accent hover:bg-accent-light text-white disabled:opacity-60 flex items-center justify-center gap-1.5`}>
+                        {isPaying && <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                        {isPaying ? t("wait") : t("pay_now")}
+                      </button>
                     )}
-                  </span>
-                  <span>•</span>
-                  <span>{order.created_at ? format(new Date(order.created_at), "dd MMM yy") : "—"}</span>
-                  {order.whitelisted_username && (
-                    <>
-                      <span>•</span>
-                      <span className={`font-mono ${isTrial ? "text-violet-400" : "text-accent-light"}`}>{order.whitelisted_username}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Right side */}
-              <div className="flex flex-col items-end shrink-0 ml-auto gap-2">
-                <div className="text-right">
-                  <p className={`text-[13px] md:text-[15px] font-bold mb-0.5 ${isTrial ? "text-violet-400" : "text-text-base"}`}>
-                    {isTrial ? "FREE" : `฿${Number(order.amount).toLocaleString()}`}
-                  </p>
-                  <span className={`text-[7px] md:text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
-                    isTrial
-                      ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
-                      : isPaid
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                        : order.status === "expired"
-                          ? "bg-red-500/10 text-red-400 border-red-500/20"
-                          : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                  }`}>
-                    {isTrial ? "Active" : order.status}
-                  </span>
-                </div>
-
-                {isPending && (
-                  <button
-                    onClick={(e) => handlePay(e, order)}
-                    disabled={isPaying}
-                    className="text-[10px] md:text-[11px] font-bold bg-accent hover:bg-accent-light text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-2"
-                  >
-                    {isPaying && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                    {isPaying ? t("wait") : t("pay_now")}
-                  </button>
-                )}
-
-                {/* Game Settings shortcut on card (mobile-friendly) */}
-                {isPaid && hasFunctions && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      router.push(`/orders/${order.id}/settings`)
-                    }}
-                    className="text-[9px] md:text-[10px] font-bold border border-accent/20 text-accent-light/70 hover:text-accent-light hover:border-accent/40 px-2 py-1 rounded-lg transition flex items-center gap-1"
-                  >
-                    <SettingsIcon size={10} />
-                    {t("settings_short")}
-                  </button>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+                    {isPaid && isDesktop && order.products.download_url && (
+                      <a href={order.products.download_url} target="_blank" rel="noopener noreferrer"
+                         className={`${btn} bg-success/[0.12] hover:bg-success/20 text-success border border-success/15`}>
+                        {t("act_download")}
+                      </a>
+                    )}
+                    {isPaid && !isDesktop && (
+                      order.products.info_page_url ? (
+                        <a href={order.products.info_page_url.startsWith("http") ? order.products.info_page_url : `https://${order.products.info_page_url}`}
+                           target="_blank" rel="noopener noreferrer" className={`${btn} bg-accent hover:bg-accent-light text-white`}>
+                          {t("act_play")}
+                        </a>
+                      ) : (
+                        <button onClick={() => setSelectedOrder(order)} className={`${btn} bg-accent hover:bg-accent-light text-white`}>{t("act_play")}</button>
+                      )
+                    )}
+                    {isPaid && hasFunctions && (
+                      <button onClick={() => router.push(`/orders/${order.id}/settings`)}
+                        className={`${btn} border border-border-soft text-text-muted hover:bg-white/[0.03] hover:text-text-base flex items-center justify-center gap-1`}>
+                        <SettingsIcon size={11} />{t("settings_short")}
+                      </button>
+                    )}
+                    {isPaid ? (
+                      <button onClick={() => setSelectedOrder(order)} className={`${btn} border border-border-soft text-text-muted hover:bg-white/[0.03] hover:text-text-base`}>
+                        {t("act_view")}
+                      </button>
+                    ) : (
+                      <Link href={`/orders/${order.id}`} className={`${btn} border border-border-soft text-text-muted hover:bg-white/[0.03] hover:text-text-base`}>
+                        {t("act_view")}
+                      </Link>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
 
       {/* ── Order Detail Modal — portaled to body, see mounted state above ── */}
       {mounted && createPortal(
@@ -573,4 +623,17 @@ function DownloadIcon({ size = 20, className = "" }: { size?: number; className?
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   )
+}
+
+// รูปย่อสินค้าในตาราง — ถ้ารูปพัง/ไม่มีไฟล์ ให้แสดงไอคอนกรอบตามดีไซน์แทน alt text
+function OrderThumb({ src, alt }: { src: string; alt: string }) {
+  const [broken, setBroken] = useState(!src)
+  if (broken) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center text-border-light">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="3" y="3" width="18" height="18" rx="2" /></svg>
+      </div>
+    )
+  }
+  return <Image src={src} alt={alt} fill sizes="56px" className="object-cover" onError={() => setBroken(true)} />
 }

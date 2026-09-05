@@ -16,6 +16,8 @@ type Order = any
 
 const TABS = ["all", "pending", "paid", "cancelled"] as const
 type Tab = (typeof TABS)[number]
+// แบ่งหน้าฝั่ง client ตามดีไซน์ (« 1 2 3 … 10 ») — ออเดอร์ทั้งหมดโหลดมาแล้วจาก server อยู่แล้ว
+const PAGE_SIZE = 10
 
 function tabOf(o: Order): Exclude<Tab, "all"> {
   if (o.status === "paid") return "paid"
@@ -30,6 +32,7 @@ export default function OrdersDashboard({
   const { data: session } = useSession()
   const [tab, setTab] = useState<Tab>("all")
   const [kind, setKind] = useState<"all" | "rent" | "lifetime">("all")
+  const [page, setPage] = useState(1)
 
   const counts = useMemo(() => {
     const c = { all: orders.length, pending: 0, paid: 0, cancelled: 0 }
@@ -50,8 +53,23 @@ export default function OrdersDashboard({
     })
   }, [orders, tab, kind])
 
+  // หน้าปัจจุบัน (กันเลยขอบเมื่อสลับแท็บแล้วจำนวนหน้าลดลง)
+  const totalPages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE))
+  const cur = Math.min(page, totalPages)
+  const pageItems = shown.slice((cur - 1) * PAGE_SIZE, cur * PAGE_SIZE)
+  // เลขหน้าที่โชว์: หน้าแรก / หน้าสุดท้าย / รอบๆ หน้าปัจจุบัน ที่เหลือเป็น "…"
+  const pageList: (number | "dots")[] = []
+  for (let p = 1; p <= totalPages; p++) {
+    if (p === 1 || p === totalPages || Math.abs(p - cur) <= 1) pageList.push(p)
+    else if (pageList[pageList.length - 1] !== "dots") pageList.push("dots")
+  }
+
   const name = session?.user?.name || t("member")
   const initial = (name || "A").trim()[0]?.toUpperCase() ?? "A"
+
+  const pageBtn = (active: boolean) =>
+    `w-8 h-8 sm:w-9 sm:h-9 rounded-lg border flex items-center justify-center text-[0.72rem] sm:text-[0.8rem] font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none ${
+      active ? "bg-accent border-accent text-white" : "border-border-soft text-text-muted hover:border-border-light hover:text-text-base"}`
 
   const navItem = (href: string, label: string, icon: React.ReactNode, active = false) => (
     <li>
@@ -79,7 +97,7 @@ export default function OrdersDashboard({
         </div>
 
         <ul className="bg-bg-card border border-border-soft rounded-[14px] p-2 list-none">
-          {navItem("/orders", t("title"), (
+          {navItem("/orders", t("my_orders"), (
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" />
             </svg>), true)}
@@ -117,12 +135,12 @@ export default function OrdersDashboard({
 
       {/* ── MAIN ── */}
       <main className="min-w-0">
-        <h1 className="text-[1.2rem] sm:text-[1.5rem] font-black mb-5">{t("title")}</h1>
+        <h1 className="text-[1.2rem] sm:text-[1.5rem] font-black mb-5">{t("my_orders")}</h1>
 
         {/* แท็บสถานะ */}
         <div className="flex gap-1 mb-5 border-b border-border-soft overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {TABS.map((k) => (
-            <button key={k} onClick={() => setTab(k)}
+            <button key={k} onClick={() => { setTab(k); setPage(1) }}
               className={`px-4 sm:px-[18px] py-3 text-[0.82rem] font-semibold whitespace-nowrap relative transition-colors ${
                 tab === k ? "text-accent-light" : "text-text-dim hover:text-text-muted"}`}>
               {t(`tab_${k}`)}
@@ -133,10 +151,10 @@ export default function OrdersDashboard({
         </div>
 
         {/* แถบเครื่องมือ */}
-        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <span className="text-[0.82rem] text-text-dim">{t("showing", { shown: shown.length, total: orders.length })}</span>
-          <select value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}
-                  className="px-3.5 py-2 rounded-lg border border-border-soft bg-bg-card text-text-muted text-[0.8rem] outline-none focus:border-accent transition-colors">
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap max-md:flex-col max-md:items-start max-md:gap-2.5">
+          <span className="text-[0.82rem] text-text-dim">{t("showing", { shown: pageItems.length, total: shown.length })}</span>
+          <select value={kind} onChange={(e) => { setKind(e.target.value as typeof kind); setPage(1) }}
+                  className="px-3.5 py-2 rounded-lg border border-border-soft bg-bg-card text-text-muted text-[0.8rem] outline-none focus:border-accent transition-colors max-md:w-full">
             <option value="all">{t("kind_all")}</option>
             <option value="rent">{t("kind_rent")}</option>
             <option value="lifetime">{t("kind_lifetime")}</option>
@@ -151,7 +169,24 @@ export default function OrdersDashboard({
             </Link>
           </div>
         ) : (
-          <OrderListClient orders={shown} livegenEnabled={livegenEnabled} />
+          <>
+            <OrderListClient orders={pageItems} livegenEnabled={livegenEnabled} />
+
+            {/* แบ่งหน้า — ปุ่ม 36px (32px บนจอเล็ก) ตามดีไซน์ */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-1 sm:gap-1.5 mt-6">
+                <button onClick={() => setPage(Math.max(1, cur - 1))} disabled={cur === 1} aria-label="previous page" className={pageBtn(false)}>«</button>
+                {pageList.map((p, i) =>
+                  p === "dots" ? (
+                    <span key={`dots-${i}`} className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[0.72rem] sm:text-[0.8rem] font-semibold text-text-dim">…</span>
+                  ) : (
+                    <button key={p} onClick={() => setPage(p)} className={pageBtn(p === cur)}>{p}</button>
+                  ),
+                )}
+                <button onClick={() => setPage(Math.min(totalPages, cur + 1))} disabled={cur === totalPages} aria-label="next page" className={pageBtn(false)}>»</button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
