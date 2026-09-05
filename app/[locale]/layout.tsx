@@ -1,7 +1,7 @@
 import "../globals.css"
 import Providers from "@/components/home/Providers"
 import PageTracker from "@/components/PageTracker"
-import { Rajdhani, DM_Sans } from "next/font/google"
+import { Inter, Noto_Sans_Thai } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages, setRequestLocale } from "next-intl/server"
 import { routing } from "@/i18n/routing"
@@ -36,16 +36,19 @@ export const metadata: Metadata = {
   },
 }
 
-const rajdhani = Rajdhani({
+// ดีไซน์ใหม่ใช้ Inter คู่กับ Noto Sans Thai ทั้งเว็บ (ไม่แยก display/body)
+// ตัวแปร --font-display / --font-body ยังคงชื่อเดิมใน globals.css เพราะ
+// component เก่าอ้างถึงอยู่ — แค่ชี้ไปที่ฟอนต์คู่ใหม่แทน
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["500", "700"],
-  variable: "--font-display",
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-sans",
 })
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500"],
-  variable: "--font-body",
+const notoThai = Noto_Sans_Thai({
+  subsets: ["thai"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-thai",
 })
 
 export function generateStaticParams() {
@@ -71,7 +74,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${rajdhani.variable} ${dmSans.variable}`}
+      className={`${inter.variable} ${notoThai.variable}`}
       suppressHydrationWarning
     >
       <body suppressHydrationWarning>

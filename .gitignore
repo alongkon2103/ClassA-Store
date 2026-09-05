@@ -55,3 +55,6 @@ public/slips/
 
 # Desktop plugin jars (uploaded at runtime, not in git)
 /storage/
+
+# ไฟล์ดีไซน์ต้นแบบ (HTML mockup) — ใช้อ้างอิงตอนย้ายเข้า Next.js เท่านั้น
+NewDesign/

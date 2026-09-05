@@ -132,7 +132,23 @@
     "join_discord_button": "เข้าร่วมเซิร์ฟเวอร์ Discord",
     "feature_alerts": "แจ้งเตือนสินค้าใหม่",
     "feature_deals": "ดีลสุดพิเศษ",
-    "feature_support": "ซัพพอร์ต 24/7"
+    "feature_support": "ซัพพอร์ต 24/7",
+    "hero_badge": "อัปเดตใหม่",
+    "hero_rent": "เช่าเกม",
+    "hero_buy": "ซื้อถาวร",
+    "hero_from": "เริ่มต้น",
+    "trust_secure_t": "ปลอดภัย 100%",
+    "trust_secure_d": "ระบบชำระเงินปลอดภัย",
+    "trust_instant_t": "เข้าเล่นได้ทันที",
+    "trust_instant_d": "หลังจากชำระเงินเรียบร้อย",
+    "trust_update_t": "อัปเดตสม่ำเสมอ",
+    "trust_update_d": "ได้เล่นเวอร์ชันล่าสุดเสมอ",
+    "trust_support_t": "ซัพพอร์ต 24/7",
+    "trust_support_d": "พร้อมช่วยเหลือทุกเวลา",
+    "promo_1": "เกมใหม่เปิดให้บริการแล้ว!",
+    "promo_2": "สมาชิกใหม่รับส่วนลดทันที",
+    "promo_3": "ดีลพิเศษประจำเดือน อย่าพลาด",
+    "buy_short": "ซื้อ"
   },
   "Footer": {
     "rights": "© 2026 A Class Store · ชำระเงินปลอดภัยผ่าน Stripe"

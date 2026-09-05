@@ -132,7 +132,23 @@
     "join_discord_button": "Join Discord Server",
     "feature_alerts": "New product alerts",
     "feature_deals": "Exclusive deals",
-    "feature_support": "24/7 support"
+    "feature_support": "24/7 support",
+    "hero_badge": "New Update",
+    "hero_rent": "Rent",
+    "hero_buy": "Buy Forever",
+    "hero_from": "from",
+    "trust_secure_t": "100% Secure",
+    "trust_secure_d": "Safe payment system",
+    "trust_instant_t": "Instant Access",
+    "trust_instant_d": "Right after payment",
+    "trust_update_t": "Regular Updates",
+    "trust_update_d": "Always the latest version",
+    "trust_support_t": "24/7 Support",
+    "trust_support_d": "We're here anytime",
+    "promo_1": "New games available now!",
+    "promo_2": "New members get an instant discount",
+    "promo_3": "Special deals this month — don't miss out",
+    "buy_short": "Buy"
   },
   "Footer": {
     "rights": "© 2026 A Class Store · Payments secured by Stripe"

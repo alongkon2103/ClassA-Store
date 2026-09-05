@@ -25,25 +25,35 @@
 .prose .text-right { text-align: right; }
 
 :root {
-  --color-accent: #427ab5;
-  --color-accent-light: #5b93cc;
-  --color-bg-base: #07101a;
-  --color-bg-surface: #0a1520;
-  --color-bg-card: #0d1e2e;
-  --color-text-base: #eef3f9;
-  --color-text-muted: #7a9bb8;
-  --color-gold: #f0c060;
-  --color-gold-text: #1a0e00;
-  --color-stock-low: #e0904a;
+  --color-accent: #2563eb;
+  --color-accent-light: #3b82f6;
+  --color-accent-lighter: #60a5fa;
+  --color-accent-glow: rgba(37, 99, 235, 0.3);
+  --color-accent-glow-strong: rgba(37, 99, 235, 0.5);
+  --color-bg-base: #060a14;
+  --color-bg-surface: #0c1225;
+  --color-bg-card: #111827;
+  --color-bg-card-hover: #162035;
+  --color-text-base: #f1f5f9;
+  --color-text-muted: #94a3b8;
+  /* ระดับที่สามของตัวหนังสือในดีไซน์ใหม่ (จาง/รอง) */
+  --color-text-dim: #64748b;
+  --color-gold: #facc15;
+  --color-gold-text: #1a1400;
+  --color-hot: #ef4444;
+  --color-stock-low: #f59e0b;
   --color-discord: #5865f2;
-  --color-border-soft: rgba(66, 122, 181, .20);
-  --color-border-hover: rgba(91, 147, 204, .45);
-  --color-success: #3ecf8e;
-  --color-success-bg: rgba(62, 207, 142, .10);
-  --color-overlay: rgba(4, 10, 18, 0.85);
+  --color-border-soft: #1e293b;
+  --color-border-light: #2d3b52;
+  --color-border-hover: #2d3b52;
+  --color-success: #22c55e;
+  --color-success-bg: rgba(34, 197, 94, .10);
+  --color-overlay: rgba(3, 6, 15, 0.85);
   --color-shadow: rgba(0, 0, 0, 0.6);
-  --color-navbar-bg: rgba(7, 16, 26, 0.9);
-  --color-bg-input: #07101a;
+  --color-navbar-bg: rgba(6, 10, 20, 0.9);
+  --color-bg-input: #0c1225;
+  --radius-card: 10px;
+  --radius-card-lg: 14px;
 
   /* Theme-aware tints used in place of hardcoded rgba(255,255,255,N).
      In dark mode these are subtle white overlays; in light mode they become
@@ -65,7 +75,7 @@
      grays give sharper contrast and a more standard document feel. */
   --color-text-base: #333333;
   --color-text-muted: #4a4a4a;
-  --color-gold: #b45309;
+  --color-gold: #a16207;
   --color-border-soft: rgba(0, 0, 0, 0.12);
   --color-border-hover: rgba(66, 122, 181, 0.4);
   /* Modal/backdrop must stay dark in light mode too — a white backdrop would
@@ -77,7 +87,15 @@
   /* Brand accent stays at the original blue in both themes — primary buttons,
      gradients, and icons read the same way in dark and light. Only accent-light
      gets a darker variant for text use on white. */
-  --color-accent-light: #2c5d94;
+  --color-accent-light: #1d4ed8;
+  --color-accent-lighter: #2563eb;
+  --color-accent-glow: rgba(37, 99, 235, 0.14);
+  --color-accent-glow-strong: rgba(37, 99, 235, 0.22);
+  --color-bg-card-hover: #f8fafc;
+  --color-text-dim: #64748b;
+  --color-hot: #dc2626;
+  --color-border-light: rgba(15, 23, 42, 0.14);
+  --color-border-hover: rgba(37, 99, 235, 0.4);
   --color-success: #047857;
   --color-success-bg: rgba(4, 120, 87, 0.10);
   --color-stock-low: #b45309;
@@ -176,10 +194,17 @@
   --color-gold: var(--color-gold);
   --color-gold-text: var(--color-gold-text);
   --color-discord: var(--color-discord);
+  --color-accent-lighter: var(--color-accent-lighter);
+  --color-bg-card-hover: var(--color-bg-card-hover);
+  --color-text-dim: var(--color-text-dim);
+  --color-hot: var(--color-hot);
+  --color-success: var(--color-success);
+  --color-border-soft: var(--color-border-soft);
+  --color-border-light: var(--color-border-light);
 
   /* Fonts - using variables from next/font */
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
+  --font-display: var(--font-sans), var(--font-thai), sans-serif;
+  --font-body: var(--font-sans), var(--font-thai), sans-serif;
 }
 
 body {
@@ -191,8 +216,8 @@ body {
 
 .grid-bg {
   background-image:
-    linear-gradient(rgba(66, 122, 181, .05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(66, 122, 181, .05) 1px, transparent 1px);
+    linear-gradient(rgba(37, 99, 235, .06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, .06) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
@@ -357,3 +382,20 @@ body {
   background: rgba(140, 145, 160, 0.6);
   background-clip: content-box;
 }
+
+/* ═══ ดีไซน์ใหม่ ═══ */
+/* จุดกะพริบบน badge ของ hero */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+.animate-pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+/* แถบโปรโมชั่นเลื่อนต่อเนื่อง — track ถูกทำซ้ำ 2 ชุด เลยเลื่อน -50% แล้ววนใหม่
+   ทำให้ดูไหลไม่มีรอยต่อ */
+@keyframes promo-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-promo { animation: promo-scroll 30s linear infinite; }
+.promo-wrap:hover .animate-promo { animation-play-state: paused; }

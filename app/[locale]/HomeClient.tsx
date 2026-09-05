@@ -5,12 +5,13 @@ import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import Hero from "@/components/home/Hero"
 import JoinDc from "@/components/home/JoinDc"
-import Driver from "@/components/home/Driver"
+import TrustBar from "@/components/home/TrustBar"
+import PromoMarquee from "@/components/home/PromoMarquee"
 import BestSeller, { type Product } from "@/components/home/BestSeller"
 import ProductModal from "@/components/products/ProductModal"
 import { AnimatePresence } from "framer-motion"
 
-export default function HomeClient({ products }: { products: Product[] }) {
+export default function HomeClient({ products, usdRate }: { products: Product[]; usdRate?: number | null }) {
   const [selected, setSelected] = useState<Product | null>(null)
 
   return (
@@ -18,12 +19,12 @@ export default function HomeClient({ products }: { products: Product[] }) {
       <Navbar />
 
       <main className="flex-1 layer-base">
-        <Hero />
-        <Driver />
+        <Hero products={products} onSelect={(p) => setSelected(p)} />
+        <TrustBar />
+        <PromoMarquee />
         <div className="layer-content">
-          <BestSeller products={products} onSelect={(p) => setSelected(p)} />
+          <BestSeller products={products} onSelect={(p) => setSelected(p)} usdRate={usdRate} />
         </div>
-        <Driver />
         <JoinDc />
       </main>
       

@@ -5,6 +5,7 @@ export const revalidate = 60;
 
 import HomeClient from "./HomeClient"
 import { prisma } from "@/lib/prisma"
+import { getThbToUsdRate } from "@/lib/paypal"
 import { setRequestLocale } from "next-intl/server";
 
 export default async function Home({
@@ -51,5 +52,7 @@ export default async function Home({
   })),
 }))
 
-  return <HomeClient products={products} />
+  const usdRate = await getThbToUsdRate()
+
+  return <HomeClient products={products} usdRate={usdRate} />
 }

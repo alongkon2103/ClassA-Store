@@ -1,11 +1,10 @@
 "use client"
 
 import { motion } from "framer-motion"
-import Link from "next/link"
-import ProductCard from "./ProductCard"
+import { Link } from "@/i18n/routing"
+import GameCard from "@/components/GameCard"
 import { useTranslations, useLocale } from "next-intl"
 import { useAutoDiscounts } from "@/lib/useAutoDiscounts"
-
 
 type Variant = {
   id: string
@@ -13,12 +12,16 @@ type Variant = {
   label_en: string
   price: number
   stock: number
+  duration_type?: string | null
 }
 
 export type Product = {
   id: string
   name_th: string
   name_en: string
+  description_th?: string | null
+  description_en?: string | null
+  type?: string | null
   price: number
   preview_video_url?: string | null
   isLower?: boolean | null
@@ -30,109 +33,73 @@ export type Product = {
 type Props = {
   products: Product[]
   onSelect?: (product: Product) => void
+  usdRate?: number | null
 }
 
-export default function BestSeller({ products, onSelect }: Props) {
+/** ตัดแท็ก HTML ออกจาก description ให้เหลือข้อความล้วนสำหรับย่อ 2 บรรทัดบนการ์ด */
+function plain(html: string | null | undefined, max = 90) {
+  if (!html) return ""
+  const t = html.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim()
+  return t.length > max ? `${t.slice(0, max).trimEnd()}…` : t
+}
+
+export default function BestSeller({ products, onSelect, usdRate }: Props) {
   const t = useTranslations("Home")
   const locale = useLocale()
-  // Personalised strikethrough prices — one fetch for the whole row.
+  const isTH = locale === "th"
   const { bestDiscountedPrice } = useAutoDiscounts()
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  }
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  }
-
   return (
-    <section className="bg-bg-surface px-6 sm:px-10 py-20">
-      <div className="max-w-5xl mx-auto">
-        <motion.p
-          initial={{ opacity: 0, x: -10 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          className="text-[11px] tracking-widest text-accent-light uppercase font-medium mb-2"
-        >
-          {t("top_sellers")}
-        </motion.p>
+    <section className="max-w-[1248px] mx-auto px-6 mb-12">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-[1.25rem] font-extrabold">{t("best_selling_keys")}</h2>
+        <Link href="/products" className="group text-accent-light text-[0.85rem] font-semibold inline-flex items-center gap-1.5 hover:gap-2.5 transition-all">
+          {t("view_all")}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+          </svg>
+        </Link>
+      </div>
 
-        <motion.h2
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="font-display font-bold text-text-base mb-1"
-          style={{ fontSize: "clamp(26px, 4vw, 38px)" }}
-        >
-          {t("best_selling_keys")}
-        </motion.h2>
+      <motion.div
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true }}
+        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
+        className="grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4"
+      >
+        {products.length > 0 ? (
+          products.map((p) => {
+            // ราคาที่โชว์ = variant ถูกสุด ถ้ามีโค้ดลดอัตโนมัติก็โชว์ราคาเดิมขีดฆ่าไว้
+            const cheapest = p.product_variants.length
+              ? p.product_variants.reduce((a, b) => (a.price <= b.price ? a : b))
+              : null
+            const base = cheapest ? Number(cheapest.price) : Number(p.price)
+            const deal = cheapest ? bestDiscountedPrice(p.id, base) : null
+            const hasDeal = deal != null && deal < base
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-          className="text-text-muted text-[13px] mb-8"
-        >
-          {t("updated_daily")}
-        </motion.p>
-
-        <motion.div
-          variants={container}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3"
-        >
-          {products.length > 0 ? (
-            products.map((product) => (
-              <motion.div key={product.id} variants={item}>
-                <ProductCard
-                  name={locale === "th" ? product.name_th : product.name_en}
-                  price={Number(product.price)}
-                  image={product.product_images?.[0]?.url || "/placeholder.png"}
-                  previewVideo={product.preview_video_url}
-                  is_low={product.isLower ?? false}
-                  badge={product.is_featured ? "Hot" : undefined}
-                  product_variants={product.product_variants.map((v) => ({
-                    ...v,
-                    label: locale === "th" ? v.label_th : v.label_en,
-                    discounted_price: bestDiscountedPrice(product.id, Number(v.price)),
-                  }))}
-                  onClick={() => onSelect?.(product)}
+            return (
+              <motion.div key={p.id} variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0 } }}>
+                <GameCard
+                  name={isTH ? p.name_th : p.name_en}
+                  description={plain(isTH ? p.description_th : p.description_en)}
+                  image={p.product_images?.[0]?.url}
+                  previewVideo={p.preview_video_url}
+                  platform={p.type === "desktop_program" ? "PC" : "Roblox"}
+                  badge={p.is_featured ? { text: "HOT", kind: "hot" } : null}
+                  price={hasDeal ? (deal as number) : base}
+                  oldPrice={hasDeal ? base : null}
+                  usdRate={usdRate}
+                  buyLabel={t("buy_short")}
+                  onClick={() => onSelect?.(p)}
                 />
               </motion.div>
-            ))
-          ) : (
-            <div className="col-span-full text-center py-10 text-text-muted text-sm">
-              {t("no_featured")}
-            </div>
-          )}
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.5 }}
-          className="flex justify-center mt-7"
-        >
-          <Link
-            href="/products"
-            className="border border-accent/20 hover:border-accent-light text-text-muted hover:text-text-base text-[13px] px-6 py-2.5 rounded-lg transition-colors"
-          >
-            {t("view_all")}
-          </Link>
-        </motion.div>
-      </div>
+            )
+          })
+        ) : (
+          <div className="col-span-full text-center py-10 text-text-muted text-sm">{t("no_featured")}</div>
+        )}
+      </motion.div>
     </section>
   )
 }
