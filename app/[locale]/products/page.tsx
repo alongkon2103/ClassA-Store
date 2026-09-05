@@ -127,6 +127,8 @@ function normalizePartner(pp: any, fallbackRate: number) {
         slug: pp.external_slug,
         name_th: pp.name_th,
         name_en: pp.name_en,
+        description_th: pp.description_html_th ?? pp.short_desc_th ?? null,
+        description_en: pp.description_html_en ?? pp.short_desc_en ?? null,
         price: Number(pp.price_from_thb ?? 0),
         commission_pct: Number(pp.commission_pct ?? 0),
         is_featured: false,
