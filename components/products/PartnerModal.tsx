@@ -5,6 +5,7 @@
 // OUT to the partner's store (with our ref). No checkout happens here.
 
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { motion } from "framer-motion"
 import { useTranslations, useLocale } from "next-intl"
 
@@ -59,7 +60,9 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
 
   const videoThumb = video?.thumbnail_url || (video?.video_id ? `https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg` : "")
 
-  return (
+  // เรนเดอร์ผ่าน portal ไปที่ body — กัน ancestor ที่มี transform/filter
+  // ทำให้ position:fixed กลายเป็นอ้างอิงกล่องนั้นแทน viewport (modal จะหลุดจอ)
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:p-5"
@@ -190,5 +193,7 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
         </div>
       </motion.div>
     </motion.div>
+    ,
+    document.body,
   )
 }

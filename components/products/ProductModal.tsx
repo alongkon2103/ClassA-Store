@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
+import { createPortal } from "react-dom"
 import { useSession } from "next-auth/react"
 import { Link, useRouter } from "@/i18n/routing"
 import { motion, AnimatePresence } from "framer-motion"
@@ -725,7 +726,9 @@ export default function ProductModal({ product, onClose }: any) {
 
   const productDesc = isTH ? (product.description_th || product.description_en) : product.description_en
 
-  return (
+  // เรนเดอร์ผ่าน portal ไปที่ body — กัน ancestor ที่มี transform/filter
+  // ทำให้ position:fixed กลายเป็นอ้างอิงกล่องนั้นแทน viewport (modal จะหลุดจอ)
+  return createPortal(
     <div className="relative">
       <AnimatePresence>
         {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
@@ -748,91 +751,46 @@ export default function ProductModal({ product, onClose }: any) {
       >
         <motion.div
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-          className="w-full bg-bg-card border border-accent/20 rounded-t-2xl sm:rounded-2xl max-h-[92vh] sm:max-w-2xl overflow-y-auto custom-scrollbar"
+          className="w-full bg-bg-card border border-border-soft rounded-t-2xl sm:rounded-[18px] max-h-[92vh] sm:max-w-[480px] overflow-y-auto custom-scrollbar"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* IMAGE SLIDER */}
-          <div className="relative aspect-video bg-bg-base overflow-hidden" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-            <div className="flex h-full transition-transform duration-300" style={{ transform: `translateX(-${index * 100}%)` }}>
-              {images.map((img: ProductImage, i: number) => (
-                <img key={i} src={getImageUrl(img.url)} alt="" className="min-w-full h-full object-cover" />
-              ))}
-              {youtubeEmbedUrl && (
-                <div className="min-w-full h-full bg-black flex items-center justify-center">
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    src={`${youtubeEmbedUrl}?rel=0&modestbranding=1`}
-                    title="YouTube video player"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-              )}
-            </div>
-            <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center transition">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          {/* หัวเรื่อง + ปุ่มปิด (ตามดีไซน์ modal ยืนยันการสั่งซื้อ) */}
+          <div className="flex items-center justify-between px-6 sm:px-7 pt-6">
+            <h2 className="text-lg font-extrabold">{t("confirm_title")}</h2>
+            <button
+              onClick={onClose}
+              aria-label="close"
+              className="w-9 h-9 rounded-[10px] border border-border-soft text-text-muted flex items-center justify-center hover:bg-white/[0.05] hover:text-text-base transition"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
-            {total > 1 && (
-              <>
-                <button onClick={prev} disabled={index === 0} className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white disabled:opacity-30">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
-                </button>
-                <button onClick={next} disabled={index === total - 1} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white disabled:opacity-30">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-                </button>
-              </>
-            )}
           </div>
 
-          {/* {total > 1 && (
-            <div className="flex gap-2 px-4 py-3 bg-bg-base border-b border-white/5 overflow-x-auto scrollbar-none">
-              {images.map((img: ProductImage, i: number) => (
-                <button key={i} onClick={() => setIndex(i)} className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${i === index ? "ring-2 ring-accent opacity-100" : "opacity-40"}`}>
-                  <img src={getImageUrl(img.url)} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-              {youtubeEmbedUrl && (
-                <button 
-                  onClick={() => setIndex(images.length)} 
-                  className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all bg-black flex items-center justify-center ${index === images.length ? "ring-2 ring-accent opacity-100" : "opacity-40"}`}
-                >
-                   <svg width="24" height="24" viewBox="0 0 24 24" fill="red" stroke="red" strokeWidth="1"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2c.46-1.7.46-5.33.46-5.33a29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="white"/></svg>
-                </button>
-              )}
+          {/* สรุปสินค้า: รูปเล็ก + ชื่อ + แพ็กเกจที่เลือก + ราคา */}
+          <div className="px-6 sm:px-7 pt-6">
+            <div className="flex items-center gap-3.5 p-4 bg-bg-surface rounded-xl">
+              <img
+                src={getImageUrl(images[0].url)}
+                alt=""
+                className="w-14 h-14 rounded-[10px] object-cover shrink-0"
+              />
+              <div className="min-w-0">
+                <h3 className="text-[0.88rem] font-bold mb-0.5 truncate">
+                  {isTH ? product.name_th : product.name_en}
+                </h3>
+                <p className="text-xs text-text-dim truncate">
+                  {selectedVariant ? (isTH ? selectedVariant.label_th : selectedVariant.label_en) : "—"}
+                </p>
+              </div>
+              <div className="ml-auto text-lg font-extrabold shrink-0">
+                {isTH ? `฿${totalPrice.toLocaleString()}` : `$${totalPriceUSD || "0.00"}`}
+              </div>
             </div>
-          )} */}
+          </div>
 
-          {total > 1 && (
-            <div className="flex gap-2 px-4 py-3 bg-bg-base border-b border-white/5 overflow-x-auto scrollbar-none">
-              {images.map((img: ProductImage, i: number) => (
-                <button key={i} onClick={() => setIndex(i)} className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${i === index ? "ring-2 ring-accent opacity-100" : "opacity-40"}`}>
-                  <img src={getImageUrl(img.url)} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-              {youtubeEmbedUrl && (() => {
-                const videoId = youtubeEmbedUrl.split("/embed/")[1]?.split("?")[0]
-                const thumbUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
-                return (
-                  <button
-                    onClick={() => setIndex(images.length)}
-                    className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all ${index === images.length ? "ring-2 ring-accent opacity-100" : "opacity-40"}`}
-                  >
-                    <img src={thumbUrl} alt="YouTube thumbnail" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="red" stroke="none">
-                        <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2c.46-1.7.46-5.33.46-5.33a29 29 0 0 0-.46-5.33z" />
-                        <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="white" />
-                      </svg>
-                    </div>
-                  </button>
-                )
-              })()}
-            </div>
-          )}
-
-          <div className="p-5 space-y-4">
+          <div className="px-6 sm:px-7 py-6 space-y-5">
             {/* Description is Tiptap-generated HTML — render through prose so
                 headings, lists, links, tables come out styled. Trusted source:
                 only admins can author it. */}
@@ -1074,91 +1032,59 @@ export default function ProductModal({ product, onClose }: any) {
                 method in /admin/settings). Fee label is read from settings,
                 not hardcoded, so a "+6%" Stripe badge becomes "+3%" the moment
                 the admin changes the value. */}
-            <div className="space-y-2">
-              <p className="text-[11px] tracking-widest text-text-muted uppercase">{t("payment_method")}</p>
-              <div className="flex items-stretch gap-2">
-                <div className="flex-1 px-4 py-3 bg-accent/10 border border-accent/30 rounded-xl">
-                  <p className="text-[14px] font-semibold leading-tight">
-                    {paymentMethod === "promptpay"
-                      ? t("promptpay_label")
-                      : paymentMethod === "paypal"
-                        ? t("paypal_label")
-                        : paymentMethod === "paypal_me"
-                          ? t("paypal_me_label")
-                          : t("stripe_label")}
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-1 text-[11px]">
-                    <span
-                      className={`font-medium ${
-                        paymentMethod === "promptpay"
-                          ? "text-green-400"
-                          : paymentMethod === "paypal"
-                            ? "text-blue-400"
-                            : paymentMethod === "paypal_me"
-                              ? "text-sky-400"
-                              : "text-orange-400"
-                      }`}
-                    >
-                      {activeFeePct > 0
-                        ? t("fee_plus", { pct: activeFeePct })
-                        : t("fee_zero")}
-                    </span>
-                    {paymentMethod === "promptpay" && (
-                      <span className="text-text-muted">· {t("promptpay_note")}</span>
-                    )}
-                    {paymentMethod === "paypal" && (
-                      <span className="text-text-muted">· {t("paypal_note")}</span>
-                    )}
-                    {paymentMethod === "paypal_me" && (
-                      <span className="text-text-muted">· {t("paypal_me_note")}</span>
-                    )}
-                  </div>
-                </div>
-                {(() => {
-                  // Cycle through ENABLED methods only, in card → promptpay → paypal
-                  // order. If only one method is enabled, the button is hidden
-                  // (no point swapping).
-                  const order: (typeof paymentMethod)[] = ["card", "promptpay", "paypal", "paypal_me"]
-                  const enabled = order.filter((m) => paymentConfig[m]?.enabled)
-                  if (enabled.length <= 1) return null
-                  const idx = enabled.indexOf(paymentMethod)
-                  const nextMethod = enabled[(idx + 1) % enabled.length]
-                  const swapTooltip =
-                    nextMethod === "promptpay"
-                      ? t("swap_to_promptpay")
-                      : nextMethod === "paypal"
-                        ? t("swap_to_paypal")
-                        : nextMethod === "paypal_me"
-                          ? t("swap_to_paypal_me")
-                          : t("swap_to_card")
-                  return (
-                    <div className="relative group/swap shrink-0">
+            {/* ช่องทางชำระเงิน — การ์ดเลือกได้ตามดีไซน์
+                แสดงเฉพาะช่องทางที่แอดมินเปิดไว้ และ % ค่าธรรมเนียมอ่านจาก settings
+                ไม่ได้ hardcode ถ้าแอดมินแก้เป็น 3% ป้ายจะเปลี่ยนตามทันที */}
+            <div>
+              <label className="text-[0.88rem] font-bold mb-3 block">{t("payment_method")}</label>
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                {(["card", "promptpay", "paypal", "paypal_me"] as const)
+                  .filter((m) => paymentConfig[m]?.enabled)
+                  .map((m) => {
+                    const on = paymentMethod === m
+                    const fee = paymentConfig[m]?.fee_pct ?? 0
+                    const label =
+                      m === "promptpay" ? t("promptpay_label")
+                        : m === "paypal" ? t("paypal_label")
+                          : m === "paypal_me" ? t("paypal_me_label")
+                            : t("stripe_label")
+                    const icon =
+                      m === "promptpay" ? (<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></>)
+                        : m === "card" ? (<><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></>)
+                          : (<><circle cx="12" cy="12" r="10" /><path d="M8 12h8M12 8v8" /></>)
+                    return (
                       <button
+                        key={m}
                         type="button"
-                        onClick={() => setPaymentMethod(nextMethod)}
-                        aria-label={swapTooltip}
-                        className="w-11 h-full min-h-[64px] flex items-center justify-center bg-bg-base/60 hover:bg-accent/10 border border-white/10 hover:border-accent/30 text-text-muted hover:text-accent-light rounded-xl transition-colors"
+                        onClick={() => setPaymentMethod(m)}
+                        className={`flex-1 p-4 rounded-xl border-2 text-center relative transition ${
+                          on
+                            ? "border-accent bg-accent/[0.04] shadow-[0_0_0_1px_rgba(37,99,235,0.15)]"
+                            : "border-border-soft bg-bg-base hover:border-border-light hover:bg-white/[0.02]"
+                        }`}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="17 1 21 5 17 9" />
-                          <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-                          <polyline points="7 23 3 19 7 15" />
-                          <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-                        </svg>
-                      </button>
-                      <div
-                        role="tooltip"
-                        className="pointer-events-none absolute bottom-full right-0 mb-2 z-50 w-max max-w-[260px] px-3 py-2 rounded-lg bg-bg-card border border-accent/40 shadow-xl text-[12px] leading-snug text-text-base opacity-0 group-hover/swap:opacity-100 transition-opacity duration-150"
-                      >
-                        {swapTooltip}
+                        {on && (
+                          <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-accent flex items-center justify-center">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </span>
+                        )}
                         <span
-                          aria-hidden="true"
-                          className="absolute top-full right-4 -mt-1 w-2 h-2 bg-bg-card border-r border-b border-accent/40 rotate-45"
-                        />
-                      </div>
-                    </div>
-                  )
-                })()}
+                          className="w-10 h-10 rounded-[10px] flex items-center justify-center mx-auto mb-2.5 text-accent-light border border-accent/[0.12]"
+                          style={{ background: "linear-gradient(135deg,rgba(37,99,235,0.10),rgba(37,99,235,0.04))" }}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            {icon}
+                          </svg>
+                        </span>
+                        <div className="text-[0.78rem] font-bold mb-0.5">{label}</div>
+                        <div className={`text-[0.68rem] ${fee > 0 ? "text-text-dim" : "text-success font-semibold"}`}>
+                          {fee > 0 ? t("fee_plus", { pct: fee }) : t("fee_zero")}
+                        </div>
+                      </button>
+                    )
+                  })}
               </div>
             </div>
 
@@ -1338,7 +1264,7 @@ export default function ProductModal({ product, onClose }: any) {
                 )}
               </div>
               <button disabled={loading} onClick={handleBuyClick}
-                className={`flex-1 py-3.5 rounded-xl font-semibold text-[15px] transition flex items-center justify-center gap-2 ${loading ? "bg-white/5 opacity-50" : (isPremiumSelected ? "bg-yellow-500 text-black hover:opacity-90" : "bg-accent text-white hover:opacity-90 active:scale-95")}`}>
+                className={`w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2.5 shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 ${loading ? "opacity-60 cursor-not-allowed bg-accent text-white" : (isPremiumSelected ? "bg-yellow-500 text-black" : "bg-gradient-to-r from-accent to-accent-light text-white")}`}>
                 {loading ? "Processing..." : "Checkout"}
               </button>
             </div>
@@ -1361,5 +1287,7 @@ export default function ProductModal({ product, onClose }: any) {
         </motion.div>
       </motion.div>
     </div>
+    ,
+    document.body,
   )
 }

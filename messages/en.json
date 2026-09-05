@@ -301,7 +301,8 @@
     "accept_rules": "By proceeding to checkout, you agree to our <link>Rules & Terms</link>.",
     "paypal_me_label": "PayPal (Direct)",
     "paypal_me_note": "Send via a PayPal.me link — auto-confirmed",
-    "swap_to_paypal_me": "Switch to PayPal (Direct) — pay the exact amount via a PayPal.me link"
+    "swap_to_paypal_me": "Switch to PayPal (Direct) — pay the exact amount via a PayPal.me link",
+    "confirm_title": "Confirm your order"
   },
   "Visitors": {
     "title": "Website Visitors",
@@ -1798,7 +1799,7 @@
         "items": [
           {
             "q": "Which payment methods are supported?",
-            "a": "Three methods: PromptPay (no fee), credit/debit card (+6% fee) and PayPal (+8% fee). The exact amount you'll pay is always shown before you confirm."
+            "a": "Three methods: PromptPay (no fee), credit/debit card (+6% fee) and PayPal (+9.9% fee). The exact amount you'll pay is always shown before you confirm."
           },
           {
             "q": "I paid but haven't received anything",
