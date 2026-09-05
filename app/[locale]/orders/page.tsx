@@ -16,6 +16,7 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations("Orders")
+  const tShop = await getTranslations("Shop")
 
   const session = await getServerSession(authOptions)
 
@@ -137,17 +138,26 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
         </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-16">
+        <div className="relative z-10 max-w-[1248px] mx-auto px-6 py-8 md:py-12">
           <header className="mb-8 md:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <div className="flex items-center gap-2 text-accent-light text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] mb-2">
-                <span className="w-6 md:w-8 h-[2px] bg-accent/40"></span>
-                {t("secure_inventory")}
+              <div className="flex items-center gap-[18px]">
+                <div className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center flex-shrink-0 shadow-[0_4px_20px_rgba(37,99,235,0.3)]"
+                     style={{ background: "linear-gradient(135deg,var(--color-accent),var(--color-accent-lighter))" }}>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" />
+                  </svg>
+                </div>
+                <div>
+                  <h1 className="text-[1.4rem] sm:text-[1.8rem] font-black tracking-[-0.02em] text-text-base">{t("title")}</h1>
+                  <p className="text-text-muted text-[0.88rem] mt-0.5">{t("subtitle")}</p>
+                </div>
               </div>
-              <h1 className="text-3xl md:text-4xl font-display font-bold text-text-base mb-1">{t("title")}</h1>
-              <p className="text-text-muted text-[13px] md:text-[14px]">
-                {t("subtitle")}
-              </p>
+              <div className="mt-4 text-[0.75rem] text-text-dim flex items-center gap-1.5">
+                <Link href="/" className="text-accent-light">{tShop("home")}</Link>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                {t("title")}
+              </div>
             </div>
 
             <div className="bg-bg-card border border-accent/10 rounded-2xl px-4 py-2.5 flex items-center gap-4 shrink-0 self-start md:self-auto">

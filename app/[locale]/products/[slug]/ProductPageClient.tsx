@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl"
 import { AnimatePresence } from "framer-motion"
 import { Link } from "@/i18n/routing"
 import Navbar from "@/components/Navbar"
+import Footer from "@/components/home/Footer"
 import ProductModal from "@/components/products/ProductModal"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { useAutoDiscounts } from "@/lib/useAutoDiscounts"
@@ -123,12 +124,12 @@ export default function ProductPageClient({ product, related }: { product: Produ
               <img src={getImageUrl(images[imgIdx].url)} alt={name} className="w-full h-full object-cover" />
             </div>
             {images.length > 1 && (
-              <div className="flex gap-2.5 mt-3 overflow-x-auto custom-scrollbar pb-1">
+              <div className="grid grid-cols-6 gap-2 mt-3">
                 {images.map((im, i) => (
                   <button
                     key={i}
                     onClick={() => setImgIdx(i)}
-                    className={`relative w-20 h-14 shrink-0 rounded-xl overflow-hidden border-2 transition-all ${i === imgIdx ? "border-accent" : "border-transparent opacity-60 hover:opacity-100"}`}
+                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${i === imgIdx ? "border-accent" : "border-transparent opacity-60 hover:opacity-100"}`}
                   >
                     <img src={getImageUrl(im.url)} alt={`${name}-${i}`} className="w-full h-full object-cover" />
                   </button>
@@ -139,7 +140,7 @@ export default function ProductPageClient({ product, related }: { product: Produ
 
           {/* ── Buy box ── */}
           <div>
-            <h1 className="text-[24px] sm:text-[30px] font-bold leading-tight">{name}</h1>
+            <h1 className="text-[1.5rem] sm:text-[2rem] font-black tracking-tight leading-tight mb-1">{name}</h1>
 
             <div className="flex items-end flex-wrap gap-x-3 gap-y-1.5 mt-4">
               <span className="text-[32px] font-bold text-accent-light leading-none">{baht(headlineNow)}</span>
@@ -157,13 +158,13 @@ export default function ProductPageClient({ product, related }: { product: Produ
             {/* Variant list (display only — selection happens in the buy modal) */}
             {displayVariants.length > 0 && (
               <div className="mt-5 space-y-2">
-                <p className="text-[12px] tracking-widest text-text-muted uppercase">{t("options")}</p>
+                <h3 className="text-base font-extrabold mb-1">{t("options")}</h3>
                 {/* Whitelist products have no key stock — never show "sold out",
                     just the price (matching the shop cards + modal). */}
                 {priced.map(({ v, price, discounted }) => (
                   <div
                     key={v.id}
-                    className={`flex items-center justify-between px-4 py-3 rounded-xl border bg-bg-card transition-colors ${discounted != null ? "border-red-400/25" : "border-accent/15"}`}
+                    className={`flex items-center justify-between px-4 py-3.5 rounded-xl border bg-bg-card transition-colors hover:border-accent/40 ${discounted != null ? "border-hot/30" : "border-border-soft"}`}
                   >
                     <span className="flex items-center gap-2">
                       <span className="text-[14px] font-medium">{isTH ? v.label_th : v.label_en}</span>
@@ -188,7 +189,7 @@ export default function ProductPageClient({ product, related }: { product: Produ
             <div className="mt-6 flex items-center gap-3">
               <button
                 onClick={() => setBuyOpen(true)}
-                className="flex-1 py-3.5 rounded-xl bg-accent text-white font-semibold text-[15px] hover:opacity-90 active:scale-[0.98] transition-all"
+                className="flex-1 py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2.5 hover:-translate-y-0.5 active:scale-[0.98] transition-all shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] bg-gradient-to-r from-accent to-accent-light"
               >
                 {tc("buy_now")}
               </button>
@@ -271,6 +272,8 @@ export default function ProductPageClient({ product, related }: { product: Produ
           {tc("buy_now")}
         </button>
       </div>
+
+      <Footer />
 
       {/* Buy flow reuses the existing modal — no checkout logic duplicated. */}
       <AnimatePresence>
