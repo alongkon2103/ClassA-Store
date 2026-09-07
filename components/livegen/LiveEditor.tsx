@@ -15,6 +15,7 @@ import { FONT_LINK_HREF, DEFAULT_FONT, ensureFont, fontWeightFor } from "@/lib/l
 import { BACKGROUNDS, type BgPreset } from "@/lib/livegen/backgrounds"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { attachSmartGuides } from "@/lib/livegen/guides"
+import { splitSides } from "@/lib/livegen/templateLayout"
 import { TemplatesPanel, TextPanel, ImagesPanel, GiftsPanel, ProjectsPanel } from "./panels"
 import SelectionBar from "./SelectionBar"
 import { CANVAS_SIZES, type Asset, type Game, type Gift, type Orientation, type PanelKey, type ProjectSummary, type SelectionInfo, type TextKind } from "./types"
@@ -384,44 +385,53 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
       await ensureFont(DEFAULT_FONT)
       clearCanvas()
       const { w, h } = size()
-      const cols = orientationRef.current === "portrait" ? 2 : 3
-      const n = d.functions.length
-      const rows = Math.max(1, Math.ceil(n / cols))
-      const margin = w * 0.05, gap = w * 0.03
-      const tileW = (w - margin * 2 - gap * (cols - 1)) / cols
-      const tileH = tileW * (7 / 9)
-      const totalH = rows * tileH + (rows - 1) * gap
-      const top0 = Math.max(h * 0.06, (h - totalH) / 2)
+      // สองฝั่งชิดขอบซ้าย/ขวา เว้นกลางไว้ให้ภาพเกม: ซ้าย = ฝั่งลบ · ขวา = ฝั่งบวก (ดู lib/livegen/templateLayout)
+      // แนวตั้ง = ฝั่งละ 1 คอลัมน์ · แนวนอน = ฝั่งละ 2 · แบ่งความสูงพอดีทั้งหน้า ขนาดการ์ดคิดจากจำนวน (มาก = เล็ก) ไม่ทะลุจอ
+      const { left, right } = splitSides(d.functions)
+      const sideCols = orientationRef.current === "portrait" ? 1 : 2
+      const rows = Math.max(1, Math.ceil(Math.max(left.length, right.length) / sideCols))
+      const marginX = w * 0.03, marginY = h * 0.03
+      const gapY = Math.min(h * 0.015, 24), gapX = w * 0.015
+      const tileH = (h - marginY * 2 - gapY * (rows - 1)) / rows
+      const maxTileW = (w * 0.44 - gapX * (sideCols - 1)) / sideCols // ฝั่งละไม่เกิน 44% ของความกว้าง
+      const tileW = Math.min((tileH * 9) / 7, maxTileW)
+      const unit = Math.min(tileH, (tileW * 7) / 9) // สเกลของของในการ์ด
+      const fontSize = Math.max(18, Math.round(unit * 0.12))
       suspendRef.current = true
-      for (let i = 0; i < n; i++) {
-        const fn = d.functions[i]
-        const col = i % cols, row = Math.floor(i / cols)
-        const cx = margin + tileW * (col + 0.5) + gap * col
-        const cy = top0 + tileH * (row + 0.5) + gap * row
+      const placeTile = async (fn: (typeof d.functions)[number], cx: number, cy: number) => {
         if (fn.image_url) {
           try {
             const img = await f.FabricImage.fromURL(canvasSafeUrl(fn.image_url), { crossOrigin: "anonymous" })
-            img.scaleToHeight(tileH * 0.62)
-            if (img.getScaledWidth() > tileW * 0.9) img.scaleToWidth(tileW * 0.9)
-            img.set({ left: cx, top: cy - tileH * 0.06, originX: "center", originY: "center" })
+            img.scaleToHeight(unit * 0.58)
+            if (img.getScaledWidth() > tileW * 0.8) img.scaleToWidth(tileW * 0.8)
+            img.set({ left: cx, top: cy - unit * 0.06, originX: "center", originY: "center" })
             c.add(img)
           } catch { /* รูปตัวละครโหลดไม่ได้ก็ข้าม */ }
         }
         if (fn.gift_image_url) {
           try {
             const g = await f.FabricImage.fromURL(canvasSafeUrl(fn.gift_image_url), { crossOrigin: "anonymous" })
-            g.scaleToWidth(tileW * 0.28)
-            g.set({ left: cx - tileW / 2 + tileW * 0.16, top: cy - tileH / 2 + tileW * 0.16, originX: "center", originY: "center" })
+            g.scaleToWidth(unit * 0.3)
+            g.set({ left: cx - tileW / 2 + unit * 0.2, top: cy - tileH / 2 + unit * 0.2, originX: "center", originY: "center" })
             c.add(g)
           } catch { /* ข้าม */ }
         }
         const label = (locale === "th" ? fn.label_th : fn.label_en) || fn.label_th || fn.label_en || fn.name
-        const fontSize = Math.round(tileW * 0.11)
         c.add(new f.Textbox(label, {
-          width: tileW * 0.96, fontSize, fontFamily: DEFAULT_FONT, fontWeight: 700,
+          width: tileW * 0.94, fontSize, fontFamily: DEFAULT_FONT, fontWeight: 700,
           fill: "#ffffff", stroke: "#0b0f1a", strokeWidth: Math.max(2, Math.round(fontSize * 0.1)), paintFirst: "stroke", strokeUniform: true,
-          textAlign: "center", originX: "center", originY: "center", left: cx, top: cy + tileH * 0.38,
+          textAlign: "center", originX: "center", originY: "center", left: cx, top: cy + tileH / 2 - fontSize * 0.95,
         }))
+      }
+      for (const [sideIdx, side] of [left, right].entries()) {
+        for (let j = 0; j < side.length; j++) {
+          const col = j % sideCols, row = Math.floor(j / sideCols)
+          const cx = sideIdx === 0
+            ? marginX + tileW / 2 + col * (tileW + gapX)
+            : w - marginX - tileW / 2 - col * (tileW + gapX)
+          const cy = marginY + tileH / 2 + row * (tileH + gapY)
+          await placeTile(side[j], cx, cy)
+        }
       }
       suspendRef.current = false
       c.requestRenderAll()
