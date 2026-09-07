@@ -166,7 +166,7 @@ function PremiumWarningModal({ onConfirm, onCancel }: {
           </div>
 
           <div className="text-center space-y-2">
-            <h2 className="text-[19px] font-bold text-white tracking-tight">{t("premium_warning_title")}</h2>
+            <h2 className="text-[19px] font-bold text-text-base tracking-tight">{t("premium_warning_title")}</h2>
             <p className="text-[13px] text-text-muted leading-relaxed px-2">
               {t("premium_warning_desc_1")}
               <span className="text-yellow-400 font-bold">{t("premium_warning_desc_2")}</span>
@@ -224,7 +224,7 @@ function PremiumWarningModal({ onConfirm, onCancel }: {
             </button>
             <button
               onClick={onConfirm}
-              className="w-full py-3 rounded-xl text-[13px] font-semibold text-text-muted hover:text-white hover:bg-white/5 transition-all"
+              className="w-full py-3 rounded-xl text-[13px] font-semibold text-text-muted hover:text-text-base hover:bg-white/5 transition-all"
             >
               {t("premium_warning_skip")}
             </button>
@@ -841,7 +841,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                           <div className="w-7 h-7 rounded-full bg-white/10" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-[12px] text-white font-medium truncate">{robloxDisplayName ?? whitelistUsername}</p>
+                          <p className="text-[12px] text-text-base font-medium truncate">{robloxDisplayName ?? whitelistUsername}</p>
                           <p className="text-[10px] text-green-400">{isTH ? "พบบัญชี Roblox" : "Roblox account found"}</p>
                         </div>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>

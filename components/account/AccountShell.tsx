@@ -57,7 +57,7 @@ export default function AccountShell({ active, children }: { active: AccountSect
           {session?.user?.image ? (
             <img src={session.user.image} alt="" className="w-16 h-16 rounded-full object-cover mx-auto mb-3" />
           ) : (
-            <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-[1.2rem] font-extrabold text-white"
+            <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-[1.2rem] font-extrabold text-white text-on-accent"
                  style={{ background: "linear-gradient(135deg,var(--color-accent),var(--color-accent-lighter))" }}>{initial}</div>
           )}
           <h3 className="text-[0.95rem] font-bold mb-0.5 truncate">{name}</h3>
@@ -79,7 +79,7 @@ export default function AccountShell({ active, children }: { active: AccountSect
 
         {/* การ์ดแนะนำเพื่อน — ลิงก์ไปหน้านายหน้าที่มีจริง */}
         <div className="rounded-[14px] p-5 text-center border border-accent/20"
-             style={{ background: "linear-gradient(135deg,#0f1a3a,#162550)" }}>
+             style={{ background: "var(--gradient-panel)" }}>
           <h4 className="text-[0.88rem] font-bold mb-1">{t("referral_title")}</h4>
           <div className="text-[1.6rem] font-black text-gold mb-1">{t("referral_amount")}</div>
           <p className="text-[0.7rem] text-text-dim mb-3">{t("referral_sub")}</p>

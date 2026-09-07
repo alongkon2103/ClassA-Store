@@ -17,7 +17,7 @@ export default function PromoMarquee() {
     <div className="page-container">
       <div
         className="promo-wrap relative overflow-hidden rounded-xl border border-border-soft mb-8"
-        style={{ background: "linear-gradient(90deg,var(--color-bg-surface),#0f1830,var(--color-bg-surface))" }}
+        style={{ background: "var(--gradient-marquee)" }}
       >
         {/* ไล่จางซ้าย/ขวา ให้ข้อความค่อย ๆ หายไปที่ขอบแทนการตัดกึก */}
         <div aria-hidden className="absolute inset-y-0 left-0 w-[60px] z-[2] pointer-events-none"

@@ -52,7 +52,7 @@ export function Panel({ title, onClose, search, children }: {
 
 const sectionTitle = "text-[0.75rem] font-semibold text-text-dim mb-2"
 const tile = "relative overflow-hidden rounded-[10px] border-2 border-border-soft hover:border-accent-light hover:-translate-y-0.5 transition-[border-color,transform] duration-200 flex items-center justify-center"
-const tileBg = { background: "linear-gradient(145deg,#141e36,#0d1526)" }
+const tileBg = { background: "var(--gradient-thumb)" }
 const tileLabel = "absolute bottom-1.5 left-1.5 right-1.5 text-[0.6rem] text-text-dim text-center bg-black/50 px-1.5 py-[3px] rounded leading-tight truncate"
 
 /* ── เท็มเพลต: แบบเปล่า / พื้นหลัง / จากเกม ── */

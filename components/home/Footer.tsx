@@ -53,7 +53,7 @@ export default function Footer() {
   ]
 
   return (
-    <footer className="border-t border-border-soft pt-12" style={{ background: "linear-gradient(180deg,var(--color-bg-base),#040710)" }}>
+    <footer className="border-t border-border-soft pt-12" style={{ background: "var(--footer-bg)" }}>
       <div className="w-full px-5 sm:px-7 lg:px-10 pb-11 grid gap-12 grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.3fr]">
         {/* แบรนด์ */}
         <div>

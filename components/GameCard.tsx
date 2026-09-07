@@ -85,7 +85,7 @@ export default function GameCard({
       }`}
     >
       <div className={`relative overflow-hidden ${isList ? "w-full sm:w-[200px] aspect-[4/3] sm:aspect-auto sm:h-[130px] sm:self-stretch flex-shrink-0" : "aspect-[4/3]"}`}
-           style={{ background: "linear-gradient(145deg,#141e36,#0d1526)" }}>
+           style={{ background: "var(--gradient-thumb)" }}>
         <img
           src={getImageUrl(image || "/placeholder.png")}
           alt={name}

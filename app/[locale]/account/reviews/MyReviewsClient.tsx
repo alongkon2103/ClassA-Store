@@ -48,7 +48,7 @@ export default function MyReviewsClient({ items: initial }: { items: ReviewItem[
             return (
               <div key={x.slug} className="bg-bg-card border border-border-soft rounded-[14px] p-5">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 relative" style={{ background: "linear-gradient(135deg,#141e36,#0d1526)" }}>
+                  <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 relative" style={{ background: "var(--gradient-thumb)" }}>
                     {x.image && <Image src={getImageUrl(x.image)} alt={name} fill sizes="56px" className="object-cover" />}
                   </div>
                   <div className="min-w-0 flex-1">

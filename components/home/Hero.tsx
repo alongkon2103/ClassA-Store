@@ -66,7 +66,7 @@ export default function Hero({
     <div className="page-container pt-6">
       <section
         className="relative overflow-hidden rounded-2xl min-h-[420px] flex items-center"
-        style={{ background: "linear-gradient(135deg,#0c1225 0%,#111d3a 40%,#162550 80%,#1a2d5c 100%)" }}
+        style={{ background: "var(--gradient-hero)" }}
       >
         {/* แสงเรืองด้านหลัง */}
         <div
@@ -111,7 +111,7 @@ export default function Hero({
               {cheapest && (
                 <button
                   onClick={() => onSelect?.(p)}
-                  className="px-[34px] py-3.5 rounded-[10px] text-[0.9rem] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-95"
+                  className="px-[34px] py-3.5 rounded-[10px] text-[0.9rem] font-bold text-white text-on-accent transition-all hover:-translate-y-0.5 active:scale-95"
                   style={{
                     background: "linear-gradient(135deg,var(--color-accent),var(--color-accent-light))",
                     boxShadow: "0 4px 24px var(--color-accent-glow)",

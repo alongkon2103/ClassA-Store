@@ -138,7 +138,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
               className="group flex flex-col sm:flex-row bg-bg-card border border-border-soft rounded-[14px] overflow-hidden hover:border-accent/40 transition-colors"
             >
               <div className="w-full sm:w-[220px] min-h-[160px] flex-shrink-0 relative flex items-center justify-center overflow-hidden"
-                   style={{ background: "linear-gradient(135deg,#0c1a3a,#0f1e45)" }}>
+                   style={{ background: "var(--gradient-panel)" }}>
                 {/* โลโก้จริงของ Tikkies (ไฟล์เดียวกับ favicon บน tikkies.aclassstore.com) */}
                 <img
                   src="/tikkies-logo.svg"

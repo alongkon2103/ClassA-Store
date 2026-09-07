@@ -173,7 +173,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                 {/* สินค้า */}
                 <td className={`${td} max-md:mb-2.5`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 relative" style={{ background: "linear-gradient(135deg,#141e36,#0d1526)" }}>
+                    <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 relative" style={{ background: "var(--gradient-thumb)" }}>
                       <OrderThumb src={getImageUrl(imageUrl)} alt={name} />
                       {isTrial && <span className="absolute bottom-1 left-1 bg-violet-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase">{t("trial_badge")}</span>}
                     </div>

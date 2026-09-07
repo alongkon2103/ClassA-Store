@@ -51,7 +51,7 @@ export default function AccountInfoClient({ user, provider, stats }: {
           {user.avatar ? (
             <img src={user.avatar} alt="" className="w-[72px] h-[72px] rounded-full object-cover" />
           ) : (
-            <div className="w-[72px] h-[72px] rounded-full flex items-center justify-center text-[1.4rem] font-extrabold text-white"
+            <div className="w-[72px] h-[72px] rounded-full flex items-center justify-center text-[1.4rem] font-extrabold text-white text-on-accent"
                  style={{ background: "linear-gradient(135deg,var(--color-accent),var(--color-accent-lighter))" }}>{initial}</div>
           )}
           <div className="min-w-0">

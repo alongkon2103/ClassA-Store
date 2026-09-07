@@ -20,13 +20,13 @@ export default function JoinDc() {
     <div className="page-container mb-12">
       <section
         className="relative overflow-hidden text-center px-6 py-[60px] rounded-2xl border border-border-soft"
-        style={{ background: "linear-gradient(180deg,var(--color-bg-surface),rgba(6,10,20,0.6))" }}
+        style={{ background: "var(--gradient-section)" }}
       >
         <div aria-hidden className="absolute inset-0 pointer-events-none"
              style={{ background: "radial-gradient(circle at 50% 30%,rgba(88,101,242,0.08) 0%,transparent 60%)" }} />
 
         <div className="relative">
-          <div className="w-[60px] h-[60px] mx-auto mb-[22px] rounded-2xl flex items-center justify-center text-white shadow-[0_4px_24px_rgba(88,101,242,0.3)]"
+          <div className="w-[60px] h-[60px] mx-auto mb-[22px] rounded-2xl flex items-center justify-center text-white text-on-accent shadow-[0_4px_24px_rgba(88,101,242,0.3)]"
                style={{ background: "linear-gradient(135deg,#5865F2,#7289da)" }}>
             <DiscordGlyph />
           </div>

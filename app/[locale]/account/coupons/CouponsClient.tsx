@@ -58,7 +58,7 @@ export default function CouponsClient({ coupons, history }: { coupons: Coupon[];
               <div key={c.id} className={`flex bg-bg-card border border-border-soft rounded-[14px] overflow-hidden ${usable ? "" : "opacity-70"}`}>
                 {/* ฝั่งซ้าย: มูลค่า */}
                 <div className="w-[118px] shrink-0 flex flex-col items-center justify-center text-center px-3 py-5 border-r border-dashed border-border-light"
-                     style={{ background: "linear-gradient(135deg,#0f1a3a,#162550)" }}>
+                     style={{ background: "var(--gradient-panel)" }}>
                   <div className="text-[1.5rem] font-black text-gold leading-none">
                     {c.type === "percent" ? `${c.value}%` : `฿${c.value.toLocaleString()}`}
                   </div>

@@ -38,7 +38,7 @@ export default function ImageCarousel({ images, alt, index, onChange, autoplayMs
   return (
     <div
       className="relative aspect-[16/10] rounded-2xl overflow-hidden border border-border-soft group select-none touch-pan-y"
-      style={{ background: "linear-gradient(135deg,#0c1a3a,#111d3a)" }}
+      style={{ background: "var(--gradient-thumb)" }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       onPointerDown={(e) => { startX.current = e.clientX }}

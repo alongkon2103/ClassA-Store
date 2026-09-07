@@ -88,7 +88,7 @@ export default function NavSearch() {
           {items.map((it) => (
             <Link key={`${it.kind}-${it.slug}`} href={it.href} onClick={close}
               className="flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-white/[0.04] transition-colors">
-              <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0" style={{ background: "linear-gradient(135deg,#141e36,#0d1526)" }}>
+              <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0" style={{ background: "var(--gradient-thumb)" }}>
                 {it.image && <img src={it.kind === "Partner" ? it.image : getImageUrl(it.image)} alt="" className="w-full h-full object-cover" />}
               </div>
               <div className="flex-1 min-w-0">

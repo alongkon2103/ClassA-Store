@@ -400,7 +400,7 @@ export default function ProductPageClient({
                     {related.map((r) => (
                       <Link key={r.slug} href={`/products/${r.slug}`}
                         className="flex gap-3 p-3 bg-bg-card border border-border-soft rounded-xl hover:border-accent/30 hover:-translate-y-0.5 transition-all">
-                        <div className="w-[72px] h-[72px] rounded-lg overflow-hidden shrink-0" style={{ background: "linear-gradient(135deg,#141e36,#0d1526)" }}>
+                        <div className="w-[72px] h-[72px] rounded-lg overflow-hidden shrink-0" style={{ background: "var(--gradient-thumb)" }}>
                           <img src={getImageUrl(r.image || "/placeholder.png")} alt="" className="w-full h-full object-cover" />
                         </div>
                         <div className="flex-1 flex flex-col justify-center min-w-0">
