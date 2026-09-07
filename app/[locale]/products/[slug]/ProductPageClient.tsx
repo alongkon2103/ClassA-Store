@@ -271,18 +271,6 @@ export default function ProductPageClient({
                      dangerouslySetInnerHTML={{ __html: desc }} />
               )}
 
-              {featureList.length > 0 && (
-                <ul className="list-none flex flex-col gap-3 mb-7">
-                  {featureList.slice(0, 6).map((f, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-text-muted leading-relaxed">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-accent-light mt-0.5 shrink-0">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              )}
 
               {/* เลือกแพ็กเกจ */}
               {displayVariants.length > 0 && (
