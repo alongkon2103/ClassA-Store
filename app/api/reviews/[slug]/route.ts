@@ -6,6 +6,8 @@
 // เงื่อนไข "ต้องซื้อจริงก่อน" ตั้งใจใส่ไว้ เพราะร้านนี้ขายจริง — ถ้าใครก็รีวิวได้
 // หน้าเว็บจะเต็มไปด้วยคะแนนปลอมและลูกค้าตัดสินใจจากข้อมูลที่เชื่อไม่ได้
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
+import { routing } from "@/i18n/routing"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
@@ -67,6 +69,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   })
 }
 
+// หน้าสินค้าเป็น ISR (60 วิ) — เขียน/ลบรีวิวแล้วให้ทุกภาษาสร้างใหม่ทันที คะแนนหัวหน้าจะได้ไม่ค้าง
+function revalidateProduct(slug: string) {
+  for (const locale of routing.locales) revalidatePath(`/${locale}/products/${slug}`)
+}
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: "unauthorized" }, { status: 401 })
@@ -93,6 +100,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     select: { id: true, rating: true, comment: true },
   })
 
+  revalidateProduct(slug)
   return NextResponse.json({ ok: true, review: saved })
 }
 
@@ -107,5 +115,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   await prisma.product_reviews.deleteMany({
     where: { product_id: product.id, user_id: session.user.id },
   })
+  revalidateProduct(slug)
   return NextResponse.json({ ok: true })
 }

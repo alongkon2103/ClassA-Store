@@ -86,6 +86,8 @@ export default function ProductPageClient({
 
   const name = isTH ? product.name_th : product.name_en
   const desc = isTH ? (product.description_th || product.description_en) : (product.description_en || product.description_th)
+  // คะแนนหัวหน้า: ค่าจาก server เป็นค่าเริ่ม แล้วให้ส่วนรีวิวอัปเดตสดหลังโหลด/ส่งรีวิว (หน้า cache ISR 60 วิ เลยเคยไม่ขึ้นทันที)
+  const [summary, setSummary] = useState<{ average: number; count: number }>(reviewSummary ?? { average: 0, count: 0 })
   const images = product.product_images.length > 0 ? product.product_images : [{ url: "/placeholder.png" }]
 
   const displayVariants = useMemo(
@@ -253,15 +255,21 @@ export default function ProductPageClient({
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-gold">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
-                {reviewSummary && reviewSummary.count > 0 ? (
+                {summary.count > 0 ? (
                   <>
-                    <span className="text-base font-extrabold">{reviewSummary.average.toFixed(1)}</span>
-                    <span className="text-text-dim text-sm">({tr("count", { count: reviewSummary.count })})</span>
+                    <span className="text-base font-extrabold">{summary.average.toFixed(1)}</span>
+                    <span className="text-text-dim text-sm">({tr("count", { count: summary.count })})</span>
                   </>
                 ) : (
                   <span className="text-text-dim text-sm">{tr("no_rating")}</span>
                 )}
               </button>
+
+              {/* รายละเอียดสินค้า — อยู่ใต้คะแนน (ย้ายมาจากแท็บด้านล่างตามที่ขอ) */}
+              {desc && (
+                <div className="prose-product max-w-none text-[0.88rem] text-text-muted leading-[1.85] mb-6 [&_img]:rounded-xl [&_a]:text-accent-light [&_h1]:text-text-base [&_h2]:text-text-base [&_h3]:text-text-base [&_strong]:text-text-base"
+                     dangerouslySetInnerHTML={{ __html: desc }} />
+              )}
 
               {featureList.length > 0 && (
                 <ul className="list-none flex flex-col gap-3 mb-7">
@@ -322,7 +330,7 @@ export default function ProductPageClient({
             <div className="flex border-b border-border-soft overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {([
                 { k: "about", label: tr("tab_detail") },
-                { k: "reviews", label: `${tr("tab_reviews")}${reviewSummary?.count ? ` (${reviewSummary.count})` : ""}` },
+                { k: "reviews", label: `${tr("tab_reviews")}${summary.count ? ` (${summary.count})` : ""}` },
                 { k: "faq", label: tr("tab_faq") },
               ] as const).map((x) => (
                 <button key={x.k} onClick={() => goSection(x.k)}
@@ -339,10 +347,6 @@ export default function ProductPageClient({
                 {/* รายละเอียด */}
                 <div id="about" className="scroll-mt-24">
                   <h3 className="text-lg font-extrabold mb-4">{t("description_title")}</h3>
-                  {desc ? (
-                    <div className="prose-product max-w-none text-[0.88rem] text-text-muted leading-[1.85] mb-6 [&_img]:rounded-xl [&_a]:text-accent-light [&_h1]:text-text-base [&_h2]:text-text-base [&_h3]:text-text-base [&_strong]:text-text-base"
-                         dangerouslySetInnerHTML={{ __html: desc }} />
-                  ) : <p className="text-[0.88rem] text-text-dim mb-6">—</p>}
 
                   {featureList.length > 0 && (
                     <ul className="list-none grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -370,9 +374,9 @@ export default function ProductPageClient({
                 <div id="reviews" className="scroll-mt-24">
                   <h3 className="text-lg font-extrabold mb-4">
                     {tr("tab_reviews")}{" "}
-                    {reviewSummary?.count ? <span className="text-[0.78rem] text-text-dim font-medium">({tr("count", { count: reviewSummary.count })})</span> : null}
+                    {summary.count ? <span className="text-[0.78rem] text-text-dim font-medium">({tr("count", { count: summary.count })})</span> : null}
                   </h3>
-                  <ProductReviews slug={product.slug} />
+                  <ProductReviews slug={product.slug} onSummary={setSummary} />
                 </div>
 
                 {/* คำถามที่พบบ่อย */}

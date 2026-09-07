@@ -24,7 +24,7 @@ type Data = {
   reviews: Review[]
 }
 
-export default function ProductReviews({ slug }: { slug: string }) {
+export default function ProductReviews({ slug, onSummary }: { slug: string; onSummary?: (s: { average: number; count: number }) => void }) {
   const t = useTranslations("Reviews")
   const locale = useLocale()
   const [data, setData] = useState<Data | null>(null)
@@ -34,7 +34,8 @@ export default function ProductReviews({ slug }: { slug: string }) {
     if (!r.ok) return
     const d: Data = await r.json()
     setData(d)
-  }, [slug])
+    onSummary?.({ average: d.average, count: d.count })
+  }, [slug, onSummary])
 
   useEffect(() => { load() }, [load])
 
