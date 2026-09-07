@@ -52,6 +52,9 @@ export function attachSmartGuides(canvas: Canvas, opts: GuidesOptions) {
   const onMoving = (e: { target?: FabricObject }) => {
     const target = e.target
     if (!target) return
+    // Fabric เพิ่ง set left/top จาก pointer แต่ aCoords ยังเป็นของเฟรมก่อน — ต้อง setCoords ก่อนอ่านกล่อง
+    // ไม่งั้นระยะที่คำนวณคลาดไปหนึ่งเฟรม ทำให้ snap สลับไปมาจนดูสั่น
+    target.setCoords()
     active = true
     vLines = []; hLines = []; measures = []
     const { w, h } = opts.getSize()
@@ -127,12 +130,15 @@ export function attachSmartGuides(canvas: Canvas, opts: GuidesOptions) {
   }
 
   const beforeRender = () => {
-    if (topDirty) { canvas.clearContext(canvas.contextTop); topDirty = false }
+    const ctx = canvas.contextTop
+    if (!ctx) return // canvas กำลังถูก dispose
+    if (topDirty) { canvas.clearContext(ctx); topDirty = false }
   }
 
   const afterRender = () => {
     if (!active || vLines.length + hLines.length + measures.length === 0) return
     const ctx = canvas.contextTop
+    if (!ctx) return
     ctx.save()
     ctx.strokeStyle = color
     ctx.fillStyle = color
