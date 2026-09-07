@@ -29,6 +29,8 @@ export type Product = {
   is_featured?: boolean | null
   product_images?: { url: string }[]
   product_variants: Variant[]
+  rating_avg?: number | null
+  rating_count?: number | null
 }
 
 type Props = {
@@ -92,6 +94,8 @@ export default function BestSeller({ products, onSelect, usdRate }: Props) {
                   oldPrice={hasDeal ? base : null}
                   usdRate={usdRate}
                   buyLabel={t("buy_short")}
+                  rating={p.rating_avg}
+                  reviewCount={p.rating_count}
                   href={`/products/${p.slug}`}
                 />
               </motion.div>

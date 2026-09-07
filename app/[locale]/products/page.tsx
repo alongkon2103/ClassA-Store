@@ -42,6 +42,12 @@ export default async function Page({
     // show "฿850 / $X". Partner games carry their OWN rate instead (see below).
     const ourRate = await getThbToUsdRate()
 
+    // คะแนนรีวิวจริงต่อสินค้า (เฉลี่ย + จำนวน) สำหรับดาวบนการ์ด
+    const ratingRows = await prisma.product_reviews.groupBy({
+        by: ["product_id"], _avg: { rating: true }, _count: { _all: true },
+    })
+    const ratings = new Map(ratingRows.map((r) => [r.product_id, { avg: r._avg.rating ?? 0, count: r._count._all }]))
+
     // Strikethrough preview prices are computed CLIENT-side (per shopper, via
     // useAutoDiscounts) so each user sees the best code THEY can still use —
     // the server render is shared/ISR-cached and can't be personalised.
@@ -50,6 +56,8 @@ export default async function Page({
         price: Number(p.price),
         commission_pct: Number(p.commission_pct ?? 0),
         is_partner: false,
+        rating_avg: ratings.get(p.id)?.avg ?? null,
+        rating_count: ratings.get(p.id)?.count ?? 0,
 
         product_variants: p.product_variants.map((v) => ({
             ...v,
@@ -134,6 +142,8 @@ function normalizePartner(pp: any, fallbackRate: number) {
         is_featured: false,
         isLower: false,
         is_partner: true,
+        rating_avg: null, // เกม partner ไม่มีรีวิวในระบบเรา
+        rating_count: 0,
         display_order: pp.display_order ?? null,
         sort_order: pp.sort_order ?? 0,
         partner_name: pp.partner?.display_name ?? "Partner",

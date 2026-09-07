@@ -9,6 +9,7 @@ import { Link, useRouter } from "@/i18n/routing"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslations, useLocale } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
+import ReviewForm from "@/components/reviews/ReviewForm"
 
 type ProductGift = { id: string; url: string; filename: string | null }
 type ProductPreset = { id: string; url: string; filename: string | null }
@@ -22,6 +23,7 @@ interface Order {
   whitelisted_username: string | null
   whitelist_status: string | null
   products: {
+    slug: string
     name_th: string
     name_en: string
     type: string
@@ -352,6 +354,13 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                     </div>
                   )}
                 </div>
+
+                {/* รีวิวสินค้านี้ — เขียน/แก้ได้จากในนี้เลย (API เช็คซ้ำว่าซื้อแล้วจริง) */}
+                {(selectedOrder.status === "paid" || selectedOrder.status === "Admin Buy") && selectedOrder.products?.slug && (
+                  <div className="bg-bg-base/60 border border-border-soft rounded-xl p-4">
+                    <ReviewForm key={selectedOrder.id} slug={selectedOrder.products.slug} compact />
+                  </div>
+                )}
 
                 {/* Try Demo — opens the in-game preview tab if product set info_page_url */}
                 {selectedOrder.products?.info_page_url && (

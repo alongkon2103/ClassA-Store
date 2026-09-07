@@ -297,6 +297,8 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
                         oldPrice={hasDeal ? base : null}
                         usdRate={cheapest?.usd_rate}
                         buyLabel={tc("buy_short")}
+                        rating={p.rating_avg}
+                        reviewCount={p.rating_count}
                         layout={view}
                         {...(p.is_partner
                           ? { onClick: () => setSelected(p) }

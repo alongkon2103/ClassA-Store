@@ -4,6 +4,8 @@
 // เขียนรีวิวได้เฉพาะคนที่ซื้อสินค้านี้และจ่ายเงินแล้ว (ฝั่ง API เป็นคนบังคับ)
 import { useCallback, useEffect, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
+import Stars from "@/components/reviews/Stars"
+import ReviewForm from "@/components/reviews/ReviewForm"
 
 type Review = {
   id: string
@@ -22,67 +24,19 @@ type Data = {
   reviews: Review[]
 }
 
-function Stars({ value, size = 14, onPick }: { value: number; size?: number; onPick?: (n: number) => void }) {
-  return (
-    <span className="inline-flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <svg
-          key={n}
-          onClick={onPick ? () => onPick(n) : undefined}
-          width={size} height={size} viewBox="0 0 24 24"
-          className={`${n <= value ? "text-gold" : "text-border-light"} ${onPick ? "cursor-pointer hover:scale-110 transition-transform" : ""}`}
-          fill="currentColor"
-        >
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      ))}
-    </span>
-  )
-}
-
 export default function ProductReviews({ slug }: { slug: string }) {
   const t = useTranslations("Reviews")
   const locale = useLocale()
   const [data, setData] = useState<Data | null>(null)
-  const [rating, setRating] = useState(0)
-  const [comment, setComment] = useState("")
-  const [busy, setBusy] = useState(false)
-  const [msg, setMsg] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     const r = await fetch(`/api/reviews/${slug}`, { cache: "no-store" })
     if (!r.ok) return
     const d: Data = await r.json()
     setData(d)
-    if (d.myReview) { setRating(d.myReview.rating); setComment(d.myReview.comment ?? "") }
   }, [slug])
 
   useEffect(() => { load() }, [load])
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!rating || busy) return
-    setBusy(true); setMsg(null)
-    try {
-      const r = await fetch(`/api/reviews/${slug}`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating, comment }),
-      })
-      if (r.ok) { setMsg(t("saved")); await load() }
-      else {
-        const d = await r.json().catch(() => null)
-        setMsg(d?.error === "must_purchase" ? t("must_purchase") : d?.error === "unauthorized" ? t("login_first") : t("error"))
-      }
-    } finally { setBusy(false) }
-  }
-
-  const remove = async () => {
-    setBusy(true)
-    try {
-      await fetch(`/api/reviews/${slug}`, { method: "DELETE" })
-      setRating(0); setComment(""); setMsg(null); await load()
-    } finally { setBusy(false) }
-  }
 
   if (!data) return <p className="text-text-muted text-sm py-6">{t("loading")}</p>
 
@@ -119,36 +73,17 @@ export default function ProductReviews({ slug }: { slug: string }) {
         <p className="text-text-muted text-sm mb-6">{t("empty")}</p>
       )}
 
-      {/* ฟอร์มเขียนรีวิว */}
-      {data.canReview ? (
-        <form onSubmit={submit} className="bg-bg-card border border-border-soft rounded-[14px] p-5 mb-6">
-          <p className="text-[0.9rem] font-bold mb-3">{data.myReview ? t("edit_title") : t("write_title")}</p>
-          <div className="flex items-center gap-2 mb-3">
-            <Stars value={rating} size={22} onPick={setRating} />
-            {rating > 0 && <span className="text-[0.8rem] text-text-muted">{rating}/5</span>}
-          </div>
-          <textarea
-            value={comment} onChange={(e) => setComment(e.target.value)} rows={3} maxLength={1000}
-            placeholder={t("placeholder")}
-            className="w-full rounded-lg bg-bg-input border border-border-soft px-3.5 py-2.5 text-[0.85rem] text-text-base outline-none focus:border-accent transition-colors placeholder:text-text-dim resize-y"
-          />
-          <div className="flex items-center gap-2 mt-3">
-            <button type="submit" disabled={!rating || busy}
-                    className="px-5 py-2.5 rounded-lg bg-accent hover:bg-accent-light text-white text-[0.82rem] font-semibold disabled:opacity-50 transition-colors">
-              {busy ? "..." : t("submit")}
-            </button>
-            {data.myReview && (
-              <button type="button" onClick={remove} disabled={busy}
-                      className="px-4 py-2.5 rounded-lg border border-border-soft text-text-muted hover:text-hot hover:border-hot/40 text-[0.82rem] transition-colors">
-                {t("delete")}
-              </button>
-            )}
-            {msg && <span className="text-[0.78rem] text-text-muted">{msg}</span>}
-          </div>
-        </form>
-      ) : (
-        <p className="text-[0.8rem] text-text-dim bg-bg-card border border-border-soft rounded-[14px] p-4 mb-6">{t("must_purchase")}</p>
-      )}
+      {/* ฟอร์มเขียน/แก้รีวิว — key ผูกกับรีวิวที่มีอยู่ เพื่อ remount เมื่อโหลดข้อมูลใหม่ */}
+      <div className="mb-6">
+        <ReviewForm
+          key={data.myReview ? `${data.myReview.rating}|${data.myReview.comment ?? ""}` : "new"}
+          slug={slug}
+          initial={data.myReview}
+          canReview={data.canReview}
+          onSaved={load}
+          onDeleted={load}
+        />
+      </div>
 
       {/* รายการรีวิว */}
       <div className="flex flex-col gap-3">

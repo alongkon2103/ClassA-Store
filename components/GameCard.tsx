@@ -6,6 +6,7 @@
 
 import { useRef, useState } from "react"
 import { Link } from "@/i18n/routing"
+import { useTranslations } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
 
 export type CardBadge = { text: string; kind: "hot" | "new" | "best" | "partner" }
@@ -20,6 +21,7 @@ const BADGE_CLASS: Record<CardBadge["kind"], string> = {
 export default function GameCard({
   name, description, image, previewVideo, platform, badge,
   price, oldPrice, usdRate, buyLabel, onClick, href, layout = "grid",
+  rating, reviewCount,
 }: {
   name: string
   description?: string | null
@@ -36,7 +38,11 @@ export default function GameCard({
   onClick?: () => void
   /** "list" = แถวแนวนอน (รูปซ้าย ข้อมูลกลาง ราคาขวา) ใช้กับปุ่มสลับมุมมองในหน้าสินค้า */
   layout?: "grid" | "list"
+  /** คะแนนเฉลี่ยจากรีวิวจริง (null/0 รีวิว = โชว์ "ยังไม่มีรีวิว" แทน เพื่อให้การ์ดสูงเท่ากันทุกใบ) */
+  rating?: number | null
+  reviewCount?: number | null
 }) {
+  const tc = useTranslations("Common")
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [videoOn, setVideoOn] = useState(false)
 
@@ -57,7 +63,10 @@ export default function GameCard({
     setVideoOn(false)
   }
 
-  const usd = (thb: number) => (usdRate ? ` / $${(thb * usdRate).toFixed(2)}` : "")
+  const usd = (thb: number) => (usdRate ? ` / ${(thb * usdRate).toFixed(2)}` : "")
+  // ป้ายส่วนลดมุมขวาบน (ตามดีไซน์ .discount-badge) คิดจากราคาเต็ม → ราคาที่ขาย
+  const discountPct = oldPrice != null && oldPrice > price ? Math.round((1 - price / oldPrice) * 100) : 0
+  const hasRating = (reviewCount ?? 0) > 0 && rating != null
 
   const isList = layout === "list"
 
@@ -99,6 +108,11 @@ export default function GameCard({
             {badge.text}
           </span>
         )}
+        {discountPct > 0 && (
+          <span className="absolute top-2.5 right-2.5 z-[3] px-2.5 py-[3px] rounded-md text-[0.62rem] font-bold bg-hot text-white">
+            -{discountPct}%
+          </span>
+        )}
       </div>
 
       <div className={`px-3.5 flex-1 flex flex-col justify-center ${isList ? "py-3.5" : "pt-3.5"}`}>
@@ -107,6 +121,20 @@ export default function GameCard({
         )}
         <h3 className="text-[0.88rem] font-bold mb-1 leading-[1.3] truncate">{name}</h3>
         {description && <p className="text-[0.7rem] text-text-dim leading-[1.5] mb-2.5 line-clamp-2">{description}</p>}
+        {/* คะแนนรีวิว (ตามดีไซน์ .game-rating) — โชว์เสมอเพื่อให้การ์ดสูงเท่ากัน */}
+        <div className={`flex items-center gap-1 ${isList ? "" : "mb-3"}`}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className={hasRating ? "text-gold" : "text-border-light"}>
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          {hasRating ? (
+            <>
+              <span className="text-[0.78rem] font-bold">{Number(rating).toFixed(1)}</span>
+              <span className="text-[0.68rem] text-text-muted">({reviewCount})</span>
+            </>
+          ) : (
+            <span className="text-[0.68rem] text-text-dim">{tc("no_rating")}</span>
+          )}
+        </div>
       </div>
 
       <div className={`px-3.5 py-3 flex items-center gap-2 ${isList ? "sm:flex-col sm:items-end sm:justify-center sm:border-l sm:border-t-0 border-t border-white/[0.06]" : "mt-auto border-t border-white/[0.06]"}`}>

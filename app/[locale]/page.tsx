@@ -38,8 +38,16 @@ export default async function Home({
     ],
   })
 
+  // คะแนนรีวิวจริงต่อสินค้า สำหรับดาวบนการ์ดเกมแนะนำ
+  const ratingRows = await prisma.product_reviews.groupBy({
+    by: ["product_id"], _avg: { rating: true }, _count: { _all: true },
+  })
+  const ratings = new Map(ratingRows.map((r) => [r.product_id, { avg: r._avg.rating ?? 0, count: r._count._all }]))
+
   const products = rawProducts.map((p) => ({
   ...p,
+  rating_avg: ratings.get(p.id)?.avg ?? null,
+  rating_count: ratings.get(p.id)?.count ?? 0,
   price: Number(p.price),
   commission_pct: Number(p.commission_pct ?? 0),
 

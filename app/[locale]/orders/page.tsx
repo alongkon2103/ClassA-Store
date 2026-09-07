@@ -7,6 +7,7 @@ import { Link } from "@/i18n/routing"        // ✅ Link ยังใช้ i18n
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import OrdersDashboard from "@/components/orders/OrdersDashboard"
+import AccountShell from "@/components/account/AccountShell"
 import { setRequestLocale, getTranslations } from "next-intl/server"
 
 // Skip the static cache — admin feature toggles must reflect immediately.
@@ -139,7 +140,9 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
         </div>
 
         <div className="relative z-10 w-full px-5 sm:px-7 lg:px-10 py-8 md:py-12">
-          <OrdersDashboard orders={orders} livegenEnabled={featureFlags.livegen_enabled} />
+          <AccountShell active="orders">
+            <OrdersDashboard orders={orders} livegenEnabled={featureFlags.livegen_enabled} />
+          </AccountShell>
         </div>
       </main>
 
