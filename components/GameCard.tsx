@@ -98,11 +98,11 @@ export default function GameCard({
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${videoOn ? "opacity-100" : "opacity-0 pointer-events-none"}`}
           />
         )}
-        {/* ไล่เงาจากล่างขึ้น ให้การ์ดกลืนกับพื้นหลังส่วน info */}
+        {/* ไล่เงาบางๆ ตรงรอยต่อกับส่วน info เท่านั้น (list = ขอบขวา 16% สุดท้าย · grid = ขอบล่าง 22%) ไม่ให้บังรูป */}
         <div aria-hidden className="absolute inset-0 z-[1] pointer-events-none"
              style={{ background: isList
-               ? "linear-gradient(to right,transparent 60%,var(--color-bg-card))"
-               : "linear-gradient(to top,var(--color-bg-card) 0%,transparent 40%)" }} />
+               ? "linear-gradient(to right,transparent 84%,color-mix(in srgb,var(--color-bg-card) 55%,transparent))"
+               : "linear-gradient(to top,color-mix(in srgb,var(--color-bg-card) 60%,transparent) 0%,transparent 22%)" }} />
         {badge && (
           <span className={`absolute top-2.5 left-2.5 z-[3] px-2.5 py-[3px] rounded-md text-[0.65rem] font-bold tracking-[0.02em] ${BADGE_CLASS[badge.kind]}`}>
             {badge.text}
