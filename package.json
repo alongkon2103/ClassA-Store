@@ -30,6 +30,7 @@
     "@tiptap/starter-kit": "^3.23.6",
     "date-fns": "^4.1.0",
     "express": "^5.2.1",
+    "fabric": "^7.4.0",
     "framer-motion": "^12.38.0",
     "jsonwebtoken": "^9.0.3",
     "jsqr": "^1.4.0",

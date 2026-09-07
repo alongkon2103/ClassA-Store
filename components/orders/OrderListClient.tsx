@@ -429,7 +429,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                 {livegenEnabled && (selectedOrder.status === "paid" || selectedOrder.status === "Admin Buy") &&
                   (selectedOrder.products?.product_functions?.length ?? 0) > 0 && (
                   <Link
-                    href={`/orders/${selectedOrder.id}/livegen`}
+                    href={`/livegen?game=${selectedOrder.product_id}`}
                     onClick={() => setSelectedOrder(null)}
                     className="group w-full flex items-center justify-between gap-3 bg-accent/5 hover:bg-accent/10 border border-accent/20 hover:border-accent/40 text-text-base px-4 py-3.5 rounded-xl transition active:scale-[0.98]"
                   >

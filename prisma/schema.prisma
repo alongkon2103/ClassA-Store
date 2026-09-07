@@ -623,6 +623,8 @@ model users {
   user_program_access  user_program_access[]
   product_reviews       product_reviews[]
   product_favorites     product_favorites[]
+  livegen_projects      livegen_projects[]
+  livegen_assets        livegen_assets[]
 }
 
 // Pre-authorized desktop whitelist grants keyed by EMAIL, for buyers who haven't
@@ -1048,4 +1050,37 @@ model product_favorites {
 
   @@unique([product_id, user_id])
   @@index([product_id])
+}
+
+// ── LiveGen editor (Canva-style) ──
+// โปรเจครูปไลฟ์ของผู้ใช้ 1 คนมีได้หลายโปรเจค · canvas_json = ผังวัตถุทั้งหมดของ Fabric.js
+// thumbnail = data URL jpeg เล็กๆ (~240px) สำหรับกริดในแท็บ "โปรเจค"
+model livegen_projects {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String   @db.Uuid
+  name        String   @db.VarChar
+  orientation String   @default("portrait") @db.VarChar // portrait | landscape
+  canvas_json Json
+  thumbnail   String?
+  product_id  String?  @db.Uuid // เกมที่ใช้เป็นเท็มเพลตตั้งต้น (ถ้ามี)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_livegen_projects_user")
+}
+
+// รูปที่ผู้ใช้อัปโหลดเข้า editor (แปลงเป็น webp แล้ว) ใช้ซ้ำได้ทุกโปรเจค
+model livegen_assets {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  url        String
+  filename   String?  @db.VarChar
+  width      Int?
+  height     Int?
+  size       Int?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_livegen_assets_user")
 }
