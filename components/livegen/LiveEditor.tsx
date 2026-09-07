@@ -232,7 +232,11 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
       canvas = new f.Canvas(canvasElRef.current, { preserveObjectStacking: true, selection: true, controlsAboveOverlay: true })
       canvasRef.current = canvas
       // ตอน dev เปิดให้ส่องจาก console ได้ (ไม่มีใน production)
-      if (process.env.NODE_ENV !== "production") (window as unknown as { __livegenCanvas?: Canvas }).__livegenCanvas = canvas
+      if (process.env.NODE_ENV !== "production") {
+        const w = window as unknown as { __livegenCanvas?: Canvas; __fabric?: FabricNS }
+        w.__livegenCanvas = canvas
+        w.__fabric = f
+      }
 
       const onSel = () => readSelection()
       canvas.on("selection:created", onSel)
@@ -463,18 +467,45 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
     pushHistory()
   }, [pushHistory])
 
-  const duplicateSelected = useCallback(async () => {
-    const c = canvasRef.current
-    if (!c) return
-    const o = c.getActiveObject()
-    if (!o) return
-    const clone = await o.clone()
-    clone.set({ left: (o.left ?? 0) + 40, top: (o.top ?? 0) + 40 })
+  // วางสำเนา (ใช้ทั้ง Ctrl+D และ Ctrl+V) — ถ้าเลือกหลายชิ้น (ActiveSelection) ต้องแตกลูกๆ add ทีละชิ้น
+  // ห้าม add ตัว selection ลง canvas ตรงๆ ไม่งั้น Fabric ฟ้อง "circular object trees" แล้วกรอบเพี้ยน (วิธีตามตัวอย่าง copy/paste ของ Fabric)
+  const pasteClone = useCallback(async (source: FabricObject, offset = 40) => {
+    const f = fabricRef.current, c = canvasRef.current
+    if (!f || !c) return
+    const clone = await source.clone()
     c.discardActiveObject()
-    c.add(clone)
+    clone.set({ left: (clone.left ?? 0) + offset, top: (clone.top ?? 0) + offset, evented: true })
+    suspendRef.current = true
+    if (clone instanceof f.ActiveSelection) {
+      clone.canvas = c
+      clone.forEachObject((o) => c.add(o))
+      clone.setCoords()
+    } else {
+      c.add(clone)
+    }
+    suspendRef.current = false
     c.setActiveObject(clone)
     c.requestRenderAll()
+    pushHistory()
+  }, [pushHistory])
+
+  const duplicateSelected = useCallback(async () => {
+    const o = canvasRef.current?.getActiveObject()
+    if (o) await pasteClone(o)
+  }, [pasteClone])
+
+  // คลิปบอร์ดภายใน editor (Ctrl+C / Ctrl+V) — เก็บสำเนาไว้ วางซ้ำได้หลายครั้ง เลื่อนลงทีละ 40px
+  const clipboardRef = useRef<FabricObject | null>(null)
+  const copySelected = useCallback(async () => {
+    const o = canvasRef.current?.getActiveObject()
+    if (o) clipboardRef.current = await o.clone()
   }, [])
+  const pasteClipboard = useCallback(async () => {
+    const src = clipboardRef.current
+    if (!src) return
+    await pasteClone(src)
+    src.set({ left: (src.left ?? 0) + 40, top: (src.top ?? 0) + 40 })
+  }, [pasteClone])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -488,12 +519,14 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
       if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); if (e.shiftKey) void redo(); else void undo(); return }
       if (mod && e.key.toLowerCase() === "y") { e.preventDefault(); void redo(); return }
       if (mod && e.key.toLowerCase() === "d") { e.preventDefault(); void duplicateSelected(); return }
+      if (mod && e.key.toLowerCase() === "c") { if (active) { e.preventDefault(); void copySelected() } return }
+      if (mod && e.key.toLowerCase() === "v") { if (clipboardRef.current) { e.preventDefault(); void pasteClipboard() } return }
       if (e.key === "Delete" || e.key === "Backspace") { if (active) { e.preventDefault(); deleteSelected() } return }
       if (e.key === "Escape") { c.discardActiveObject(); c.requestRenderAll(); setSelection(null) }
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [undo, redo, duplicateSelected, deleteSelected])
+  }, [undo, redo, duplicateSelected, deleteSelected, copySelected, pasteClipboard])
 
   /* ══ แถบเครื่องมือของวัตถุที่เลือก ══ */
   const patchText = useCallback(async (p: { fontFamily?: string; fontSize?: number; fill?: string; stroke?: string; strokeWidth?: number; bold?: boolean; textAlign?: "left" | "center" | "right" }) => {

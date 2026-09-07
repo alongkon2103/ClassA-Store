@@ -2026,7 +2026,7 @@
     "bring_forward": "Bring forward",
     "send_backward": "Send backward",
     "duplicate": "Duplicate",
-    "shortcuts_hint": "Delete removes · Ctrl+Z undo · Ctrl+D duplicate · double-click text to edit",
+    "shortcuts_hint": "Delete removes · Ctrl+Z undo · Ctrl+D duplicate · Ctrl+C/V copy-paste · double-click text to edit",
     "image_load_error": "Could not load this image, try another"
   }
 }

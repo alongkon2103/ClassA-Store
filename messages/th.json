@@ -2029,7 +2029,7 @@
     "bring_forward": "เลื่อนขึ้นบน",
     "send_backward": "เลื่อนลงล่าง",
     "duplicate": "ทำสำเนา",
-    "shortcuts_hint": "Delete ลบ · Ctrl+Z ย้อน · Ctrl+D ทำสำเนา · ดับเบิลคลิกข้อความเพื่อแก้",
+    "shortcuts_hint": "Delete ลบ · Ctrl+Z ย้อน · Ctrl+D ทำสำเนา · Ctrl+C/V คัดลอก-วาง · ดับเบิลคลิกข้อความเพื่อแก้",
     "image_load_error": "โหลดรูปไม่สำเร็จ ลองรูปอื่น"
   }
 }
