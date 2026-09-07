@@ -2032,5 +2032,21 @@
     "duplicate": "Duplicate",
     "shortcuts_hint": "Delete removes · Ctrl+Z undo · Ctrl+D duplicate · Ctrl+C/V copy-paste · double-click text to edit",
     "image_load_error": "Could not load this image, try another"
+  },
+  "AdminFeatures": {
+    "title": "Product features",
+    "subtitle": "Type them yourself — shown as a 2-column checklist in the product page's Details tab",
+    "placeholder_th": "Thai text, e.g. 5,000+ levels",
+    "placeholder_en": "English (optional, falls back to Thai)",
+    "add": "Add item",
+    "remove": "Remove",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "save_error": "Save failed",
+    "empty": "No features yet — click + to add",
+    "hint": "Rows empty in both languages are dropped on save · top-to-bottom order = left-to-right on the product page"
   }
 }

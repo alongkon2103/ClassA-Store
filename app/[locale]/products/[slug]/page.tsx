@@ -144,6 +144,13 @@ export default async function Page({ params }: Params) {
     _avg: { rating: true },
     _count: { _all: true },
   })
+  // จุดเด่นที่แอดมินพิมพ์เอง (แท็บ Feature ใน admin) — โชว์ในแท็บรายละเอียด
+  const features = await prisma.product_features.findMany({
+    where: { product_id: product.id },
+    orderBy: { sort_order: "asc" },
+    select: { id: true, text_th: true, text_en: true },
+  })
+
   const functions = await prisma.product_functions.findMany({
     where: { product_id: product.id },
     orderBy: { sort_order: "asc" },
@@ -181,7 +188,7 @@ export default async function Page({ params }: Params) {
       {/* Suspense: ProductPageClient reads useSearchParams() for ?ref=CODE.
           Without it, ISR prerender bails with a CSR-bailout error. */}
       <Suspense fallback={null}>
-        <ProductPageClient product={safeProduct} related={related} reviewSummary={reviewSummary} functions={functions} />
+        <ProductPageClient product={safeProduct} related={related} reviewSummary={reviewSummary} functions={functions} features={features} />
       </Suspense>
     </>
   )

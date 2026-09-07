@@ -59,12 +59,13 @@ const HIGHLIGHTS: { key: string; icon: React.ReactNode }[] = [
 ]
 
 export default function ProductPageClient({
-  product, related, reviewSummary, functions = [],
+  product, related, reviewSummary, functions = [], features = [],
 }: {
   product: Product
   related: Related[]
   reviewSummary?: { average: number; count: number }
   functions?: { id: string; name: string; label_th: string | null; label_en: string | null }[]
+  features?: { id: string; text_th: string; text_en: string | null }[]
 }) {
   const t = useTranslations("ProductPage")
   const tc = useTranslations("Common")
@@ -159,7 +160,9 @@ export default function ProductPageClient({
 
   const selected = displayVariants.find((v) => v.id === pkgId) ?? null
   const selectedPriced = priced.find((x) => x.v.id === pkgId) ?? null
-  const featureList = functions.map((f) => (isTH ? f.label_th : f.label_en) || f.label_en || f.label_th || f.name)
+  // ป้าย "16 ฟังก์ชัน" ยังนับจาก product_functions · รายการจุดเด่นในแท็บรายละเอียดมาจากที่แอดมินพิมพ์เอง (product_features)
+  const functionCount = functions.length
+  const featureList = features.map((f) => (isTH ? f.text_th : f.text_en || f.text_th) || f.text_th)
   const typeChip = (product as unknown as { type?: string }).type === "desktop_program" ? "PC" : "Roblox"
 
   return (
@@ -253,9 +256,9 @@ export default function ProductPageClient({
 
               <div className="flex gap-2 mb-4 flex-wrap">
                 <span className="px-4 py-1.5 rounded-lg text-[0.78rem] font-semibold bg-accent/[0.08] border border-accent/[0.12] text-accent-lighter">{typeChip}</span>
-                {featureList.length > 0 && (
+                {functionCount > 0 && (
                   <span className="px-4 py-1.5 rounded-lg text-[0.78rem] font-semibold bg-accent/[0.08] border border-accent/[0.12] text-accent-lighter">
-                    {t("functions_count", { count: featureList.length })}
+                    {t("functions_count", { count: functionCount })}
                   </span>
                 )}
               </div>

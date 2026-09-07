@@ -9,6 +9,7 @@ import KeysPanel from "./KeysPanel"
 import GiftManager from "./GiftManager"
 import PresetManager from "./PresetManager"
 import FunctionManager from "./FunctionManager"
+import FeatureManager from "./FeatureManager"
 import ConsignmentManager from "./ConsignmentManager"
 import PartnershipManager from "./PartnershipManager"
 import TiptapEditor from "../TiptapEditor"
@@ -28,7 +29,7 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
     const locale = useLocale()
     const router = useRouter()
     const [saving, setSaving] = useState(false)
-    const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys" | "consignment" | "functions" | "partnership"> ("info")
+    const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys" | "consignment" | "functions" | "features" | "partnership"> ("info")
     const [videoUploading, setVideoUploading] = useState(false)
     const [videoError, setVideoError] = useState<string | null>(null)
 
@@ -180,6 +181,7 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
         { key: "consignment", label: t("tab_consignment"), hidden: mode === "create" || !form.is_consignment },
         { key: "partnership", label: t("tab_partnership"), hidden: mode === "create" || form.is_consignment },
         { key: "functions", label: "Functions", hidden: mode === "create" },
+        { key: "features", label: "Feature", hidden: mode === "create" },
     ] as const
 
     return (
@@ -523,6 +525,10 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
                     onUpdate={(list) => set("partnership_shares", list)}
                 />
             )}
+            {activeTab === "features" && (
+                <FeatureManager productId={product.id} features={product.product_features ?? []} />
+            )}
+
             {activeTab === "functions" && (
                 <FunctionManager productId={product.id} functions={product.product_functions ?? []} allGifts={allGifts ?? []} />
             )}

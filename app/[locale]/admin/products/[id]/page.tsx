@@ -21,6 +21,7 @@ export default async function EditProductPage({
       product_gifts: { orderBy: { sort_order: "asc" } },
       product_presets: { orderBy: { sort_order: "asc" } },
       product_functions: { orderBy: { sort_order: "asc" } },
+      product_features: { orderBy: { sort_order: "asc" } },
       product_consignments: { orderBy: { created_at: "asc" } },
       product_shares: { include: { partners: true } },
     },
