@@ -395,24 +395,25 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
       const tileH = (h - marginY * 2 - gapY * (rows - 1)) / rows
       const maxTileW = (w * 0.44 - gapX * (sideCols - 1)) / sideCols // ฝั่งละไม่เกิน 44% ของความกว้าง
       const tileW = Math.min((tileH * 9) / 7, maxTileW)
-      const unit = Math.min(tileH, (tileW * 7) / 9) // สเกลของของในการ์ด
-      const fontSize = Math.max(18, Math.round(unit * 0.12))
+      // ของในการ์ดขยายให้เต็มกรอบที่มี (ทั้งกว้างและสูง) การ์ดเตี้ยก็ยังได้รูปกว้างสุดเท่าที่ใส่ได้
+      const imgBoxW = tileW * 0.86, imgBoxH = tileH * 0.6
+      const giftSize = Math.min(tileW * 0.3, tileH * 0.3)
+      const fontSize = Math.round(Math.max(16, Math.min(tileW * 0.11, tileH * 0.14)))
       suspendRef.current = true
       const placeTile = async (fn: (typeof d.functions)[number], cx: number, cy: number) => {
         if (fn.image_url) {
           try {
             const img = await f.FabricImage.fromURL(canvasSafeUrl(fn.image_url), { crossOrigin: "anonymous" })
-            img.scaleToHeight(unit * 0.58)
-            if (img.getScaledWidth() > tileW * 0.8) img.scaleToWidth(tileW * 0.8)
-            img.set({ left: cx, top: cy - unit * 0.06, originX: "center", originY: "center" })
+            img.scale(Math.min(imgBoxW / img.width, imgBoxH / img.height))
+            img.set({ left: cx, top: cy - tileH * 0.06, originX: "center", originY: "center" })
             c.add(img)
           } catch { /* รูปตัวละครโหลดไม่ได้ก็ข้าม */ }
         }
         if (fn.gift_image_url) {
           try {
             const g = await f.FabricImage.fromURL(canvasSafeUrl(fn.gift_image_url), { crossOrigin: "anonymous" })
-            g.scaleToWidth(unit * 0.3)
-            g.set({ left: cx - tileW / 2 + unit * 0.2, top: cy - tileH / 2 + unit * 0.2, originX: "center", originY: "center" })
+            g.scaleToWidth(giftSize)
+            g.set({ left: cx - tileW / 2 + giftSize * 0.65, top: cy - tileH / 2 + giftSize * 0.65, originX: "center", originY: "center" })
             c.add(g)
           } catch { /* ข้าม */ }
         }
