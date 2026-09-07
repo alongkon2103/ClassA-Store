@@ -73,7 +73,7 @@ export default function LoginCard({ callbackUrl = "/" }: { callbackUrl?: string 
       <p className="text-center text-[0.7rem] text-text-dim leading-relaxed mt-6">
         {t.rich("agreement", {
           terms: (chunks) => <Link href="/rules" className="text-accent-light hover:underline">{chunks}</Link>,
-          privacy: (chunks) => <Link href="/rules" className="text-accent-light hover:underline">{chunks}</Link>,
+          privacy: (chunks) => <Link href="/privacy" className="text-accent-light hover:underline">{chunks}</Link>,
         })}
       </p>
     </div>

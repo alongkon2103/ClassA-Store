@@ -167,7 +167,8 @@
     "newsletter_done": "You're subscribed!",
     "newsletter_error": "Invalid email, please try again",
     "made_with": "Made with",
-    "made_for": "by A Class Store"
+    "made_for": "by A Class Store",
+    "link_privacy": "Privacy policy"
   },
   "Shop": {
     "title": "All Products",
@@ -2048,5 +2049,13 @@
     "save_error": "Save failed",
     "empty": "No features yet — click + to add",
     "hint": "Rows empty in both languages are dropped on save · top-to-bottom order = left-to-right on the product page"
+  },
+  "Privacy": {
+    "eyebrow": "Policy",
+    "title": "Privacy Policy",
+    "subtitle": "We collect only what is needed to deliver your purchases and support you. This page explains what we collect, how it is used, and your rights.",
+    "updated": "Last updated {date}",
+    "toc": "Contents",
+    "contact_page": "Contact page"
   }
 }

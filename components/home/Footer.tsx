@@ -48,6 +48,7 @@ export default function Footer() {
   const links = [
     { href: "/products", label: t("link_products") },
     { href: "/rules", label: t("link_terms") },
+    { href: "/privacy", label: t("link_privacy") },
     { href: "/faq", label: t("link_faq") },
     { href: "/contact", label: t("link_contact") },
   ]
