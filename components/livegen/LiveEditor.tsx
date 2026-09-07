@@ -385,7 +385,7 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
       await ensureFont(DEFAULT_FONT)
       clearCanvas()
       const { w, h } = size()
-      // สองฝั่งชิดขอบซ้าย/ขวา เว้นกลางไว้ให้ภาพเกม: ซ้าย = ฝั่งลบ · ขวา = ฝั่งบวก (ดู lib/livegen/templateLayout)
+      // สองฝั่งชิดขอบซ้าย/ขวา เว้นกลางไว้ให้ภาพเกม: เรียงตามลำดับใน admin ครึ่งแรกซ้าย ครึ่งหลังขวา (ดู lib/livegen/templateLayout)
       // แนวตั้ง = ฝั่งละ 1 คอลัมน์ · แนวนอน = ฝั่งละ 2 · แบ่งความสูงพอดีทั้งหน้า ขนาดการ์ดคิดจากจำนวน (มาก = เล็ก) ไม่ทะลุจอ
       const { left, right } = splitSides(d.functions)
       const sideCols = orientationRef.current === "portrait" ? 1 : 2
