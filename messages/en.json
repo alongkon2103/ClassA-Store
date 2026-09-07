@@ -1299,7 +1299,7 @@
     "instant_delivery": "Instant key delivery",
     "exclusive_deals": "Exclusive deals",
     "support_247": "24/7 support",
-    "agreement": "By continuing you agree to our privacy policies and service conditions.",
+    "agreement": "By continuing, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
     "terms": "Terms of Service",
     "privacy": "Privacy Policy"
   },
