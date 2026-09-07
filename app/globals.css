@@ -1,4 +1,9 @@
 @import "tailwindcss";
+/* บอก Tailwind ชัดๆ ว่าสแกน class จากที่ไหน — ให้ Turbopack track ไฟล์พวกนี้ตอน dev
+   (ไม่งั้น class ใหม่ในไฟล์ที่เพิ่งแก้บางทีไม่ถูกสร้าง จนต้อง restart) */
+@source "../app";
+@source "../components";
+@source "../lib";
 @plugin "@tailwindcss/typography";
 
 /* Prose styles for Tiptap-generated HTML — used both by the editor (admin) and
