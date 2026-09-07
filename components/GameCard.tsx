@@ -75,12 +75,13 @@ export default function GameCard({
           : "flex flex-col hover:-translate-y-1.5 hover:shadow-[0_0_0_1px_rgba(37,99,235,0.2),0_12px_40px_rgba(37,99,235,0.15),0_4px_16px_rgba(0,0,0,0.3)]"
       }`}
     >
-      <div className={`relative overflow-hidden ${isList ? "w-full sm:w-[200px] aspect-[4/3] sm:aspect-auto sm:min-h-[130px] flex-shrink-0" : "aspect-[4/3]"}`}
+      <div className={`relative overflow-hidden ${isList ? "w-full sm:w-[200px] aspect-[4/3] sm:aspect-auto sm:h-[130px] sm:self-stretch flex-shrink-0" : "aspect-[4/3]"}`}
            style={{ background: "linear-gradient(145deg,#141e36,#0d1526)" }}>
         <img
           src={getImageUrl(image || "/placeholder.png")}
           alt={name}
-          className={`w-full h-full object-cover transition-transform duration-500 ${videoOn ? "opacity-0" : "group-hover:scale-[1.08]"}`}
+          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${videoOn ? "opacity-0" : "group-hover:scale-[1.08]"}`}
+          onError={(e) => { e.currentTarget.style.visibility = "hidden" }}
         />
         {previewVideo && (
           <video

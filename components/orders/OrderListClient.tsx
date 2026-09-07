@@ -123,7 +123,6 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
             const isPending = order.status === "pending"
             const isTrial = order.order_type === "TRIAL"
             const isPaying = payingId === order.id
-            const hasFunctions = (order.products?.product_functions?.length ?? 0) > 0
             const isDesktop = order.products?.type === "desktop_program"
             const name = locale === "th" ? order.products.name_th : order.products.name_en
             const variantLabel = locale === "th"
@@ -244,12 +243,6 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                       ) : (
                         <button onClick={() => setSelectedOrder(order)} className={`${btn} bg-accent hover:bg-accent-light text-white`}>{t("act_play")}</button>
                       )
-                    )}
-                    {isPaid && hasFunctions && (
-                      <button onClick={() => router.push(`/orders/${order.id}/settings`)}
-                        className={`${btn} border border-border-soft text-text-muted hover:bg-white/[0.03] hover:text-text-base flex items-center justify-center gap-1`}>
-                        <SettingsIcon size={11} />{t("settings_short")}
-                      </button>
                     )}
                     {isPaid ? (
                       <button onClick={() => setSelectedOrder(order)} className={`${btn} border border-border-soft text-text-muted hover:bg-white/[0.03] hover:text-text-base`}>
@@ -591,14 +584,6 @@ function CloseIcon({ size = 20 }: { size?: number }) {
   )
 }
 
-function SettingsIcon({ size = 20, className = "" }: { size?: number; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  )
-}
 
 function ImageIcon({ size = 20 }: { size?: number }) {
   return (
