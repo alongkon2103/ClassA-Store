@@ -428,3 +428,6 @@ body {
 @media (max-width: 768px) {
   .page-container { padding-inline: 16px; }
 }
+
+/* ป้าย NEW ใช้ตัวดำบนเขียวสดในโหมดมืด — โหมดสว่างเขียวเข้มกว่า ตัวหนังสือต้องขาวถึงจะอ่านออก */
+[data-theme="light"] .bg-success.text-black { color: #ffffff !important; }
