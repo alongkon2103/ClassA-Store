@@ -1696,7 +1696,11 @@
     "like": "Like",
     "favorite": "Favorite",
     "login_to_use": "Sign in to use",
-    "functions_count": "{count} functions"
+    "functions_count": "{count} functions",
+    "highlight_auto_update": "Automatic update system",
+    "highlight_new_content": "Fresh content updates all the time",
+    "highlight_presets": "Presets and images included — ready to use right away",
+    "highlight_tikfinity": "Works smoothly with Tikfinity Pro and other programs"
   },
   "Notifications": {
     "title": "Notifications",

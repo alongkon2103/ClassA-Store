@@ -1699,7 +1699,11 @@
     "like": "กดใจ",
     "favorite": "รายการโปรด",
     "login_to_use": "เข้าสู่ระบบก่อนใช้งาน",
-    "functions_count": "{count} ฟังก์ชัน"
+    "functions_count": "{count} ฟังก์ชัน",
+    "highlight_auto_update": "ระบบอัปเดตอัตโนมัติ",
+    "highlight_new_content": "อัปเดตคอนเทนต์ใหม่เสมอ",
+    "highlight_presets": "พร้อมพรีเซ็ตและรูปภาพ พร้อมใช้งานได้ทันที",
+    "highlight_tikfinity": "รองรับการใช้งานร่วมกับ Tikfinity Pro และโปรแกรมอื่น ๆ ได้อย่างสะดวก"
   },
   "Notifications": {
     "title": "การแจ้งเตือน",

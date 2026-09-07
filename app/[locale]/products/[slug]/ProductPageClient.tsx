@@ -49,6 +49,15 @@ function youtubeEmbed(url: string): string | null {
   return m ? `https://www.youtube.com/embed/${m[1]}` : null
 }
 
+// จุดเด่นคงที่ที่โชว์ใต้คะแนนของทุกเกม — ข้อความอยู่ใน i18n ProductPage.highlight_*
+const hlSvg = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }
+const HIGHLIGHTS: { key: string; icon: React.ReactNode }[] = [
+  { key: "auto_update", icon: <svg {...hlSvg}><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg> },
+  { key: "new_content", icon: <svg {...hlSvg}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> },
+  { key: "presets", icon: <svg {...hlSvg}><rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg> },
+  { key: "tikfinity", icon: <svg {...hlSvg}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
+]
+
 export default function ProductPageClient({
   product, related, reviewSummary, functions = [],
 }: {
@@ -265,11 +274,15 @@ export default function ProductPageClient({
                 )}
               </button>
 
-              {/* รายละเอียดสินค้า — อยู่ใต้คะแนน (ย้ายมาจากแท็บด้านล่างตามที่ขอ) */}
-              {desc && (
-                <div className="prose-product max-w-none text-[0.88rem] text-text-muted leading-[1.85] mb-6 [&_img]:rounded-xl [&_a]:text-accent-light [&_h1]:text-text-base [&_h2]:text-text-base [&_h3]:text-text-base [&_strong]:text-text-base"
-                     dangerouslySetInnerHTML={{ __html: desc }} />
-              )}
+              {/* จุดเด่นคงที่ของทุกเกม (ตามที่เจ้าของร้านกำหนด) */}
+              <ul className="list-none flex flex-col gap-3 mb-7">
+                {HIGHLIGHTS.map(({ key, icon }) => (
+                  <li key={key} className="flex items-start gap-3 text-sm text-text-muted leading-relaxed">
+                    <span className="text-accent-light mt-0.5 shrink-0">{icon}</span>
+                    {t(`highlight_${key}`)}
+                  </li>
+                ))}
+              </ul>
 
 
               {/* เลือกแพ็กเกจ */}
@@ -335,6 +348,10 @@ export default function ProductPageClient({
                 {/* รายละเอียด */}
                 <div id="about" className="scroll-mt-24">
                   <h3 className="text-lg font-extrabold mb-4">{t("description_title")}</h3>
+                  {desc ? (
+                    <div className="prose-product max-w-none text-[0.88rem] text-text-muted leading-[1.85] mb-6 [&_img]:rounded-xl [&_a]:text-accent-light [&_h1]:text-text-base [&_h2]:text-text-base [&_h3]:text-text-base [&_strong]:text-text-base"
+                         dangerouslySetInnerHTML={{ __html: desc }} />
+                  ) : <p className="text-[0.88rem] text-text-dim mb-6">—</p>}
 
                   {featureList.length > 0 && (
                     <ul className="list-none grid grid-cols-1 sm:grid-cols-2 gap-2.5">
