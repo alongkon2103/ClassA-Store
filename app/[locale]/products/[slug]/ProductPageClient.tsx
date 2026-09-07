@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import ImageCarousel from "@/components/products/ImageCarousel"
 import { useSearchParams } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
 import { AnimatePresence } from "framer-motion"
@@ -172,9 +173,8 @@ export default function ProductPageClient({
 
             {/* ── GALLERY ── */}
             <div className="flex flex-col gap-3">
-              <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border border-border-soft flex items-center justify-center"
-                   style={{ background: "linear-gradient(135deg,#0c1a3a,#111d3a)" }}>
-                <img src={getImageUrl(images[imgIdx].url)} alt={name} className="w-full h-full object-cover" />
+              {/* carousel ของรูปเกมทั้งหมด — ป้ายส่วนลดกับปุ่มไปดูวิดีโอวางทับมุม ไม่บังรูป */}
+              <ImageCarousel images={images.map((im) => getImageUrl(im.url))} alt={name} index={imgIdx} onChange={setImgIdx}>
                 {headlineWas != null && (
                   <span className="absolute top-3.5 left-3.5 px-3.5 py-1 bg-hot text-white rounded-lg text-[0.7rem] font-bold z-10">
                     -{pct(headlineWas, headlineNow)}%
@@ -183,13 +183,13 @@ export default function ProductPageClient({
                 {ytEmbeds.length > 0 && (
                   <button
                     onClick={() => goSection("about")}
-                    aria-label={t("videos_title")}
-                    className="absolute w-[60px] h-[60px] rounded-full bg-black/45 border-2 border-white/25 flex items-center justify-center z-10 backdrop-blur-sm hover:scale-[1.08] hover:bg-accent/50 transition-transform"
+                    className="absolute top-3.5 right-3.5 z-10 px-3 py-1.5 rounded-lg bg-black/45 border border-white/20 text-white text-[0.7rem] font-semibold flex items-center gap-1.5 backdrop-blur-sm hover:bg-black/65 transition"
                   >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                    {t("videos_title")}
                   </button>
                 )}
-              </div>
+              </ImageCarousel>
 
               {images.length > 1 && (
                 <div className="grid grid-cols-6 gap-2">
