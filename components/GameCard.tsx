@@ -120,7 +120,8 @@ export default function GameCard({
           <span className="text-[0.65rem] font-semibold text-accent-light uppercase tracking-[0.05em] mb-1">{platform}</span>
         )}
         <h3 className="text-[0.88rem] font-bold mb-1 leading-[1.3] truncate">{name}</h3>
-        {description && <p className="text-[0.7rem] text-text-dim leading-[1.5] mb-2.5 line-clamp-2">{description}</p>}
+        {/* จองที่ 2 บรรทัดเสมอ (แม้คำอธิบายสั้น/ไม่มี) ให้แถวดาวกับราคาอยู่ระดับเดียวกันทุกใบ */}
+        <p className="text-[0.7rem] text-text-dim leading-[1.5] mb-2.5 line-clamp-2 min-h-[2.1rem]">{description}</p>
         {/* คะแนนรีวิว (ตามดีไซน์ .game-rating) — โชว์เสมอเพื่อให้การ์ดสูงเท่ากัน */}
         <div className={`flex items-center gap-1 ${isList ? "" : "mb-3"}`}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className={hasRating ? "text-gold" : "text-border-light"}>
@@ -138,17 +139,18 @@ export default function GameCard({
       </div>
 
       <div className={`px-3.5 py-3 flex items-center gap-2 ${isList ? "sm:flex-col sm:items-end sm:justify-center sm:border-l sm:border-t-0 border-t border-white/[0.06]" : "mt-auto border-t border-white/[0.06]"}`}>
-        <div className={isList ? "flex-1 min-w-0 sm:flex-none sm:text-right" : "flex-1 min-w-0"}>
+        <div className={`leading-tight ${isList ? "flex-1 min-w-0 sm:flex-none sm:text-right" : "flex-1 min-w-0"}`}>
+          {/* ราคาเต็มอยู่บรรทัดบนของตัวเอง — ถ้าวางบรรทัดเดียวกับราคา+USD จะยาวเกินการ์ดแล้วตกบรรทัด ทำให้การ์ดสูงไม่เท่ากัน */}
           {oldPrice != null && oldPrice > price && (
-            <span className="text-[0.72rem] text-text-dim line-through font-medium mr-1.5">฿{oldPrice.toLocaleString()}</span>
+            <span className="block text-[0.68rem] text-text-dim line-through font-medium mb-0.5">฿{oldPrice.toLocaleString()}</span>
           )}
-          <span className="text-[1.05rem] font-extrabold text-text-base tracking-[-0.02em]">
+          <span className="block whitespace-nowrap text-[1.05rem] font-extrabold text-text-base tracking-[-0.02em]">
             <span className="text-[0.78rem] font-semibold">฿</span>{price.toLocaleString()}
+            {usdRate ? <span className="text-[0.66rem] text-text-dim font-medium tracking-normal">{usd(price)}</span> : null}
           </span>
-          {usdRate ? <span className="text-[0.68rem] text-text-dim">{usd(price)}</span> : null}
         </div>
         <span
-          className="px-4 py-2.5 rounded-[10px] bg-accent hover:bg-accent-light text-white text-[0.8rem] font-bold flex items-center justify-center gap-[7px] transition-all shadow-[0_2px_12px_rgba(37,99,235,0.2)] hover:shadow-[0_4px_20px_rgba(37,99,235,0.35)] active:scale-95 flex-shrink-0"
+          className="shrink-0 px-4 py-2.5 rounded-[10px] bg-accent hover:bg-accent-light text-white text-[0.8rem] font-bold flex items-center justify-center gap-[7px] transition-all shadow-[0_2px_12px_rgba(37,99,235,0.2)] hover:shadow-[0_4px_20px_rgba(37,99,235,0.35)] active:scale-95 flex-shrink-0"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
