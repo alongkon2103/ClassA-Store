@@ -156,7 +156,7 @@ export default function ProductPageClient({
 
       <main className="pb-28 lg:pb-0">
         {/* BREADCRUMB */}
-        <div className="w-full px-5 sm:px-7 lg:px-10">
+        <div className="page-container">
           <div className="py-5 text-xs text-text-dim flex items-center gap-1.5 flex-wrap">
             <Link href="/products" className="text-accent-light">{t("breadcrumb_shop")}</Link>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
@@ -167,7 +167,7 @@ export default function ProductPageClient({
         </div>
 
         {/* PRODUCT LAYOUT */}
-        <div className="w-full px-5 sm:px-7 lg:px-10">
+        <div className="page-container">
           <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-8 lg:gap-12 mb-12 items-start">
 
             {/* ── GALLERY ── */}
@@ -317,7 +317,7 @@ export default function ProductPageClient({
         </div>
 
         {/* ── TABS ── */}
-        <div className="w-full px-5 sm:px-7 lg:px-10">
+        <div className="page-container">
           <div className="border-t border-border-soft mb-12">
             <div className="flex border-b border-border-soft overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {([

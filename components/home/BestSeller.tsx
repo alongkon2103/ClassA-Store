@@ -53,7 +53,7 @@ export default function BestSeller({ products, onSelect, usdRate }: Props) {
   const { bestDiscountedPrice } = useAutoDiscounts()
 
   return (
-    <section className="w-full px-5 sm:px-7 lg:px-10 mb-12">
+    <section className="page-container mb-12">
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-[1.25rem] font-extrabold">{t("best_selling_keys")}</h2>
         <Link href="/products" className="group text-accent-light text-[0.85rem] font-semibold inline-flex items-center gap-1.5 hover:gap-2.5 transition-all">

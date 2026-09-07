@@ -32,7 +32,7 @@ export default function TrustBar() {
   ] as const
 
   return (
-    <div className="w-full px-5 sm:px-7 lg:px-10">
+    <div className="page-container">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-border-soft rounded-[14px] overflow-hidden my-6">
         {items.map((it) => (
           <div key={it.title} className="bg-bg-surface hover:bg-bg-card transition-colors px-6 py-[22px] flex items-center gap-3.5">

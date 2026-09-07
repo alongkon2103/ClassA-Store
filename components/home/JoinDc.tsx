@@ -17,7 +17,7 @@ export default function JoinDc() {
   const t = useTranslations("Home")
 
   return (
-    <div className="w-full px-5 sm:px-7 lg:px-10 mb-12">
+    <div className="page-container mb-12">
       <section
         className="relative overflow-hidden text-center px-6 py-[60px] rounded-2xl border border-border-soft"
         style={{ background: "linear-gradient(180deg,var(--color-bg-surface),rgba(6,10,20,0.6))" }}

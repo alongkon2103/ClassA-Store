@@ -104,7 +104,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
       <Navbar />
 
       <main className="flex-1">
-        <div className="w-full px-5 sm:px-7 lg:px-10">
+        <div className="page-container">
           {/* หัวเรื่อง + breadcrumb */}
           <div className="pt-10 pb-7 border-b border-border-soft mb-7">
             <div className="flex items-center gap-[18px]">

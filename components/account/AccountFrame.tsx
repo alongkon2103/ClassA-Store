@@ -11,7 +11,7 @@ export default function AccountFrame({ active, children }: { active: AccountSect
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
         </div>
-        <div className="relative z-10 w-full px-5 sm:px-7 lg:px-10 py-8 md:py-12">
+        <div className="relative z-10 page-container py-8 md:py-12">
           <AccountShell active={active}>{children}</AccountShell>
         </div>
       </main>

@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma"
 import { setRequestLocale } from "next-intl/server"
 import { getFeatureFlags } from "@/lib/featureFlags"
 import Navbar from "@/components/Navbar"
-import Footer from "@/components/home/Footer"
 import LiveEditor from "@/components/livegen/LiveEditor"
 
 // สร้างรูปไลฟ์ — editor แบบ Canva (Fabric.js) ตาม designer.html
@@ -55,7 +54,6 @@ export default async function LiveGenPage({ params, searchParams }: {
         initialGameId={sp.game ?? null}
         initialProjectId={sp.project ?? null}
       />
-      <Footer />
     </div>
   )
 }

@@ -102,12 +102,7 @@ export default function Navbar() {
           href="/"
           className="flex items-center gap-2.5 text-[1.1rem] font-extrabold tracking-[-0.02em] text-text-base no-underline whitespace-nowrap shrink-0"
         >
-          <span
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-[0.72rem] font-black text-white shadow-[0_2px_12px_rgba(37,99,235,0.3)]"
-            style={{ background: "linear-gradient(135deg,var(--color-accent),var(--color-accent-lighter))" }}
-          >
-            AC
-          </span>
+          <img src="/AClassStoreLogo.png" alt="A Class Store" width={40} height={40} className="w-10 h-10 object-contain drop-shadow-[0_2px_10px_rgba(37,99,235,0.35)]" />
           A CLASS STORE
         </Link>
 

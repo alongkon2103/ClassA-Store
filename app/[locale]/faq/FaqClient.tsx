@@ -39,7 +39,7 @@ export default function FaqClient() {
 
   return (
     <>
-      <div className="w-full px-5 sm:px-7 lg:px-10">
+      <div className="page-container">
         {/* HERO */}
         <div className="text-center pt-14 pb-10">
           <h1 className="text-[1.6rem] sm:text-[2.2rem] font-black tracking-[-0.02em] mb-2.5">{t("title")}</h1>

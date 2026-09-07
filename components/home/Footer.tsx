@@ -58,8 +58,7 @@ export default function Footer() {
         {/* แบรนด์ */}
         <div>
           <h3 className="text-[1.05rem] font-extrabold mb-3 flex items-center gap-2">
-            <span className="w-[26px] h-[26px] rounded-md inline-flex items-center justify-center text-[0.55rem] font-black text-white"
-                  style={{ background: "linear-gradient(135deg,var(--color-accent),var(--color-accent-lighter))" }}>AC</span>
+            <img src="/AClassStoreLogo.png" alt="" width={28} height={28} className="w-7 h-7 object-contain" />
             A CLASS STORE
           </h3>
           <p className="text-[0.78rem] text-text-dim leading-[1.7] mb-[18px]">{t("tagline")}</p>
