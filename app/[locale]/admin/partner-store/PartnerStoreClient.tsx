@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations, useLocale } from "next-intl"
+import MakiProductEditor, { type MakiPlanView } from "./MakiProductEditor"
 
 type Split = { partner_id: string; pct: number }
 type PartnerProduct = {
@@ -22,10 +23,17 @@ type PartnerProduct = {
   commission_paid_thb: number
   sales_count: number
   splits: Split[]
+  // ร้าน Maki
+  description_html_th: string | null
+  description_html_en: string | null
+  images: string[]
+  coming_soon: boolean
+  plans: MakiPlanView[]
 }
 type Store = {
   id: string
   key: string
+  integration: string
   display_name: string
   site_url: string | null
   ref_slug: string | null
@@ -50,6 +58,8 @@ export default function PartnerStoreClient({
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
+  const [makiEditing, setMakiEditing] = useState<PartnerProduct | null>(null)
+  const tm = useTranslations("AdminMaki")
 
   const partnerName = (id: string) => partners.find((p) => p.id === id)?.name ?? "—"
   const syncedKeys = new Set(stores.map((s) => s.key))
@@ -166,12 +176,39 @@ export default function PartnerStoreClient({
                       ? <img src={p.thumbnail_url} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                       : <div className="w-10 h-10 rounded-lg bg-accent/20 flex-shrink-0" />}
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] text-text-base font-medium line-clamp-1">{locale === "th" ? p.name_th : p.name_en}</p>
-                      <p className="text-[11px] text-text-muted">
-                        {p.external_slug} · {t("commission")} {t("realized")}: <span className="text-green-400">{baht(p.commission_paid_thb)}</span>
-                        {" · "}{t("pending")}: {baht(p.commission_pending_thb)}
+                      <p className="text-[13px] text-text-base font-medium line-clamp-1">
+                        {locale === "th" ? p.name_th : p.name_en}
+                        {p.coming_soon && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-hot/15 text-hot">{tm("gone")}</span>}
                       </p>
+                      {store.integration === "maki_api" ? (
+                        <p className="text-[11px] text-text-muted flex flex-wrap gap-x-3">
+                          {p.plans.map((pl) => {
+                            const ok = pl.sell_price_thb != null && pl.sell_price_thb >= pl.min_price_thb
+                            return (
+                              <span key={pl.key}>
+                                {locale === "th" ? pl.label_th : pl.label_en}: {tm("min")} {baht(pl.min_price_thb)} →{" "}
+                                {pl.sell_price_thb == null
+                                  ? <span className="text-yellow-400">{tm("no_price")}</span>
+                                  : <span className={ok ? "text-green-400" : "text-hot"}>{baht(pl.sell_price_thb)}</span>}
+                              </span>
+                            )
+                          })}
+                          {p.images.length === 0 && <span className="text-yellow-400">{tm("no_image")}</span>}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-text-muted">
+                          {p.external_slug} · {t("commission")} {t("realized")}: <span className="text-green-400">{baht(p.commission_paid_thb)}</span>
+                          {" · "}{t("pending")}: {baht(p.commission_pending_thb)}
+                        </p>
+                      )}
                     </div>
+
+                    {store.integration === "maki_api" && (
+                      <button onClick={() => setMakiEditing(p)}
+                        className="text-[12px] px-3 py-1.5 rounded-lg bg-accent text-white font-semibold hover:opacity-90">
+                        {tm("edit")}
+                      </button>
+                    )}
 
                     <VideoCell product={p} t={t} onDone={() => router.refresh()} />
 
@@ -202,6 +239,11 @@ export default function PartnerStoreClient({
 
       {partners.length === 0 && (
         <p className="text-[12px] text-text-muted">{t("no_partners_hint")}</p>
+      )}
+
+      {makiEditing && (
+        <MakiProductEditor product={makiEditing} onClose={() => setMakiEditing(null)}
+                           onSaved={() => { setMakiEditing(null); router.refresh() }} />
       )}
     </div>
   )

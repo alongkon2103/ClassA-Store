@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import ProductsClient from "./ProductsClient"
 import { prisma } from "@/lib/prisma"
 import { getThbToUsdRate } from "@/lib/paypal"
+import { withLiveMinimums, planAvailable, toPlanRows } from "@/lib/maki"
 import { setRequestLocale } from "next-intl/server";
 
 // ISR cache the catalog page for 60s. Stock counts may be slightly stale, but
@@ -72,12 +73,18 @@ export default async function Page({
     // Partner games (external, synced from a partner's affiliate API). Shown in
     // the SAME grid but they open a separate modal and the buy button links out
     // to the partner site. Only visible rows from active partners.
-    const partnerRows = await prisma.partner_products.findMany({
-        where: { is_visible: true, partner: { is_active: true } },
-        include: { partner: { select: { display_name: true } } },
+    const partnerRowsRaw = await prisma.partner_products.findMany({
+        where: { is_visible: true, coming_soon: false, partner: { is_active: true } },
+        include: { partner: { select: { display_name: true, integration: true } } },
         orderBy: { sort_order: "asc" },
     })
-    const partnerItems = partnerRows.map((pp) => normalizePartner(pp, ourRate))
+    // เกม Maki: ทับขั้นต่ำด้วยค่าสด แล้วโชว์เฉพาะที่มีแพลนขายได้ (ราคาแอดมิน ≥ ขั้นต่ำ)
+    const makiRows = await withLiveMinimums(partnerRowsRaw.filter((r) => r.partner.integration === "maki_api"))
+    const partnerRows = [
+        ...partnerRowsRaw.filter((r) => r.partner.integration !== "maki_api"),
+        ...makiRows.filter((r) => r.plans.some(planAvailable)),
+    ]
+    const partnerItems = partnerRows.map((pp) => pp.partner.integration === "maki_api" ? normalizeMaki(pp, ourRate) : normalizePartner(pp, ourRate))
 
     // Unified storefront order. Items the admin placed (display_order != null)
     // come first in that order — real and partner games freely interleaved.
@@ -175,5 +182,46 @@ function normalizePartner(pp: any, fallbackRate: number) {
             videos: Array.isArray(pp.videos) ? pp.videos : [],
             plans,
         },
+    }
+}
+
+// เกม Maki: ขายในเว็บเรา (ไม่มี modal ลิงก์ออก) → การ์ดชี้ไปหน้าสินค้า /products/<slug>
+// แพลน = ราคาที่แอดมินตั้ง (ไม่มีส่วนลด) · USD ใช้เรทเรา
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeMaki(pp: any, ourRate: number) {
+    const plans = toPlanRows(pp.plans).filter(planAvailable)
+    const images: string[] = Array.isArray(pp.images) ? pp.images : []
+    const from = plans.length ? Math.min(...plans.map((p) => p.sell_price_thb as number)) : 0
+    return {
+        id: `partner:${pp.id}`,
+        slug: pp.external_slug,
+        name_th: pp.name_th,
+        name_en: pp.name_en,
+        description_th: pp.description_html_th ?? null,
+        description_en: pp.description_html_en ?? null,
+        price: from,
+        commission_pct: 0,
+        is_featured: false,
+        isLower: false,
+        is_partner: true,
+        partner_integration: "maki_api",
+        partner_href: `/products/${pp.external_slug}`,
+        display_order: pp.display_order ?? null,
+        sort_order: pp.sort_order ?? 0,
+        partner_name: pp.partner?.display_name ?? "Partner",
+        product_images: (pp.thumbnail_url ? [{ url: pp.thumbnail_url }] : images.slice(0, 1).map((url) => ({ url }))),
+        preview_video_url: pp.preview_video_url ?? null,
+        rating_avg: null,
+        rating_count: 0,
+        product_variants: plans.map((pl) => ({
+            id: `${pp.id}-${pl.key}`,
+            label_th: pl.label_th,
+            label_en: pl.label_en,
+            price: Number(pl.sell_price_thb),
+            discounted_price: Number(pl.sell_price_thb),
+            is_active: true,
+            variant_type: "normal",
+            usd_rate: ourRate,
+        })),
     }
 }

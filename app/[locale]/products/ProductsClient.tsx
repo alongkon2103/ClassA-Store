@@ -300,9 +300,9 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
                         rating={p.rating_avg}
                         reviewCount={p.rating_count}
                         layout={view}
-                        {...(p.is_partner
+                        {...(p.is_partner && p.partner_integration !== "maki_api"
                           ? { onClick: () => setSelected(p) }
-                          : { href: `/products/${p.slug}` })}
+                          : { href: p.partner_href ?? `/products/${p.slug}` })}
                       />
                     </motion.div>
                   )

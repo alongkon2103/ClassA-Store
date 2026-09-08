@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import PartnerStoreClient from "./PartnerStoreClient"
 import { setRequestLocale } from "next-intl/server"
 import { PARTNERS } from "@/lib/partnerSync"
+import { withLiveMinimums, toPlanRows } from "@/lib/maki"
 
 // Admin management for the PARTNER STORE (external reseller games). Separate from
 // /admin/partners (internal revenue-share partners). Lets admin sync the catalog
@@ -23,9 +24,15 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
     prisma.partners.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ])
 
-  const safe = stores.map((s) => ({
+  // ร้าน Maki: ทับขั้นต่ำด้วยค่าสดจาก API (cache 60 วิ) ให้แอดมินเห็นราคาล่าสุด
+  const storesLive = await Promise.all(stores.map(async (s) =>
+    s.integration === "maki_api" ? { ...s, products: await withLiveMinimums(s.products) } : s,
+  ))
+
+  const safe = storesLive.map((s) => ({
     id: s.id,
     key: s.key,
+    integration: s.integration,
     display_name: s.display_name,
     site_url: s.site_url,
     ref_slug: s.ref_slug,
@@ -46,6 +53,13 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
       is_visible: p.is_visible,
       sort_order: p.sort_order,
       preview_video_url: p.preview_video_url ?? null,
+      description_html_th: p.description_html_th ?? null,
+      description_html_en: p.description_html_en ?? null,
+      images: Array.isArray(p.images) ? (p.images as string[]) : [],
+      coming_soon: p.coming_soon,
+      plans: s.integration === "maki_api"
+        ? toPlanRows(p.plans).map((pl) => ({ key: pl.key, plan: pl.plan, label_th: pl.label_th, label_en: pl.label_en, min_price_thb: pl.min_price_thb, sell_price_thb: pl.sell_price_thb, preset_link: pl.preset_link }))
+        : [],
       commission_pending_thb: p.commission_pending_thb == null ? 0 : Number(p.commission_pending_thb),
       commission_paid_thb: p.commission_paid_thb == null ? 0 : Number(p.commission_paid_thb),
       sales_count: p.sales_count ?? 0,

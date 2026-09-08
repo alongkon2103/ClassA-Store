@@ -8,6 +8,7 @@
 // (name, price, images, videos, …) is overwritten.
 
 import { prisma } from "@/lib/prisma"
+import { getMakiCatalog, groupCatalog, planLabel, priceFrom, toPlanRows, asJson, type MakiPlanRow } from "@/lib/maki"
 
 // Per-partner static config. `envKey` names the env var holding that partner's
 // affiliate API key (kept out of the DB — it's a secret). Add a row here to
@@ -17,6 +18,8 @@ type PartnerConfig = {
   display_name: string // brand shown on the "Partner" label (NOT our affiliate name)
   api_base: string
   envKey: string
+  // affiliate_link = ลิงก์ออกไปซื้อที่พาร์ทเนอร์ (ค่าเริ่มต้น) · maki_api = ขายในเว็บเราผ่าน Partner API
+  integration?: "affiliate_link" | "maki_api"
 }
 
 export const PARTNERS: PartnerConfig[] = [
@@ -25,6 +28,13 @@ export const PARTNERS: PartnerConfig[] = [
     display_name: "JudyGameStudio",
     api_base: "https://judygamestudio.com",
     envKey: "JUDY_AFFILIATE_KEY",
+  },
+  {
+    key: "maki",
+    display_name: "Maki",
+    api_base: "https://maki-website.onrender.com/api/partner/v1",
+    envKey: "MAKI_PARTNER_KEY",
+    integration: "maki_api",
   },
 ]
 
@@ -98,6 +108,9 @@ export type SyncResult = { ok: true; synced: number; removed: number } | { ok: f
 
 /** Fetch + mirror one partner's catalog. Never throws — returns a result. */
 export async function syncPartner(key: string): Promise<SyncResult> {
+  const makiCfg = PARTNERS.find((p) => p.key === key && p.integration === "maki_api")
+  if (makiCfg) return syncMaki(makiCfg)
+
   const cfg = PARTNERS.find((p) => p.key === key)
   if (!cfg) return { ok: false, error: `unknown partner "${key}"` }
 
@@ -224,4 +237,76 @@ export async function syncAllPartners(): Promise<Record<string, SyncResult>> {
   const out: Record<string, SyncResult> = {}
   for (const p of PARTNERS) out[p.key] = await syncPartner(p.key)
   return out
+}
+
+/**
+ * Maki: แคตตาล็อกจาก Partner API มีแค่ ชื่อ/แพลน/ขั้นต่ำ/ลิงก์พรีเซ็ต (ไม่มีรูป/คำอธิบาย)
+ * รูป คำอธิบาย ชื่อไทย ราคาขาย การแสดง ลำดับ → เป็นของแอดมิน ไม่ถูกทับตอน sync
+ * เกมที่หายจากแคตตาล็อกจะถูกซ่อน (ไม่ลบ เพราะรูป/คำอธิบายเป็นของแอดมิน)
+ * เกมใหม่เริ่มแบบซ่อนไว้ก่อน ให้แอดมินใส่รูปและตั้งราคาแล้วค่อยเปิด
+ */
+async function syncMaki(cfg: PartnerConfig): Promise<SyncResult> {
+  const now = new Date()
+  const store = await prisma.partner_stores.upsert({
+    where: { key: cfg.key },
+    create: { key: cfg.key, display_name: cfg.display_name, api_base: cfg.api_base, integration: "maki_api" },
+    update: { integration: "maki_api", api_base: cfg.api_base },
+  })
+
+  let catalog: Awaited<ReturnType<typeof getMakiCatalog>>
+  try {
+    catalog = await getMakiCatalog({ fresh: true })
+  } catch (e) {
+    const error = e instanceof Error ? e.message : "maki catalog failed"
+    await prisma.partner_stores.update({ where: { id: store.id }, data: { last_sync_error: error, updated_at: now } })
+    return { ok: false, error }
+  }
+
+  const games = groupCatalog(catalog.products)
+  const existing = await prisma.partner_products.findMany({ where: { partner_id: store.id }, select: { id: true, external_slug: true, plans: true } })
+  const seen: string[] = []
+  let index = 0
+  for (const g of games) {
+    const prev = existing.find((e) => e.external_slug === g.slug)
+    const prevPlans = toPlanRows(prev?.plans)
+    const plans: MakiPlanRow[] = g.plans.map((p) => ({
+      key: p.key, plan: p.plan,
+      label_th: planLabel(p.plan).th, label_en: planLabel(p.plan).en,
+      duration_days: p.duration_days, is_lifetime: p.plan === "perma",
+      min_price_thb: p.min_price_thb,
+      sell_price_thb: prevPlans.find((x) => x.key === p.key)?.sell_price_thb ?? null, // ราคาแอดมิน คงไว้
+      preset_link: p.preset_link,
+    }))
+    const price_from_thb = priceFrom(plans)
+    if (prev) {
+      await prisma.partner_products.update({
+        where: { id: prev.id },
+        data: { plans: asJson(plans), price_from_thb, coming_soon: false, synced_at: now, updated_at: now },
+      })
+    } else {
+      await prisma.partner_products.create({
+        data: {
+          partner_id: store.id, external_slug: g.slug, name_en: g.name, name_th: g.name,
+          ref_url: "", plans: asJson(plans), images: [], videos: [], price_from_thb,
+          is_visible: false, sort_order: index, synced_at: now,
+        },
+      })
+    }
+    seen.push(g.slug)
+    index++
+  }
+
+  const hidden = await prisma.partner_products.updateMany({
+    where: { partner_id: store.id, external_slug: { notIn: seen.length ? seen : ["__none__"] }, coming_soon: false },
+    data: { is_visible: false, coming_soon: true, updated_at: now },
+  })
+
+  await prisma.partner_stores.update({
+    where: { id: store.id },
+    data: {
+      last_synced_at: now, updated_at: now,
+      last_sync_error: catalog.source === "mock" ? "ใช้แคตตาล็อกจำลอง — ยังไม่ได้ตั้ง MAKI_PARTNER_KEY" : catalog.source === "test" ? "โหมด sandbox (MAKI_API_MODE=test)" : null,
+    },
+  })
+  return { ok: true, synced: games.length, removed: hidden.count }
 }

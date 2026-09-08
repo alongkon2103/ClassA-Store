@@ -932,6 +932,8 @@ model partner_stores {
   key             String             @unique @db.VarChar // stable id e.g. "judygamestudio" (env key suffix)
   display_name    String             @db.VarChar // shown on the Partner badge / label
   api_base        String             @db.VarChar // e.g. https://judygamestudio.com
+  // วิธีเชื่อมต่อ: affiliate_link = ลิงก์ออกไปซื้อที่พาร์ทเนอร์ (Judy) · maki_api = ขายในเว็บเราผ่าน Partner API (Maki)
+  integration     String             @default("affiliate_link") @db.VarChar
   site_url        String?            @db.VarChar
   ref_slug        String?            @db.VarChar // our affiliate ref (e.g. "aclassstore")
   commission_pct  Decimal?           @db.Decimal(5, 2)

@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
         ],
       },
       take: 4,
-      select: { external_slug: true, name_th: true, name_en: true, thumbnail_url: true, price_from_thb: true },
+      select: { partner: { select: { integration: true } }, external_slug: true, name_th: true, name_en: true, thumbnail_url: true, price_from_thb: true },
     }),
   ])
 
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       image: p.thumbnail_url,
       price: p.price_from_thb == null ? null : Number(p.price_from_thb),
       kind: "Partner",
-      href: `/products?slug=${encodeURIComponent(p.external_slug)}`,
+      href: p.partner?.integration === "maki_api" ? `/products/${p.external_slug}` : `/products?slug=${encodeURIComponent(p.external_slug)}`,
     })),
   ].slice(0, 8)
 

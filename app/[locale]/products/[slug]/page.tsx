@@ -15,6 +15,11 @@ import { setRequestLocale } from "next-intl/server"
 import { prisma } from "@/lib/prisma"
 import { getImageUrl } from "@/lib/getImageUrl"
 import ProductPageClient from "./ProductPageClient"
+import PartnerProductClient from "./PartnerProductClient"
+import Navbar from "@/components/Navbar"
+import Footer from "@/components/home/Footer"
+import { getThbToUsdRate } from "@/lib/paypal"
+import { withLiveMinimums, planAvailable } from "@/lib/maki"
 
 export const revalidate = 60
 
@@ -58,10 +63,34 @@ async function getProduct(slug: string) {
   })
 }
 
+// เกมพาร์ทเนอร์แบบขายในเว็บเรา (Maki) ใช้ slug เดียวกัน /products/<slug> — ถ้าไม่ใช่สินค้าเราค่อยหาในนี้
+async function getMakiProduct(slug: string) {
+  const row = await prisma.partner_products.findFirst({
+    where: { external_slug: slug, is_visible: true, coming_soon: false, partner: { is_active: true, integration: "maki_api" } },
+    include: { partner: { select: { display_name: true } } },
+  })
+  if (!row) return null
+  const [live] = await withLiveMinimums([row])
+  return live
+}
+
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { locale, slug } = await params
   const product = await getProduct(slug)
-  if (!product) return { title: "Not found" }
+  if (!product) {
+    const pp = await getMakiProduct(slug)
+    if (!pp) return { title: "Not found" }
+    const isTH = locale === "th"
+    const name = isTH ? pp.name_th : pp.name_en
+    const desc = toPlainText(isTH ? (pp.description_html_th || pp.description_html_en) : (pp.description_html_en || pp.description_html_th))
+    const first = Array.isArray(pp.images) ? (pp.images as string[])[0] : undefined
+    const img = pp.thumbnail_url || first
+    return {
+      title: `${name} — ${pp.partner.display_name}`,
+      description: desc || undefined,
+      openGraph: { type: "website", title: name, description: desc || undefined, ...(img ? { images: [{ url: absUrl(img), alt: name }] } : {}) },
+    }
+  }
 
   const isTH = locale === "th"
   const name = isTH ? product.name_th : product.name_en
@@ -95,7 +124,44 @@ export default async function Page({ params }: Params) {
   setRequestLocale(locale)
 
   const product = await getProduct(slug)
-  if (!product) notFound()
+  if (!product) {
+    // ── เกม Maki ──
+    const pp = await getMakiProduct(slug)
+    if (!pp) notFound()
+    const [relatedRaw, usdRate] = await Promise.all([
+      prisma.products.findMany({
+        where: { is_active: true },
+        orderBy: [{ is_featured: "desc" }, { created_at: "desc" }],
+        take: 4,
+        include: {
+          product_images: { orderBy: { sort_order: "asc" }, take: 1 },
+          product_variants: { where: { is_active: true }, select: { price: true, variant_type: true } },
+        },
+      }),
+      getThbToUsdRate(),
+    ])
+    const related = relatedRaw.map((p) => {
+      const prices = p.product_variants.filter((v) => v.variant_type !== "premium").map((v) => Number(v.price))
+      return { slug: p.slug, name_th: p.name_th, name_en: p.name_en, image: p.product_images[0]?.url ?? null, min_price: prices.length ? Math.min(...prices) : Number(p.price) }
+    })
+    const images = Array.isArray(pp.images) ? (pp.images as string[]) : []
+    return (
+      <div className="min-h-screen bg-bg-base flex flex-col">
+        <Navbar />
+        <PartnerProductClient
+          product={{
+            slug: pp.external_slug, name_th: pp.name_th, name_en: pp.name_en, partner_name: pp.partner.display_name,
+            description_th: pp.description_html_th, description_en: pp.description_html_en,
+            images: pp.thumbnail_url && !images.includes(pp.thumbnail_url) ? [pp.thumbnail_url, ...images] : images,
+            plans: pp.plans.map((pl) => ({ key: pl.key, plan: pl.plan, label_th: pl.label_th, label_en: pl.label_en, duration_days: pl.duration_days, is_lifetime: pl.is_lifetime, sell_price_thb: pl.sell_price_thb, available: planAvailable(pl), has_preset: !!pl.preset_link })),
+          }}
+          related={related}
+          usdRate={usdRate}
+        />
+        <Footer />
+      </div>
+    )
+  }
 
   // Related: other active products, featured first then newest, take 4.
   const relatedRaw = await prisma.products.findMany({

@@ -53,7 +53,8 @@ export default function ImageCarousel({ images, alt, index, onChange, autoplayMs
       <div className="flex h-full transition-transform duration-500 ease-out" style={{ transform: `translateX(-${index * 100}%)` }}>
         {images.map((src, i) => (
           <img key={i} src={src} alt={i === index ? alt : ""} draggable={false} loading={i === 0 ? "eager" : "lazy"}
-               className="w-full h-full object-cover shrink-0" />
+               className="w-full h-full object-cover shrink-0"
+               onError={(e) => { e.currentTarget.style.visibility = "hidden" }} />
         ))}
       </div>
 
