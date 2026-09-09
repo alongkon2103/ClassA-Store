@@ -1,4 +1,5 @@
 "use client"
+import { variantLabel as pickVariantLabel } from "@/lib/i18n/locale"
 
 import { useState, useRef } from "react"
 import { Link, useRouter } from "@/i18n/routing"
@@ -21,6 +22,8 @@ type CheckoutOrder = {
   product_variants?: {
     label_th?: string | null
     label_en?: string | null
+    duration_type?: string | null
+    duration_days?: number | null
     price?: number
     premium_addon_price?: number
     discount_pct?: number
@@ -98,7 +101,7 @@ export default function CheckoutClient({
   ] : []
 
   const productName = locale === "th" ? order.products?.name_th : order.products?.name_en
-  const variantLabel = locale === "th" ? order.product_variants?.label_th : order.product_variants?.label_en
+  const variantLabel = pickVariantLabel(order.product_variants, locale)
 
   return (
     <div className="min-h-screen bg-bg-base">

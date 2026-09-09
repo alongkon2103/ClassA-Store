@@ -1,4 +1,5 @@
 "use client"
+import { variantLabel } from "@/lib/i18n/locale"
 
 // Modal for a PARTNER game (external). Same look as ProductModal but read-only:
 // it shows the price/discount breakdown + review video and the buy button links
@@ -85,7 +86,7 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
                 <iframe
                   width="100%" height="100%"
                   src={`${embedUrl}?rel=0&modestbranding=1`}
-                  title="Review video" frameBorder="0"
+                  title={t("review_video")} frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 />
@@ -155,7 +156,7 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
               return (
                 <div key={i} className="bg-bg-base/50 border border-white/5 rounded-xl p-4">
                   <p className="text-[13px] font-semibold text-text-base mb-2">
-                    {isTH ? pl.label_th : pl.label_en}
+                    {variantLabel(pl, locale)}
                   </p>
                   <div className="space-y-1 text-[13px]">
                     <div className="flex justify-between">

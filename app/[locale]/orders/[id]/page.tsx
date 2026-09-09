@@ -1,3 +1,4 @@
+import { dateFnsLocale, variantLabel } from "@/lib/i18n/locale"
 import { prisma } from "@/lib/prisma"
 import { getFeatureFlags } from "@/lib/featureFlags"
 import Navbar from "@/components/Navbar"
@@ -93,7 +94,7 @@ export default async function OrderPage({
                                 {t("order_successful")}
                             </span>
                             <span className="text-text-muted text-[12px]">
-                                {order.created_at ? format(new Date(order.created_at), "dd MMM yy") : "—"}
+                                {order.created_at ? format(new Date(order.created_at), "dd MMM yy", { locale: dateFnsLocale(locale) }) : "—"}
                             </span>
                         </div>
                         <h1 className="text-2xl md:text-4xl font-display font-bold text-text-base leading-tight">
@@ -131,26 +132,18 @@ export default async function OrderPage({
                                         )}
                                     </span>
 
-                                    Access Information
+                                    {t("access_info")}
                                 </h2>
 
                                 {order.status === "paid" || order.status === "Admin Buy"   ? (
                                     <div className="space-y-5">
                                         <div className="bg-bg-base/50 border border-accent/10 rounded-xl md:rounded-2xl p-5 md:p-6">
                                             <p className="text-[16px] md:text-[18px] font-semibold text-text-base mb-2">
-                                                {isDesktopProduct
-                                                    ? (locale === "th" ? "ชำระเงินสำเร็จ" : "Purchase Completed")
-                                                    : (locale === "th" ? "ซื้อ Whitelist สำเร็จ" : "Whitelist Purchase Completed")}
+                                                {isDesktopProduct ? t("purchase_completed") : t("whitelist_purchase_completed")}
                                             </p>
 
                                             <p className="text-[13px] text-text-muted leading-relaxed">
-                                                {isDesktopProduct
-                                                    ? (locale === "th"
-                                                        ? "สิทธิ์ใช้งานเปิดให้บัญชีนี้แล้ว — ดาวน์โหลดตัวติดตั้งด้านล่าง ติดตั้งแล้วเข้าสู่ระบบด้วยบัญชีเดียวกันนี้เพื่อใช้งาน"
-                                                        : "Access is now active on this account. Download the installer below, then sign in to the app with this same account.")
-                                                    : (locale === "th"
-                                                        ? "เปิดสิทธิ์ whitelist ให้แล้ว เข้าเซิร์ฟเวอร์ได้ผ่านลิงก์ด้านล่าง"
-                                                        : "Your whitelist access has been successfully activated. You can now join the server using the link below.")}
+                                                {isDesktopProduct ? t("desktop_access_desc") : t("whitelist_access_desc")}
                                             </p>
                                         </div>
 
@@ -162,7 +155,7 @@ export default async function OrderPage({
                                                 className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-light text-white font-semibold text-[14px] py-3 rounded-xl transition"
                                             >
                                                 <ExternalIcon size={16} />
-                                                {locale === "th" ? "ดาวน์โหลดตัวติดตั้ง" : "Download installer"}
+                                                {t("download_installer")}
                                             </a>
                                         )}
 
@@ -178,7 +171,7 @@ export default async function OrderPage({
                                                 className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-light text-white font-semibold text-[14px] py-3 rounded-xl transition"
                                             >
                                                 <ExternalIcon size={16} />
-                                                Map Information
+                                                {t("map_information")}
                                             </a>
                                         )}
                                     </div>
@@ -187,7 +180,7 @@ export default async function OrderPage({
                                         <div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-4"></div>
 
                                         <p className="text-text-muted text-[14px]">
-                                            Waiting for payment confirmation
+                                            {t("waiting_payment")}
                                         </p>
                                     </div>
                                 )}
@@ -327,7 +320,7 @@ export default async function OrderPage({
                                     {locale === 'th' ? order.products.name_th : order.products.name_en}
                                 </h3>
                                 <p className="text-accent-light text-[13px] font-medium mb-4">
-                                    {locale === 'th' ? (order.product_variants?.label_th || t("standard_version")) : (order.product_variants?.label_en || t("standard_version"))}
+                                    {variantLabel(order.product_variants, locale) || t("standard_version")}
                                 </p>
 
                                 <div className="space-y-3 pt-4 border-t border-accent/10">

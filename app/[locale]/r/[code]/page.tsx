@@ -10,12 +10,14 @@
 import { useEffect } from "react"
 import { useParams } from "next/navigation"
 import { useRouter } from "@/i18n/routing"
+import { useTranslations } from "next-intl"
 
 export const AFF_REF_KEY = "aff_ref"
 
 export default function AffiliateRefLanding() {
   const params = useParams()
   const router = useRouter()
+  const t = useTranslations("Common")
 
   useEffect(() => {
     const raw = params?.code
@@ -32,7 +34,7 @@ export default function AffiliateRefLanding() {
     <div className="min-h-screen flex items-center justify-center bg-bg-base">
       <div className="flex items-center gap-3 text-text-muted text-[14px]">
         <span className="w-4 h-4 rounded-full border-2 border-accent/30 border-t-accent animate-spin" />
-        กำลังพาไปที่ร้าน...
+        {t("redirecting_shop")}
       </div>
     </div>
   )

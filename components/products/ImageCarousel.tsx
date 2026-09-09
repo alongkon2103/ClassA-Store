@@ -3,6 +3,7 @@
 // แกลเลอรีรูปสินค้าแบบ carousel: เลื่อนซ้าย/ขวา · จุดบอกตำแหน่ง · ปัดบนมือถือ · เลื่อนเองทุก 5 วิ
 // (หยุดตอนเอาเมาส์ชี้ หรือ 8 วิหลังผู้ใช้กดเอง) — thumbnail ข้างนอกคุม index ตัวเดียวกันผ่าน onChange
 import { useEffect, useRef, useState } from "react"
+import { useTranslations } from "next-intl"
 
 export default function ImageCarousel({ images, alt, index, onChange, autoplayMs = 5000, children }: {
   images: string[]
@@ -13,6 +14,7 @@ export default function ImageCarousel({ images, alt, index, onChange, autoplayMs
   /** ของที่วางทับรูป เช่น ป้ายส่วนลด / ปุ่มไปดูวิดีโอ */
   children?: React.ReactNode
 }) {
+  const t = useTranslations("Common")
   const n = images.length
   const [hover, setHover] = useState(false)
   const pausedUntil = useRef(0)
@@ -62,10 +64,10 @@ export default function ImageCarousel({ images, alt, index, onChange, autoplayMs
 
       {n > 1 && (
         <>
-          <button onClick={() => go(index - 1, true)} aria-label="previous image" className={`${arrow} left-3`}>
+          <button onClick={() => go(index - 1, true)} aria-label={t("prev_image")} className={`${arrow} left-3`}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
           </button>
-          <button onClick={() => go(index + 1, true)} aria-label="next image" className={`${arrow} right-3`}>
+          <button onClick={() => go(index + 1, true)} aria-label={t("next_image")} className={`${arrow} right-3`}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
           </button>
           <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">

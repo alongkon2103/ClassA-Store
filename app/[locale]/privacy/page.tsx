@@ -4,27 +4,28 @@ import { Link } from "@/i18n/routing"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import { prisma } from "@/lib/prisma"
-import { PRIVACY_TH, PRIVACY_EN, PRIVACY_UPDATED } from "@/lib/content/privacy"
+import { PRIVACY_BY_LOCALE, PRIVACY_UPDATED } from "@/lib/content/privacy"
+import { localeTag } from "@/lib/i18n/locale"
 
 // นโยบายความเป็นส่วนตัว — เนื้อหาหลักอยู่ใน lib/content/privacy.ts
-// ถ้าแอดมินใส่ system_configs `privacy_th` / `privacy_en` (HTML) จะแสดงของนั้นแทน (แบบเดียวกับหน้ากฎ)
+// ถ้าแอดมินใส่ system_configs `privacy_<locale>` (HTML) จะแสดงของนั้นแทน (แบบเดียวกับหน้ากฎ)
 export const revalidate = 60
 
-export const metadata: Metadata = {
-  title: "นโยบายความเป็นส่วนตัว — A Class Store",
-  description: "How A Class Store collects, uses and protects your data",
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "Privacy" })
+  return { title: t("meta_title"), description: t("meta_desc") }
 }
 
 export default async function PrivacyPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations("Privacy")
-  const isTH = locale === "th"
 
-  const row = await prisma.system_configs.findUnique({ where: { key: isTH ? "privacy_th" : "privacy_en" } }).catch(() => null)
+  const row = await prisma.system_configs.findUnique({ where: { key: `privacy_${locale}` } }).catch(() => null)
   const override = (row?.value ?? "").trim()
-  const sections = isTH ? PRIVACY_TH : PRIVACY_EN
-  const updated = new Date(PRIVACY_UPDATED).toLocaleDateString(isTH ? "th-TH" : "en-US", { day: "numeric", month: "long", year: "numeric" })
+  const sections = PRIVACY_BY_LOCALE[locale] ?? PRIVACY_BY_LOCALE.en
+  const updated = new Date(PRIVACY_UPDATED).toLocaleDateString(localeTag(locale), { day: "numeric", month: "long", year: "numeric" })
 
   return (
     <div className="min-h-screen bg-bg-base flex flex-col selection:bg-accent/30 selection:text-accent-light">

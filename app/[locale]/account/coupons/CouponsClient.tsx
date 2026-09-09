@@ -1,4 +1,5 @@
 "use client"
+import { localeTag } from "@/lib/i18n/locale"
 
 import { useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
@@ -22,7 +23,7 @@ export default function CouponsClient({ coupons, history }: { coupons: Coupon[];
   const [copied, setCopied] = useState<string | null>(null)
 
   const fmt = (s: string | null) =>
-    s ? new Date(s).toLocaleDateString(isTH ? "th-TH" : "en-US", { day: "numeric", month: "short", year: "numeric" }) : "—"
+    s ? new Date(s).toLocaleDateString(localeTag(locale), { day: "numeric", month: "short", year: "numeric" }) : "—"
   const copy = async (code: string) => {
     try { await navigator.clipboard.writeText(code) } catch { /* คลิปบอร์ดไม่พร้อม (เช่น http) — ผู้ใช้เลือกก๊อปเองได้ */ }
     setCopied(code)

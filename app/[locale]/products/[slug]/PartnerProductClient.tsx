@@ -1,4 +1,5 @@
 "use client"
+import { variantLabel } from "@/lib/i18n/locale"
 
 // หน้าสินค้าของเกมพาร์ทเนอร์แบบขายในเว็บเรา (Maki) — โครงเดียวกับหน้าสินค้าเรา
 // เฟส 1: แสดงข้อมูล/ราคา ปุ่มซื้อยังปิดอยู่ (รอ Stripe ของ Maki พร้อม) · ไม่มีรีวิว/รายการโปรด (ยังไม่ผูก products)
@@ -93,7 +94,7 @@ export default function PartnerProductClient({ product, related, usdRate }: { pr
               {product.plans.map((p) => (
                 <button key={p.key} disabled={!p.available} onClick={() => setPkgKey(p.key)}
                   className={`text-left rounded-xl border p-4 transition ${pkgKey === p.key ? "border-accent bg-accent/[0.08]" : "border-border-soft bg-bg-card hover:border-border-light"} disabled:opacity-50 disabled:cursor-not-allowed`}>
-                  <div className="text-[0.82rem] font-bold mb-1">{isTH ? p.label_th : p.label_en}</div>
+                  <div className="text-[0.82rem] font-bold mb-1">{variantLabel(p, locale)}</div>
                   {p.available ? (
                     <div className="text-[1.15rem] font-extrabold text-accent-lighter">{baht(p.sell_price_thb as number)}<span className="text-[0.68rem] text-text-dim font-medium">{usd(p.sell_price_thb as number)}</span></div>
                   ) : (

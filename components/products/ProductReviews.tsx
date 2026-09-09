@@ -1,4 +1,5 @@
 "use client"
+import { localeTag } from "@/lib/i18n/locale"
 
 // ระบบรีวิวจริง: ดึงจาก /api/reviews/[slug]
 // เขียนรีวิวได้เฉพาะคนที่ซื้อสินค้านี้และจ่ายเงินแล้ว (ฝั่ง API เป็นคนบังคับ)
@@ -42,7 +43,7 @@ export default function ProductReviews({ slug, onSummary }: { slug: string; onSu
   if (!data) return <p className="text-text-muted text-sm py-6">{t("loading")}</p>
 
   const fmtDate = (s: string | null) =>
-    s ? new Date(s).toLocaleDateString(locale === "th" ? "th-TH" : "en-US", { day: "numeric", month: "short", year: "numeric" }) : ""
+    s ? new Date(s).toLocaleDateString(localeTag(locale), { day: "numeric", month: "short", year: "numeric" }) : ""
 
   return (
     <div>

@@ -106,7 +106,7 @@ export default function OrdersDashboard({
             {/* แบ่งหน้า — ปุ่ม 36px (32px บนจอเล็ก) ตามดีไซน์ */}
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-1 sm:gap-1.5 mt-6">
-                <button onClick={() => setPage(Math.max(1, cur - 1))} disabled={cur === 1} aria-label="previous page" className={pageBtn(false)}>«</button>
+                <button onClick={() => setPage(Math.max(1, cur - 1))} disabled={cur === 1} aria-label={t("prev_page")} className={pageBtn(false)}>«</button>
                 {pageList.map((p, i) =>
                   p === "dots" ? (
                     <span key={`dots-${i}`} className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[0.72rem] sm:text-[0.8rem] font-semibold text-text-dim">…</span>
@@ -114,7 +114,7 @@ export default function OrdersDashboard({
                     <button key={p} onClick={() => setPage(p)} className={pageBtn(p === cur)}>{p}</button>
                   ),
                 )}
-                <button onClick={() => setPage(Math.min(totalPages, cur + 1))} disabled={cur === totalPages} aria-label="next page" className={pageBtn(false)}>»</button>
+                <button onClick={() => setPage(Math.min(totalPages, cur + 1))} disabled={cur === totalPages} aria-label={t("next_page")} className={pageBtn(false)}>»</button>
               </div>
             )}
           </>

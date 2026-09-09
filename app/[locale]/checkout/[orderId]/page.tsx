@@ -50,7 +50,7 @@ export default async function CheckoutPage({
             ? { name_th: order.products.name_th, name_en: order.products.name_en }
             : null,
           product_variants: order.product_variants
-            ? { label_th: order.product_variants.label_th, label_en: order.product_variants.label_en }
+            ? { label_th: order.product_variants.label_th, label_en: order.product_variants.label_en, duration_type: order.product_variants.duration_type, duration_days: order.product_variants.duration_days }
             : null,
         }}
         payUrl={payUrl}

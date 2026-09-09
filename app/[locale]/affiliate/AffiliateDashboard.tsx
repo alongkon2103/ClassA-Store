@@ -1,9 +1,10 @@
 "use client"
+import { localeTag } from "@/lib/i18n/locale"
 
 import { useEffect, useRef, useState } from "react"
 import { useTranslations, useLocale } from "next-intl"
 import Navbar from "@/components/Navbar"
-import { PAYOUT_CHANNELS, getChannel } from "@/lib/affiliatePayout"
+import { PAYOUT_CHANNELS, getChannel, payoutLabel } from "@/lib/affiliatePayout"
 
 type Data = {
   profile: {
@@ -133,7 +134,7 @@ export default function AffiliateDashboard() {
     setTimeout(() => setCopied(null), 1500)
   }
 
-  const fmtDay = (iso: string) => new Date(iso).toLocaleDateString(locale === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short" })
+  const fmtDay = (iso: string) => new Date(iso).toLocaleDateString(localeTag(locale), { day: "numeric", month: "short" })
   const payoutSet = !!(d?.profile.payout_method && d?.profile.payout_detail)
 
   return (
@@ -344,7 +345,7 @@ export default function AffiliateDashboard() {
                       <tr><td colSpan={5} className="text-center py-10 text-text-muted">{t("no_sales")}</td></tr>
                     ) : d.earnings.map((e) => (
                       <tr key={e.id} className="hover:bg-accent/[0.04] transition-colors">
-                        <td className="px-5 py-2.5 text-text-muted">{new Date(e.created_at).toLocaleDateString()}</td>
+                        <td className="px-5 py-2.5 text-text-muted">{new Date(e.created_at).toLocaleDateString(localeTag(locale))}</td>
                         <td className="px-4 py-2.5">{e.product_name ?? "—"}</td>
                         <td className="px-4 py-2.5 text-right font-mono text-text-muted">{money(e.base_amount)}</td>
                         <td className="px-4 py-2.5 text-right font-mono font-semibold">
@@ -378,7 +379,7 @@ export default function AffiliateDashboard() {
                       <div key={p.id} className="text-[13px] py-2.5 first:pt-0 last:pb-0">
                         <div className="flex items-center justify-between">
                           <span className="text-text-muted">
-                            {date ? new Date(date).toLocaleDateString() : "—"}{p.method ? ` · ${p.method}` : ""}
+                            {date ? new Date(date).toLocaleDateString(localeTag(locale)) : "—"}{p.method ? ` · ${p.method}` : ""}
                           </span>
                           <span className="flex items-center gap-2">
                             <span className="font-mono font-semibold text-green-400/90">{money(p.amount)}</span>
@@ -563,7 +564,7 @@ function PayoutForm({ method0, info0, summary, locale, busy, onSave, t }: {
         <select value={method} onChange={(e) => setMethod(e.target.value)} className={inputCls}>
           <option value="">{t("select_channel")}</option>
           {PAYOUT_CHANNELS.map((c) => (
-            <option key={c.value} value={c.value}>{locale === "th" ? c.label_th : c.label_en}</option>
+            <option key={c.value} value={c.value}>{payoutLabel(c, locale)}</option>
           ))}
         </select>
       </div>
@@ -573,7 +574,7 @@ function PayoutForm({ method0, info0, summary, locale, busy, onSave, t }: {
           {channel.fields.map((f) => (
             <div key={f.key}>
               <label className="block text-[11px] text-text-muted mb-1 uppercase tracking-wider">
-                {locale === "th" ? f.label_th : f.label_en}{f.required ? " *" : ""}
+                {payoutLabel(f, locale)}{f.required ? " *" : ""}
               </label>
               <input
                 value={info[f.key] ?? ""}

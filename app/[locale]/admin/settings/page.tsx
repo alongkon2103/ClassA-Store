@@ -25,6 +25,8 @@ export default async function SettingsPage({
             <RulesSettingsClient
                 initialRulesTh={configMap.rules_th ?? ""}
                 initialRulesEn={configMap.rules_en ?? ""}
+                initialRulesJa={configMap.rules_ja ?? ""}
+                initialRulesZh={configMap.rules_zh ?? ""}
             />
         </div>
     )

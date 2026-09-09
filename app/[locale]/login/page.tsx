@@ -1,13 +1,14 @@
 import type { Metadata } from "next"
-import { setRequestLocale } from "next-intl/server"
+import { setRequestLocale, getTranslations } from "next-intl/server"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import LoginCard from "@/components/login/LoginCard"
 
 // หน้าเข้าสู่ระบบตามดีไซน์ใหม่ — ใช้ navbar/footer ชุดเดียวกับทุกหน้า การ์ดอยู่กลางจอ
-export const metadata: Metadata = {
-  title: "เข้าสู่ระบบ — A Class Store",
-  description: "Sign in to A Class Store with Discord or Google",
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "Login" })
+  return { title: t("meta_title"), description: t("meta_desc") }
 }
 
 export default async function LoginPage({ params, searchParams }: {

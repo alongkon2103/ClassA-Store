@@ -1,4 +1,5 @@
 "use client"
+import { variantLabel } from "@/lib/i18n/locale"
 
 import { useEffect, useMemo, useState } from "react"
 import ImageCarousel from "@/components/products/ImageCarousel"
@@ -299,7 +300,7 @@ export default function ProductPageClient({
                         <button key={v.id} onClick={() => setPkgId(v.id)}
                           className={`flex flex-col items-center py-[18px] px-4 text-center transition-colors ${on ? "bg-accent/[0.08]" : "bg-bg-card hover:bg-white/[0.02]"} ${i === 0 && displayVariants.length > 1 ? "border-r border-border-soft" : ""}`}>
                           <div className="text-[0.88rem] font-bold mb-0.5 flex items-center justify-center gap-2 flex-wrap">
-                            {isTH ? v.label_th : v.label_en}
+                            {variantLabel(v, locale)}
                             {discounted != null && (
                               <span className="px-2 py-0.5 rounded bg-hot text-white text-[0.58rem] font-bold tracking-wide">-{pct(price, discounted)}%</span>
                             )}

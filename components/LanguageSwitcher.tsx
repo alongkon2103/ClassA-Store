@@ -1,9 +1,9 @@
 "use client"
 
 // เมนูเลือกภาษาแบบ dropdown ตามดีไซน์ใหม่ (TH/EN/JP/CN)
-// ja/zh ยังแปลไม่ครบ — ระบบ i18n จะ fallback เป็นอังกฤษให้เองในคีย์ที่ยังไม่มี
+// ทุกภาษาแปลครบ — ถ้ามีคีย์ใหม่ที่ยังไม่แปล ระบบ i18n จะ fallback เป็นอังกฤษให้เอง
 import { useEffect, useRef, useState } from "react"
-import { useLocale } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { usePathname, useRouter } from "@/i18n/routing"
 import { AnimatePresence, motion } from "framer-motion"
 
@@ -16,6 +16,7 @@ const LANGS = [
 
 export default function LanguageSwitcher() {
   const locale = useLocale()
+  const t = useTranslations("Navbar")
   const router = useRouter()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -42,7 +43,7 @@ export default function LanguageSwitcher() {
     <div ref={boxRef} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        aria-label="Change language"
+        aria-label={t("change_language")}
         className={`w-[38px] h-[38px] rounded-[10px] border text-[0.78rem] font-bold tracking-[0.02em] flex items-center justify-center transition-all ${
           open
             ? "border-accent text-accent-light bg-accent/[0.08]"

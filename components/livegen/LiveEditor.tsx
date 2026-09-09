@@ -1,4 +1,5 @@
 "use client"
+import { localeTag } from "@/lib/i18n/locale"
 
 // สร้างรูปไลฟ์ — editor แบบ Canva ตาม designer.html
 // engine = Fabric.js (โหลดฝั่ง client เท่านั้น) · ขนาดจริงของ canvas 1080×1920 / 1920×1080
@@ -751,7 +752,7 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
   const saveLabel = !isAuthenticated
     ? t("login_to_save")
     : saveState === "saving" ? t("saving")
-      : saveState === "saved" && savedAt ? t("saved_at", { time: savedAt.toLocaleTimeString(locale === "th" ? "th-TH" : "en-US", { hour: "2-digit", minute: "2-digit" }) })
+      : saveState === "saved" && savedAt ? t("saved_at", { time: savedAt.toLocaleTimeString(localeTag(locale), { hour: "2-digit", minute: "2-digit" }) })
         : saveState === "error" ? t("save_error") : t("not_saved")
 
   const ctBtn = "w-8 h-8 rounded-md flex items-center justify-center text-text-muted hover:bg-white/[0.05] hover:text-text-base transition-colors disabled:opacity-40 disabled:pointer-events-none"

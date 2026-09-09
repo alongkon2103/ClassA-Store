@@ -1,4 +1,5 @@
 "use client"
+import { localeTag } from "@/lib/i18n/locale"
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -47,7 +48,7 @@ export default function KeyModal({ order, isOpen, onClose }: KeyModalProps) {
   }, [isOpen])
 
   const fmtDate = (iso: string) => {
-    return new Date(iso).toLocaleDateString("en-GB", {
+    return new Date(iso).toLocaleDateString(localeTag(locale), {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -136,7 +137,7 @@ export default function KeyModal({ order, isOpen, onClose }: KeyModalProps) {
                 </div>
                 <div className="text-right">
                   <p className="text-[11px] uppercase tracking-widest mb-0.5 text-text-muted">
-                    Date
+                    {t("date_label")}
                   </p>
                   <p className="text-[13px]">{fmtDate(order.date)}</p>
                 </div>

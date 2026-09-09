@@ -511,19 +511,17 @@ export default function GameSettingsClient({
                             </div>
                             <div>
                                 <h3 className="text-[15px] font-bold text-yellow-500">
-                                    {locale === "th" ? "[ Trial Mode Active ]" : "[ Trial Mode Active ]"}
+                                    {t("trial_mode_active")}
                                 </h3>
                                 <p className="text-[13px] text-text-muted mt-0.5">
-                                    {locale === "th"
-                                        ? "คุณกำลังใช้งานสิทธิ์ Whitelist ทดลองใช้ฟรี ระบบจะหยุดทำงานอัตโนมัติเมื่อหมดเวลา"
-                                        : "You are using a free trial whitelist. The system will stop automatically when time expires."}
+                                    {t("trial_mode_desc")}
                                 </p>
                             </div>
                         </div>
                         {timeLeft !== null && (
                             <div className="flex flex-col items-center sm:items-end gap-1 px-6 py-2 bg-yellow-500/5 rounded-2xl border border-yellow-500/10 min-w-[120px]">
                                 <p className="text-[10px] text-yellow-500/70 font-bold uppercase tracking-widest">
-                                    {locale === "th" ? "เวลาที่เหลือ" : "TIME REMAINING"}
+                                    {t("time_remaining")}
                                 </p>
                                 <span className={`font-mono text-[24px] font-black ${timeLeft < 60 ? "text-red-500 animate-pulse" : "text-yellow-500"}`}>
                                     {formatTime(timeLeft)}
@@ -828,7 +826,7 @@ export default function GameSettingsClient({
                                                                             parseInt(e.target.value) || 1,
                                                                         )
                                                                     }
-                                                                    placeholder="Like"
+                                                                    placeholder={t("threshold_placeholder")}
                                                                     className="w-16 bg-bg-base border border-accent/15 rounded-lg px-2 py-1 text-[11px] text-accent-light text-center focus:border-accent/40 outline-none disabled:opacity-50"
                                                                 />
                                                             )}
@@ -1002,7 +1000,7 @@ export default function GameSettingsClient({
                                             width="100%"
                                             height="100%"
                                             src={`${tutorialEmbedUrl}?rel=0&modestbranding=1`}
-                                            title="Tutorial video player"
+                                            title={t("tutorial_video_title")}
                                             frameBorder="0"
                                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                             allowFullScreen

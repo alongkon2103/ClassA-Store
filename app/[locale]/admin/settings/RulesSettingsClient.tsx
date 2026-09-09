@@ -7,15 +7,21 @@ import TiptapEditor from "@/components/admin/TiptapEditor"
 type Props = {
   initialRulesTh?: string
   initialRulesEn?: string
+  initialRulesJa?: string
+  initialRulesZh?: string
 }
 
 export default function RulesSettingsClient({
   initialRulesTh = "",
   initialRulesEn = "",
+  initialRulesJa = "",
+  initialRulesZh = "",
 }: Props) {
   const t = useTranslations("Admin")
   const [rulesTh, setRulesTh] = useState(initialRulesTh)
   const [rulesEn, setRulesEn] = useState(initialRulesEn)
+  const [rulesJa, setRulesJa] = useState(initialRulesJa)
+  const [rulesZh, setRulesZh] = useState(initialRulesZh)
   const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
@@ -28,6 +34,8 @@ export default function RulesSettingsClient({
           configs: {
             rules_th: rulesTh,
             rules_en: rulesEn,
+            rules_ja: rulesJa,
+            rules_zh: rulesZh,
           },
         }),
       })
@@ -79,6 +87,30 @@ export default function RulesSettingsClient({
             </span>
           </div>
           <TiptapEditor content={rulesEn} onChange={setRulesEn} />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-[13px] text-text-muted font-medium">
+              {t("rules_ja_label")}
+            </label>
+            <span className="text-[11px] text-accent-light bg-accent/5 px-2 py-0.5 rounded-md border border-accent/10">
+              JA
+            </span>
+          </div>
+          <TiptapEditor content={rulesJa} onChange={setRulesJa} />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-[13px] text-text-muted font-medium">
+              {t("rules_zh_label")}
+            </label>
+            <span className="text-[11px] text-accent-light bg-accent/5 px-2 py-0.5 rounded-md border border-accent/10">
+              ZH
+            </span>
+          </div>
+          <TiptapEditor content={rulesZh} onChange={setRulesZh} />
         </div>
 
         <p className="text-[11px] text-text-muted italic">

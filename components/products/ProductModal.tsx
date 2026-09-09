@@ -1,4 +1,5 @@
 "use client"
+import { variantLabel } from "@/lib/i18n/locale"
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { createPortal } from "react-dom"
@@ -55,6 +56,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 // --- ส่วน UsernameHelpModal ---
 function UsernameHelpModal({ onClose, images }: { onClose: () => void; images: string[] }) {
   const [idx, setIdx] = useState(0)
+  const t = useTranslations("ProductModal")
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -69,8 +71,8 @@ function UsernameHelpModal({ onClose, images }: { onClose: () => void; images: s
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
           <div>
-            <p className="text-[16px] font-semibold text-text-base">How to find your username</p>
-            <p className="text-[12px] text-text-muted mt-0.5">Follow the screenshots below</p>
+            <p className="text-[16px] font-semibold text-text-base">{t("username_help_title")}</p>
+            <p className="text-[12px] text-text-muted mt-0.5">{t("username_help_sub")}</p>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 transition flex items-center justify-center">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -95,7 +97,7 @@ function UsernameHelpModal({ onClose, images }: { onClose: () => void; images: s
             </>
           )}
         </div>
-        <div className="px-5 py-4 text-center text-[13px] text-text-muted">Step <span className="text-text-base font-semibold">{idx + 1}</span> of <span className="text-text-base font-semibold">{images.length}</span></div>
+        <div className="px-5 py-4 text-center text-[13px] text-text-muted">{t("step")} <span className="text-text-base font-semibold">{idx + 1}</span> {t("of")} <span className="text-text-base font-semibold">{images.length}</span></div>
       </motion.div>
     </motion.div>
   )
@@ -183,7 +185,7 @@ function PremiumWarningModal({ onConfirm, onCancel }: {
           >
             <img
               src="/uploads/premiumWorning.png"
-              alt="Premium Settings Preview"
+              alt={t("premium_preview_alt")}
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-125"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -192,13 +194,13 @@ function PremiumWarningModal({ onConfirm, onCancel }: {
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
               <div className="bg-yellow-500/90 text-black px-4 py-2 rounded-full text-[11px] font-bold flex items-center gap-2 shadow-2xl">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /><line x1="11" y1="8" x2="11" y2="14" /><line x1="8" y1="11" x2="14" y2="11" /></svg>
-                CLICK TO PREVIEW
+                {t("click_to_preview")}
               </div>
             </div>
 
             <div className="absolute bottom-3 left-4 flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest drop-shadow-md">Interface Preview</span>
+              <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest drop-shadow-md">{t("interface_preview")}</span>
             </div>
           </div>
 
@@ -241,6 +243,8 @@ interface ProductVariant {
   price: number
   label_en?: string
   label_th?: string
+  duration_type?: string | null
+  duration_days?: number | null
   variant_type?: string | null
   is_active?: boolean | null
   sort_order?: number | null
@@ -762,7 +766,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
             <h2 className="text-lg font-extrabold">{t("confirm_title")}</h2>
             <button
               onClick={onClose}
-              aria-label="close"
+              aria-label={t("close")}
               className="w-9 h-9 rounded-[10px] border border-border-soft text-text-muted flex items-center justify-center hover:bg-white/[0.05] hover:text-text-base transition"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -784,7 +788,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                   {isTH ? product.name_th : product.name_en}
                 </h3>
                 <p className="text-xs text-text-dim truncate">
-                  {selectedVariant ? (isTH ? selectedVariant.label_th : selectedVariant.label_en) : "—"}
+                  {selectedVariant ? variantLabel(selectedVariant, locale) : "—"}
                 </p>
               </div>
               <div className="ml-auto text-lg font-extrabold shrink-0">
@@ -799,9 +803,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
             {isDesktop ? (
               <div className="rounded-xl bg-bg-base/50 border border-accent/10 px-4 py-3">
                 <p className="text-[12px] text-text-muted leading-relaxed">
-                  {isTH
-                    ? "โปรแกรมนี้เข้าใช้ด้วยบัญชีที่ล็อกอิน ไม่ต้องกรอกชื่อในเกม · ลิงก์ดาวน์โหลดตัวติดตั้งจะขึ้นหลังชำระเงินสำเร็จ"
-                    : "This program signs in with your account — no in-game name needed. The installer download link appears after payment."}
+                  {t("desktop_signin_note")}
                 </p>
               </div>
             ) : (!isTrialEnabled || session) ? (
@@ -828,7 +830,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                         <div className="w-7 h-7 rounded-full bg-white/10 animate-pulse" />
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-                          <span className="text-[12px] text-text-muted">{isTH ? "กำลังตรวจสอบ..." : "Verifying..."}</span>
+                          <span className="text-[12px] text-text-muted">{t("verifying")}</span>
                         </div>
                       </>
                     )}
@@ -842,7 +844,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-[12px] text-text-base font-medium truncate">{robloxDisplayName ?? whitelistUsername}</p>
-                          <p className="text-[10px] text-green-400">{isTH ? "พบบัญชี Roblox" : "Roblox account found"}</p>
+                          <p className="text-[10px] text-green-400">{t("roblox_found")}</p>
                         </div>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                       </>
@@ -852,7 +854,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                         <div className="w-7 h-7 rounded-full bg-red-500/10 flex items-center justify-center">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                         </div>
-                        <span className="text-[12px] text-red-400">{isTH ? "ไม่พบ username นี้" : "Username not found"}</span>
+                        <span className="text-[12px] text-red-400">{t("username_not_found")}</span>
                       </>
                     )}
                   </div>

@@ -16,7 +16,11 @@
     "rules": "กฎและเงื่อนไข",
     "livegen": "สร้างภาพไลฟ์",
     "affiliate": "ตัวแทน",
-    "faq": "FAQ"
+    "faq": "FAQ",
+    "toggle_theme": "สลับธีม",
+    "toggle_menu": "เปิด/ปิดเมนู",
+    "close_menu": "ปิดเมนู",
+    "change_language": "เปลี่ยนภาษา"
   },
   "Affiliate": {
     "title": "แดชบอร์ดตัวแทน",
@@ -213,7 +217,8 @@
     "discount": "ส่วนลด",
     "final_price": "ราคาหลังหักส่วนลด",
     "buy_at_partner": "ซื้อที่ร้าน {name}",
-    "external_note": "จะพาไปที่หน้าร้านพาร์ทเนอร์เพื่อชำระเงิน"
+    "external_note": "จะพาไปที่หน้าร้านพาร์ทเนอร์เพื่อชำระเงิน",
+    "review_video": "วิดีโอรีวิว"
   },
   "ProductModal": {
     "premium_warning_title": "ไม่ซื้อ Premium?",
@@ -306,7 +311,17 @@
     "confirm_title": "ยืนยันการสั่งซื้อ",
     "username_label": "ชื่อตัวละคร (Roblox Username)",
     "username_hint": "ชื่อต้องตรงกับบัญชี Roblox เพื่อรับสินค้า · กดดูวิธีหาชื่อ",
-    "confirm_pay": "ยืนยันการชำระเงิน"
+    "confirm_pay": "ยืนยันการชำระเงิน",
+    "username_help_title": "วิธีหาชื่อผู้ใช้ของคุณ",
+    "username_help_sub": "ทำตามภาพหน้าจอด้านล่าง",
+    "click_to_preview": "คลิกเพื่อดูตัวอย่าง",
+    "interface_preview": "ตัวอย่างหน้าจอ",
+    "premium_preview_alt": "ตัวอย่างการตั้งค่าพรีเมียม",
+    "desktop_signin_note": "โปรแกรมนี้เข้าใช้ด้วยบัญชีที่ล็อกอิน ไม่ต้องกรอกชื่อในเกม · ลิงก์ดาวน์โหลดตัวติดตั้งจะขึ้นหลังชำระเงินสำเร็จ",
+    "verifying": "กำลังตรวจสอบ...",
+    "roblox_found": "พบบัญชี Roblox",
+    "username_not_found": "ไม่พบ username นี้",
+    "close": "ปิด"
   },
   "Visitors": {
     "title": "สถิติผู้เข้าชมเว็บไซต์",
@@ -617,7 +632,9 @@
     "plugin_none_short": "ยังไม่มี jar",
     "wl_program": "โปรแกรม",
     "wl_no_programs": "ยังไม่มีโปรแกรม desktop — สร้าง product ที่ type = desktop_program ก่อน",
-    "wl_pick_program": "เลือกโปรแกรมก่อน"
+    "wl_pick_program": "เลือกโปรแกรมก่อน",
+    "rules_ja_label": "เนื้อหากฎ (ภาษาญี่ปุ่น)",
+    "rules_zh_label": "เนื้อหากฎ (ภาษาจีน)"
   },
   "AdminDiscountCodes": {
     "title": "โค้ดส่วนลด",
@@ -1219,7 +1236,21 @@
     "act_play": "เล่นเกม",
     "act_download": "ดาวน์โหลด",
     "act_view": "ดูรายละเอียด",
-    "my_orders": "ออเดอร์ของฉัน"
+    "my_orders": "ออเดอร์ของฉัน",
+    "order_id": "เลขที่ออเดอร์",
+    "date_label": "วันที่",
+    "access_info": "ข้อมูลการเข้าใช้งาน",
+    "purchase_completed": "ชำระเงินสำเร็จ",
+    "whitelist_purchase_completed": "ซื้อ Whitelist สำเร็จ",
+    "desktop_access_desc": "สิทธิ์ใช้งานเปิดให้บัญชีนี้แล้ว — ดาวน์โหลดตัวติดตั้งด้านล่าง ติดตั้งแล้วเข้าสู่ระบบด้วยบัญชีเดียวกันนี้เพื่อใช้งาน",
+    "whitelist_access_desc": "เปิดสิทธิ์ whitelist ให้แล้ว เข้าเซิร์ฟเวอร์ได้ผ่านลิงก์ด้านล่าง",
+    "download_installer": "ดาวน์โหลดตัวติดตั้ง",
+    "install_then_sign_in": "ติดตั้งแล้วล็อกอินด้วยบัญชีนี้",
+    "map_information": "ข้อมูลแมพ",
+    "waiting_payment": "กำลังรอยืนยันการชำระเงิน",
+    "lifetime": "ถาวร",
+    "prev_page": "หน้าก่อนหน้า",
+    "next_page": "หน้าถัดไป"
   },
   "AdminProductForm": {
     "edit": "แก้ไข — {name}",
@@ -1305,7 +1336,9 @@
     "support_247": "ซัพพอร์ต 24/7",
     "agreement": "ในการดำเนินการต่อ แสดงว่าคุณยอมรับ<terms>ข้อกำหนดการให้บริการ</terms> และ<privacy>นโยบายความเป็นส่วนตัว</privacy>ของเรา",
     "terms": "ข้อกำหนดการให้บริการ",
-    "privacy": "นโยบายความเป็นส่วนตัว"
+    "privacy": "นโยบายความเป็นส่วนตัว",
+    "meta_title": "เข้าสู่ระบบ — A Class Store",
+    "meta_desc": "เข้าสู่ระบบ A Class Store ด้วย Discord หรือ Google"
   },
   "Checkout": {
     "shop": "ร้านค้า",
@@ -1347,7 +1380,11 @@
     "price": "ราคา",
     "hot": "ยอดฮิต",
     "partner": "Partner",
-    "no_rating": "ยังไม่มีรีวิว"
+    "no_rating": "ยังไม่มีรีวิว",
+    "redirecting_shop": "กำลังพาไปที่ร้าน...",
+    "prev_image": "รูปก่อนหน้า",
+    "next_image": "รูปถัดไป",
+    "close": "ปิด"
   },
   "Setting": {
     "back": "ย้อนกลับ",
@@ -1406,7 +1443,12 @@
     "maintenance_desc": "ขณะนี้หน้าตั้งค่าเกมกำลังอยู่ระหว่างการปรับปรุงครั้งใหญ่ ขออภัยในความไม่สะดวก กรุณากลับมาใหม่อีกครั้งในภายหลัง",
     "maintenance_note": "การสั่งซื้อและสิทธิ์ Whitelist ของคุณจะไม่ได้รับผลกระทบ",
     "maintenance_back_button": "← กลับไปหน้าออเดอร์",
-    "maintenance_footer": "หน้าตั้งค่าเกมปิดให้บริการชั่วคราว"
+    "maintenance_footer": "หน้าตั้งค่าเกมปิดให้บริการชั่วคราว",
+    "trial_mode_active": "[ โหมดทดลองใช้ ]",
+    "trial_mode_desc": "คุณกำลังใช้งานสิทธิ์ Whitelist ทดลองใช้ฟรี ระบบจะหยุดทำงานอัตโนมัติเมื่อหมดเวลา",
+    "time_remaining": "เวลาที่เหลือ",
+    "threshold_placeholder": "จำนวนไลก์",
+    "tutorial_video_title": "วิดีโอสอนใช้งาน"
   },
   "AdminGifts": {
     "title": "จัดการของขวัญ",
@@ -2040,7 +2082,19 @@
     "send_backward": "เลื่อนลงล่าง",
     "duplicate": "ทำสำเนา",
     "shortcuts_hint": "Delete ลบ · Ctrl+Z ย้อน · Ctrl+D ทำสำเนา · Ctrl+C/V คัดลอก-วาง · ดับเบิลคลิกข้อความเพื่อแก้",
-    "image_load_error": "โหลดรูปไม่สำเร็จ ลองรูปอื่น"
+    "image_load_error": "โหลดรูปไม่สำเร็จ ลองรูปอื่น",
+    "bg_transparent": "โปร่งใส",
+    "bg_white": "ขาว",
+    "bg_black": "ดำ",
+    "bg_ocean": "น้ำเงิน",
+    "bg_neon": "นีออน",
+    "bg_sunset": "ซันเซ็ต",
+    "bg_purple": "ม่วง",
+    "bg_mint": "มิ้นต์",
+    "bg_pink": "ชมพู",
+    "bg_gold": "ทอง",
+    "bg_midnight": "มิดไนท์",
+    "close": "ปิด"
   },
   "AdminFeatures": {
     "title": "จุดเด่นของสินค้า (Feature)",
@@ -2064,7 +2118,9 @@
     "subtitle": "เราเก็บข้อมูลเท่าที่จำเป็นต่อการส่งมอบสินค้าและดูแลคุณ หน้านี้อธิบายว่าเก็บอะไร ใช้ทำอะไร และคุณมีสิทธิ์อะไรบ้าง",
     "updated": "อัปเดตล่าสุด {date}",
     "toc": "หัวข้อ",
-    "contact_page": "หน้าติดต่อเรา"
+    "contact_page": "หน้าติดต่อเรา",
+    "meta_title": "นโยบายความเป็นส่วนตัว — A Class Store",
+    "meta_desc": "A Class Store เก็บ ใช้ และปกป้องข้อมูลของคุณอย่างไร"
   },
   "AdminMaki": {
     "edit": "แก้ไข",
@@ -2101,5 +2157,14 @@
     "saving": "กำลังบันทึก...",
     "saved": "บันทึกแล้ว",
     "save_error": "บันทึกไม่สำเร็จ"
+  },
+  "Meta": {
+    "title": "A-Class Store | แมพ Roblox พรีเมียมและระบบ Whitelist ที่ปลอดภัย",
+    "description": "แมพ Roblox คุณภาพสูงพร้อมระบบ whitelist กันก๊อป ปกป้องผลงานและจัดการสิทธิ์ใช้งานได้ง่ายผ่านแดชบอร์ด",
+    "og_title": "A-Class Store - แมพ Roblox พรีเมียมและ Whitelist ที่ปลอดภัย",
+    "og_description": "เข้าถึงแมพ Roblox ระดับท็อปแบบเอ็กซ์คลูซีฟ ซื้อสิทธิ์ whitelist วันนี้ ใช้งานได้ทันที ปลอดภัย และถาวร",
+    "og_image_alt": "ระบบ Whitelist ของ A-Class Store",
+    "twitter_title": "A-Class Store | ตลาดสินค้า Roblox ที่ปลอดภัย",
+    "twitter_description": "หยุดปัญหาแมพหลุด ระบบ whitelist มืออาชีพและสินค้าพรีเมียมสำหรับนักพัฒนา Roblox"
   }
 }

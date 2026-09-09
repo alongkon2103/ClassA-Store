@@ -1,4 +1,5 @@
 "use client"
+import { localeTag } from "@/lib/i18n/locale"
 
 import { useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
@@ -19,7 +20,7 @@ export default function MyReviewsClient({ items: initial }: { items: ReviewItem[
   const [open, setOpen] = useState<string | null>(null)
 
   const fmt = (s: string | null) =>
-    s ? new Date(s).toLocaleDateString(isTH ? "th-TH" : "en-US", { day: "numeric", month: "short", year: "numeric" }) : "—"
+    s ? new Date(s).toLocaleDateString(localeTag(locale), { day: "numeric", month: "short", year: "numeric" }) : "—"
   const done = items.filter((x) => x.review).length
 
   const patch = (slug: string, review: Review | null) =>

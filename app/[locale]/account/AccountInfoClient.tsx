@@ -1,4 +1,5 @@
 "use client"
+import { localeTag } from "@/lib/i18n/locale"
 
 // หน้า "ข้อมูลบัญชี" — แก้ได้แค่ชื่อที่แสดง (อีเมล/รูปมาจาก Discord/Google)
 import { useState } from "react"
@@ -21,7 +22,7 @@ export default function AccountInfoClient({ user, provider, stats }: {
 
   const initial = (user.username || "A").trim()[0]?.toUpperCase() ?? "A"
   const since = user.created_at
-    ? new Date(user.created_at).toLocaleDateString(locale === "th" ? "th-TH" : "en-US", { day: "numeric", month: "short", year: "numeric" })
+    ? new Date(user.created_at).toLocaleDateString(localeTag(locale), { day: "numeric", month: "short", year: "numeric" })
     : "—"
   const roleLabel = ({ admin: t("role_admin"), affiliate: t("role_affiliate"), partnership: t("role_partnership") } as Record<string, string>)[user.role] ?? t("role_user")
   const providerLabel = provider === "discord" ? "Discord" : provider === "google" ? "Google" : provider ? provider : "—"

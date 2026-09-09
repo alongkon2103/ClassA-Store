@@ -1,4 +1,5 @@
 "use client"
+import { variantLabel } from "@/lib/i18n/locale"
 
 import { useRef, useState } from "react"
 import { useTranslations, useLocale } from "next-intl"
@@ -128,7 +129,7 @@ export default function ProductCard({
                   className="flex justify-between items-center text-[12px]"
                 >
                   <span className="text-text-muted">
-                    {locale === "th" ? v.label_th : v.label_en}
+                    {variantLabel(v, locale)}
                   </span>
                   {hasDeal ? (
                     <span className="flex items-baseline gap-1.5">

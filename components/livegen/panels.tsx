@@ -4,7 +4,7 @@
 import { useRef, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import { formatDistanceToNow } from "date-fns"
-import { th as thLocale, enUS } from "date-fns/locale"
+import { dateFnsLocale } from "@/lib/i18n/locale"
 import { Link } from "@/i18n/routing"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { FONT_OPTIONS } from "@/lib/livegen/fonts"
@@ -31,11 +31,12 @@ export function Panel({ title, onClose, search, children }: {
   search?: { value: string; onChange: (v: string) => void; placeholder: string }
   children: React.ReactNode
 }) {
+  const t = useTranslations("Editor")
   return (
     <div className="w-[260px] shrink-0 bg-bg-surface border-r border-border-soft flex flex-col overflow-hidden max-md:absolute max-md:left-14 max-md:top-0 max-md:bottom-0 max-md:z-20 max-md:w-[min(260px,calc(100vw-56px))] max-md:shadow-[8px_0_24px_rgba(0,0,0,0.45)]">
       <div className="px-[18px] pt-4 pb-3 flex items-center justify-between">
         <h2 className="text-[0.95rem] font-bold">{title}</h2>
-        <button onClick={onClose} className="w-7 h-7 rounded-md text-text-dim hover:bg-white/[0.04] hover:text-text-base flex items-center justify-center transition-colors" aria-label="close">
+        <button onClick={onClose} className="w-7 h-7 rounded-md text-text-dim hover:bg-white/[0.04] hover:text-text-base flex items-center justify-center transition-colors" aria-label={t("close")}>
           <CloseIcon />
         </button>
       </div>
@@ -86,8 +87,8 @@ export function TemplatesPanel({ games, busyGameId, onClose, onBlank, onBackgrou
       <h4 className={sectionTitle}>{t("backgrounds")}</h4>
       <div className="grid grid-cols-3 gap-2 mb-4">
         {BACKGROUNDS.map((p) => (
-          <button key={p.id} onClick={() => onBackground(p)} className={`${tile} aspect-square`} style={bgPreviewStyle(p)} title={isTH ? p.label_th : p.label_en}>
-            <span className={tileLabel}>{isTH ? p.label_th : p.label_en}</span>
+          <button key={p.id} onClick={() => onBackground(p)} className={`${tile} aspect-square`} style={bgPreviewStyle(p)} title={t(`bg_${p.id}`)}>
+            <span className={tileLabel}>{t(`bg_${p.id}`)}</span>
           </button>
         ))}
       </div>
@@ -243,7 +244,7 @@ export function ProjectsPanel({ isAuthenticated, projects, loading, currentId, o
 }) {
   const t = useTranslations("Editor")
   const locale = useLocale()
-  const ago = (s: string) => formatDistanceToNow(new Date(s), { addSuffix: true, locale: locale === "th" ? thLocale : enUS })
+  const ago = (s: string) => formatDistanceToNow(new Date(s), { addSuffix: true, locale: dateFnsLocale(locale) })
 
   return (
     <Panel title={t("tab_projects")} onClose={onClose}>

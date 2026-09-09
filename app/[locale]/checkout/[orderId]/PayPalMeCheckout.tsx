@@ -1,4 +1,5 @@
 "use client"
+import { variantLabel as pickVariantLabel } from "@/lib/i18n/locale"
 
 // Pay page for the paypal_me flow. There is NO slip upload and NO PayPal API
 // redirect — the customer pays the exact amount by hand, then this page polls
@@ -18,7 +19,7 @@ type PayPalMeOrder = {
   expires_at: string | null
   whitelisted_username: string | null
   products: { name_th: string; name_en: string } | null
-  product_variants: { label_th: string; label_en: string } | null
+  product_variants: { label_th: string; label_en: string; duration_type?: string | null; duration_days?: number | null } | null
 }
 
 function fmtTime(ms: number): string {
@@ -98,7 +99,7 @@ export default function PayPalMeCheckout({
   }
 
   const productName = locale === "th" ? order.products?.name_th : order.products?.name_en
-  const variantLabel = locale === "th" ? order.product_variants?.label_th : order.product_variants?.label_en
+  const variantLabel = pickVariantLabel(order.product_variants, locale)
 
   const countdown = useMemo(() => fmtTime(remaining), [remaining])
 

@@ -1,4 +1,5 @@
 "use client"
+import { variantLabel } from "@/lib/i18n/locale"
 
 // Hero ตามดีไซน์ใหม่: การ์ดโชว์ "เกมเด่น" ทีละเกม พร้อมราคาเช่า/ซื้อขาด
 // และจุด carousel ด้านล่าง — ข้อมูลมาจาก products ที่ is_featured จริง
@@ -119,7 +120,7 @@ export default function Hero({
                 >
                   {t("hero_rent")}
                   <span className="block text-[0.7rem] font-normal opacity-60 mt-1">
-                    {t("hero_from")} {baht(cheapest.price)} / {isTH ? cheapest.label_th : cheapest.label_en}
+                    {t("hero_from")} {baht(cheapest.price)} / {variantLabel(cheapest, locale)}
                   </span>
                 </button>
               )}

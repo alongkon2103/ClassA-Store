@@ -16,7 +16,11 @@
     "rules": "Rules",
     "livegen": "Live Image",
     "affiliate": "Affiliate",
-    "faq": "FAQ"
+    "faq": "FAQ",
+    "toggle_theme": "Toggle theme",
+    "toggle_menu": "Toggle menu",
+    "close_menu": "Close menu",
+    "change_language": "Change language"
   },
   "Affiliate": {
     "title": "Affiliate Dashboard",
@@ -213,7 +217,8 @@
     "discount": "Discount",
     "final_price": "Price after discount",
     "buy_at_partner": "Buy at {name}",
-    "external_note": "You'll be taken to the partner's store to complete payment"
+    "external_note": "You'll be taken to the partner's store to complete payment",
+    "review_video": "Review video"
   },
   "ProductModal": {
     "premium_warning_title": "Skip Premium?",
@@ -306,7 +311,17 @@
     "confirm_title": "Confirm your order",
     "username_label": "Character name (Roblox Username)",
     "username_hint": "Must match your Roblox account to receive the item · tap for help",
-    "confirm_pay": "Confirm payment"
+    "confirm_pay": "Confirm payment",
+    "username_help_title": "How to find your username",
+    "username_help_sub": "Follow the screenshots below",
+    "click_to_preview": "CLICK TO PREVIEW",
+    "interface_preview": "Interface preview",
+    "premium_preview_alt": "Premium settings preview",
+    "desktop_signin_note": "This program signs in with your account — no in-game name needed. The installer download link appears after payment.",
+    "verifying": "Verifying...",
+    "roblox_found": "Roblox account found",
+    "username_not_found": "Username not found",
+    "close": "Close"
   },
   "Visitors": {
     "title": "Website Visitors",
@@ -614,7 +629,9 @@
     "plugin_none_short": "No jar",
     "wl_program": "Program",
     "wl_no_programs": "No desktop programs yet. Create a product with type = desktop_program.",
-    "wl_pick_program": "Pick a program first."
+    "wl_pick_program": "Pick a program first.",
+    "rules_ja_label": "Rules content (Japanese)",
+    "rules_zh_label": "Rules content (Chinese)"
   },
   "AdminDiscountCodes": {
     "title": "Discount Codes",
@@ -1216,7 +1233,21 @@
     "act_play": "Play",
     "act_download": "Download",
     "act_view": "View details",
-    "my_orders": "My Orders"
+    "my_orders": "My Orders",
+    "order_id": "Order ID",
+    "date_label": "Date",
+    "access_info": "Access Information",
+    "purchase_completed": "Purchase Completed",
+    "whitelist_purchase_completed": "Whitelist Purchase Completed",
+    "desktop_access_desc": "Access is now active on this account. Download the installer below, then sign in to the app with this same account.",
+    "whitelist_access_desc": "Your whitelist access has been successfully activated. You can now join the server using the link below.",
+    "download_installer": "Download installer",
+    "install_then_sign_in": "Install, then sign in with this account",
+    "map_information": "Map Information",
+    "waiting_payment": "Waiting for payment confirmation",
+    "lifetime": "Lifetime",
+    "prev_page": "Previous page",
+    "next_page": "Next page"
   },
   "AdminProductForm": {
     "edit": "Edit — {name}",
@@ -1302,7 +1333,9 @@
     "support_247": "24/7 support",
     "agreement": "By continuing, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
     "terms": "Terms of Service",
-    "privacy": "Privacy Policy"
+    "privacy": "Privacy Policy",
+    "meta_title": "Sign in — A Class Store",
+    "meta_desc": "Sign in to A Class Store with Discord or Google"
   },
   "Checkout": {
     "shop": "Shop",
@@ -1344,7 +1377,11 @@
     "price": "Price",
     "hot": "HOT",
     "partner": "Partner",
-    "no_rating": "No reviews yet"
+    "no_rating": "No reviews yet",
+    "redirecting_shop": "Taking you to the shop...",
+    "prev_image": "Previous image",
+    "next_image": "Next image",
+    "close": "Close"
   },
   "Setting": {
     "back": "Back",
@@ -1403,7 +1440,12 @@
     "maintenance_desc": "Game settings are temporarily unavailable while we perform scheduled maintenance. We apologize for the inconvenience and appreciate your patience.",
     "maintenance_note": "Your existing orders and whitelist access are not affected.",
     "maintenance_back_button": "← Back to Orders",
-    "maintenance_footer": "Game settings disabled"
+    "maintenance_footer": "Game settings disabled",
+    "trial_mode_active": "[ Trial Mode Active ]",
+    "trial_mode_desc": "You are using a free trial whitelist. The system will stop automatically when time expires.",
+    "time_remaining": "Time remaining",
+    "threshold_placeholder": "Likes",
+    "tutorial_video_title": "Tutorial video"
   },
   "AdminGifts": {
     "title": "Gift Management",
@@ -2037,7 +2079,19 @@
     "send_backward": "Send backward",
     "duplicate": "Duplicate",
     "shortcuts_hint": "Delete removes · Ctrl+Z undo · Ctrl+D duplicate · Ctrl+C/V copy-paste · double-click text to edit",
-    "image_load_error": "Could not load this image, try another"
+    "image_load_error": "Could not load this image, try another",
+    "bg_transparent": "Transparent",
+    "bg_white": "White",
+    "bg_black": "Black",
+    "bg_ocean": "Ocean",
+    "bg_neon": "Neon",
+    "bg_sunset": "Sunset",
+    "bg_purple": "Purple",
+    "bg_mint": "Mint",
+    "bg_pink": "Pink",
+    "bg_gold": "Gold",
+    "bg_midnight": "Midnight",
+    "close": "Close"
   },
   "AdminFeatures": {
     "title": "Product features",
@@ -2061,7 +2115,9 @@
     "subtitle": "We collect only what is needed to deliver your purchases and support you. This page explains what we collect, how it is used, and your rights.",
     "updated": "Last updated {date}",
     "toc": "Contents",
-    "contact_page": "Contact page"
+    "contact_page": "Contact page",
+    "meta_title": "Privacy Policy — A Class Store",
+    "meta_desc": "How A Class Store collects, uses and protects your data"
   },
   "AdminMaki": {
     "edit": "Edit",
@@ -2098,5 +2154,14 @@
     "saving": "Saving...",
     "saved": "Saved",
     "save_error": "Save failed"
+  },
+  "Meta": {
+    "title": "A-Class Store | Premium Roblox Maps & Secure Whitelist Systems",
+    "description": "High-quality Roblox maps with advanced anti-copy whitelist protection. Secure your assets and manage licenses effortlessly via our dashboard.",
+    "og_title": "A-Class Store - Premium Roblox Maps & Secure Whitelist",
+    "og_description": "Get exclusive access to top-tier Roblox maps. Buy your whitelist license today for instant, secure, and permanent access to our premium creations.",
+    "og_image_alt": "A-Class Store Whitelist System",
+    "twitter_title": "A-Class Store | Secure Roblox Asset Marketplace",
+    "twitter_description": "Stop map leaks today. Professional Whitelist systems and premium assets for Roblox developers."
   }
 }

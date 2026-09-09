@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { format } from "date-fns"
-import { th as thLocale, enUS } from "date-fns/locale"
+import { dateFnsLocale, variantLabel as pickVariantLabel } from "@/lib/i18n/locale"
 import Image from "next/image"
 import { Link, useRouter } from "@/i18n/routing"
 import { motion, AnimatePresence } from "framer-motion"
@@ -34,7 +34,7 @@ interface Order {
     product_presets: ProductPreset[]
     product_functions: unknown[]
   }
-  product_variants: { label_th: string | null; label_en: string | null } | null
+  product_variants: { label_th: string | null; label_en: string | null; duration_type?: string | null; duration_days?: number | null } | null
 }
 
 interface OrderListClientProps {
@@ -127,9 +127,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
             const isPaying = payingId === order.id
             const isDesktop = order.products?.type === "desktop_program"
             const name = locale === "th" ? order.products.name_th : order.products.name_en
-            const variantLabel = locale === "th"
-              ? (order.product_variants?.label_th || t("standard_version"))
-              : (order.product_variants?.label_en || t("standard_version"))
+            const variantLabel = pickVariantLabel(order.product_variants, locale) || t("standard_version")
 
             // ประเภท: ถาวร ดูจาก variant ก่อน ไม่มีค่อยดูวันหมดอายุ (ปี 9999 = ถาวร)
             const expiresAt = order.expires_at ? new Date(order.expires_at) : null
@@ -141,7 +139,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
             const amount = Number(order.amount)
             const discount = Number(order.discount_amount ?? 0)
             const created = order.created_at ? new Date(order.created_at) : null
-            const dateLocale = locale === "th" ? thLocale : enUS
+            const dateLocale = dateFnsLocale(locale)
 
             const statusKind = isTrial ? "trial" : isPaid ? "paid" : isPending ? "pending" : "cancelled"
             const badgeCls = {
@@ -193,7 +191,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                     {isTrial ? t("free_trial") : isLifetime ? t("type_lifetime") : t("type_rent")}
                   </span>
                   <div className="text-[0.68rem] text-text-dim mt-[3px]">
-                    {isTrial ? "—" : isLifetime ? "Lifetime" : durationDays ? t("days", { days: durationDays }) : variantLabel}
+                    {isTrial ? "—" : isLifetime ? t("lifetime") : durationDays ? t("days", { days: durationDays }) : variantLabel}
                   </div>
                 </td>
 
@@ -300,9 +298,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                     {locale === "th" ? selectedOrder.products.name_th : selectedOrder.products.name_en}
                   </h2>
                   <p className="text-accent-light text-[11px] md:text-[14px] font-medium">
-                    {locale === "th"
-                      ? (selectedOrder.product_variants?.label_th || t("standard_version"))
-                      : (selectedOrder.product_variants?.label_en || t("standard_version"))}
+                    {pickVariantLabel(selectedOrder.product_variants, locale) || t("standard_version")}
                   </p>
                 </div>
               </div>
@@ -414,8 +410,8 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                         </svg>
                       </div>
                       <div className="text-left min-w-0">
-                        <p className="text-[13px] font-semibold text-accent-light truncate">{locale === "th" ? "ดาวน์โหลดตัวติดตั้ง" : "Download installer"}</p>
-                        <p className="text-[11px] text-text-muted truncate">{locale === "th" ? "ติดตั้งแล้วล็อกอินด้วยบัญชีนี้" : "Install, then sign in with this account"}</p>
+                        <p className="text-[13px] font-semibold text-accent-light truncate">{t("download_installer")}</p>
+                        <p className="text-[11px] text-text-muted truncate">{t("install_then_sign_in")}</p>
                       </div>
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light flex-shrink-0 group-hover:translate-y-0.5 transition-transform">

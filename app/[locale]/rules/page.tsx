@@ -14,9 +14,10 @@ export default async function RulesPage({
   setRequestLocale(locale)
   const t = await getTranslations("Rules")
 
-  const key = locale === "th" ? "rules_th" : "rules_en"
-  const row = await prisma.system_configs.findUnique({ where: { key } })
-  const content = (row?.value ?? "").trim()
+  // กฎตามภาษาที่เปิด (rules_th/en/ja/zh) — ภาษาที่แอดมินยังไม่ใส่เนื้อหาใช้อังกฤษแทน
+  const rows = await prisma.system_configs.findMany({ where: { key: { in: [`rules_${locale}`, "rules_en"] } } })
+  const pick = (k: string) => (rows.find((r) => r.key === k)?.value ?? "").trim()
+  const content = pick(`rules_${locale}`) || pick("rules_en")
 
   return (
     <div className="min-h-screen bg-bg-base flex flex-col selection:bg-accent/30 selection:text-accent-light">
