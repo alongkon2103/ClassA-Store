@@ -72,6 +72,10 @@ export default async function OrderPage({
 
     const mainImage = order.products.product_images[0]?.url || "/next.svg"
     const isDesktopProduct = order.products.type === "desktop_program"
+    // AC Points ที่ออเดอร์นี้ได้รับ (ถ้ามี) — โชว์ในการ์ดสรุปด้านขวา
+    const pointsRow = order.user_id
+        ? await prisma.point_ledger.findFirst({ where: { order_id: order.id, type: "earn_purchase" }, select: { delta: true } })
+        : null
 
     return (
         <div className="min-h-screen bg-bg-base selection:bg-accent/30 selection:text-accent-light">
@@ -330,6 +334,15 @@ export default async function OrderPage({
                                             ฿{Number(order.amount).toLocaleString()}
                                         </span>
                                     </div>
+                                    {pointsRow && (
+                                        <div className="flex justify-between items-start text-[12px]">
+                                            <span className="text-text-muted">
+                                                {t("points_earned_label")}
+                                                <span className="block text-[10px] text-text-dim">{t("points_note")}</span>
+                                            </span>
+                                            <span className="text-gold font-bold">+{pointsRow.delta.toLocaleString()}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

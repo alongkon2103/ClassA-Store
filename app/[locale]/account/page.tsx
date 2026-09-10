@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { requireUser } from "@/lib/requireUser"
+import { getPointsBalance } from "@/lib/points"
 import { setRequestLocale } from "next-intl/server"
 import AccountFrame from "@/components/account/AccountFrame"
 import AccountInfoClient from "./AccountInfoClient"
@@ -11,7 +12,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
   setRequestLocale(locale)
   const { userId, session } = await requireUser(locale)
 
-  const [user, orders, favorites, reviews] = await Promise.all([
+  const [user, orders, favorites, reviews, points] = await Promise.all([
     prisma.users.findUnique({
       where: { id: userId },
       select: { username: true, email: true, avatar: true, role: true, created_at: true },
@@ -19,6 +20,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
     prisma.orders.count({ where: { user_id: userId, status: "paid" } }),
     prisma.product_favorites.count({ where: { user_id: userId, saved: true } }),
     prisma.product_reviews.count({ where: { user_id: userId } }),
+    getPointsBalance(userId),
   ])
 
   return (
@@ -32,7 +34,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
           created_at: user?.created_at?.toISOString() ?? null,
         }}
         provider={session.user.provider ?? null}
-        stats={{ orders, favorites, reviews }}
+        stats={{ orders, favorites, reviews, points }}
       />
     </AccountFrame>
   )

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 import { releaseOrderDiscount } from "@/lib/discountCodes"
 import { reverseAffiliateEarning } from "@/lib/affiliateEarnings"
+import { awardPointsForOrder, reversePointsForOrder } from "@/lib/points"
 
 const RELEASE_DISCOUNT_STATUSES = new Set(["expired", "cancelled"])
 
@@ -68,6 +69,8 @@ export async function PATCH(
     }
     if (shouldReverseEarning) {
       await reverseAffiliateEarning(tx, id)
+      // ยกเลิก/หมดอายุหลังจ่ายแล้ว → หัก AC Points ที่เคยให้คืน (no-op ถ้าไม่เคยได้)
+      await reversePointsForOrder(id, tx)
     }
 
     const updatedOrder = await tx.orders.update({
@@ -93,6 +96,9 @@ export async function PATCH(
 
     return updatedOrder
   })
+
+  // แอดมินเปลี่ยนเป็น paid เอง → ให้ AC Points เหมือนจ่ายผ่านระบบ (best-effort)
+  if (becomingPaid) await awardPointsForOrder(id)
 
   return NextResponse.json({ ...result, amount: Number(result.amount) })
 }

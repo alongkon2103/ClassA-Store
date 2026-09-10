@@ -289,6 +289,13 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
   // change knows what to do: 'auto' = pre-applied best code, 'card' = tapped a
   // public card, 'typed' = manually entered (can't be re-evaluated client-side).
   type DiscountSource = "auto" | "card" | "typed"
+  // AC Points: กติกาแต้ม (เปิด/ปิด + แต้มต่อบาท) สำหรับพรีวิว "จะได้รับ x แต้ม" — คิดจากราคาเกม ไม่รวมค่าธรรมเนียม
+  const [pointsCfg, setPointsCfg] = useState<{ enabled: boolean; per_baht: number } | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetch("/api/points/config").then((r) => (r.ok ? r.json() : null)).then((d) => { if (alive && d) setPointsCfg(d) }).catch(() => {})
+    return () => { alive = false }
+  }, [])
   const [appliedDiscount, setAppliedDiscount] =
     useState<{ code: string; amountOff: number; source: DiscountSource } | null>(null)
   const [discountChecking, setDiscountChecking] = useState(false)
@@ -795,6 +802,13 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                 {isTH ? `฿${totalPrice.toLocaleString()}` : `$${totalPriceUSD || "0.00"}`}
               </div>
             </div>
+            {pointsCfg?.enabled && subtotalAfterDiscount > 0 && (
+              <p className="mt-2 px-1 text-[0.72rem] text-gold flex flex-wrap items-center gap-x-1.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="shrink-0"><circle cx="12" cy="12" r="10" /></svg>
+                {t("points_preview", { points: Math.floor(subtotalAfterDiscount * pointsCfg.per_baht).toLocaleString() })}
+                <span className="text-text-dim">· {t("points_preview_note")}</span>
+              </p>
+            )}
           </div>
 
           <div className="px-6 sm:px-7 py-6 space-y-5">

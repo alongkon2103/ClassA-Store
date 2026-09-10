@@ -9,6 +9,7 @@
 
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { awardPointsForOrder } from "@/lib/points"
 import { prepareAffiliateEarning } from "@/lib/affiliateEarnings"
 import { notify } from "@/lib/notifications"
 
@@ -90,6 +91,9 @@ export async function fulfillPaidOrder(orderId: string, opts?: { isPremium?: boo
     ...(earning ? [prisma.affiliate_earnings.create({ data: earning })] : []),
   ]
   await prisma.$transaction(ops)
+
+  // AC Points: ให้แต้มหลัง commit (best-effort, ทำซ้ำได้ไม่ให้ซ้ำ) — ต้องมีคู่กับ webhook Stripe เสมอ
+  await awardPointsForOrder(orderId)
 
   // Notify the affiliate of the new commission (best-effort, after commit).
   if (earning) {

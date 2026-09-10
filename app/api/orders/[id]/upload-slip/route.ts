@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { awardPointsForOrder } from "@/lib/points"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { writeFile, mkdir } from "fs/promises"
@@ -218,6 +219,9 @@ export async function POST(
       })
     ] : [])
   ])
+
+  // AC Points: สลิปโอนไม่มีค่าธรรมเนียม → คิดจาก amount ทั้งก้อน (best-effort)
+  await awardPointsForOrder(id)
 
   return NextResponse.json({ ok: true, orderId: id })
 }

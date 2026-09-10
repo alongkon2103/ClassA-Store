@@ -149,7 +149,9 @@
     "waiting_payment": "等待付款确认",
     "lifetime": "永久",
     "prev_page": "上一页",
-    "next_page": "下一页"
+    "next_page": "下一页",
+    "points_earned_label": "获得的 AC Points",
+    "points_note": "按游戏价格计算，不含手续费"
   },
   "Navbar": {
     "home": "首页",
@@ -408,6 +410,10 @@
           {
             "q": "可以把程序转移到另一台电脑吗？",
             "a": "可以，但一个账号只绑定一台设备。如需转移，请通过 Discord 联系我们重置设备绑定。"
+          },
+          {
+            "q": "什么是 AC Points？如何使用？",
+            "a": "AC Points 是每次购买游戏时获得的积分：游戏价格每 ฿100 可获得 1,000 AC Points。积分按折后游戏价格计算，不包含支付手续费（银行卡 / PayPal），免费试用也不获得积分。付款确认后积分会自动到账，可在「我的金币」查看余额。兑换折扣和奖励的功能即将开放，现在累积的积分会一直保留。"
           }
         ]
       }
@@ -470,7 +476,11 @@
     "just_now": "刚刚",
     "minutes_ago": "{n} 分钟前",
     "hours_ago": "{n} 小时前",
-    "days_ago": "{n} 天前"
+    "days_ago": "{n} 天前",
+    "points_earned_title": "获得 AC Points",
+    "points_earned_body": "购买获得 +{points} 积分",
+    "points_adjusted_title": "AC Points 已调整",
+    "points_adjusted_body": "客服调整了你的积分 {points}"
   },
   "DesktopLogin": {
     "title": "登录应用",
@@ -591,7 +601,9 @@
     "verifying": "验证中...",
     "roblox_found": "已找到 Roblox 账号",
     "username_not_found": "未找到该用户名",
-    "close": "关闭"
+    "close": "关闭",
+    "points_preview": "付款完成后获得 {points} AC Points",
+    "points_preview_note": "按游戏价格计算，不含手续费"
   },
   "Checkout": {
     "shop": "商店",
@@ -816,7 +828,23 @@
     "cp_use_now": "去购买",
     "cp_history": "折扣码使用记录",
     "cp_history_empty": "你还没有使用过折扣码",
-    "cp_saved": "省 ฿{amount}"
+    "cp_saved": "省 ฿{amount}",
+    "nav_coins": "我的金币",
+    "stat_points": "AC Points",
+    "coins_title": "我的 AC Points",
+    "coins_sub": "每次购买游戏赚取的积分，为即将推出的奖励保存",
+    "coins_balance_label": "可用积分",
+    "coins_rule": "游戏价格每 ฿100 = {points} AC Points",
+    "coins_rule_note": "按折后游戏价格计算。支付手续费（银行卡 / PayPal）不计入，免费试用不获得积分。付款确认后积分会自动到账。",
+    "coins_soon_title": "积分兑换即将开放",
+    "coins_soon_body": "你的积分不会丢失。兑换功能上线后即可用于折扣和奖励。",
+    "coins_disabled": "积分计划尚未启用",
+    "coins_history": "积分记录",
+    "coins_history_empty": "暂无记录。下次购买付款完成后积分会立即到账。",
+    "coins_type_earn_purchase": "购买获得",
+    "coins_type_reverse_purchase": "已撤销（订单取消）",
+    "coins_type_adjust_admin": "客服调整",
+    "coins_order": "订单：{product}"
   },
   "Editor": {
     "untitled": "未命名项目",

@@ -173,6 +173,7 @@ export async function POST(req: Request) {
 
           const orderData = {
             amount: totalThb,
+            goods_amount: baseAfterDiscount, // ราคาสินค้าหลังส่วนลด ไม่รวมค่าธรรมเนียม (ใช้คิด AC Points)
             payment_method: "paypal_me",
             whitelisted_username: whitelistUsername.trim(),
             is_premium_order: !!isPremium,

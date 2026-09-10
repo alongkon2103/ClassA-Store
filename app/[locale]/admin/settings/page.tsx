@@ -4,6 +4,7 @@ import GlobalSettingsClient from "./GlobalSettingsClient"
 import PaymentSettingsClient from "./PaymentSettingsClient"
 import FeaturesSettingsClient from "./FeaturesSettingsClient"
 import RulesSettingsClient from "./RulesSettingsClient"
+import PointsSettingsClient from "./PointsSettingsClient"
 import { setRequestLocale } from "next-intl/server"
 
 export default async function SettingsPage({
@@ -22,6 +23,7 @@ export default async function SettingsPage({
             <GlobalSettingsClient initialConfigs={configMap} />
             <PaymentSettingsClient initialConfigs={configMap} />
             <FeaturesSettingsClient initialConfigs={configMap} />
+            <PointsSettingsClient initialConfigs={configMap} />
             <RulesSettingsClient
                 initialRulesTh={configMap.rules_th ?? ""}
                 initialRulesEn={configMap.rules_en ?? ""}

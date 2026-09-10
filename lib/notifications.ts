@@ -13,6 +13,8 @@ export type NotificationType =
   | "payout_paid"       // data: { amount }
   | "payout_rejected"   // data: { amount, reason }
   | "commission_earned" // data: { amount }
+  | "points_earned"     // data: { points, order_id? } — AC Points จากการซื้อ
+  | "points_adjusted"   // data: { points } — แอดมินปรับแต้ม (+/−)
 
 type NotifyInput = {
   userId: string

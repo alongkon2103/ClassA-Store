@@ -25,6 +25,7 @@ const groups = [
       { href: "/admin/partner-store/transactions", key: "partner_transactions", roles: ["admin"] },
       { href: "/admin/gifts", key: "gifts", roles: ["admin"] },
       { href: "/admin/discount-codes", key: "discount_codes", roles: ["admin"] },
+      { href: "/admin/points", key: "points_nav", roles: ["admin"] },
     ]
   },
   {

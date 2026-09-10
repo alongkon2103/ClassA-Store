@@ -119,6 +119,7 @@ model orders {
   // for in the incoming PayPal email. Null for every other payment method.
   expected_amount       Decimal?              @db.Decimal(10, 2)
   expected_currency     String?               @default("USD") @db.VarChar
+  goods_amount          Decimal?              @db.Decimal(10, 2) // ราคาสินค้าหลังส่วนลด ไม่รวมค่าธรรมเนียม (ใช้คิด AC Points)
   game_keys             game_keys?
   products              products              @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                 users?                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -132,6 +133,7 @@ model orders {
   livegen_config        user_livegen_configs?
   paypal_payment        paypal_payments?
   affiliate_earning     affiliate_earnings?
+  point_ledger          point_ledger[]
 
   @@index([user_id], map: "idx_orders_user")
   @@index([recorded_by_id], map: "idx_orders_recorded_by")
@@ -626,6 +628,7 @@ model users {
   product_favorites     product_favorites[]
   livegen_projects      livegen_projects[]
   livegen_assets        livegen_assets[]
+  point_ledger          point_ledger[]
 }
 
 // Pre-authorized desktop whitelist grants keyed by EMAIL, for buyers who haven't
@@ -684,6 +687,26 @@ model desktop_tokens {
 // In-app notifications (bell + badge). Generic per-user feed; currently used by
 // the affiliate program (payout paid/rejected, new commission) but reusable for
 // any future event. Best-effort: creation never blocks the source transaction.
+// ── AC Points: สมุดบัญชีแต้มสะสม (เฟส 1 = ได้แต้มจากการซื้อ เก็บไว้ก่อน ระบบแลกค่อยต่อยอด) ──
+// ยอดคงเหลือ = SUM(delta) ต่อผู้ใช้ · ให้แต้มซ้ำต่อออเดอร์ไม่ได้เพราะ unique (order_id, type)
+model point_ledger {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  delta       Int // + ได้รับ / − หักออก
+  type        String    @db.VarChar // earn_purchase | reverse_purchase | adjust_admin (อนาคต: earn_review, redeem_*, expire)
+  order_id    String?   @db.Uuid
+  base_amount Decimal?  @db.Decimal(10, 2) // ยอดที่ใช้คิดแต้ม = ราคาเกมหลังส่วนลด ไม่รวมค่าธรรมเนียม
+  note        String?   @db.VarChar
+  created_by  String?   @db.Uuid // แอดมินที่ปรับแต้มเอง
+  expires_at  DateTime? @db.Timestamptz(6) // null = ไม่หมดอายุ (เผื่อกติกาในอนาคต)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  user        users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  order       orders?   @relation(fields: [order_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@unique([order_id, type], map: "uq_point_ledger_order_type")
+  @@index([user_id, created_at], map: "idx_point_ledger_user_created")
+}
+
 model notifications {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id    String    @db.Uuid

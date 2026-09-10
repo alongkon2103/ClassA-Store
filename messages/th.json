@@ -321,7 +321,9 @@
     "verifying": "กำลังตรวจสอบ...",
     "roblox_found": "พบบัญชี Roblox",
     "username_not_found": "ไม่พบ username นี้",
-    "close": "ปิด"
+    "close": "ปิด",
+    "points_preview": "รับ {points} AC Points เมื่อชำระเงินสำเร็จ",
+    "points_preview_note": "คิดจากราคาเกม ไม่รวมค่าธรรมเนียม"
   },
   "Visitors": {
     "title": "สถิติผู้เข้าชมเว็บไซต์",
@@ -634,7 +636,19 @@
     "wl_no_programs": "ยังไม่มีโปรแกรม desktop — สร้าง product ที่ type = desktop_program ก่อน",
     "wl_pick_program": "เลือกโปรแกรมก่อน",
     "rules_ja_label": "เนื้อหากฎ (ภาษาญี่ปุ่น)",
-    "rules_zh_label": "เนื้อหากฎ (ภาษาจีน)"
+    "rules_zh_label": "เนื้อหากฎ (ภาษาจีน)",
+    "points_nav": "AC Points",
+    "points_settings_title": "AC Points (แต้มสะสม)",
+    "points_enabled_label": "เปิดระบบแต้ม",
+    "points_enabled_hint": "ลูกค้าได้แต้มอัตโนมัติเมื่อออเดอร์ชำระเงินสำเร็จ ระบบแลกแต้มเป็นเฟสถัดไป ตอนนี้เก็บสะสมไว้ก่อน",
+    "points_per_baht_label": "แต้มต่อ 1 บาท",
+    "points_per_baht_hint": "ค่าเริ่มต้น 10 = ฿100 ได้ 1,000 แต้ม คิดจากราคาเกมหลังส่วนลด ไม่รวมค่าธรรมเนียมการชำระเงิน",
+    "points_per_baht_invalid": "แต้มต่อบาทต้องมากกว่า 0",
+    "points_start_label": "เริ่มนับแต้มตั้งแต่",
+    "points_start_hint": "ออเดอร์ที่จ่ายก่อนเวลานี้จะไม่ได้แต้ม (ไม่ย้อนหลัง) ให้ตั้งเป็นเวลาที่เปิดใช้จริงบน production",
+    "points_start_required": "กรุณาตั้งเวลาเริ่มนับก่อนเปิดใช้",
+    "points_start_now": "ตั้งเป็นตอนนี้",
+    "points_preview_line": "ตัวอย่าง: เกม ฿750 → {points} แต้ม"
   },
   "AdminDiscountCodes": {
     "title": "โค้ดส่วนลด",
@@ -1250,7 +1264,9 @@
     "waiting_payment": "กำลังรอยืนยันการชำระเงิน",
     "lifetime": "ถาวร",
     "prev_page": "หน้าก่อนหน้า",
-    "next_page": "หน้าถัดไป"
+    "next_page": "หน้าถัดไป",
+    "points_earned_label": "AC Points ที่ได้รับ",
+    "points_note": "คิดจากราคาเกม ไม่รวมค่าธรรมเนียม"
   },
   "AdminProductForm": {
     "edit": "แก้ไข — {name}",
@@ -1767,7 +1783,11 @@
     "just_now": "เมื่อสักครู่",
     "minutes_ago": "{n} นาทีที่แล้ว",
     "hours_ago": "{n} ชม.ที่แล้ว",
-    "days_ago": "{n} วันที่แล้ว"
+    "days_ago": "{n} วันที่แล้ว",
+    "points_earned_title": "ได้รับ AC Points",
+    "points_earned_body": "+{points} แต้มจากการซื้อเกม",
+    "points_adjusted_title": "ปรับยอด AC Points",
+    "points_adjusted_body": "ทีมงานปรับแต้มของคุณ {points}"
   },
   "AdminStripe": {
     "title": "Stripe",
@@ -1919,6 +1939,10 @@
           {
             "q": "เปลี่ยนเครื่องที่ใช้โปรแกรมได้ไหม?",
             "a": "ได้ แต่ 1 บัญชีผูกได้ 1 เครื่อง หากต้องการย้ายเครื่อง กรุณาติดต่อทีมงานผ่าน Discord เพื่อรีเซ็ตการผูกเครื่องให้"
+          },
+          {
+            "q": "AC Points คืออะไร? ใช้งานอย่างไร?",
+            "a": "AC Points คือแต้มสะสมที่ได้รับเมื่อซื้อเกมในร้าน ทุกการซื้อ ฿100 จะได้รับ 1,000 AC Points โดยคิดจากราคาเกมหลังหักส่วนลด ไม่รวมค่าธรรมเนียมการชำระเงิน (บัตร / PayPal) และการทดลองใช้ฟรีไม่ได้แต้ม แต้มจะเข้าอัตโนมัติเมื่อชำระเงินสำเร็จ ดูยอดได้ที่หน้า \"Coins ของฉัน\" ส่วนระบบแลกส่วนลดและของรางวัลกำลังจะเปิด แต้มที่สะสมไว้ตอนนี้ไม่หายไปไหน"
           }
         ]
       }
@@ -2006,7 +2030,23 @@
     "cp_use_now": "ไปเลือกซื้อ",
     "cp_history": "ประวัติการใช้โค้ด",
     "cp_history_empty": "ยังไม่เคยใช้โค้ดส่วนลด",
-    "cp_saved": "ลด ฿{amount}"
+    "cp_saved": "ลด ฿{amount}",
+    "nav_coins": "Coins ของฉัน",
+    "stat_points": "AC Points",
+    "coins_title": "AC Points ของฉัน",
+    "coins_sub": "แต้มสะสมจากการซื้อเกม เก็บไว้แลกสิทธิพิเศษเร็วๆ นี้",
+    "coins_balance_label": "แต้มคงเหลือ",
+    "coins_rule": "ทุก ฿100 ของราคาเกม = {points} AC Points",
+    "coins_rule_note": "คิดจากราคาเกมหลังหักส่วนลด ไม่รวมค่าธรรมเนียมการชำระเงิน (บัตร / PayPal) และการทดลองใช้ฟรีไม่ได้แต้ม แต้มจะเข้าอัตโนมัติเมื่อชำระเงินสำเร็จ",
+    "coins_soon_title": "ระบบแลกแต้มกำลังจะเปิด",
+    "coins_soon_body": "แต้มที่สะสมไว้ไม่หายไปไหน พอระบบแลกเปิดจะนำไปแลกส่วนลดและของรางวัลได้",
+    "coins_disabled": "ระบบแต้มยังไม่เปิดใช้งาน",
+    "coins_history": "ประวัติแต้ม",
+    "coins_history_empty": "ยังไม่มีรายการ — ซื้อเกมครั้งถัดไปรับแต้มทันทีที่ชำระเงินสำเร็จ",
+    "coins_type_earn_purchase": "ได้รับจากการซื้อ",
+    "coins_type_reverse_purchase": "หักคืน (ออเดอร์ถูกยกเลิก)",
+    "coins_type_adjust_admin": "ปรับโดยทีมงาน",
+    "coins_order": "ออเดอร์: {product}"
   },
   "Editor": {
     "untitled": "โปรเจคไม่มีชื่อ",
@@ -2166,5 +2206,39 @@
     "og_image_alt": "ระบบ Whitelist ของ A-Class Store",
     "twitter_title": "A-Class Store | ตลาดสินค้า Roblox ที่ปลอดภัย",
     "twitter_description": "หยุดปัญหาแมพหลุด ระบบ whitelist มืออาชีพและสินค้าพรีเมียมสำหรับนักพัฒนา Roblox"
+  },
+  "AdminPoints": {
+    "title": "AC Points",
+    "status_active": "เปิดใช้อยู่ · ฿100 = {rate} แต้ม · นับตั้งแต่ {date}",
+    "status_inactive": "ยังไม่เปิดใช้ — เปิดได้ที่หน้าตั้งค่า",
+    "go_settings": "ตั้งค่า",
+    "reconcile": "กวาดออเดอร์ที่ยังไม่ได้แต้ม",
+    "reconcile_result": "ให้แต้มเพิ่ม {awarded} จากออเดอร์ที่ตรวจ {scanned} รายการ",
+    "working": "กำลังทำ...",
+    "stat_outstanding": "แต้มคงค้างรวมทุกคน",
+    "stat_earned": "ได้จากการซื้อ ({n} ออเดอร์)",
+    "stat_reversed": "หักคืน",
+    "stat_adjusted": "ทีมงานปรับ",
+    "lookup_title": "ค้นหาลูกค้า / ปรับแต้ม",
+    "lookup_placeholder": "อีเมล ชื่อผู้ใช้ หรือ user id",
+    "search": "ค้นหา",
+    "not_found": "ไม่พบลูกค้า",
+    "balance": "ยอดคงเหลือ",
+    "delta_placeholder": "แต้ม (+ เพิ่ม / − หัก)",
+    "note_placeholder": "เหตุผล (ลูกค้าเห็นด้วย)",
+    "adjust": "บันทึกการปรับ",
+    "adjust_confirm": "ปรับแต้มของ {user} {points} แต้ม?",
+    "adjust_failed": "ไม่สำเร็จ",
+    "delta_invalid": "กรอกจำนวนเต็มที่ไม่ใช่ 0",
+    "recent_title": "รายการล่าสุด",
+    "col_date": "วันที่",
+    "col_user": "ลูกค้า",
+    "col_type": "ประเภท",
+    "col_detail": "รายละเอียด",
+    "col_points": "แต้ม",
+    "no_entries": "ไม่มีรายการ",
+    "type_earn": "ซื้อเกม",
+    "type_reverse": "หักคืน",
+    "type_adjust": "ปรับเอง"
   }
 }

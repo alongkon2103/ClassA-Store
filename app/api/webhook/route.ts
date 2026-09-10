@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { releaseOrderDiscount } from "@/lib/discountCodes"
 import { prepareAffiliateEarning, reverseAffiliateEarning } from "@/lib/affiliateEarnings"
+import { awardPointsForOrder } from "@/lib/points"
 import { fetchStripeCardCountry } from "@/lib/stripeCardCountry"
 import { notify } from "@/lib/notifications"
 import { NextRequest } from "next/server"
@@ -221,6 +222,9 @@ export async function POST(req: NextRequest) {
       ...(earning ? [prisma.affiliate_earnings.create({ data: earning })] : [])
     ]
     await prisma.$transaction(ops)
+
+    // AC Points: ให้แต้มจากราคาเกม (ไม่รวมค่าธรรมเนียม) หลัง commit — best-effort, ทำซ้ำได้ไม่ให้ซ้ำ
+    await awardPointsForOrder(orderId)
 
     // Notify the affiliate of the new commission (best-effort, after commit).
     if (earning) {

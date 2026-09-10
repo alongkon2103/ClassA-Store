@@ -321,7 +321,9 @@
     "verifying": "Verifying...",
     "roblox_found": "Roblox account found",
     "username_not_found": "Username not found",
-    "close": "Close"
+    "close": "Close",
+    "points_preview": "Earn {points} AC Points when paid",
+    "points_preview_note": "from the game price, fees excluded"
   },
   "Visitors": {
     "title": "Website Visitors",
@@ -631,7 +633,19 @@
     "wl_no_programs": "No desktop programs yet. Create a product with type = desktop_program.",
     "wl_pick_program": "Pick a program first.",
     "rules_ja_label": "Rules content (Japanese)",
-    "rules_zh_label": "Rules content (Chinese)"
+    "rules_zh_label": "Rules content (Chinese)",
+    "points_nav": "AC Points",
+    "points_settings_title": "AC Points (loyalty)",
+    "points_enabled_label": "Enable points",
+    "points_enabled_hint": "Customers earn points automatically when an order is paid. Redemption comes in a later phase — points are stored for now.",
+    "points_per_baht_label": "Points per ฿1",
+    "points_per_baht_hint": "Default 10 = ฿100 earns 1,000 points. Based on the game price after discounts, payment fees excluded.",
+    "points_per_baht_invalid": "Points per baht must be greater than 0",
+    "points_start_label": "Count points from",
+    "points_start_hint": "Orders paid before this time never earn points (no backfill). Set it to the real launch time on production.",
+    "points_start_required": "Please set the start time before enabling",
+    "points_start_now": "Set to now",
+    "points_preview_line": "Example: a ฿750 game → {points} points"
   },
   "AdminDiscountCodes": {
     "title": "Discount Codes",
@@ -1247,7 +1261,9 @@
     "waiting_payment": "Waiting for payment confirmation",
     "lifetime": "Lifetime",
     "prev_page": "Previous page",
-    "next_page": "Next page"
+    "next_page": "Next page",
+    "points_earned_label": "AC Points earned",
+    "points_note": "From the game price, fees excluded"
   },
   "AdminProductForm": {
     "edit": "Edit — {name}",
@@ -1764,7 +1780,11 @@
     "just_now": "just now",
     "minutes_ago": "{n}m ago",
     "hours_ago": "{n}h ago",
-    "days_ago": "{n}d ago"
+    "days_ago": "{n}d ago",
+    "points_earned_title": "AC Points earned",
+    "points_earned_body": "+{points} points from your purchase",
+    "points_adjusted_title": "AC Points adjusted",
+    "points_adjusted_body": "Staff adjusted your points by {points}"
   },
   "AdminStripe": {
     "title": "Stripe",
@@ -1916,6 +1936,10 @@
           {
             "q": "Can I move the program to another computer?",
             "a": "Yes, but one account is bound to one device. To move, contact us on Discord and we'll reset the device binding for you."
+          },
+          {
+            "q": "What are AC Points and how do they work?",
+            "a": "AC Points are loyalty points you earn on every game purchase: every ฿100 of the game price earns 1,000 AC Points. Points are calculated from the game price after discounts and never include payment fees (card / PayPal) or free trials. They are added automatically once your payment is confirmed, and you can see your balance under \"My Coins\". Redeeming points for discounts and rewards is coming soon — the points you collect now will stay."
           }
         ]
       }
@@ -2003,7 +2027,23 @@
     "cp_use_now": "Shop now",
     "cp_history": "Code usage history",
     "cp_history_empty": "You haven't used a discount code yet",
-    "cp_saved": "Saved ฿{amount}"
+    "cp_saved": "Saved ฿{amount}",
+    "nav_coins": "My Coins",
+    "stat_points": "AC Points",
+    "coins_title": "My AC Points",
+    "coins_sub": "Points you earn on every game purchase, saved for upcoming rewards",
+    "coins_balance_label": "Available points",
+    "coins_rule": "Every ฿100 of game price = {points} AC Points",
+    "coins_rule_note": "Calculated from the game price after discounts. Payment fees (card / PayPal) are never counted, and free trials do not earn points. Points are added automatically once your payment is confirmed.",
+    "coins_soon_title": "Redemption is coming soon",
+    "coins_soon_body": "Your points are safe. Once redemption launches you can spend them on discounts and rewards.",
+    "coins_disabled": "The points program is not active yet",
+    "coins_history": "Points history",
+    "coins_history_empty": "No entries yet. Points are added as soon as your next purchase is paid.",
+    "coins_type_earn_purchase": "Earned from a purchase",
+    "coins_type_reverse_purchase": "Reversed (order cancelled)",
+    "coins_type_adjust_admin": "Adjusted by staff",
+    "coins_order": "Order: {product}"
   },
   "Editor": {
     "untitled": "Untitled project",
@@ -2163,5 +2203,39 @@
     "og_image_alt": "A-Class Store Whitelist System",
     "twitter_title": "A-Class Store | Secure Roblox Asset Marketplace",
     "twitter_description": "Stop map leaks today. Professional Whitelist systems and premium assets for Roblox developers."
+  },
+  "AdminPoints": {
+    "title": "AC Points",
+    "status_active": "Active · ฿100 = {rate} points · counting from {date}",
+    "status_inactive": "Not active — enable it in Settings",
+    "go_settings": "Settings",
+    "reconcile": "Award missing points",
+    "reconcile_result": "Awarded {awarded} of {scanned} paid orders",
+    "working": "Working...",
+    "stat_outstanding": "Outstanding balance (all customers)",
+    "stat_earned": "Earned from purchases ({n} orders)",
+    "stat_reversed": "Reversed",
+    "stat_adjusted": "Staff adjustments",
+    "lookup_title": "Look up a customer / adjust points",
+    "lookup_placeholder": "Email, username or user id",
+    "search": "Search",
+    "not_found": "Customer not found",
+    "balance": "Balance",
+    "delta_placeholder": "Points (+ add / − deduct)",
+    "note_placeholder": "Reason (shown to the customer)",
+    "adjust": "Apply adjustment",
+    "adjust_confirm": "Adjust {user} by {points} points?",
+    "adjust_failed": "Failed",
+    "delta_invalid": "Enter a non-zero whole number",
+    "recent_title": "Recent entries",
+    "col_date": "Date",
+    "col_user": "Customer",
+    "col_type": "Type",
+    "col_detail": "Detail",
+    "col_points": "Points",
+    "no_entries": "No entries",
+    "type_earn": "Purchase",
+    "type_reverse": "Reversal",
+    "type_adjust": "Adjustment"
   }
 }

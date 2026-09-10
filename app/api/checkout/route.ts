@@ -345,6 +345,7 @@ export async function POST(req: Request) {
 
         const orderData = {
           amount: totalPrice,
+          goods_amount: currentSubtotal, // ราคาสินค้าหลังส่วนลด ไม่รวมค่าธรรมเนียม (ใช้คิด AC Points)
           payment_method: paymentMethod,
           whitelisted_username: whitelistUsername.trim(),
           is_premium_order: !!isPremium,

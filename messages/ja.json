@@ -149,7 +149,9 @@
     "waiting_payment": "支払いの確認を待っています",
     "lifetime": "永久",
     "prev_page": "前のページ",
-    "next_page": "次のページ"
+    "next_page": "次のページ",
+    "points_earned_label": "獲得したAC Points",
+    "points_note": "ゲーム価格から計算、手数料を除く"
   },
   "Navbar": {
     "home": "ホーム",
@@ -408,6 +410,10 @@
           {
             "q": "別のパソコンにアプリを移せますか？",
             "a": "はい。ただし1アカウントは1台に紐づいています。移動する場合はDiscordでご連絡ください。デバイスの紐づけをリセットします。"
+          },
+          {
+            "q": "AC Pointsとは？どう使えますか？",
+            "a": "AC Pointsはゲームを購入するたびに貯まるポイントです。ゲーム価格 ฿100 ごとに 1,000 AC Points が付与されます。割引後のゲーム価格から計算し、決済手数料（カード / PayPal）や無料お試しは対象外です。支払いが確認されると自動的に加算され、残高は「マイコイン」で確認できます。割引や特典への交換は近日公開予定で、今貯めたポイントはそのまま残ります。"
           }
         ]
       }
@@ -470,7 +476,11 @@
     "just_now": "たった今",
     "minutes_ago": "{n}分前",
     "hours_ago": "{n}時間前",
-    "days_ago": "{n}日前"
+    "days_ago": "{n}日前",
+    "points_earned_title": "AC Pointsを獲得",
+    "points_earned_body": "購入で +{points} ポイント",
+    "points_adjusted_title": "AC Pointsの調整",
+    "points_adjusted_body": "スタッフがポイントを {points} 調整しました"
   },
   "DesktopLogin": {
     "title": "アプリにログイン",
@@ -591,7 +601,9 @@
     "verifying": "確認中...",
     "roblox_found": "Robloxアカウントが見つかりました",
     "username_not_found": "ユーザー名が見つかりません",
-    "close": "閉じる"
+    "close": "閉じる",
+    "points_preview": "支払い完了で {points} AC Points 獲得",
+    "points_preview_note": "ゲーム価格から計算、手数料を除く"
   },
   "Checkout": {
     "shop": "ショップ",
@@ -816,7 +828,23 @@
     "cp_use_now": "今すぐ使う",
     "cp_history": "コード使用履歴",
     "cp_history_empty": "割引コードの使用履歴はまだありません",
-    "cp_saved": "฿{amount}お得"
+    "cp_saved": "฿{amount}お得",
+    "nav_coins": "マイコイン",
+    "stat_points": "AC Points",
+    "coins_title": "マイAC Points",
+    "coins_sub": "ゲーム購入ごとに貯まるポイント。今後の特典に使えるよう保存されます",
+    "coins_balance_label": "利用可能ポイント",
+    "coins_rule": "ゲーム価格 ฿100 ごとに {points} AC Points",
+    "coins_rule_note": "割引後のゲーム価格から計算します。決済手数料（カード / PayPal）は含まれず、無料お試しではポイントは付きません。支払いが確認されると自動的に加算されます。",
+    "coins_soon_title": "ポイント交換は近日公開",
+    "coins_soon_body": "貯めたポイントは失われません。交換機能が公開されたら割引や特典に使えます。",
+    "coins_disabled": "ポイントプログラムはまだ有効ではありません",
+    "coins_history": "ポイント履歴",
+    "coins_history_empty": "まだ履歴がありません。次回の購入の支払いが完了するとすぐにポイントが加算されます。",
+    "coins_type_earn_purchase": "購入で獲得",
+    "coins_type_reverse_purchase": "取り消し（注文キャンセル）",
+    "coins_type_adjust_admin": "スタッフによる調整",
+    "coins_order": "注文: {product}"
   },
   "Editor": {
     "untitled": "無題のプロジェクト",
