@@ -204,7 +204,7 @@ export async function getPointsSummary(userId: string, opts?: { reconcile?: bool
   }
 }
 
-/** แอดมินปรับแต้มเอง (+/−) พร้อมเหตุผล — บันทึกเป็น adjust_admin และแจ้งเตือนลูกค้า */
+/** แอดมินปรับแต้มเอง (+ เพิ่ม / − หัก) พร้อมเหตุผล — บันทึกเป็น adjust_admin และแจ้งเตือนลูกค้า */
 export async function adminAdjustPoints(input: { userId: string; delta: number; note: string; adminId: string }) {
   if (!Number.isInteger(input.delta) || input.delta === 0) throw new Error("invalid_delta")
   const row = await prisma.point_ledger.create({
@@ -212,4 +212,44 @@ export async function adminAdjustPoints(input: { userId: string; delta: number; 
   })
   await notify({ userId: input.userId, type: "points_adjusted", data: { points: input.delta }, link: "/account/coins" })
   return row
+}
+
+/** แอดมิน "ตั้งยอด" ให้เท่ากับค่าที่กำหนด — คำนวณส่วนต่างในทรานแซกชันกันชนกัน คืน delta ที่บันทึก (0 = ยอดเท่าเดิม) */
+export async function adminSetPoints(input: { userId: string; balance: number; note: string; adminId: string }): Promise<number> {
+  if (!Number.isInteger(input.balance) || input.balance < 0) throw new Error("invalid_balance")
+  const delta = await prisma.$transaction(async (tx) => {
+    const current = await getPointsBalance(input.userId, tx)
+    const d = input.balance - current
+    if (d === 0) return 0
+    await tx.point_ledger.create({
+      data: { user_id: input.userId, delta: d, type: "adjust_admin", note: input.note.trim() || null, created_by: input.adminId },
+    })
+    return d
+  })
+  if (delta !== 0) await notify({ userId: input.userId, type: "points_adjusted", data: { points: delta }, link: "/account/coins" })
+  return delta
+}
+
+/**
+ * ยกเลิกรายการที่แอดมินปรับผิด — ไม่ลบแถวเดิม (เก็บร่องรอย) แต่สร้างรายการกลับค่าที่ชี้ reverses_id
+ * unique(reverses_id) ทำให้ยกเลิกซ้ำไม่ได้ · ยกเลิกได้เฉพาะ adjust_admin ที่ไม่ใช่รายการยกเลิกเอง
+ * (แต้มจากการซื้อให้ยกเลิกผ่านการเปลี่ยนสถานะออเดอร์แทน)
+ */
+export async function adminVoidEntry(input: { entryId: string; adminId: string; note?: string }): Promise<{ delta: number; userId: string }> {
+  const entry = await prisma.point_ledger.findUnique({ where: { id: input.entryId } })
+  if (!entry) throw new Error("not_found")
+  if (entry.type !== "adjust_admin" || entry.reverses_id) throw new Error("void_not_allowed")
+  try {
+    await prisma.point_ledger.create({
+      data: {
+        user_id: entry.user_id, delta: -entry.delta, type: "adjust_admin", created_by: input.adminId, reverses_id: entry.id,
+        note: (input.note?.trim() || `ยกเลิกรายการ: ${entry.note ?? entry.id.slice(0, 8)}`).slice(0, 200),
+      },
+    })
+  } catch (err) {
+    if ((err as { code?: string })?.code === "P2002") throw new Error("already_voided")
+    throw err
+  }
+  await notify({ userId: entry.user_id, type: "points_adjusted", data: { points: -entry.delta }, link: "/account/coins" })
+  return { delta: -entry.delta, userId: entry.user_id }
 }

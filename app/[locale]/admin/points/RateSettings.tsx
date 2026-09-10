@@ -1,6 +1,6 @@
 "use client"
 
-// ตั้งค่า AC Points (เฟส 1): เปิด/ปิด · แต้มต่อบาท · วันเริ่มนับ (ไม่ย้อนหลัง — ออเดอร์ก่อนหน้านี้ไม่ได้แต้ม)
+// แท็บ "ตั้งค่าเรท" ในหน้า /admin/points: เปิด/ปิด · แต้มต่อบาท · วันเริ่มนับ (ไม่ย้อนหลัง — ออเดอร์ก่อนหน้านี้ไม่ได้แต้ม)
 import { useState } from "react"
 import { useTranslations } from "next-intl"
 
@@ -15,7 +15,7 @@ const toLocalInput = (iso: string | undefined) => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
-export default function PointsSettingsClient({ initialConfigs = {} }: Props) {
+export default function RateSettings({ initialConfigs = {} }: Props) {
   const t = useTranslations("Admin")
   const [enabled, setEnabled] = useState(initialConfigs.points_enabled === "true")
   const [perBaht, setPerBaht] = useState(initialConfigs.points_per_baht || "10")
@@ -58,12 +58,7 @@ export default function PointsSettingsClient({ initialConfigs = {} }: Props) {
 
   return (
     <section>
-      <h2 className="text-[20px] font-bold text-text-base mb-4 flex items-center gap-2">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent-light">
-          <circle cx="12" cy="12" r="9" /><path d="M14.5 9.5a2.5 2.5 0 0 0-5 0c0 2.5 5 2.5 5 5a2.5 2.5 0 0 1-5 0" /><path d="M12 6v1.5M12 16.5V18" />
-        </svg>
-        {t("points_settings_title")}
-      </h2>
+      <h2 className="text-[16px] font-bold text-text-base mb-4">{t("points_settings_title")}</h2>
 
       <div className="bg-bg-card border border-white/5 rounded-2xl p-6 space-y-4">
         <div className={`p-4 rounded-xl border transition ${enabled ? "bg-white/5 border-white/10" : "bg-white/[0.02] border-white/5 opacity-80"}`}>
