@@ -1767,7 +1767,10 @@
     "partner_delivery_note": "ซื้อแล้วเกมจะปลดล็อกให้บัญชี Discord/Google ที่คุณล็อกอินไว้ ใช้งานผ่าน Maki Launcher — ไม่มีคีย์ ไม่ต้องรอแอดมิน",
     "plan_unavailable": "ราคาปรับ รอแอดมิน",
     "partner_preset_note": "มีพรีเซ็ต/เทมเพลตให้ดาวน์โหลดหลังซื้อ",
-    "partner_by": "จำหน่ายโดย {name} ผ่าน A Class Store"
+    "partner_by": "จำหน่ายโดย {name} ผ่าน A Class Store",
+    "points_unit": "แต้ม",
+    "points_earn": "รับ {points} AC Points เมื่อชำระเงินสำเร็จ",
+    "points_note": "คิดจากราคาเกม ไม่รวมค่าธรรมเนียม"
   },
   "Notifications": {
     "title": "การแจ้งเตือน",

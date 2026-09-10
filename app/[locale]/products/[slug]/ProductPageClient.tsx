@@ -60,13 +60,14 @@ const HIGHLIGHTS: { key: string; icon: React.ReactNode }[] = [
 ]
 
 export default function ProductPageClient({
-  product, related, reviewSummary, functions = [], features = [],
+  product, related, reviewSummary, functions = [], features = [], pointsPerBaht = null
 }: {
   product: Product
   related: Related[]
   reviewSummary?: { average: number; count: number }
   functions?: { id: string; name: string; label_th: string | null; label_en: string | null }[]
   features?: { id: string; text_th: string; text_en: string | null }[]
+  pointsPerBaht?: number | null // อัตรา AC Points ต่อบาท (null = ระบบแต้มปิด) — โชว์แต้มต่อแพ็กเกจและตรงปุ่มซื้อ
 }) {
   const t = useTranslations("ProductPage")
   const tc = useTranslations("Common")
@@ -309,11 +310,22 @@ export default function ProductPageClient({
                             {discounted != null && <span className="text-[0.8rem] text-text-dim line-through mr-1.5 font-semibold">฿{price.toLocaleString()}</span>}
                             <span className="text-sm">฿</span>{(discounted ?? price).toLocaleString()}
                           </div>
+                          {pointsPerBaht != null && (
+                            <div className="mt-1 text-[0.68rem] font-bold text-gold">+{Math.floor((discounted ?? price) * pointsPerBaht).toLocaleString()} {t("points_unit")}</div>
+                          )}
                         </button>
                       )
                     })}
                   </div>
 
+                  {/* AC Points ของแพ็กเกจที่เลือก — คิดจากราคาเกมหลังส่วนลด ไม่รวมค่าธรรมเนียม */}
+                  {pointsPerBaht != null && selectedPriced && (
+                    <p className="mb-3 text-[0.78rem] text-gold flex flex-wrap items-center gap-x-1.5">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="shrink-0"><circle cx="12" cy="12" r="10" /></svg>
+                      {t("points_earn", { points: Math.floor((selectedPriced.discounted ?? selectedPriced.price) * pointsPerBaht).toLocaleString() })}
+                      <span className="text-text-dim">· {t("points_note")}</span>
+                    </p>
+                  )}
                   <button onClick={() => setBuyOpen(true)}
                     className="w-full py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-2.5 hover:-translate-y-0.5 transition-all shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] mt-1 bg-gradient-to-r from-accent to-accent-light">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

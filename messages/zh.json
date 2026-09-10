@@ -305,7 +305,10 @@
     "partner_delivery_note": "购买后，游戏将通过 Maki Launcher 解锁到你当前登录的 Discord/Google 账号 — 无需密钥，无需等待",
     "plan_unavailable": "价格更新中，请稍候",
     "partner_preset_note": "购买后可下载预设/模板",
-    "partner_by": "由 {name} 通过 A Class Store 销售"
+    "partner_by": "由 {name} 通过 A Class Store 销售",
+    "points_unit": "积分",
+    "points_earn": "付款完成后获得 {points} AC Points",
+    "points_note": "按游戏价格计算，不含手续费"
   },
   "PartnerModal": {
     "partner_product": "合作伙伴商品",

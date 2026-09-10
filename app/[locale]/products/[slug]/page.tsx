@@ -18,6 +18,7 @@ import ProductPageClient from "./ProductPageClient"
 import PartnerProductClient from "./PartnerProductClient"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
+import { getPointsConfig, pointsActive } from "@/lib/points"
 import { getThbToUsdRate } from "@/lib/paypal"
 import { withLiveMinimums, planAvailable } from "@/lib/maki"
 
@@ -230,6 +231,9 @@ export default async function Page({ params }: Params) {
 
   // Product JSON-LD for rich results (server-rendered into initial HTML).
   const isTH = locale === "th"
+  // AC Points: อัตราแต้มตอนนี้ (null = ระบบปิด) ให้หน้าเกมโชว์ "รับ x แต้ม" ต่อแพ็กเกจ
+  const pointsCfg = await getPointsConfig()
+  const pointsPerBaht = pointsActive(pointsCfg) ? pointsCfg.perBaht : null
   const name = isTH ? product.name_th : product.name_en
   const variantPrices = safeProduct.product_variants.filter((v) => v.variant_type !== "premium").map((v) => v.price)
   const lowPrice = variantPrices.length ? Math.min(...variantPrices) : safeProduct.price
@@ -254,7 +258,7 @@ export default async function Page({ params }: Params) {
       {/* Suspense: ProductPageClient reads useSearchParams() for ?ref=CODE.
           Without it, ISR prerender bails with a CSR-bailout error. */}
       <Suspense fallback={null}>
-        <ProductPageClient product={safeProduct} related={related} reviewSummary={reviewSummary} functions={functions} features={features} />
+        <ProductPageClient product={safeProduct} related={related} reviewSummary={reviewSummary} functions={functions} features={features} pointsPerBaht={pointsPerBaht} />
       </Suspense>
     </>
   )

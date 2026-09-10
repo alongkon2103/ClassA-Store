@@ -1764,7 +1764,10 @@
     "partner_delivery_note": "After purchase the game unlocks for the Discord/Google account you're signed in with, via the Maki Launcher — no keys, no waiting",
     "plan_unavailable": "Price updating, please wait",
     "partner_preset_note": "Presets/templates available to download after purchase",
-    "partner_by": "Sold by {name} via A Class Store"
+    "partner_by": "Sold by {name} via A Class Store",
+    "points_unit": "pts",
+    "points_earn": "Earn {points} AC Points when paid",
+    "points_note": "from the game price, fees excluded"
   },
   "Notifications": {
     "title": "Notifications",
