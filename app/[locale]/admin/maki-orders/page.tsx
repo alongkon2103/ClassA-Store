@@ -14,8 +14,18 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
   })
   const paid = rows.filter((r) => r.status === "paid")
   const sum = (xs: typeof rows, f: (r: (typeof rows)[number]) => number) => xs.reduce((n, r) => n + f(r), 0)
+  // สรุปรายเดือน (ตามเดือนที่จ่าย เวลาไทย) ไว้เทียบกับยอดที่ Maki โอนให้เป็นรอบ
+  const monthKey = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit" }).format(d)
+  const monthly = new Map<string, { orders: number; sales: number; share: number }>()
+  for (const r of paid) {
+    const k = monthKey(r.paid_at ?? r.created_at)
+    const m = monthly.get(k) ?? { orders: 0, sales: 0, share: 0 }
+    m.orders++; m.sales += Number(r.price_thb); m.share += Number(r.price_thb) - Number(r.min_price_thb)
+    monthly.set(k, m)
+  }
   return (
     <MakiOrdersAdminClient
+      monthly={[...monthly.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([month, m]) => ({ month, ...m }))}
       stats={{
         paid: paid.length,
         pending: rows.filter((r) => r.status === "pending").length,

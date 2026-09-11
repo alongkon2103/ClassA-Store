@@ -3,7 +3,7 @@
 import { randomUUID } from "crypto"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
-import { MakiError, makiCreateOrder, makiGetOrder, planAvailable, toPlanRows, withLiveMinimums, type MakiAccess, type MakiPlanRow } from "@/lib/maki"
+import { MakiError, makiCreateOrder, makiGetOrder, makiListOrders, planAvailable, toPlanRows, withLiveMinimums, type MakiAccess, type MakiPlanRow } from "@/lib/maki"
 import { awardPointsForPartnerOrder } from "@/lib/points"
 
 export type MakiCheckoutCode = "not_found" | "unavailable" | "no_identity" | "onboarding" | "below_min" | "maki_error"
@@ -141,5 +141,38 @@ export function toMakiOrderView(row: Row, product: ProductLite): MakiOrderView {
     expires_at: row.expires_at?.toISOString() ?? null, paid_at: row.paid_at?.toISOString() ?? null, created_at: row.created_at.toISOString(),
     product: product ? { slug: product.external_slug, name_th: product.name_th, name_en: product.name_en, image: product.thumbnail_url ?? images[0] ?? null } : null,
     preset_link: plan?.preset_link ?? null,
+  }
+}
+
+/**
+ * เทียบกับรายการฝั่ง Maki (GET /orders 200 รายการล่าสุด) — ออเดอร์ที่ Maki บอกจ่ายแล้วแต่ของเรายังไม่ใช่ → sync ให้
+ * (รวมแถวที่เคย failed ตอนบันทึกไม่สำเร็จแต่ Maki สร้างสำเร็จ) · ref ที่ไม่มีในระบบเราแจ้งให้แอดมินดู
+ */
+export async function reconcileWithMaki() {
+  const { orders } = await makiListOrders({ limit: 200 })
+  const ours = await prisma.partner_orders.findMany({
+    where: { partner_order_ref: { in: orders.map((o) => o.partner_order_ref) } },
+    select: { id: true, partner_order_ref: true, status: true, maki_order_id: true },
+  })
+  const byRef = new Map(ours.map((o) => [o.partner_order_ref, o]))
+  let updated = 0
+  const unknown: string[] = []
+  for (const m of orders) {
+    const o = byRef.get(m.partner_order_ref)
+    if (!o) { unknown.push(m.partner_order_ref); continue }
+    if (o.status === m.status) continue
+    if (m.status === "paid" || (o.status === "pending" && (m.status === "expired" || m.status === "failed"))) {
+      // ให้ syncMakiOrder เป็นคนอัปเดต (บันทึก access + ให้แต้ม) — เติม maki_order_id / ปลดสถานะ failed ก่อน
+      await prisma.partner_orders.update({ where: { id: o.id }, data: { maki_order_id: o.maki_order_id ?? m.order_id, ...(o.status === "failed" ? { status: "pending", note: null } : {}) } })
+      const r = await syncMakiOrder(o.id)
+      if (r && r.status !== o.status) updated++
+    }
+  }
+  const paid = orders.filter((o) => o.status === "paid")
+  return {
+    maki_count: orders.length, matched: orders.length - unknown.length, updated, unknown,
+    maki_paid: paid.length,
+    maki_sales: paid.reduce((n, o) => n + Number(o.price_thb), 0),
+    maki_share: paid.reduce((n, o) => n + Number(o.price_thb) - Number(o.min_total_thb), 0),
   }
 }

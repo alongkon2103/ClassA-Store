@@ -11,20 +11,35 @@ const fmt = (s: string | null) => (s ? new Date(s).toLocaleString("th-TH", { day
 const TONE: Record<string, string> = { pending: "bg-yellow-500/10 text-yellow-400", paid: "bg-green-500/10 text-green-400", expired: "bg-white/5 text-text-muted", failed: "bg-red-500/10 text-red-400" }
 const btn = "px-3 py-1.5 rounded-lg border border-white/10 text-[12px] text-text-muted hover:text-text-base hover:border-white/20 transition disabled:opacity-50"
 
-export default function MakiOrdersAdminClient({ stats, orders }: { stats: { paid: number; pending: number; revenue: number; margin: number }; orders: Row[] }) {
+type Monthly = { month: string; orders: number; sales: number; share: number }
+const STATUSES = ["all", "paid", "pending", "expired", "failed"] as const
+
+export default function MakiOrdersAdminClient({ stats, orders, monthly }: { stats: { paid: number; pending: number; revenue: number; margin: number }; orders: Row[]; monthly: Monthly[] }) {
   const t = useTranslations("AdminMaki")
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState<"sync" | "reconcile" | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  const [filter, setFilter] = useState<(typeof STATUSES)[number]>("all")
+  const shown = filter === "all" ? orders : orders.filter((o) => o.status === filter)
   const [wl, setWl] = useState<{ key: string; loading: boolean; access?: Access[]; error?: string } | null>(null)
 
   const sync = async () => {
-    setBusy(true); setMsg(null)
+    setBusy("sync"); setMsg(null)
     try {
-      const r = await fetch("/api/admin/maki", { method: "POST" })
+      const r = await fetch("/api/admin/maki", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync" }) })
       const d = await r.json()
       setMsg(r.ok ? t("sync_result", { checked: d.checked, paid: d.paid }) : t("whitelist_error"))
       if (r.ok && d.paid > 0) window.location.reload()
-    } finally { setBusy(false) }
+    } finally { setBusy(null) }
+  }
+  // เทียบกับ GET /orders ฝั่ง Maki — ออเดอร์ที่ Maki ว่าจ่ายแล้วแต่ของเราไม่ตรงจะถูก sync ให้
+  const reconcile = async () => {
+    setBusy("reconcile"); setMsg(null)
+    try {
+      const r = await fetch("/api/admin/maki", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reconcile" }) })
+      const d = await r.json()
+      setMsg(r.ok ? t("reconcile_result", { count: d.maki_count, matched: d.matched, updated: d.updated, unknown: d.unknown.length, share: Number(d.maki_share).toLocaleString() }) : `${t("whitelist_error")}: ${d.error ?? ""}`)
+      if (r.ok && d.updated > 0) window.location.reload()
+    } finally { setBusy(null) }
   }
   const check = async (o: Row) => {
     const key = `${o.customer_provider}:${o.customer_id}`
@@ -41,11 +56,13 @@ export default function MakiOrdersAdminClient({ stats, orders }: { stats: { paid
           <h1 className="text-[24px] font-bold text-text-base">{t("orders_title")}</h1>
           <p className="text-[13px] text-text-muted mt-1">{t("orders_sub")}</p>
         </div>
-        <div className="flex items-center gap-3">
-          {msg && <span className="text-[12px] text-text-muted">{msg}</span>}
-          <button onClick={sync} disabled={busy} className={btn}>{busy ? t("working") : t("sync_pending")}</button>
+        <div className="flex flex-wrap items-center gap-3">
+          {msg && <span className="text-[12px] text-text-muted max-w-[420px]">{msg}</span>}
+          <button onClick={sync} disabled={busy !== null} className={btn}>{busy === "sync" ? t("working") : t("sync_pending")}</button>
+          <button onClick={reconcile} disabled={busy !== null} className={btn}>{busy === "reconcile" ? t("working") : t("reconcile")}</button>
         </div>
       </div>
+      <p className="text-[12px] text-text-muted -mt-3">{t("money_note")}</p>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
@@ -60,6 +77,25 @@ export default function MakiOrdersAdminClient({ stats, orders }: { stats: { paid
           </div>
         ))}
       </div>
+
+      {monthly.length > 0 && (
+        <section className="bg-bg-card border border-white/5 rounded-2xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-white/5"><h2 className="text-[14px] font-bold text-text-base">{t("monthly_title")}</h2></div>
+          <table className="w-full text-[12px]">
+            <thead className="bg-white/[0.03] text-text-muted"><tr><th className="text-left px-5 py-2">{t("col_month")}</th><th className="text-right px-5 py-2">{t("col_orders")}</th><th className="text-right px-5 py-2">{t("col_sales")}</th><th className="text-right px-5 py-2">{t("col_share")}</th></tr></thead>
+            <tbody>
+              {monthly.map((m) => (
+                <tr key={m.month} className="border-t border-white/5">
+                  <td className="px-5 py-2 font-mono text-text-base">{m.month}</td>
+                  <td className="px-5 py-2 text-right text-text-muted">{m.orders}</td>
+                  <td className="px-5 py-2 text-right text-text-base">฿{m.sales.toLocaleString()}</td>
+                  <td className="px-5 py-2 text-right font-bold text-green-400">฿{m.share.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       {wl && (
         <section className="bg-bg-card border border-accent/20 rounded-2xl p-5">
@@ -84,6 +120,15 @@ export default function MakiOrdersAdminClient({ stats, orders }: { stats: { paid
       )}
 
       <section className="bg-bg-card border border-white/5 rounded-2xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/5 flex flex-wrap items-center gap-2">
+          {STATUSES.map((st) => (
+            <button key={st} onClick={() => setFilter(st)}
+              className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition ${filter === st ? "bg-accent/15 border-accent/40 text-accent-light" : "border-white/10 text-text-muted hover:text-text-base"}`}>
+              {t(`filter_${st}`)} {st !== "all" && <span className="opacity-70">({orders.filter((o) => o.status === st).length})</span>}
+            </button>
+          ))}
+          <span className="ml-auto text-[12px] text-text-muted">{t("showing", { n: shown.length })}</span>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-[12px]">
             <thead className="bg-white/[0.03] text-text-muted">
@@ -94,8 +139,8 @@ export default function MakiOrdersAdminClient({ stats, orders }: { stats: { paid
               </tr>
             </thead>
             <tbody>
-              {orders.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-text-muted">{t("no_orders")}</td></tr>}
-              {orders.map((o) => (
+              {shown.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-text-muted">{t("no_orders")}</td></tr>}
+              {shown.map((o) => (
                 <tr key={o.id} className="border-t border-white/5">
                   <td className="px-4 py-2 text-text-muted whitespace-nowrap">{fmt(o.created_at)}</td>
                   <td className="px-4 py-2"><span className="text-text-base">{o.user.username}</span><span className="block text-text-muted">{o.user.email ?? ""}</span></td>

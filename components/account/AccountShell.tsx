@@ -92,7 +92,7 @@ export default function AccountShell({ active, children, points }: {
         </ul>
 
         {/* การ์ดแนะนำเพื่อน — ลิงก์ไปหน้านายหน้าที่มีจริง */}
-        <div className="rounded-[14px] p-5 text-center border border-accent/20"
+        {/* <div className="rounded-[14px] p-5 text-center border border-accent/20"
              style={{ background: "var(--gradient-panel)" }}>
           <h4 className="text-[0.88rem] font-bold mb-1">{t("referral_title")}</h4>
           <div className="text-[1.6rem] font-black text-gold mb-1">{t("referral_amount")}</div>
@@ -100,7 +100,7 @@ export default function AccountShell({ active, children, points }: {
           <Link href="/affiliate" className="inline-block px-5 py-2 rounded-lg bg-accent hover:bg-accent-light text-white text-[0.78rem] font-semibold transition-colors">
             {t("referral_cta")}
           </Link>
-        </div>
+        </div> */}
       </aside>
 
       {/* ── เมนูจอเล็ก: ชิปเลื่อนแนวนอน ── */}

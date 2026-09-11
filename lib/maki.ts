@@ -164,3 +164,10 @@ export function makiGetOrder(makiOrderId: string) {
 export function makiWhitelist(provider: string, id: string) {
   return makiFetch<{ customer: { provider: string; id: string }; access: MakiWhitelistEntry[] }>(`/whitelist?provider=${encodeURIComponent(provider)}&id=${encodeURIComponent(id)}`)
 }
+
+/** GET /orders — ประวัติออเดอร์ทั้งหมดของเราฝั่ง Maki (ใหม่สุดก่อน, limit ≤ 200) ใช้เทียบยอด/หาออเดอร์ที่หลุด */
+export function makiListOrders(opts?: { limit?: number; status?: "pending" | "paid" | "failed" | "expired" }) {
+  const q = new URLSearchParams({ limit: String(Math.min(200, Math.max(1, opts?.limit ?? 200))) })
+  if (opts?.status) q.set("status", opts.status)
+  return makiFetch<{ count: number; orders: MakiOrder[] }>(`/orders?${q}`)
+}
