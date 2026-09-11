@@ -57,7 +57,13 @@ export function evaluateDiscount(
   if (code.per_user_limit !== null && userUsedCount >= code.per_user_limit) {
     return { ok: false, errorCode: "ALREADY_USED" }
   }
-  if (code.product_id && code.product_id !== productId) {
+  // scope: product_id = เกมเราเกมเดียว · partner_product_id = เกม Maki เกมเดียว · ว่างทั้งคู่ = ทุกเกม
+  // เกมพาร์ทเนอร์ส่ง opts.partner + productId = partner_products.id
+  if (opts?.partner) {
+    if (code.product_id || (code.partner_product_id && code.partner_product_id !== productId)) {
+      return { ok: false, errorCode: "WRONG_PRODUCT" }
+    }
+  } else if (code.partner_product_id || (code.product_id && code.product_id !== productId)) {
     return { ok: false, errorCode: "WRONG_PRODUCT" }
   }
   const minAmount = code.min_amount ? Number(code.min_amount) : 0
@@ -170,4 +176,9 @@ export async function releasePartnerOrderDiscount(tx: Prisma.TransactionClient, 
   await tx.discount_codes.update({ where: { id: o.discount_code_id }, data: { used_count: { decrement: 1 } } })
   await tx.discount_redemptions.deleteMany({ where: { partner_order_id: partnerOrderId } })
   await tx.partner_orders.update({ where: { id: partnerOrderId }, data: { discount_code_id: null, discount_amount: null } })
+}
+
+/** โค้ด (ข้อมูลพรีวิว) ใช้กับเกมนี้ได้ไหม — id เป็น products.id หรือ partner_products.id ก็ได้ (uuid คนละตาราง ไม่ชนกัน) */
+export function codeAppliesTo(c: { product_id: string | null; partner_product_id?: string | null }, id: string): boolean {
+  return (c.product_id === null && !c.partner_product_id) || c.product_id === id || c.partner_product_id === id
 }

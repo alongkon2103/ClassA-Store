@@ -219,6 +219,7 @@ function normalizeMaki(pp: any, ourRate: number) {
             label_en: pl.label_en,
             price: Number(pl.sell_price_thb),
             discounted_price: Number(pl.sell_price_thb),
+            min_price: Number(pl.min_price_thb), // ส่วนลดจากโค้ดต้องไม่ทำให้ต่ำกว่านี้
             is_active: true,
             variant_type: "normal",
             usd_rate: ourRate,

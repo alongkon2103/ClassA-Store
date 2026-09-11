@@ -41,7 +41,7 @@ export async function createMakiCheckout(input: { userId: string; provider: stri
   if (input.discountCode?.trim()) {
     codeRow = await prisma.discount_codes.findUnique({ where: { code: input.discountCode.trim().toUpperCase() } })
     const used = codeRow ? await countUserRedemptions(prisma, codeRow.id, input.userId) : 0
-    const ev = evaluateDiscount(codeRow, sell, `partner:${row.id}`, used, new Date(), { partner: true })
+    const ev = evaluateDiscount(codeRow, sell, row.id, used, new Date(), { partner: true })
     if (!ev.ok) throw new MakiCheckoutError("discount", ev.errorCode)
     discount = capPartnerDiscount(ev.amountOff, sell, plan.min_price_thb)
     if (discount <= 0) throw new MakiCheckoutError("discount", "NO_EFFECT")

@@ -677,7 +677,7 @@
     "field_per_user_limit": "จำกัดต่อผู้ใช้ (1 = ใช้ได้คนละครั้ง, เว้นว่าง = ไม่จำกัด)",
     "field_min_amount": "ยอดสั่งซื้อขั้นต่ำ (฿, ไม่บังคับ)",
     "field_product": "สินค้า (เว้นว่าง = ใช้กับสินค้าทุกชิ้น)",
-    "option_all_products": "สินค้าทุกชิ้น",
+    "option_all_products": "ทุกเกม รวมเกม Maki",
     "field_starts_at": "วันที่เริ่มใช้งาน (ไม่บังคับ)",
     "field_expires_at": "วันหมดอายุ (ไม่บังคับ)",
     "field_note": "บันทึกภายใน",
@@ -707,7 +707,10 @@
     "action_disable": "ปิด",
     "action_delete": "ลบ",
     "empty_state": "ยังไม่มีโค้ดส่วนลด",
-    "delete_confirm": "ต้องการลบโค้ดนี้ใช่ไหม?"
+    "delete_confirm": "ต้องการลบโค้ดนี้ใช่ไหม?",
+    "group_our_games": "เกมของเรา",
+    "group_maki_games": "เกมพาร์ทเนอร์ Maki",
+    "hint_maki": "ส่วนลดเกม Maki ถูกจำกัดไม่ให้ราคาต่ำกว่าขั้นต่ำของ Maki · โค้ดนายหน้าผูกกับเกม Maki ไม่ได้"
   },
   "AdminAffiliates": {
     "title": "ตัวแทน (Affiliate)",

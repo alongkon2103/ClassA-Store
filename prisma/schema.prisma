@@ -153,6 +153,8 @@ model discount_codes {
   per_user_limit Int?                   @default(1)
   min_amount     Decimal?               @db.Decimal(10, 2)
   product_id     String?                @db.Uuid
+  // จำกัดให้ใช้กับเกม Maki เกมเดียว (ไม่พร้อมกับ product_id) · ทั้งคู่ว่าง = ใช้ได้ทุกเกมรวม Maki
+  partner_product_id String?            @db.Uuid
   starts_at      DateTime?              @db.Timestamptz(6)
   expires_at     DateTime?              @db.Timestamptz(6)
   is_active      Boolean                @default(true)
@@ -177,6 +179,8 @@ model discount_codes {
   created_at     DateTime?              @default(now()) @db.Timestamptz(6)
   updated_at     DateTime?              @default(now()) @db.Timestamptz(6)
   product        products?              @relation(fields: [product_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  // Restrict: ห้ามลบเกม Maki ที่ยังมีโค้ดผูกอยู่ (SetNull จะทำให้โค้ดกลายเป็นใช้ได้ทุกเกม)
+  partner_product partner_products?     @relation("discount_code_partner_product", fields: [partner_product_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
   owner          users?                 @relation("affiliate_codes", fields: [owner_user_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   redemptions    discount_redemptions[]
   partner_orders partner_orders[]     @relation("partner_order_discount")
@@ -1058,6 +1062,7 @@ model partner_products {
   partner             partner_stores @relation(fields: [partner_id], references: [id], onDelete: Cascade)
   splits              partner_commission_splits[]
   orders              partner_orders[]
+  discount_codes      discount_codes[] @relation("discount_code_partner_product")
 
   @@unique([partner_id, external_slug])
   @@index([partner_id])

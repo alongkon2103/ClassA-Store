@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
-import { pickBestAutoCode, previewDiscountAmount, type AutoCodeCandidate } from "@/lib/discountCodes"
+import { codeAppliesTo, pickBestAutoCode, previewDiscountAmount, type AutoCodeCandidate } from "@/lib/discountCodes"
 
 type AutoPreviewCode = {
   code: string
@@ -22,6 +22,7 @@ type AutoPreviewCode = {
   value: number
   min_amount: number | null
   product_id: string | null
+  partner_product_id: string | null
   sold_out: boolean
   already_used: boolean
 }
@@ -88,7 +89,7 @@ export function useAutoDiscounts() {
       // 2) Fall back to the best global auto-select code.
       if (!codes || codes.length === 0) return null
       const candidates: AutoCodeCandidate[] = codes
-        .filter((c) => c.product_id === null || c.product_id === productId)
+        .filter((c) => codeAppliesTo(c, productId))
         .map((c) => ({
           code: c.code,
           type: c.type,
@@ -111,7 +112,7 @@ export function useAutoDiscounts() {
     (productId: string, price: number): { code: string; amountOff: number } | null => {
       if (!codes || codes.length === 0) return null
       const candidates: AutoCodeCandidate[] = codes
-        .filter((c) => c.product_id === null || c.product_id === productId)
+        .filter((c) => codeAppliesTo(c, productId))
         .map((c) => ({ code: c.code, type: c.type, value: c.value, minAmount: c.min_amount, isAutoSelect: true, soldOut: c.sold_out, alreadyUsed: c.already_used }))
       return pickBestAutoCode(candidates, price)
     },

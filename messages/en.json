@@ -674,7 +674,7 @@
     "field_per_user_limit": "Per-user limit (1 = once per person, empty = unlimited)",
     "field_min_amount": "Min order (฿, optional)",
     "field_product": "Product (empty = all)",
-    "option_all_products": "All products",
+    "option_all_products": "All games (incl. Maki games)",
     "field_starts_at": "Starts at (optional)",
     "field_expires_at": "Expires at (optional)",
     "field_note": "Note (internal)",
@@ -704,7 +704,10 @@
     "action_disable": "Disable",
     "action_delete": "Delete",
     "empty_state": "No discount codes yet.",
-    "delete_confirm": "Delete this code?"
+    "delete_confirm": "Delete this code?",
+    "group_our_games": "Our games",
+    "group_maki_games": "Partner · Maki",
+    "hint_maki": "Maki discounts are capped so the price never drops below Maki's minimum. Affiliate codes can't be limited to a Maki game."
   },
   "AdminAffiliates": {
     "title": "Affiliates",

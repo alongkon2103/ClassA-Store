@@ -6,17 +6,24 @@ import { prisma } from "@/lib/prisma"
 export const dynamic = "force-dynamic"
 
 export default async function DiscountCodesAdminPage() {
-  const [codes, products] = await Promise.all([
+  const [codes, products, makiGames] = await Promise.all([
     prisma.discount_codes.findMany({
       orderBy: { created_at: "desc" },
       include: {
         product: { select: { id: true, name_en: true, name_th: true } },
+        partner_product: { select: { id: true, name_en: true } },
         _count: { select: { redemptions: true } },
       },
     }),
     prisma.products.findMany({
       where: { is_active: true },
       select: { id: true, name_en: true, name_th: true },
+      orderBy: { name_en: "asc" },
+    }),
+    // เกม Maki ทุกเกม (รวมที่ยังซ่อน) ให้ตั้งโค้ดเตรียมไว้ก่อนเปิดขายได้
+    prisma.partner_products.findMany({
+      where: { partner: { integration: "maki_api" } },
+      select: { id: true, name_en: true },
       orderBy: { name_en: "asc" },
     }),
   ])
@@ -34,7 +41,8 @@ export default async function DiscountCodesAdminPage() {
           per_user_limit: c.per_user_limit,
           min_amount: c.min_amount ? Number(c.min_amount) : null,
           product_id: c.product_id,
-          product_name: c.product?.name_en ?? null,
+          partner_product_id: c.partner_product_id,
+          product_name: c.product?.name_en ?? (c.partner_product ? `Maki · ${c.partner_product.name_en}` : null),
           starts_at: c.starts_at?.toISOString() ?? null,
           expires_at: c.expires_at?.toISOString() ?? null,
           is_active: c.is_active,
@@ -44,6 +52,7 @@ export default async function DiscountCodesAdminPage() {
           redemption_count: c._count.redemptions,
         }))}
         products={products.map((p) => ({ id: p.id, name: p.name_en }))}
+        makiGames={makiGames.map((g) => ({ id: g.id, name: g.name_en }))}
       />
     </div>
   )

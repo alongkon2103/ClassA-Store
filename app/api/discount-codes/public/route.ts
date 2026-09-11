@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
           { OR: [{ starts_at: null }, { starts_at: { lte: now } }] },
           { OR: [{ expires_at: null }, { expires_at: { gt: now } }] },
           // global codes + codes tied to this product
-          { OR: [{ product_id: null }, { product_id: productId }] },
+          { OR: [{ product_id: null, partner_product_id: null }, { product_id: productId }] },
         ],
       },
       orderBy: { created_at: "desc" },

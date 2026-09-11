@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       const sell = plan.sell_price_thb as number
       const found = await prisma.discount_codes.findUnique({ where: { code: raw } })
       const used = found ? await countUserRedemptions(prisma, found.id, session.user.id) : 0
-      const result = evaluateDiscount(found, sell, `partner:${partnerProductId}`, used, new Date(), { partner: true })
+      const result = evaluateDiscount(found, sell, partnerProductId, used, new Date(), { partner: true })
       if (!result.ok) return NextResponse.json({ valid: false, errorCode: result.errorCode, params: result.params })
       const amountOff = capPartnerDiscount(result.amountOff, sell, plan.min_price_thb)
       if (amountOff <= 0) return NextResponse.json({ valid: false, errorCode: "NO_EFFECT" })

@@ -13,6 +13,7 @@ type DiscountCode = {
   per_user_limit: number | null
   min_amount: number | null
   product_id: string | null
+  partner_product_id: string | null
   product_name: string | null
   starts_at: string | null
   expires_at: string | null
@@ -24,6 +25,8 @@ type DiscountCode = {
 }
 
 type Product = { id: string; name: string }
+// ค่าใน dropdown: "<products.id>" = เกมเรา · "maki:<partner_products.id>" = เกม Maki · "" = ทุกเกม
+const MAKI_PREFIX = "maki:"
 
 type FormState = {
   code: string
@@ -73,7 +76,7 @@ function codeToForm(c: DiscountCode): FormState {
     max_uses: c.max_uses === null ? "" : String(c.max_uses),
     per_user_limit: c.per_user_limit === null ? "" : String(c.per_user_limit),
     min_amount: c.min_amount === null ? "" : String(c.min_amount),
-    product_id: c.product_id ?? "",
+    product_id: c.partner_product_id ? MAKI_PREFIX + c.partner_product_id : c.product_id ?? "",
     starts_at: toLocalDatetime(c.starts_at),
     expires_at: toLocalDatetime(c.expires_at),
     is_public: c.is_public,
@@ -85,9 +88,11 @@ function codeToForm(c: DiscountCode): FormState {
 export default function DiscountCodeManager({
   initialCodes,
   products,
+  makiGames = [],
 }: {
   initialCodes: DiscountCode[]
   products: Product[]
+  makiGames?: Product[]
 }) {
   const t = useTranslations("AdminDiscountCodes")
   const locale = useLocale()
@@ -135,7 +140,8 @@ export default function DiscountCodeManager({
         max_uses: form.max_uses ? Number(form.max_uses) : null,
         per_user_limit: form.per_user_limit === "" ? null : Number(form.per_user_limit),
         min_amount: form.min_amount ? Number(form.min_amount) : null,
-        product_id: form.product_id || null,
+        product_id: form.product_id && !form.product_id.startsWith(MAKI_PREFIX) ? form.product_id : null,
+        partner_product_id: form.product_id.startsWith(MAKI_PREFIX) ? form.product_id.slice(MAKI_PREFIX.length) : null,
         starts_at: form.starts_at || null,
         expires_at: form.expires_at || null,
         // Auto-select implies public (server also enforces this).
@@ -158,9 +164,12 @@ export default function DiscountCodeManager({
         return
       }
 
-      const productName = form.product_id
-        ? products.find((p) => p.id === form.product_id)?.name ?? null
-        : null
+      const maki = form.product_id.startsWith(MAKI_PREFIX) ? makiGames.find((g) => MAKI_PREFIX + g.id === form.product_id) : null
+      const productName = maki
+        ? `Maki · ${maki.name}`
+        : form.product_id
+          ? products.find((p) => p.id === form.product_id)?.name ?? null
+          : null
 
       const mapped: DiscountCode = {
         id: data.id,
@@ -172,6 +181,7 @@ export default function DiscountCodeManager({
         per_user_limit: data.per_user_limit,
         min_amount: data.min_amount ? Number(data.min_amount) : null,
         product_id: data.product_id,
+        partner_product_id: data.partner_product_id ?? null,
         product_name: productName,
         starts_at: data.starts_at,
         expires_at: data.expires_at,
@@ -328,12 +338,26 @@ export default function DiscountCodeManager({
                 className="w-full bg-bg-base border border-accent/15 rounded-xl px-3 py-2 text-[14px]"
               >
                 <option value="">{t("option_all_products")}</option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
+                <optgroup label={t("group_our_games")}>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </optgroup>
+                {makiGames.length > 0 && (
+                  <optgroup label={t("group_maki_games")}>
+                    {makiGames.map((g) => (
+                      <option key={g.id} value={MAKI_PREFIX + g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
+              {form.product_id.startsWith(MAKI_PREFIX) && (
+                <p className="text-[11px] text-text-muted mt-1.5 leading-relaxed">{t("hint_maki")}</p>
+              )}
             </div>
 
             <div>

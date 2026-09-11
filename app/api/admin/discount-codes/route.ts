@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { randomBytes } from "crypto"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
+import { checkPartnerScope } from "./scope"
 
 // A → Z and 2 → 9 (no I/O/0/1 to avoid look-alikes)
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -25,6 +26,7 @@ export async function GET() {
     orderBy: { created_at: "desc" },
     include: {
       product: { select: { id: true, name_en: true, name_th: true } },
+      partner_product: { select: { id: true, name_en: true } },
       _count: { select: { redemptions: true } },
     },
   })
@@ -50,6 +52,7 @@ export async function POST(req: NextRequest) {
         : Number(body.per_user_limit)
     const minAmount = body.min_amount === null || body.min_amount === "" ? null : Number(body.min_amount)
     const productId = body.product_id?.trim() || null
+    const partnerProductId: string | null = body.partner_product_id?.trim() || null
     const startsAt = body.starts_at ? new Date(body.starts_at) : null
     const expiresAt = body.expires_at ? new Date(body.expires_at) : null
     const note: string | null = body.note?.trim() || null
@@ -78,6 +81,8 @@ export async function POST(req: NextRequest) {
     if (commissionPct !== null && (!Number.isFinite(commissionPct) || commissionPct < 0 || commissionPct > 100)) {
       return NextResponse.json({ error: "commission_pct must be 0-100 or empty" }, { status: 400 })
     }
+    const scopeError = await checkPartnerScope(productId, partnerProductId, ownerUserId)
+    if (scopeError) return NextResponse.json({ error: scopeError }, { status: 400 })
 
     if (!code) {
       // generate until unique — retry on collision (very rare for 8 char codes)
@@ -108,6 +113,7 @@ export async function POST(req: NextRequest) {
         per_user_limit: Number.isFinite(perUserLimit) ? (perUserLimit as number) : null,
         min_amount: minAmount,
         product_id: productId,
+        partner_product_id: partnerProductId,
         starts_at: startsAt,
         expires_at: expiresAt,
         // Affiliate codes are private (link-applied), so an owned code is never

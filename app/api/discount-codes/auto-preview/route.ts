@@ -43,6 +43,7 @@ export async function GET() {
         value: true,
         min_amount: true,
         product_id: true,
+        partner_product_id: true,
         max_uses: true,
         used_count: true,
         per_user_limit: true,
@@ -65,6 +66,7 @@ export async function GET() {
           value: Number(c.value),
           min_amount: c.min_amount ? Number(c.min_amount) : null,
           product_id: c.product_id, // null = applies to every product
+          partner_product_id: c.partner_product_id, // เกม Maki เกมเดียว
           sold_out: c.max_uses !== null && c.used_count >= c.max_uses,
           already_used: alreadyUsed,
         }

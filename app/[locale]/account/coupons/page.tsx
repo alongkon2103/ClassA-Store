@@ -23,7 +23,10 @@ export default async function CouponsPage({ params }: { params: Promise<{ locale
           { OR: [{ starts_at: null }, { starts_at: { lte: now } }] },
         ],
       },
-      include: { product: { select: { slug: true, name_th: true, name_en: true } } },
+      include: {
+        product: { select: { slug: true, name_th: true, name_en: true } },
+        partner_product: { select: { external_slug: true, name_th: true, name_en: true } },
+      },
       orderBy: [{ expires_at: "asc" }],
     }),
     prisma.discount_redemptions.findMany({
@@ -47,7 +50,11 @@ export default async function CouponsPage({ params }: { params: Promise<{ locale
     type: c.type as "fixed" | "percent",
     value: Number(c.value),
     min_amount: c.min_amount != null ? Number(c.min_amount) : null,
-    product: c.product ? { slug: c.product.slug, name_th: c.product.name_th, name_en: c.product.name_en } : null,
+    product: c.product
+      ? { slug: c.product.slug, name_th: c.product.name_th, name_en: c.product.name_en }
+      : c.partner_product
+        ? { slug: c.partner_product.external_slug, name_th: c.partner_product.name_th, name_en: c.partner_product.name_en }
+        : null,
     expires_at: c.expires_at?.toISOString() ?? null,
     remaining: c.max_uses != null ? Math.max(0, c.max_uses - c.used_count) : null,
     used_by_me: paidUsesOf(c.id),
