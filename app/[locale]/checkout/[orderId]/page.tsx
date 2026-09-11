@@ -71,6 +71,7 @@ export default async function CheckoutPage({
         amount: Number(order.amount),
         discount_amount: order.discount_amount === null ? null : Number(order.discount_amount),
         expected_amount: order.expected_amount === null ? null : Number(order.expected_amount),
+        goods_amount: order.goods_amount === null ? null : Number(order.goods_amount),
         products: order.products
           ? {
               ...order.products,

@@ -13,6 +13,7 @@ type CheckoutOrder = {
   amount: number
   discount_amount?: number | null
   expected_amount?: number | null
+  goods_amount?: number | null
   products?: {
     name_th?: string | null
     name_en?: string | null

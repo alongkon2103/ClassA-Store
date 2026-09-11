@@ -139,12 +139,12 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
             >
               <div className="w-full sm:w-[220px] min-h-[160px] flex-shrink-0 relative flex items-center justify-center overflow-hidden"
                    style={{ background: "var(--gradient-panel)" }}>
-                {/* โลโก้จริงของ Tikkies (ไฟล์เดียวกับ favicon บน tikkies.aclassstore.com) */}
+                {/* โลโก้ TK ของ Tikkies (จาก Tikkies/brand/logo-tk.png ย่อเหลือ 256px เป็น webp) — มีขอบโปร่งใส ใช้ drop-shadow แทน box-shadow */}
                 <img
-                  src="/tikkies-logo.svg"
+                  src="/tikkies-logo.webp"
                   alt="Tikkies"
                   width={80} height={80}
-                  className="w-20 h-20 rounded-2xl shadow-[0_4px_24px_rgba(37,99,235,0.35)] transition-transform group-hover:scale-105"
+                  className="w-20 h-20 object-contain drop-shadow-[0_4px_18px_rgba(37,99,235,0.4)] transition-transform group-hover:scale-105"
                 />
               </div>
 

@@ -271,6 +271,7 @@ export default async function AdminDashboard({
           amount: Number(o.amount),
           discount_amount: o.discount_amount === null ? null : Number(o.discount_amount),
           expected_amount: o.expected_amount === null ? null : Number(o.expected_amount),
+          goods_amount: o.goods_amount === null ? null : Number(o.goods_amount),
           affiliate: affCode
             ? {
                 code: affCode.code,
