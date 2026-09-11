@@ -1,6 +1,7 @@
 "use client"
 
-// แก้ไขเกม Maki: รูปปก/แกลเลอรี (อัปโหลดเอง เพราะ API ไม่มีรูปมา) · ชื่อ TH/EN · คำอธิบาย · ราคาขายต่อแพลน (≥ ขั้นต่ำสด) · เปิด/ปิดแสดง
+// แก้ไขเกม Maki: ชื่อ TH/EN · คำอธิบาย · ราคาขายต่อแพลน (≥ ขั้นต่ำสด) · เปิด/ปิดแสดง
+// รูปปก/แบนเนอร์/วิดีโอดึงจาก Maki อัตโนมัติตอน sync (API v1.1) — ไม่ต้องอัปโหลดเอง โชว์ให้ดูเฉย ๆ
 import { useState } from "react"
 import { useTranslations } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
@@ -9,7 +10,7 @@ export type MakiPlanView = { key: string; plan: "1m" | "perma"; label_th: string
 export type MakiProductView = {
   id: string; external_slug: string; name_th: string; name_en: string
   description_html_th: string | null; description_html_en: string | null
-  images: string[]; is_visible: boolean; coming_soon: boolean; plans: MakiPlanView[]
+  thumbnail_url: string | null; is_visible: boolean; coming_soon: boolean; plans: MakiPlanView[]
 }
 
 export default function MakiProductEditor({ product, onClose, onSaved }: { product: MakiProductView; onClose: () => void; onSaved: () => void }) {
@@ -18,27 +19,10 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
   const [nameEn, setNameEn] = useState(product.name_en)
   const [descTh, setDescTh] = useState(product.description_html_th ?? "")
   const [descEn, setDescEn] = useState(product.description_html_en ?? "")
-  const [images, setImages] = useState<string[]>(product.images)
   const [prices, setPrices] = useState<Record<string, string>>(Object.fromEntries(product.plans.map((p) => [p.key, p.sell_price_thb == null ? "" : String(p.sell_price_thb)])))
   const [visible, setVisible] = useState(product.is_visible)
-  const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
-
-  const upload = async (files: File[]) => {
-    if (!files.length) return
-    setUploading(true); setMsg(null)
-    try {
-      for (const file of files.slice(0, 12 - images.length)) {
-        const fd = new FormData()
-        fd.append("file", file); fd.append("type", "image")
-        const r = await fetch("/api/admin/upload", { method: "POST", body: fd })
-        if (!r.ok) { setMsg({ ok: false, text: t("upload_error") }); continue }
-        const d = await r.json()
-        if (d?.url) setImages((xs) => [...xs, d.url])
-      }
-    } finally { setUploading(false) }
-  }
 
   const save = async () => {
     setSaving(true); setMsg(null)
@@ -47,7 +31,7 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
       for (const p of product.plans) sell_prices[p.key] = prices[p.key] === "" ? null : Number(prices[p.key])
       const r = await fetch(`/api/admin/partner-store/products/${product.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name_th: nameTh, name_en: nameEn, description_html_th: descTh, description_html_en: descEn, images, sell_prices, is_visible: visible }),
+        body: JSON.stringify({ name_th: nameTh, name_en: nameEn, description_html_th: descTh, description_html_en: descEn, sell_prices, is_visible: visible }),
       })
       if (r.ok) { setMsg({ ok: true, text: t("saved") }); onSaved() }
       else {
@@ -73,26 +57,12 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
           <button onClick={onClose} className="w-8 h-8 rounded-lg text-text-dim hover:text-text-base hover:bg-white/[0.04] flex items-center justify-center">×</button>
         </div>
 
-        {/* รูป */}
-        <div>
-          <span className={label}>{t("images")} ({images.length}/12)</span>
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-2">
-            {images.map((u, i) => (
-              <div key={u + i} className="relative group aspect-[4/3] rounded-lg overflow-hidden border border-border-soft" style={{ background: "var(--gradient-thumb)" }}>
-                <img src={getImageUrl(u)} alt="" className="w-full h-full object-cover" />
-                {i === 0 && <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-accent text-white text-[9px] font-bold">{t("cover")}</span>}
-                <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1">
-                  {i > 0 && <button onClick={() => setImages((xs) => [u, ...xs.filter((_, k) => k !== i)])} className="px-1.5 py-0.5 rounded bg-white/15 text-white text-[10px]" title={t("set_cover")}>★</button>}
-                  <button onClick={() => setImages((xs) => xs.filter((_, k) => k !== i))} className="px-1.5 py-0.5 rounded bg-hot/80 text-white text-[10px]" title={t("remove")}>×</button>
-                </div>
-              </div>
-            ))}
-            <label className={`aspect-[4/3] rounded-lg border-2 border-dashed border-border-light flex flex-col items-center justify-center text-[11px] text-text-dim cursor-pointer hover:border-accent-light hover:text-accent-light transition ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
-              <span className="text-lg leading-none">+</span>{uploading ? t("uploading") : t("upload")}
-              <input type="file" accept="image/*" multiple hidden onChange={(e) => { upload(Array.from(e.target.files ?? [])); e.target.value = "" }} />
-            </label>
+        {/* สื่อจาก Maki (อ่านอย่างเดียว) */}
+        <div className="flex items-center gap-3 rounded-xl border border-border-soft bg-bg-input/40 p-3">
+          <div className="w-20 h-12 rounded-lg overflow-hidden shrink-0" style={{ background: "var(--gradient-thumb)" }}>
+            {product.thumbnail_url && <img src={getImageUrl(product.thumbnail_url)} alt="" className="w-full h-full object-cover" />}
           </div>
-          <p className="text-[11px] text-text-dim">{t("images_hint")}</p>
+          <p className="text-[11px] text-text-dim leading-relaxed">{t("media_from_maki")}</p>
         </div>
 
         {/* ชื่อ */}
@@ -148,7 +118,7 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-soft">
           {msg && <span className={`text-[12px] mr-auto ${msg.ok ? "text-success" : "text-hot"}`}>{msg.text}</span>}
           <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border-soft text-text-muted text-[13px] hover:text-text-base transition">{t("cancel")}</button>
-          <button onClick={save} disabled={saving || uploading || belowMin} className="px-5 py-2 rounded-lg bg-accent hover:bg-accent-light text-white text-[13px] font-semibold transition disabled:opacity-50">
+          <button onClick={save} disabled={saving || belowMin} className="px-5 py-2 rounded-lg bg-accent hover:bg-accent-light text-white text-[13px] font-semibold transition disabled:opacity-50">
             {saving ? t("saving") : t("save")}
           </button>
         </div>

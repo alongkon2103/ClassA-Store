@@ -20,7 +20,8 @@ export async function createMakiCheckout(input: { userId: string; provider: stri
   })
   if (!row) throw new MakiCheckoutError("not_found")
   const [live] = await withLiveMinimums([row])
-  const plan = live.plans.find((p) => p.key === input.planKey)
+  const plans: MakiPlanRow[] = toPlanRows(live.plans)
+  const plan = plans.find((p) => p.key === input.planKey)
   if (!plan || !planAvailable(plan)) throw new MakiCheckoutError("unavailable")
 
   // บัญชีที่จะรับสิทธิ์ = provider ที่ล็อกอินอยู่ (ไม่มีค่อยหยิบ discord/google ที่ผูกไว้) — Maki ต้องการ id ตัวเลข ไม่ใช่ชื่อ/อีเมล

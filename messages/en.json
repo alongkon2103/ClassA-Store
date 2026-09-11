@@ -1802,7 +1802,8 @@
     "partner_err_below_min": "The price has changed. Please refresh the page and try again.",
     "partner_err_no_identity": "Your account is not linked to Discord or Google. Please sign in with one of them.",
     "partner_err_unavailable": "This package is not available right now.",
-    "partner_err_generic": "Could not start the payment. Please try again."
+    "partner_err_generic": "Could not start the payment. Please try again.",
+    "partner_video_title": "Gameplay video"
   },
   "Notifications": {
     "title": "Notifications",
@@ -2204,15 +2205,7 @@
     "no_price": "no price yet",
     "no_image": "no image yet",
     "edit_title": "Edit Maki game",
-    "edit_sub": "Maki's API only provides name/plans/minimum price — images, description and sell prices are ours (sync never overwrites them)",
-    "images": "Cover & gallery",
-    "cover": "Cover",
-    "set_cover": "Set as cover",
-    "remove": "Remove",
-    "upload": "Upload",
-    "uploading": "Uploading...",
-    "upload_error": "Upload failed",
-    "images_hint": "First image = cover on cards and the product page (4:3 or 16:10 recommended); use ★ to change the cover",
+    "edit_sub": "Names, descriptions, sell prices (must be ≥ Maki's live minimum) and visibility",
     "name_th": "Name (TH)",
     "name_en": "Name (EN)",
     "desc_th": "Description (TH)",
@@ -2270,7 +2263,8 @@
     "filter_pending": "Pending",
     "filter_expired": "Expired",
     "filter_failed": "Failed",
-    "showing": "{n} orders"
+    "showing": "{n} orders",
+    "media_from_maki": "Cover, banner and gameplay video come from Maki automatically on every sync — nothing to upload."
   },
   "Meta": {
     "title": "A-Class Store | Premium Roblox Maps & Secure Whitelist Systems",

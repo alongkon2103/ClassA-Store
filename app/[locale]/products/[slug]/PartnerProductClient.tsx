@@ -16,6 +16,7 @@ export type PartnerProductData = {
   id: string; slug: string; name_th: string; name_en: string; partner_name: string
   description_th: string | null; description_en: string | null
   images: string[]; plans: PartnerPlan[]
+  videos: { embed_url: string; youtube_url?: string | null }[] // จาก Maki preview_url
 }
 type Related = { slug: string; name_th: string; name_en: string; image: string | null; min_price: number }
 
@@ -164,6 +165,18 @@ export default function PartnerProductClient({ product, related, usdRate, points
         {/* รายละเอียด + สินค้าอื่น */}
         <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-9 pb-12">
           <div className="min-w-0">
+            {product.videos.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-lg font-extrabold mb-4">{t("partner_video_title")}</h3>
+                <div className={`grid gap-4 ${product.videos.length > 1 ? "sm:grid-cols-2" : ""}`}>
+                  {product.videos.map((v) => (
+                    <div key={v.embed_url} className="aspect-video rounded-xl overflow-hidden border border-border-soft bg-black">
+                      <iframe src={`${v.embed_url}?rel=0&modestbranding=1`} title={t("partner_video_title")} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <h3 className="text-lg font-extrabold mb-4">{t("description_title")}</h3>
             {desc ? (
               <div className="prose-product max-w-none text-[0.88rem] text-text-muted leading-[1.85] whitespace-pre-line [&_img]:rounded-xl [&_a]:text-accent-light [&_h1]:text-text-base [&_h2]:text-text-base [&_h3]:text-text-base [&_strong]:text-text-base"

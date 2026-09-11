@@ -8,6 +8,7 @@
 // (name, price, images, videos, …) is overwritten.
 
 import { prisma } from "@/lib/prisma"
+import { youtubeId, youtubeThumb } from "@/lib/video"
 import { getMakiCatalog, groupCatalog, planLabel, priceFrom, toPlanRows, asJson, type MakiPlanRow } from "@/lib/maki"
 
 // Per-partner static config. `envKey` names the env var holding that partner's
@@ -278,16 +279,22 @@ async function syncMaki(cfg: PartnerConfig): Promise<SyncResult> {
       preset_link: p.preset_link,
     }))
     const price_from_thb = priceFrom(plans)
+    // สื่อจาก Maki (v1.1): แบนเนอร์เป็นปก ไอคอนเป็นรูปที่สอง วิดีโอ YouTube — ทับทุกครั้งที่ sync (Maki เป็นแหล่งจริง ไม่ต้องอัปโหลดเอง)
+    const src = g.plans.find((p) => p.banner_url || p.icon_url || p.preview_url)
+    const images = [...new Set([src?.banner_url, src?.icon_url].filter((u): u is string => !!u))]
+    const ytId = src?.preview_url ? youtubeId(src.preview_url) : null
+    const videos = ytId ? [{ video_id: ytId, embed_url: `https://www.youtube.com/embed/${ytId}`, thumbnail_url: youtubeThumb(ytId), youtube_url: src!.preview_url }] : []
+    const media = { thumbnail_url: images[0] ?? null, images: asJson(images), videos: asJson(videos) }
     if (prev) {
       await prisma.partner_products.update({
         where: { id: prev.id },
-        data: { plans: asJson(plans), price_from_thb, coming_soon: false, synced_at: now, updated_at: now },
+        data: { plans: asJson(plans), price_from_thb, coming_soon: false, synced_at: now, updated_at: now, ...media },
       })
     } else {
       await prisma.partner_products.create({
         data: {
           partner_id: store.id, external_slug: g.slug, name_en: g.name, name_th: g.name,
-          ref_url: "", plans: asJson(plans), images: [], videos: [], price_from_thb,
+          ref_url: "", plans: asJson(plans), price_from_thb, ...media,
           is_visible: false, sort_order: index, synced_at: now,
         },
       })

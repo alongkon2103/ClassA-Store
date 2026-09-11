@@ -1,5 +1,6 @@
 "use client"
 import { variantLabel } from "@/lib/i18n/locale"
+import { youtubeEmbed } from "@/lib/video"
 
 import { useEffect, useMemo, useState } from "react"
 import ImageCarousel from "@/components/products/ImageCarousel"
@@ -45,10 +46,6 @@ type Related = { slug: string; name_th: string; name_en: string; image: string |
 const baht = (n: number) => `฿${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
 const pct = (was: number, now: number) => (was > 0 ? Math.round(((was - now) / was) * 100) : 0)
 
-function youtubeEmbed(url: string): string | null {
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/)
-  return m ? `https://www.youtube.com/embed/${m[1]}` : null
-}
 
 // จุดเด่นคงที่ที่โชว์ใต้คะแนนของทุกเกม — ข้อความอยู่ใน i18n ProductPage.highlight_*
 const hlSvg = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }

@@ -34,11 +34,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (name_en) data.name_en = name_en
     if ("description_html_th" in body) data.description_html_th = str(body.description_html_th, 20000) || null
     if ("description_html_en" in body) data.description_html_en = str(body.description_html_en, 20000) || null
-    if (Array.isArray(body.images)) {
-      const images = body.images.filter((u: unknown) => typeof u === "string" && u.length < 500).slice(0, 12) as string[]
-      data.images = images
-      data.thumbnail_url = images[0] ?? null
-    }
     if (body.sell_prices && typeof body.sell_prices === "object") {
       // ขั้นต่ำสดจาก Maki (cache 60 วิ) ถ้าเรียกไม่ได้ใช้ค่าที่ sync ไว้
       let live = new Map<string, number>()

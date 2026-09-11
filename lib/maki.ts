@@ -6,7 +6,12 @@ import type { Prisma } from "@prisma/client"
 
 export const MAKI_BASE = process.env.MAKI_API_BASE || "https://maki-website.onrender.com/api/partner/v1"
 export type MakiPlan = "1m" | "perma"
-export type MakiProduct = { key: string; name: string; plan: MakiPlan; duration_days: number; min_price_thb: number; preset_link: string | null }
+export type MakiProduct = {
+  key: string; name: string; plan: MakiPlan; duration_days: number; min_price_thb: number; preset_link: string | null
+  preview_url: string | null // YouTube gameplay (v1.1)
+  icon_url: string | null // รูปสี่เหลี่ยม (v1.1)
+  banner_url: string | null // แบนเนอร์กว้าง (v1.1)
+}
 export type MakiSource = "live" | "test" | "mock"
 
 export class MakiError extends Error {
@@ -33,9 +38,9 @@ export async function makiFetch<T>(path: string, init?: RequestInit): Promise<T>
 
 // แคตตาล็อกจำลองสำหรับ dev (ค่าจากตัวอย่างในเอกสาร)
 const MOCK_CATALOG: MakiProduct[] = [
-  { key: "maki_boxing_1m", name: "Maki Boxing", plan: "1m", duration_days: 30, min_price_thb: 550, preset_link: "https://drive.google.com/drive/folders/17vFNNUPQr1OGbQZt_IPtEseYJfxb5kzb" },
-  { key: "maki_boxing_perma", name: "Maki Boxing", plan: "perma", duration_days: 36500, min_price_thb: 1250, preset_link: "https://drive.google.com/drive/folders/17vFNNUPQr1OGbQZt_IPtEseYJfxb5kzb" },
-  { key: "maki_block_1m", name: "Maki Block", plan: "1m", duration_days: 30, min_price_thb: 500, preset_link: null },
+  { key: "maki_boxing_1m", name: "Maki Boxing", plan: "1m", duration_days: 30, min_price_thb: 550, preset_link: "https://drive.google.com/drive/folders/17vFNNUPQr1OGbQZt_IPtEseYJfxb5kzb", preview_url: "https://youtu.be/XIxoTCQdrds", icon_url: "https://maki-website.onrender.com/Picture/minecraft_server_icon/maki_boxing.jpg", banner_url: "https://maki-website.onrender.com/Picture/minecraft_server_banner/BannerBoxing.jpg" },
+  { key: "maki_boxing_perma", name: "Maki Boxing", plan: "perma", duration_days: 36500, min_price_thb: 1250, preset_link: "https://drive.google.com/drive/folders/17vFNNUPQr1OGbQZt_IPtEseYJfxb5kzb", preview_url: "https://youtu.be/XIxoTCQdrds", icon_url: "https://maki-website.onrender.com/Picture/minecraft_server_icon/maki_boxing.jpg", banner_url: "https://maki-website.onrender.com/Picture/minecraft_server_banner/BannerBoxing.jpg" },
+  { key: "maki_block_1m", name: "Maki Block", plan: "1m", duration_days: 30, min_price_thb: 500, preset_link: null, preview_url: null, icon_url: null, banner_url: null },
 ]
 
 function normalizeProduct(p: Partial<MakiProduct> & { key?: string }): MakiProduct | null {
@@ -46,6 +51,9 @@ function normalizeProduct(p: Partial<MakiProduct> & { key?: string }): MakiProdu
     duration_days: Number(p.duration_days ?? (plan === "perma" ? 36500 : 30)),
     min_price_thb: Number(p.min_price_thb ?? 0),
     preset_link: p.preset_link ? String(p.preset_link) : null,
+    preview_url: p.preview_url ? String(p.preview_url) : null,
+    icon_url: p.icon_url ? String(p.icon_url) : null,
+    banner_url: p.banner_url ? String(p.banner_url) : null,
   }
 }
 
@@ -166,8 +174,9 @@ export function makiWhitelist(provider: string, id: string) {
 }
 
 /** GET /orders — ประวัติออเดอร์ทั้งหมดของเราฝั่ง Maki (ใหม่สุดก่อน, limit ≤ 200) ใช้เทียบยอด/หาออเดอร์ที่หลุด */
-export function makiListOrders(opts?: { limit?: number; status?: "pending" | "paid" | "failed" | "expired" }) {
+export function makiListOrders(opts?: { limit?: number; status?: "pending" | "paid" | "failed" | "expired"; game?: string }) {
   const q = new URLSearchParams({ limit: String(Math.min(200, Math.max(1, opts?.limit ?? 200))) })
   if (opts?.status) q.set("status", opts.status)
+  if (opts?.game) q.set("game", opts.game)
   return makiFetch<{ count: number; orders: MakiOrder[] }>(`/orders?${q}`)
 }

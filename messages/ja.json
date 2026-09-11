@@ -342,7 +342,8 @@
     "partner_err_below_min": "価格が変更されました。ページを更新してお試しください。",
     "partner_err_no_identity": "アカウントがDiscordまたはGoogleと連携していません。いずれかでログインしてください。",
     "partner_err_unavailable": "このパッケージは現在購入できません。",
-    "partner_err_generic": "お支払いを開始できませんでした。もう一度お試しください。"
+    "partner_err_generic": "お支払いを開始できませんでした。もう一度お試しください。",
+    "partner_video_title": "ゲームプレイ動画"
   },
   "PartnerModal": {
     "partner_product": "パートナー商品",

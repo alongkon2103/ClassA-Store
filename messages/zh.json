@@ -342,7 +342,8 @@
     "partner_err_below_min": "价格已变动，请刷新页面后重试。",
     "partner_err_no_identity": "你的账号未绑定 Discord 或 Google，请使用其中之一登录。",
     "partner_err_unavailable": "该套餐目前不可购买。",
-    "partner_err_generic": "无法发起付款，请重试。"
+    "partner_err_generic": "无法发起付款，请重试。",
+    "partner_video_title": "游戏视频"
   },
   "PartnerModal": {
     "partner_product": "合作伙伴商品",

@@ -155,6 +155,7 @@ export default async function Page({ params }: Params) {
             id: pp.id, slug: pp.external_slug, name_th: pp.name_th, name_en: pp.name_en, partner_name: pp.partner.display_name,
             description_th: pp.description_html_th, description_en: pp.description_html_en,
             images: pp.thumbnail_url && !images.includes(pp.thumbnail_url) ? [pp.thumbnail_url, ...images] : images,
+            videos: (Array.isArray(pp.videos) ? (pp.videos as { embed_url?: string; youtube_url?: string | null }[]) : []).filter((v) => !!v.embed_url).map((v) => ({ embed_url: v.embed_url as string, youtube_url: v.youtube_url ?? null })),
             plans: pp.plans.map((pl) => ({ key: pl.key, plan: pl.plan, label_th: pl.label_th, label_en: pl.label_en, duration_days: pl.duration_days, is_lifetime: pl.is_lifetime, sell_price_thb: pl.sell_price_thb, available: planAvailable(pl), has_preset: !!pl.preset_link })),
           }}
           related={related}
