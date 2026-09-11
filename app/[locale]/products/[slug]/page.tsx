@@ -9,7 +9,6 @@
 // shop cards use.
 
 import type { Metadata } from "next"
-import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { setRequestLocale } from "next-intl/server"
 import { prisma } from "@/lib/prisma"
@@ -265,11 +264,7 @@ export default async function Page({ params }: Params) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      {/* Suspense: ProductPageClient reads useSearchParams() for ?ref=CODE.
-          Without it, ISR prerender bails with a CSR-bailout error. */}
-      <Suspense fallback={null}>
-        <ProductPageClient product={safeProduct} related={related} reviewSummary={reviewSummary} functions={functions} features={features} pointsPerBaht={pointsPerBaht} />
-      </Suspense>
+      <ProductPageClient product={safeProduct} related={related} reviewSummary={reviewSummary} functions={functions} features={features} pointsPerBaht={pointsPerBaht} />
     </>
   )
 }

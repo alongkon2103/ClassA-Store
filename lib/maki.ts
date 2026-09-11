@@ -29,7 +29,9 @@ export async function makiFetch<T>(path: string, init?: RequestInit): Promise<T>
   const r = await fetch(`${MAKI_BASE}${modePrefix()}${path}`, {
     ...init,
     headers: { "X-Partner-Key": key, "Content-Type": "application/json", ...(init?.headers ?? {}) },
-    cache: "no-store",
+    // ไม่ cache เว้นแต่ผู้เรียกส่ง next.revalidate มา — หน้า ISR ห้ามยิง no-store (render ใหม่ระหว่างทางจะ 500
+    // "Page changed from static to dynamic at runtime")
+    ...(init?.next ? {} : { cache: "no-store" as const }),
   })
   const data = await r.json().catch(() => null)
   if (!r.ok || data?.success === false) throw new MakiError(r.status, data?.message || `HTTP ${r.status}`)
@@ -68,7 +70,8 @@ export async function getMakiCatalog(opts?: { fresh?: boolean }): Promise<{ prod
     return { products: MOCK_CATALOG, source: "mock" }
   }
   if (!opts?.fresh && cache && Date.now() - cache.at < CACHE_MS) return { products: cache.products, source: cache.source }
-  const d = await makiFetch<{ products?: Partial<MakiProduct>[] }>("/products")
+  // หน้าร้าน/หน้าเกม (ISR) เรียกผ่าน withLiveMinimums → ต้องเป็น fetch ที่ cache ได้ · fresh (sync ใน admin/cron) = สดเสมอ
+  const d = await makiFetch<{ products?: Partial<MakiProduct>[] }>("/products", opts?.fresh ? undefined : { next: { revalidate: 60 } })
   const products = (d.products ?? []).map(normalizeProduct).filter((x): x is MakiProduct => !!x)
   const source: MakiSource = process.env.MAKI_API_MODE === "test" ? "test" : "live"
   cache = { at: Date.now(), products, source }

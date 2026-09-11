@@ -4,7 +4,6 @@ import { youtubeEmbed } from "@/lib/video"
 
 import { useEffect, useMemo, useState } from "react"
 import ImageCarousel from "@/components/products/ImageCarousel"
-import { useSearchParams } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
 import { AnimatePresence } from "framer-motion"
 import { Link } from "@/i18n/routing"
@@ -79,17 +78,17 @@ export default function ProductPageClient({
   const tFaq = useTranslations("Faq")
   const locale = useLocale()
   const isTH = locale === "th"
-  const searchParams = useSearchParams()
-
   // 1) Persist the affiliate ref (?ref=CODE) BEFORE useAutoDiscounts resolves.
   //    Registered first so its effect runs before the hook reads aff_ref.
   //    Last-click: a newer ref overwrites the old one, matching /r/<code>.
+  //    Read from window (not useSearchParams): that hook forces a CSR bailout on this
+  //    ISR page and 500s any render that has no Suspense boundary above it.
   useEffect(() => {
-    const ref = searchParams?.get("ref")?.trim().toUpperCase()
+    const ref = new URLSearchParams(window.location.search).get("ref")?.trim().toUpperCase()
     if (ref) {
       try { sessionStorage.setItem(AFF_REF_KEY, ref) } catch { /* storage disabled */ }
     }
-  }, [searchParams])
+  }, [])
 
   const { bestDiscountedPrice, bestMakiPrice } = useAutoDiscounts()
 
