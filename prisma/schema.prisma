@@ -744,6 +744,7 @@ model point_ledger {
   partner_order_id String? @db.Uuid // แต้มจากออเดอร์เกมพาร์ทเนอร์ (Maki) — ใช้แทน order_id
   product_id  String?   @db.Uuid // แต้มจากการรีวิวเกมนี้ (earn_review / reverse_review)
   partner_product_id String? @db.Uuid // แต้มจากการรีวิวเกม Maki นี้
+  day_key     String?   @db.VarChar(10) // วันตามเวลาไทย "YYYY-MM-DD" ของแต้มรายวัน (earn_daily)
   reverses_id String?   @unique(map: "uq_point_ledger_reverses") @db.Uuid // รายการนี้ยกเลิก (กลับค่า) รายการไหน — unique = ยกเลิกได้ครั้งเดียว
   expires_at  DateTime? @db.Timestamptz(6) // null = ไม่หมดอายุ (เผื่อกติกาในอนาคต)
   created_at  DateTime  @default(now()) @db.Timestamptz(6)
@@ -757,6 +758,7 @@ model point_ledger {
   @@unique([partner_order_id, type], map: "uq_point_ledger_partner_order_type")
   @@unique([user_id, product_id, type], map: "uq_point_ledger_user_product_type") // รีวิวได้แต้มครั้งเดียวต่อเกม
   @@unique([user_id, partner_product_id, type], map: "uq_point_ledger_user_partner_product_type") // เกม Maki ก็ครั้งเดียวต่อเกม
+  @@unique([user_id, day_key, type], map: "uq_point_ledger_user_day_type") // แต้มรายวันกดรับได้วันละครั้ง
   @@index([user_id, created_at], map: "idx_point_ledger_user_created")
 }
 

@@ -12,22 +12,28 @@
 // แต้มรีวิว (2026-09-12): รีวิวเกมที่ซื้อจริง (จ่ายแล้ว ไม่ใช่ทดลองใช้ ยอด > 0) ได้ points_per_review ครั้งเดียวต่อเกม
 // · นับเฉพาะรีวิวที่เขียนหลัง points_start_at (ไม่ย้อนหลัง เหมือนการซื้อ) · แก้รีวิวแต้มไม่หาย
 // · ลบรีวิว → หักคืน และรีวิวเกมเดิมใหม่ไม่ได้แต้มอีก (unique user_id+product_id+type)
+//
+// แต้มรายวัน (2026-09-12): กดรับได้วันละครั้ง points_per_daily (ค่าเริ่มต้น 100, 0 = ปิด) · วันตามเวลาไทย
+// รีเซ็ต 00:00 น. · กันกดซ้ำด้วย unique (user_id, day_key, type) — day_key คิดใน JS ไม่พึ่งเวลาใน DB (นาฬิกา DB เพี้ยน 7 ชม.)
 import type { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { notify } from "@/lib/notifications"
 import { gameWhere, realPurchaseIds, type GameRef } from "@/lib/games"
+import { bangkokDayKey, bangkokDayStart } from "@/lib/bangkokTz"
 
 export const POINTS_CONFIG_KEYS = {
   enabled: "points_enabled",
   perBaht: "points_per_baht",
   startAt: "points_start_at",
   perReview: "points_per_review",
+  perDaily: "points_per_daily",
 } as const
 export const POINTS_DEFAULT_PER_BAHT = 10
 export const POINTS_DEFAULT_PER_REVIEW = 100
+export const POINTS_DEFAULT_PER_DAILY = 100
 
-export type PointsConfig = { enabled: boolean; perBaht: number; startAt: Date | null; perReview: number }
-export type LedgerType = "earn_purchase" | "reverse_purchase" | "adjust_admin" | "earn_review" | "reverse_review"
+export type PointsConfig = { enabled: boolean; perBaht: number; startAt: Date | null; perReview: number; perDaily: number }
+export type LedgerType = "earn_purchase" | "reverse_purchase" | "adjust_admin" | "earn_review" | "reverse_review" | "earn_daily"
 
 type Db = Prisma.TransactionClient | typeof prisma
 
@@ -41,11 +47,14 @@ export async function getPointsConfig(db: Db = prisma): Promise<PointsConfig> {
   // ไม่ตั้ง = ค่าเริ่มต้น · 0 = ปิดแต้มรีวิว
   const reviewRaw = map[POINTS_CONFIG_KEYS.perReview]
   const perReview = reviewRaw === undefined || reviewRaw === "" ? POINTS_DEFAULT_PER_REVIEW : Math.max(0, Math.floor(Number(reviewRaw) || 0))
+  const dailyRaw = map[POINTS_CONFIG_KEYS.perDaily]
+  const perDaily = dailyRaw === undefined || dailyRaw === "" ? POINTS_DEFAULT_PER_DAILY : Math.max(0, Math.floor(Number(dailyRaw) || 0))
   return {
     enabled: map[POINTS_CONFIG_KEYS.enabled] === "true",
     perBaht: Number.isFinite(perBaht) && perBaht > 0 ? perBaht : POINTS_DEFAULT_PER_BAHT,
     startAt: startAt && !Number.isNaN(startAt.getTime()) ? startAt : null,
     perReview,
+    perDaily,
   }
 }
 
@@ -256,6 +265,34 @@ async function reviewsMissingPoints(startAt: Date, userId?: string) {
   })
   const got = new Set(have.map((h) => `${h.user_id}:${h.product_id ?? h.partner_product_id}`))
   return reviews.filter((r) => !got.has(`${r.user_id}:${r.game.id}`))
+}
+
+// ── แต้มรายวัน ──
+export type DailyStatus = { enabled: boolean; points: number; claimedToday: boolean; nextResetAt: string }
+
+/** เที่ยงคืนถัดไปตามเวลาไทย (ไทยไม่มี DST — +24 ชม. จากต้นวันปัจจุบันเสมอ) */
+export const nextBangkokMidnight = (now = new Date()) => new Date(bangkokDayStart(now).getTime() + 24 * 3600_000)
+
+export async function getDailyStatus(userId: string | null): Promise<DailyStatus> {
+  const cfg = await getPointsConfig()
+  const enabled = pointsActive(cfg) && cfg.perDaily > 0
+  const claimed = enabled && userId
+    ? (await prisma.point_ledger.count({ where: { user_id: userId, type: "earn_daily", day_key: bangkokDayKey(new Date()) } })) > 0
+    : false
+  return { enabled, points: cfg.perDaily, claimedToday: claimed, nextResetAt: nextBangkokMidnight().toISOString() }
+}
+
+/** กดรับแต้มรายวัน — วันละครั้งตามเวลาไทย · ซ้ำ/กดพร้อมกันหลายแท็บ → already_claimed (unique) */
+export async function claimDailyPoints(userId: string): Promise<{ ok: true; points: number } | { ok: false; error: "disabled" | "already_claimed" }> {
+  const cfg = await getPointsConfig()
+  if (!pointsActive(cfg) || cfg.perDaily <= 0) return { ok: false, error: "disabled" }
+  try {
+    await prisma.point_ledger.create({ data: { user_id: userId, delta: cfg.perDaily, type: "earn_daily", day_key: bangkokDayKey(new Date()) } })
+  } catch (err) {
+    if ((err as { code?: string })?.code === "P2002") return { ok: false, error: "already_claimed" }
+    throw err
+  }
+  return { ok: true, points: cfg.perDaily }
 }
 
 export async function getPointsBalance(userId: string, db: Db = prisma): Promise<number> {

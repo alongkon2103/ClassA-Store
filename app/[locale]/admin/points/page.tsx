@@ -20,7 +20,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
 
   return (
     <PointsAdminClient
-      config={{ active: pointsActive(cfg), perBaht: cfg.perBaht, perReview: cfg.perReview, startAt: cfg.startAt?.toISOString() ?? null }}
+      config={{ active: pointsActive(cfg), perBaht: cfg.perBaht, perReview: cfg.perReview, perDaily: cfg.perDaily, startAt: cfg.startAt?.toISOString() ?? null }}
       configs={Object.fromEntries(configRows.map((r) => [r.key, r.value]))}
       stats={{
         outstanding: totals.reduce((n, x) => n + (x._sum.delta ?? 0), 0),

@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl"
 import { Link } from "@/i18n/routing"
 import { localeTag } from "@/lib/i18n/locale"
 import type { PointsSummary } from "@/lib/points"
+import DailyClaim from "@/components/points/DailyClaim"
 
 export default function CoinsClient({ summary }: { summary: PointsSummary }) {
   const t = useTranslations("Account")
@@ -19,6 +20,7 @@ export default function CoinsClient({ summary }: { summary: PointsSummary }) {
       case "reverse_purchase": return { title: t("coins_type_reverse_purchase"), sub: product ? t("coins_order", { product }) : null }
       case "earn_review": return { title: t("coins_type_earn_review"), sub: product || null }
       case "reverse_review": return { title: t("coins_type_reverse_review"), sub: product || null }
+      case "earn_daily": return { title: t("coins_type_earn_daily"), sub: null }
       case "adjust_admin": return { title: t("coins_type_adjust_admin"), sub: e.note }
       default: return { title: e.type, sub: e.note }
     }
@@ -30,6 +32,9 @@ export default function CoinsClient({ summary }: { summary: PointsSummary }) {
         <h1 className="text-[1.4rem] md:text-[1.7rem] font-black tracking-[-0.02em]">{t("coins_title")}</h1>
         <p className="text-text-muted text-[0.85rem] mt-1">{t("coins_sub")}</p>
       </div>
+
+      {/* แต้มรายวัน (โชว์เฉพาะตอนระบบแต้มเปิดและตั้งแต้มรายวันไว้) */}
+      <DailyClaim variant="card" />
 
       {/* ยอดคงเหลือ + กติกา */}
       <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-4">

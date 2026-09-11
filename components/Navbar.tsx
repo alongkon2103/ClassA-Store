@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl"
 import LanguageSwitcher from "./LanguageSwitcher"
 import NavSearch from "./NavSearch"
 import NotificationBell from "./NotificationBell"
+import DailyClaim from "./points/DailyClaim"
 
 const navItems = [
   { href: "/", labelKey: "home", auth: false, flag: null },
@@ -134,6 +135,9 @@ export default function Navbar() {
           <div className="hidden sm:block">
             <NavSearch />
           </div>
+
+          {/* แต้มรายวัน — ไอคอนของขวัญโชว์เฉพาะตอนล็อกอินและยังไม่ได้รับวันนี้ */}
+          {session && <DailyClaim variant="icon" />}
 
           {/* NOTIFICATION BELL (affiliates only) */}
           <NotificationBell />

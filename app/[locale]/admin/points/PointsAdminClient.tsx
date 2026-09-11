@@ -14,7 +14,7 @@ type Entry = {
   by?: string | null; user?: { id: string; username: string; email: string | null }
 }
 type Tab = "users" | "ledger" | "rate"
-type Config = { active: boolean; perBaht: number; perReview: number; startAt: string | null }
+type Config = { active: boolean; perBaht: number; perReview: number; perDaily: number; startAt: string | null }
 
 const fmt = (s: string | null | undefined) => (s ? new Date(s).toLocaleString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-")
 const input = "bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[14px] text-text-base outline-none focus:border-accent/50"
@@ -99,7 +99,7 @@ export default function PointsAdminClient({ config, configs, stats }: {
       {tab === "rate" && (
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
           <RateSettings initialConfigs={configs} />
-          <RateExamples perBaht={config.perBaht} perReview={config.perReview} />
+          <RateExamples perBaht={config.perBaht} perReview={config.perReview} perDaily={config.perDaily} />
         </div>
       )}
 
@@ -198,6 +198,7 @@ function LedgerTab({ refreshKey, onOpenUser }: { refreshKey: number; onOpenUser:
           <option value="reverse_purchase">{t("type_reverse")}</option>
           <option value="earn_review">{t("type_review")}</option>
           <option value="reverse_review">{t("type_reverse_review")}</option>
+          <option value="earn_daily">{t("type_daily")}</option>
           <option value="adjust_admin">{t("type_adjust")}</option>
         </select>
         {data && <span className="text-[12px] text-text-muted whitespace-nowrap">{t("total_entries", { n: data.total })}</span>}
@@ -377,10 +378,11 @@ function UserDrawer({ userId, onClose, onChanged }: { userId: string; onClose: (
 /* ── ชิ้นส่วนร่วม ── */
 function TypeBadge({ entry }: { entry: Entry }) {
   const t = useTranslations("AdminPoints")
-  const label = entry.reverses_id ? t("void_of") : ({ earn_purchase: t("type_earn"), reverse_purchase: t("type_reverse"), earn_review: t("type_review"), reverse_review: t("type_reverse_review"), adjust_admin: t("type_adjust") } as Record<string, string>)[entry.type] ?? entry.type
+  const label = entry.reverses_id ? t("void_of") : ({ earn_purchase: t("type_earn"), reverse_purchase: t("type_reverse"), earn_review: t("type_review"), reverse_review: t("type_reverse_review"), earn_daily: t("type_daily"), adjust_admin: t("type_adjust") } as Record<string, string>)[entry.type] ?? entry.type
   const tone = entry.reverses_id ? "bg-white/5 text-text-muted"
     : entry.type === "earn_purchase" ? "bg-green-500/10 text-green-400"
     : entry.type === "earn_review" ? "bg-sky-500/10 text-sky-400"
+    : entry.type === "earn_daily" ? "bg-violet-500/10 text-violet-300"
     : entry.type === "reverse_purchase" || entry.type === "reverse_review" ? "bg-red-500/10 text-red-400"
     : "bg-yellow-500/10 text-yellow-400"
   return (
@@ -403,7 +405,7 @@ function Pager({ page, pages, onPage }: { page: number; pages: number; onPage: (
   )
 }
 
-function RateExamples({ perBaht, perReview }: { perBaht: number; perReview: number }) {
+function RateExamples({ perBaht, perReview, perDaily }: { perBaht: number; perReview: number; perDaily: number }) {
   const t = useTranslations("AdminPoints")
   return (
     <div className="bg-bg-card border border-white/5 rounded-2xl p-6">
@@ -419,6 +421,12 @@ function RateExamples({ perBaht, perReview }: { perBaht: number; perReview: numb
           <li className="py-2 flex items-center justify-between">
             <span className="text-text-muted">{t("rate_example_review")}</span>
             <span className="font-bold text-sky-400">+{perReview.toLocaleString()}</span>
+          </li>
+        )}
+        {perDaily > 0 && (
+          <li className="py-2 flex items-center justify-between">
+            <span className="text-text-muted">{t("rate_example_daily")}</span>
+            <span className="font-bold text-violet-300">+{perDaily.toLocaleString()}</span>
           </li>
         )}
       </ul>

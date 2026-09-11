@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 
 // ประวัติแต้มทั้งร้าน กรองตามประเภท / ค้นหาผู้ใช้ แบ่งหน้า
-const TYPES = new Set(["earn_purchase", "reverse_purchase", "earn_review", "reverse_review", "adjust_admin"])
+const TYPES = new Set(["earn_purchase", "reverse_purchase", "earn_review", "reverse_review", "earn_daily", "adjust_admin"])
 
 export async function GET(req: NextRequest) {
   const admin = await validateAdmin(["admin"])

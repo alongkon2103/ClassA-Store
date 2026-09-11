@@ -650,7 +650,10 @@
     "maki_orders": "Maki orders",
     "points_per_review_label": "Points per review (per game)",
     "points_per_review_hint": "Given once per game, only for games actually bought (free trials don't count). Deleting the review takes the points back. 0 = no review points.",
-    "points_per_review_invalid": "Points per review must be 0 or a positive whole number"
+    "points_per_review_invalid": "Points per review must be 0 or a positive whole number",
+    "points_per_daily_label": "Daily check-in points",
+    "points_per_daily_hint": "Customers can claim once per day, resetting at midnight Thai time. 0 = off.",
+    "points_per_daily_invalid": "Daily points must be 0 or a positive whole number"
   },
   "AdminDiscountCodes": {
     "title": "Discount Codes",
@@ -1982,7 +1985,7 @@
           },
           {
             "q": "What are AC Points and how do they work?",
-            "a": "AC Points are loyalty points you earn on every game purchase: every ฿100 of the game price earns 1,000 AC Points. Points are calculated from the game price after discounts and never include payment fees (card / PayPal) or free trials. They are added automatically once your payment is confirmed, and you can see your balance under \"My Coins\". Redeeming points for discounts and rewards is coming soon — the points you collect now will stay. Reviewing a game you bought also earns points (once per game)."
+            "a": "AC Points are loyalty points you earn on every game purchase: every ฿100 of the game price earns 1,000 AC Points. Points are calculated from the game price after discounts and never include payment fees (card / PayPal) or free trials. They are added automatically once your payment is confirmed, and you can see your balance under \"My Coins\". Redeeming points for discounts and rewards is coming soon — the points you collect now will stay. Reviewing a game you bought also earns points (once per game). You can also claim daily points once a day on My Coins."
           }
         ]
       }
@@ -2099,7 +2102,15 @@
     "coins_type_earn_review": "Earned from a review",
     "coins_type_reverse_review": "Taken back (review deleted)",
     "coins_rule_review": "Review a game you bought = {points} AC Points per game",
-    "coins_go_review": "Go to my reviews"
+    "coins_go_review": "Go to my reviews",
+    "daily_title": "Daily check-in",
+    "daily_sub": "Claim {points} AC Points every day · resets at midnight Thai time",
+    "daily_claim": "Claim +{points} pts",
+    "daily_claimed": "Claimed today",
+    "daily_next": "Next claim in {time}",
+    "daily_done": "You got +{points} AC Points",
+    "daily_error": "Couldn't claim, please try again",
+    "coins_type_earn_daily": "Daily check-in"
   },
   "Editor": {
     "untitled": "Untitled project",
@@ -2376,6 +2387,8 @@
     "rate_fee_note": "Card / PayPal fees and free trials never count. Points are calculated from the game price after discounts.",
     "type_review": "Review",
     "type_reverse_review": "Review taken back",
-    "rate_example_review": "Review a bought game (per game)"
+    "rate_example_review": "Review a bought game (per game)",
+    "type_daily": "Daily check-in",
+    "rate_example_daily": "Daily check-in (per day)"
   }
 }

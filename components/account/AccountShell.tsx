@@ -8,6 +8,7 @@
 import { useSession, signOut } from "next-auth/react"
 import { useTranslations } from "next-intl"
 import { Link } from "@/i18n/routing"
+import DailyClaim from "@/components/points/DailyClaim"
 
 export type AccountSection = "account" | "orders" | "coins" | "coupons" | "reviews" | "favorites"
 
@@ -76,6 +77,7 @@ export default function AccountShell({ active, children, points }: {
               AC Points <strong>{points.balance.toLocaleString()}</strong>
             </Link>
           )}
+          {points && <div><DailyClaim variant="compact" /></div>}
         </div>
 
         <ul className="bg-bg-card border border-border-soft rounded-[14px] p-2 list-none">

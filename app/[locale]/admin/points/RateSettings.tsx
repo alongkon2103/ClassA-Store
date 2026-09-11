@@ -20,6 +20,7 @@ export default function RateSettings({ initialConfigs = {} }: Props) {
   const [enabled, setEnabled] = useState(initialConfigs.points_enabled === "true")
   const [perBaht, setPerBaht] = useState(initialConfigs.points_per_baht || "10")
   const [perReview, setPerReview] = useState(initialConfigs.points_per_review ?? "100")
+  const [perDaily, setPerDaily] = useState(initialConfigs.points_per_daily ?? "100")
   const [startAt, setStartAt] = useState(toLocalInput(initialConfigs.points_start_at))
   const [saving, setSaving] = useState(false)
 
@@ -35,6 +36,7 @@ export default function RateSettings({ initialConfigs = {} }: Props) {
   const handleSave = async () => {
     if (!Number.isFinite(Number(perBaht)) || Number(perBaht) <= 0) return alert(t("points_per_baht_invalid"))
     if (!Number.isInteger(Number(perReview)) || Number(perReview) < 0) return alert(t("points_per_review_invalid"))
+    if (!Number.isInteger(Number(perDaily)) || Number(perDaily) < 0) return alert(t("points_per_daily_invalid"))
     if (enabled && !startAt) return alert(t("points_start_required"))
     setSaving(true)
     try {
@@ -46,6 +48,7 @@ export default function RateSettings({ initialConfigs = {} }: Props) {
             points_enabled: String(enabled),
             points_per_baht: String(Number(perBaht)),
             points_per_review: String(Number(perReview)),
+            points_per_daily: String(Number(perDaily)),
             points_start_at: startAt ? new Date(startAt).toISOString() : "",
           },
         }),
@@ -99,11 +102,19 @@ export default function RateSettings({ initialConfigs = {} }: Props) {
           </div>
         </div>
 
-        <div className="space-y-1.5 md:max-w-[50%] md:pr-2">
-          <label className="text-[13px] text-text-muted font-medium">{t("points_per_review_label")}</label>
-          <input type="number" min={0} step={1} value={perReview} onChange={(e) => setPerReview(e.target.value)}
-            className="w-full bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[14px] text-text-base outline-none focus:border-accent/50" />
-          <p className="text-[11px] text-text-muted">{t("points_per_review_hint")}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[13px] text-text-muted font-medium">{t("points_per_review_label")}</label>
+            <input type="number" min={0} step={1} value={perReview} onChange={(e) => setPerReview(e.target.value)}
+              className="w-full bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[14px] text-text-base outline-none focus:border-accent/50" />
+            <p className="text-[11px] text-text-muted">{t("points_per_review_hint")}</p>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[13px] text-text-muted font-medium">{t("points_per_daily_label")}</label>
+            <input type="number" min={0} step={1} value={perDaily} onChange={(e) => setPerDaily(e.target.value)}
+              className="w-full bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[14px] text-text-base outline-none focus:border-accent/50" />
+            <p className="text-[11px] text-text-muted">{t("points_per_daily_hint")}</p>
+          </div>
         </div>
 
         <div className="flex justify-end pt-2">

@@ -450,7 +450,7 @@
           },
           {
             "q": "什么是 AC Points？如何使用？",
-            "a": "AC Points 是每次购买游戏时获得的积分：游戏价格每 ฿100 可获得 1,000 AC Points。积分按折后游戏价格计算，不包含支付手续费（银行卡 / PayPal），免费试用也不获得积分。付款确认后积分会自动到账，可在「我的金币」查看余额。兑换折扣和奖励的功能即将开放，现在累积的积分会一直保留。评价已购买的游戏也能获得积分（每款一次）。"
+            "a": "AC Points 是每次购买游戏时获得的积分：游戏价格每 ฿100 可获得 1,000 AC Points。积分按折后游戏价格计算，不包含支付手续费（银行卡 / PayPal），免费试用也不获得积分。付款确认后积分会自动到账，可在「我的金币」查看余额。兑换折扣和奖励的功能即将开放，现在累积的积分会一直保留。评价已购买的游戏也能获得积分（每款一次）。在「我的金币」每天还可以领取一次每日积分。"
           }
         ]
       }
@@ -893,7 +893,15 @@
     "coins_type_earn_review": "评价获得",
     "coins_type_reverse_review": "扣回（删除评价）",
     "coins_rule_review": "评价已购买的游戏 = 每款 {points} AC Points",
-    "coins_go_review": "前往我的评价"
+    "coins_go_review": "前往我的评价",
+    "daily_title": "每日签到",
+    "daily_sub": "每天可领取 {points} AC Points · 泰国时间午夜重置",
+    "daily_claim": "领取 +{points} 积分",
+    "daily_claimed": "今日已领取",
+    "daily_next": "距下次领取 {time}",
+    "daily_done": "已获得 +{points} AC Points",
+    "daily_error": "领取失败，请重试",
+    "coins_type_earn_daily": "每日签到"
   },
   "Editor": {
     "untitled": "未命名项目",
