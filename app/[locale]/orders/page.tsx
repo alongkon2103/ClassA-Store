@@ -46,7 +46,7 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
     return {
       id: r.id, status: r.status, order_type: "PARTNER", payment_method: "maki",
       product_id: r.partner_product_id, variant_id: null, whitelisted_username: null, whitelist_status: null,
-      amount: v.price_thb, discount_amount: 0, expected_amount: null,
+      amount: v.price_thb, discount_amount: v.discount_amount ?? 0, expected_amount: null,
       expires_at: lifetime ? "9999-12-31T00:00:00.000Z" : v.access?.[0]?.expires_at ?? null,
       created_at: v.created_at, paid_at: v.paid_at, fulfilled_at: v.paid_at, game_keys: null,
       products: {

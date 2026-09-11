@@ -323,7 +323,8 @@
     "username_not_found": "Username not found",
     "close": "Close",
     "points_preview": "Earn {points} AC Points when paid",
-    "points_preview_note": "from the game price, fees excluded"
+    "points_preview_note": "from the game price, fees excluded",
+    "discount_error_PARTNER_GAME": "Affiliate codes can't be used on partner games"
   },
   "Visitors": {
     "title": "Website Visitors",
@@ -1801,7 +1802,9 @@
     "partner_err_no_identity": "Your account is not linked to Discord or Google. Please sign in with one of them.",
     "partner_err_unavailable": "This package is not available right now.",
     "partner_err_generic": "Could not start the payment. Please try again.",
-    "partner_video_title": "Gameplay video"
+    "partner_video_title": "Gameplay video",
+    "partner_discount_capped": "Discount on partner games is limited to ฿{amount} for this package",
+    "partner_discount_auto": "Best available code applied automatically"
   },
   "Notifications": {
     "title": "Notifications",

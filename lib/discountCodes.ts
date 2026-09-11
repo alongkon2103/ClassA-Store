@@ -32,6 +32,7 @@ export type DiscountErrorCode =
   | "WRONG_PRODUCT"
   | "BELOW_MIN_AMOUNT"
   | "NO_EFFECT"
+  | "PARTNER_GAME" // โค้ดนายหน้า (มีเจ้าของ) ใช้กับเกมพาร์ทเนอร์ไม่ได้ — ยังไม่มีระบบจ่ายค่าคอมจากส่วนต่าง Maki
 
 export type DiscountEvaluation =
   | { ok: true; code: discount_codes; amountOff: number }
@@ -43,9 +44,11 @@ export function evaluateDiscount(
   productId: string,
   userUsedCount: number,
   now: Date = new Date(),
+  opts?: { partner?: boolean },
 ): DiscountEvaluation {
   if (!code) return { ok: false, errorCode: "NOT_FOUND" }
   if (!code.is_active) return { ok: false, errorCode: "DISABLED" }
+  if (opts?.partner && code.owner_user_id) return { ok: false, errorCode: "PARTNER_GAME" }
   if (code.starts_at && now < code.starts_at) return { ok: false, errorCode: "NOT_YET_ACTIVE" }
   if (code.expires_at && now > code.expires_at) return { ok: false, errorCode: "EXPIRED" }
   if (code.max_uses !== null && code.used_count >= code.max_uses) {
@@ -118,9 +121,11 @@ export async function countUserRedemptions(
     where: {
       discount_code_id: codeId,
       user_id: userId,
-      orders: {
-        status: { notIn: ["expired", "cancelled"] },
-      },
+      // นับทั้งออเดอร์สินค้าเราและออเดอร์เกมพาร์ทเนอร์ (Maki) — ที่ยังไม่หมดอายุ/ยกเลิก
+      OR: [
+        { orders: { status: { notIn: ["expired", "cancelled"] } } },
+        { partner_order: { status: { notIn: ["expired", "failed"] } } },
+      ],
     },
   })
 }
@@ -150,4 +155,19 @@ export async function releaseOrderDiscount(
     where: { id: orderId },
     data: { discount_code_id: null, discount_amount: null },
   })
+}
+
+/** ส่วนลดบนเกมพาร์ทเนอร์ห้ามทำให้ราคาต่ำกว่าขั้นต่ำของ Maki — ตัดส่วนลดลงให้พอดี (0 = ใช้ไม่ได้) */
+export function capPartnerDiscount(amountOff: number, sellPrice: number, minPrice: number): number {
+  const room = Math.round((sellPrice - minPrice) * 100) / 100
+  return Math.max(0, Math.min(amountOff, room))
+}
+
+/** คืนสิทธิ์โค้ดของออเดอร์เกมพาร์ทเนอร์ (คู่กับ releaseOrderDiscount) — idempotent ใช้ใน transaction */
+export async function releasePartnerOrderDiscount(tx: Prisma.TransactionClient, partnerOrderId: string): Promise<void> {
+  const o = await tx.partner_orders.findUnique({ where: { id: partnerOrderId }, select: { discount_code_id: true } })
+  if (!o?.discount_code_id) return
+  await tx.discount_codes.update({ where: { id: o.discount_code_id }, data: { used_count: { decrement: 1 } } })
+  await tx.discount_redemptions.deleteMany({ where: { partner_order_id: partnerOrderId } })
+  await tx.partner_orders.update({ where: { id: partnerOrderId }, data: { discount_code_id: null, discount_amount: null } })
 }

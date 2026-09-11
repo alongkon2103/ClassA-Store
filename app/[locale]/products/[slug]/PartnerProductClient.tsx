@@ -4,8 +4,9 @@ import { variantLabel } from "@/lib/i18n/locale"
 // หน้าสินค้าของเกมพาร์ทเนอร์แบบขายในเว็บเรา (Maki) — โครงเดียวกับหน้าสินค้าเรา
 // เฟส 2: กดซื้อ → POST /api/maki/checkout → redirect ไป Stripe ของ Maki → กลับมาที่ /orders/maki/<id>
 // สิทธิ์ส่งเข้าบัญชี Discord/Google ที่ล็อกอินอยู่ จึงต้องโชว์ให้ชัดก่อนจ่ายว่าปลดล็อกให้บัญชีไหน (ส่งผิด = Maki ไม่คืนเงิน)
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
+import { useAutoDiscounts } from "@/lib/useAutoDiscounts"
 import { useLocale, useTranslations } from "next-intl"
 import { Link, useRouter } from "@/i18n/routing"
 import { getImageUrl } from "@/lib/getImageUrl"
@@ -33,9 +34,11 @@ const btnBase = "w-full py-4 rounded-xl text-white text-base font-bold flex item
 export default function PartnerProductClient({ product, related, usdRate, pointsPerBaht = null }: { product: PartnerProductData; related: Related[]; usdRate: number | null; pointsPerBaht?: number | null }) {
   const t = useTranslations("ProductPage")
   const tc = useTranslations("Common")
+  const tm = useTranslations("ProductModal") // ข้อความโค้ดส่วนลดชุดเดียวกับ modal สินค้าเรา
   const locale = useLocale()
   const router = useRouter()
   const { data: session, status: authStatus } = useSession()
+  const { bestAutoCode } = useAutoDiscounts()
   const isTH = locale === "th"
   const name = isTH ? product.name_th : product.name_en
   const desc = isTH ? (product.description_th || product.description_en) : (product.description_en || product.description_th)
@@ -51,13 +54,44 @@ export default function PartnerProductClient({ product, related, usdRate, points
   const pts = (n: number) => Math.floor(n * (pointsPerBaht ?? 0)).toLocaleString()
   const providerLabel = session?.user?.provider === "google" ? "Google" : session?.user?.provider === "discord" ? "Discord" : "Discord / Google"
 
+  // ── โค้ดส่วนลดร้านเรา (ใช้กับเกมพาร์ทเนอร์ได้ ยกเว้นโค้ดนายหน้า) — server เป็นคนคิดและตัดไม่ให้ต่ำกว่าขั้นต่ำ Maki ──
+  type Applied = { code: string; amountOff: number; finalAmount: number; capped: boolean; source: "typed" | "auto" }
+  const [codeInput, setCodeInput] = useState("")
+  const [applied, setApplied] = useState<Applied | null>(null)
+  const [codeErr, setCodeErr] = useState<string | null>(null)
+  const [checking, setChecking] = useState(false)
+  const discountErr = (code: string) => { const k = `discount_error_${code}`; return tm.has(k) ? tm(k) : tm("discount_error_SERVER_ERROR") }
+  const validate = useCallback(async (code: string, planKey: string, source: Applied["source"]) => {
+    setChecking(true); setCodeErr(null)
+    try {
+      const r = await fetch("/api/discount-codes/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, partnerProductId: product.id, planKey }) })
+      const d = await r.json().catch(() => ({}))
+      if (d.valid) { setApplied({ code: d.code, amountOff: Number(d.amountOff), finalAmount: Number(d.finalAmount), capped: !!d.capped, source }); return true }
+      setApplied(null)
+      if (source === "typed") setCodeErr(discountErr(String(d.errorCode ?? "SERVER_ERROR")))
+      return false
+    } catch { if (source === "typed") setCodeErr(tm("discount_error_NETWORK")); return false } finally { setChecking(false) }
+  }, [product.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  // เปลี่ยนแพลน/ล็อกอิน → ตรวจโค้ดที่พิมพ์ไว้ใหม่ หรือใส่โค้ด auto ที่ลดได้มากสุดให้เอง (เหมือน modal สินค้าเรา)
+  useEffect(() => {
+    if (!session?.user?.id || !cur?.sell_price_thb) { setApplied(null); return }
+    if (applied?.source === "typed") { validate(applied.code, cur.key, "typed"); return }
+    const auto = bestAutoCode(product.id, cur.sell_price_thb)
+    if (auto) validate(auto.code, cur.key, "auto"); else setApplied(null)
+  }, [cur?.key, session?.user?.id, bestAutoCode]) // eslint-disable-line react-hooks/exhaustive-deps
+  const finalPrice = cur?.sell_price_thb != null ? (applied ? applied.finalAmount : cur.sell_price_thb) : null
+
   const buy = async () => {
     if (!cur) return
     setBusy(true); setErr(null)
     try {
-      const r = await fetch("/api/maki/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product_id: product.id, plan_key: cur.key, locale }) })
+      const r = await fetch("/api/maki/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product_id: product.id, plan_key: cur.key, locale, discount_code: applied?.code ?? null }) })
       const d = await r.json().catch(() => ({}))
-      if (!r.ok || !d.payment_url) { setErr(t(ERR_KEYS[d.error] ?? "partner_err_generic")); setBusy(false); return }
+      if (!r.ok || !d.payment_url) {
+        setErr(d.error === "discount" ? discountErr(String(d.errorCode ?? "SERVER_ERROR")) : t(ERR_KEYS[d.error] ?? "partner_err_generic"))
+        if (d.error === "discount") setApplied(null)
+        setBusy(false); return
+      }
       window.location.assign(d.payment_url) // ไปหน้าจ่ายของ Stripe (Maki) — จ่ายเสร็จเด้งกลับมา /orders/maki/<id>
     } catch { setErr(t("partner_err_generic")); setBusy(false) }
   }
@@ -129,10 +163,40 @@ export default function PartnerProductClient({ product, related, usdRate, points
               ))}
             </div>
 
-            {pointsPerBaht != null && cur?.sell_price_thb != null && (
+            {/* โค้ดส่วนลด (ต้องล็อกอินถึงตรวจได้ — เหมือน modal) */}
+            {session && cur?.sell_price_thb != null && (
+              <div className="mb-4">
+                <label className="block text-[0.68rem] text-text-dim uppercase tracking-[0.08em] mb-1.5">{tm("discount_label")}</label>
+                {applied ? (
+                  <div className="flex items-center justify-between bg-success/10 border border-success/30 rounded-xl px-3 py-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-success font-mono font-semibold text-[0.82rem]">{applied.code}</span>
+                      <span className="text-[0.75rem] text-text-muted">−{baht(applied.amountOff)}</span>
+                      {applied.source === "auto" && <span className="text-[0.65rem] text-text-dim truncate">· {t("partner_discount_auto")}</span>}
+                    </div>
+                    <button type="button" onClick={() => { setApplied(null); setCodeInput("") }} className="text-[0.75rem] text-text-muted hover:text-hot transition shrink-0">{tm("discount_remove")}</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input value={codeInput} onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (codeInput.trim()) validate(codeInput.trim(), cur.key, "typed") } }}
+                      placeholder={tm("discount_placeholder")}
+                      className="flex-1 bg-bg-base border border-border-soft rounded-xl px-3 py-2.5 text-[0.85rem] uppercase placeholder:text-text-dim focus:border-accent/40 outline-none transition" />
+                    <button type="button" onClick={() => validate(codeInput.trim(), cur.key, "typed")} disabled={checking || !codeInput.trim()}
+                      className="px-4 py-2.5 rounded-xl bg-accent/15 text-accent-light text-[0.8rem] font-semibold hover:bg-accent/25 disabled:opacity-40 transition">
+                      {checking ? "..." : tm("discount_apply")}
+                    </button>
+                  </div>
+                )}
+                {codeErr && <p className="text-[0.75rem] text-hot mt-1.5">{codeErr}</p>}
+                {applied?.capped && <p className="text-[0.72rem] text-text-dim mt-1.5">{t("partner_discount_capped", { amount: applied.amountOff.toLocaleString() })}</p>}
+              </div>
+            )}
+
+            {pointsPerBaht != null && finalPrice != null && (
               <p className="mb-3 text-[0.78rem] text-gold flex flex-wrap items-center gap-x-1.5">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="shrink-0"><circle cx="12" cy="12" r="10" /></svg>
-                {t("points_earn", { points: pts(cur.sell_price_thb) })}
+                {t("points_earn", { points: pts(finalPrice) })}
                 <span className="text-text-dim">· {t("points_note")}</span>
               </p>
             )}
@@ -151,7 +215,13 @@ export default function PartnerProductClient({ product, related, usdRate, points
                   <p className="text-[0.72rem] text-text-dim mt-0.5 leading-relaxed">{t("partner_unlock_hint")}</p>
                 </div>
                 <button onClick={buy} disabled={!cur || busy} className={`${btnBase} hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0`}>
-                  {busy ? t("partner_redirecting") : `${tc("buy_now")}${cur?.sell_price_thb != null ? ` · ${baht(cur.sell_price_thb)}` : ""}`}
+                  {busy ? t("partner_redirecting") : (
+                    <>
+                      {tc("buy_now")}
+                      {finalPrice != null && <span> · {baht(finalPrice)}</span>}
+                      {applied && cur?.sell_price_thb != null && <span className="text-[0.8rem] font-medium line-through opacity-70">{baht(cur.sell_price_thb)}</span>}
+                    </>
+                  )}
                 </button>
                 {err && <p className="text-[0.78rem] text-hot mt-2">{err}</p>}
               </>

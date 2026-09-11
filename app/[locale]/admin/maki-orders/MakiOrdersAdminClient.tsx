@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useTranslations } from "next-intl"
 import { Link } from "@/i18n/routing"
 
-type Row = { id: string; status: string; plan_key: string; price: number; min: number; customer_provider: string; customer_id: string; maki_order_id: string | null; note: string | null; created_at: string; paid_at: string | null; user: { id: string; username: string; email: string | null }; product: string; slug: string }
+type Row = { id: string; status: string; plan_key: string; price: number; min: number; discount: number; customer_provider: string; customer_id: string; maki_order_id: string | null; note: string | null; created_at: string; paid_at: string | null; user: { id: string; username: string; email: string | null }; product: string; slug: string }
 type Access = { game: string; server_id: string; days_remaining: number; expires_at: string; added_by: string; from_your_orders: boolean }
 
 const fmt = (s: string | null) => (s ? new Date(s).toLocaleString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-")
@@ -145,7 +145,7 @@ export default function MakiOrdersAdminClient({ stats, orders, monthly }: { stat
                   <td className="px-4 py-2 text-text-muted whitespace-nowrap">{fmt(o.created_at)}</td>
                   <td className="px-4 py-2"><span className="text-text-base">{o.user.username}</span><span className="block text-text-muted">{o.user.email ?? ""}</span></td>
                   <td className="px-4 py-2"><span className="text-text-base">{o.product}</span><span className="block text-text-muted font-mono">{o.plan_key}</span></td>
-                  <td className="px-4 py-2 text-right font-bold text-text-base">฿{o.price.toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right font-bold text-text-base">฿{o.price.toLocaleString()}{o.discount > 0 && <span className="block text-[11px] font-medium text-text-muted">−฿{o.discount.toLocaleString()}</span>}</td>
                   <td className="px-4 py-2 text-right text-text-muted">฿{o.min.toLocaleString()}</td>
                   <td className="px-4 py-2 text-right font-bold text-green-400">฿{(o.price - o.min).toLocaleString()}</td>
                   <td className="px-4 py-2">

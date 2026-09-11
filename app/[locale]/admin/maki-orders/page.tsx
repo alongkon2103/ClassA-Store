@@ -33,7 +33,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
         margin: sum(paid, (r) => Number(r.price_thb) - Number(r.min_price_thb)),
       }}
       orders={rows.map((r) => ({
-        id: r.id, status: r.status, plan_key: r.plan_key, price: Number(r.price_thb), min: Number(r.min_price_thb),
+        id: r.id, status: r.status, plan_key: r.plan_key, price: Number(r.price_thb), min: Number(r.min_price_thb), discount: Number(r.discount_amount ?? 0),
         customer_provider: r.customer_provider, customer_id: r.customer_id, maki_order_id: r.maki_order_id, note: r.note,
         created_at: r.created_at.toISOString(), paid_at: r.paid_at?.toISOString() ?? null,
         user: r.user, product: r.partner_product.name_th, slug: r.partner_product.external_slug,

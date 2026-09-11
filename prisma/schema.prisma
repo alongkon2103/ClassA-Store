@@ -179,6 +179,7 @@ model discount_codes {
   product        products?              @relation(fields: [product_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   owner          users?                 @relation("affiliate_codes", fields: [owner_user_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   redemptions    discount_redemptions[]
+  partner_orders partner_orders[]     @relation("partner_order_discount")
   orders         orders[]             @relation("order_discount")
   referred_orders orders[]            @relation("order_referral")
   affiliate_earnings affiliate_earnings[]
@@ -191,12 +192,14 @@ model discount_codes {
 model discount_redemptions {
   id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   discount_code_id String         @db.Uuid
-  order_id         String         @unique @db.Uuid
+  order_id         String?        @unique @db.Uuid // ออเดอร์สินค้าเรา (หรือ null ถ้าเป็นออเดอร์เกมพาร์ทเนอร์)
+  partner_order_id String?        @unique @db.Uuid // ออเดอร์เกม Maki — ใช้โค้ดส่วนลดร้านเราได้เหมือนเกมเรา
   user_id          String         @db.Uuid
   amount_off       Decimal        @db.Decimal(10, 2)
   redeemed_at      DateTime       @default(now()) @db.Timestamptz(6)
   discount_codes   discount_codes @relation(fields: [discount_code_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  orders           orders         @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orders           orders?        @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  partner_order    partner_orders? @relation(fields: [partner_order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([discount_code_id], map: "idx_redemptions_code")
   @@index([user_id], map: "idx_redemptions_user")
@@ -696,7 +699,10 @@ model partner_orders {
   partner_product_id String    @db.Uuid
   plan_key           String    @db.VarChar // เช่น maki_boxing_1m
   price_thb          Decimal   @db.Decimal(10, 2) // ราคาขายของเรา = ยอดที่ลูกค้าจ่าย (ไม่มีค่าธรรมเนียมเพิ่ม)
-  min_price_thb      Decimal   @db.Decimal(10, 2) // ขั้นต่ำ Maki ตอนสั่ง — ส่วนต่างคือกำไรเราก่อนหักค่าธรรมเนียม Stripe
+  min_price_thb      Decimal   @db.Decimal(10, 2) // ขั้นต่ำ Maki ตอนสั่ง — ส่วนต่างคือกำไรเรา
+  list_price_thb     Decimal?  @db.Decimal(10, 2) // ราคาขายก่อนหักส่วนลด (null = ไม่มีส่วนลด)
+  discount_code_id   String?   @db.Uuid
+  discount_amount    Decimal?  @db.Decimal(10, 2) // ส่วนลดที่ใช้จริง (ถูกจำกัดไม่ให้ราคาต่ำกว่าขั้นต่ำ Maki)
   status             String    @default("pending") @db.VarChar
   partner_order_ref  String    @unique @db.VarChar // ref ที่ส่งให้ Maki (idempotent) = ACS-<id>
   maki_order_id      String?   @unique @db.VarChar
@@ -711,6 +717,8 @@ model partner_orders {
   updated_at         DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
   user               users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   partner_product    partner_products @relation(fields: [partner_product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  discount_code      discount_codes?  @relation("partner_order_discount", fields: [discount_code_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  discount_redemption discount_redemptions?
   point_ledger       point_ledger[]
 
   @@index([user_id, created_at], map: "idx_partner_orders_user_created")

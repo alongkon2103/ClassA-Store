@@ -62,6 +62,9 @@ export default function MakiOrderClient({ initial, initialPoints }: { initial: M
         <div className="text-right shrink-0">
           <p className="text-[0.7rem] text-text-dim">{t("maki_price")}</p>
           <p className="text-[1.2rem] font-black text-accent-lighter">฿{order.price_thb.toLocaleString()}</p>
+          {order.discount_amount != null && order.list_price_thb != null && (
+            <p className="text-[0.72rem] text-text-dim"><span className="line-through">฿{order.list_price_thb.toLocaleString()}</span> <span className="text-success font-semibold">· {t("saved", { amount: order.discount_amount.toLocaleString() })}</span></p>
+          )}
         </div>
       </div>
 

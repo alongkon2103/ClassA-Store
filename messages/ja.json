@@ -341,7 +341,9 @@
     "partner_err_no_identity": "アカウントがDiscordまたはGoogleと連携していません。いずれかでログインしてください。",
     "partner_err_unavailable": "このパッケージは現在購入できません。",
     "partner_err_generic": "お支払いを開始できませんでした。もう一度お試しください。",
-    "partner_video_title": "ゲームプレイ動画"
+    "partner_video_title": "ゲームプレイ動画",
+    "partner_discount_capped": "このパッケージのパートナーゲーム割引は最大 ฿{amount} です",
+    "partner_discount_auto": "最もお得なコードを自動適用しました"
   },
   "PartnerModal": {
     "partner_product": "パートナー商品",
@@ -639,7 +641,8 @@
     "username_not_found": "ユーザー名が見つかりません",
     "close": "閉じる",
     "points_preview": "支払い完了で {points} AC Points 獲得",
-    "points_preview_note": "ゲーム価格から計算、手数料を除く"
+    "points_preview_note": "ゲーム価格から計算、手数料を除く",
+    "discount_error_PARTNER_GAME": "アフィリエイトコードはパートナーゲームには使えません"
   },
   "Checkout": {
     "shop": "ショップ",

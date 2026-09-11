@@ -31,13 +31,15 @@ export default async function CouponsPage({ params }: { params: Promise<{ locale
       include: {
         discount_codes: { select: { code: true } },
         orders: { select: { status: true, products: { select: { name_th: true, name_en: true } } } },
+        // โค้ดที่ใช้กับเกมพาร์ทเนอร์ (Maki) ผูกกับ partner_order แทน orders
+        partner_order: { select: { status: true, partner_product: { select: { name_th: true, name_en: true } } } },
       },
       orderBy: { redeemed_at: "desc" },
     }),
   ])
 
   const paidUsesOf = (codeId: string) =>
-    redemptions.filter((r) => r.discount_code_id === codeId && r.orders.status === "paid").length
+    redemptions.filter((r) => r.discount_code_id === codeId && (r.orders?.status ?? r.partner_order?.status) === "paid").length
 
   const coupons = codes.map((c) => ({
     id: c.id,
@@ -57,9 +59,9 @@ export default async function CouponsPage({ params }: { params: Promise<{ locale
     code: r.discount_codes.code,
     amount_off: Number(r.amount_off),
     redeemed_at: r.redeemed_at.toISOString(),
-    status: r.orders.status,
-    product_th: r.orders.products?.name_th ?? "",
-    product_en: r.orders.products?.name_en ?? "",
+    status: r.orders?.status ?? r.partner_order?.status ?? "",
+    product_th: r.orders?.products?.name_th ?? r.partner_order?.partner_product.name_th ?? "",
+    product_en: r.orders?.products?.name_en ?? r.partner_order?.partner_product.name_en ?? "",
   }))
 
   return (

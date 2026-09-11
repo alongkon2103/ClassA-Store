@@ -106,5 +106,17 @@ export function useAutoDiscounts() {
     [codes, refInfo],
   )
 
-  return { bestDiscountedPrice }
+  // โค้ด auto ที่ดีที่สุด (ไม่รวมโค้ดนายหน้าจากลิงก์ /r) — หน้าเกมพาร์ทเนอร์ใช้ส่งไป validate/checkout
+  const bestAutoCode = useCallback(
+    (productId: string, price: number): { code: string; amountOff: number } | null => {
+      if (!codes || codes.length === 0) return null
+      const candidates: AutoCodeCandidate[] = codes
+        .filter((c) => c.product_id === null || c.product_id === productId)
+        .map((c) => ({ code: c.code, type: c.type, value: c.value, minAmount: c.min_amount, isAutoSelect: true, soldOut: c.sold_out, alreadyUsed: c.already_used }))
+      return pickBestAutoCode(candidates, price)
+    },
+    [codes],
+  )
+
+  return { bestDiscountedPrice, bestAutoCode }
 }
