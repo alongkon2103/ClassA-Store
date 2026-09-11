@@ -35,6 +35,8 @@ interface Order {
     product_functions: unknown[]
   }
   product_variants: { label_th: string | null; label_en: string | null; duration_type?: string | null; duration_days?: number | null } | null
+  // ออเดอร์เกมพาร์ทเนอร์ (Maki): จ่ายที่ลิงก์ของ Maki, รายละเอียดอยู่หน้าของตัวเอง ไม่มีคีย์/เล่น/ตั้งค่า
+  partner?: { href: string; payment_url: string | null; label: string } | null
 }
 
 interface OrderListClientProps {
@@ -126,6 +128,8 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
             const isTrial = order.order_type === "TRIAL"
             const isPaying = payingId === order.id
             const isDesktop = order.products?.type === "desktop_program"
+            const partner = (order as Order).partner ?? null
+            const detailHref = partner?.href ?? `/orders/${order.id}`
             const name = locale === "th" ? order.products.name_th : order.products.name_en
             const variantLabel = pickVariantLabel(order.product_variants, locale) || t("standard_version")
 
@@ -165,7 +169,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                 {/* ออเดอร์ */}
                 <td className={`${td} border-l rounded-l-[10px] max-md:rounded-none max-md:pb-3 max-md:mb-3 max-md:border-b max-md:border-border-soft`}>
                   <span className="block text-[0.75rem] font-bold text-accent-light mb-0.5">#{order.id.slice(0, 8).toUpperCase()}</span>
-                  <Link href={`/orders/${order.id}`} className="text-[0.65rem] text-accent-light hover:underline">{t("order_details_link")} ›</Link>
+                  <Link href={detailHref} className="text-[0.65rem] text-accent-light hover:underline">{t("order_details_link")} ›</Link>
                 </td>
 
                 {/* สินค้า */}
@@ -177,7 +181,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-[0.82rem] font-bold mb-0.5 truncate">{name}</h4>
-                      <div className="text-[0.68rem] text-text-dim truncate">{isDesktop ? "PC" : "Roblox"} · {isTrial ? t("free_trial") : variantLabel}</div>
+                      <div className="text-[0.68rem] text-text-dim truncate">{partner ? partner.label : isDesktop ? "PC" : "Roblox"} · {isTrial ? t("free_trial") : variantLabel}</div>
                     </div>
                   </div>
                 </td>
@@ -221,6 +225,17 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                 {/* จัดการ */}
                 <td className={`${td} border-r rounded-r-[10px] max-md:rounded-none max-md:mt-3 max-md:pt-3 max-md:border-t max-md:border-border-soft`}>
                   <div className="flex flex-col gap-1.5 min-w-[120px] max-md:flex-row max-md:flex-wrap">
+                    {partner ? (
+                      <>
+                        {isPending && partner.payment_url && (
+                          <a href={partner.payment_url} className={`${btn} bg-accent hover:bg-accent-light text-white`}>{t("pay_now")}</a>
+                        )}
+                        <Link href={detailHref} className={`${btn} border border-border-soft text-text-muted hover:bg-white/[0.03] hover:text-text-base`}>
+                          {t("act_view")}
+                        </Link>
+                      </>
+                    ) : (
+                      <>
                     {isPending && (
                       <button onClick={(e) => handlePay(e, order)} disabled={isPaying}
                         className={`${btn} bg-accent hover:bg-accent-light text-white disabled:opacity-60 flex items-center justify-center gap-1.5`}>
@@ -252,6 +267,8 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
                       <Link href={`/orders/${order.id}`} className={`${btn} border border-border-soft text-text-muted hover:bg-white/[0.03] hover:text-text-base`}>
                         {t("act_view")}
                       </Link>
+                    )}
+                      </>
                     )}
                   </div>
                 </td>

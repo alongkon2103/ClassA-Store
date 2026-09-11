@@ -1283,9 +1283,7 @@
     "maki_expired_hint": "The payment link has expired. You can order again from the game page.",
     "maki_failed_hint": "The order could not be created. Please try again from the game page.",
     "maki_back_product": "Back to game",
-    "maki_section_title": "Partner games (Maki)",
     "maki_no_refund": "Digital product, delivered instantly — no refunds.",
-    "maki_view": "Details",
     "maki_points_earned": "You earned {points} AC Points",
     "maki_paid_at": "Paid {date}",
     "maki_price": "Price"

@@ -1286,9 +1286,7 @@
     "maki_expired_hint": "ลิงก์ชำระเงินหมดอายุแล้ว สั่งซื้อใหม่ได้ที่หน้าเกม",
     "maki_failed_hint": "สร้างออเดอร์ไม่สำเร็จ กรุณาลองใหม่จากหน้าเกม",
     "maki_back_product": "กลับไปหน้าเกม",
-    "maki_section_title": "เกมพาร์ทเนอร์ (Maki)",
     "maki_no_refund": "สินค้าดิจิทัล ส่งมอบทันที ไม่รับคืนเงิน",
-    "maki_view": "รายละเอียด",
     "maki_points_earned": "ได้รับ {points} AC Points",
     "maki_paid_at": "ชำระเมื่อ {date}",
     "maki_price": "ราคา"

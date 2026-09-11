@@ -170,9 +170,7 @@
     "maki_expired_hint": "支払いリンクの期限が切れました。ゲームページから再度注文できます。",
     "maki_failed_hint": "注文を作成できませんでした。ゲームページからもう一度お試しください。",
     "maki_back_product": "ゲームページへ戻る",
-    "maki_section_title": "パートナーゲーム（Maki）",
     "maki_no_refund": "デジタル商品・即時納品のため返金不可",
-    "maki_view": "詳細",
     "maki_points_earned": "{points} AC Pointsを獲得",
     "maki_paid_at": "支払い日時 {date}",
     "maki_price": "価格"

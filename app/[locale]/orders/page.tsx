@@ -8,7 +8,6 @@ import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import OrdersDashboard from "@/components/orders/OrdersDashboard"
 import AccountShell from "@/components/account/AccountShell"
-import MakiOrdersSection from "@/components/orders/MakiOrdersSection"
 import { syncPendingMakiOrders, toMakiOrderView } from "@/lib/makiOrders"
 import { getPointsSummary } from "@/lib/points"
 import { setRequestLocale, getTranslations } from "next-intl/server"
@@ -40,7 +39,25 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
     }),
     getPointsSummary(session.user.id, { entries: 0, reconcile: false }).catch(() => null),
   ])
-  const makiOrders = makiRows.map((r) => toMakiOrderView(r, r.partner_product))
+  // แปลงออเดอร์ Maki ให้หน้าตาเหมือนแถวออเดอร์ปกติ แล้วรวมในตารางเดียว (ลิงก์/ปุ่มจ่ายชี้ไปของ Maki)
+  const partnerRows = makiRows.map((r) => {
+    const v = toMakiOrderView(r, r.partner_product)
+    const lifetime = v.plan?.is_lifetime ?? false
+    return {
+      id: r.id, status: r.status, order_type: "PARTNER", payment_method: "maki",
+      product_id: r.partner_product_id, variant_id: null, whitelisted_username: null, whitelist_status: null,
+      amount: v.price_thb, discount_amount: 0, expected_amount: null,
+      expires_at: lifetime ? "9999-12-31T00:00:00.000Z" : v.access?.[0]?.expires_at ?? null,
+      created_at: v.created_at, paid_at: v.paid_at, fulfilled_at: v.paid_at, game_keys: null,
+      products: {
+        slug: v.product?.slug ?? "", name_th: v.product?.name_th ?? v.plan_key, name_en: v.product?.name_en ?? v.plan_key, type: "partner",
+        download_url: null, info_page_url: null, product_images: v.product?.image ? [{ url: v.product.image }] : [],
+        product_gifts: [], product_presets: [], product_functions: [],
+      },
+      product_variants: v.plan ? { label_th: v.plan.label_th, label_en: v.plan.label_en, duration_type: lifetime ? "permanent" : "rental", duration_days: v.plan.duration_days } : null,
+      partner: { href: `/orders/maki/${r.id}`, payment_url: v.payment_url, label: "Partner · Maki" },
+    }
+  })
 
   const rawOrders = await prisma.orders.findMany({
     where: {
@@ -145,6 +162,10 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
     } : null
   }))
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allOrders: any[] = [...orders, ...partnerRows].sort((a, b) =>
+    String(a.status).localeCompare(String(b.status)) || (new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()))
+
   return (
     <div className="min-h-screen bg-bg-base flex flex-col selection:bg-accent/30 selection:text-accent-light">
       <Navbar />
@@ -156,8 +177,7 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
 
         <div className="relative z-10 page-container py-8 md:py-12">
           <AccountShell active="orders" points={pointsSummary ? { balance: pointsSummary.balance, active: pointsSummary.active } : null}>
-            {makiOrders.length > 0 && <MakiOrdersSection orders={makiOrders} />}
-            <OrdersDashboard orders={orders} livegenEnabled={featureFlags.livegen_enabled} />
+            <OrdersDashboard orders={allOrders} livegenEnabled={featureFlags.livegen_enabled} />
           </AccountShell>
         </div>
       </main>
