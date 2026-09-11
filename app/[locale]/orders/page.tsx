@@ -8,6 +8,9 @@ import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import OrdersDashboard from "@/components/orders/OrdersDashboard"
 import AccountShell from "@/components/account/AccountShell"
+import MakiOrdersSection from "@/components/orders/MakiOrdersSection"
+import { syncPendingMakiOrders, toMakiOrderView } from "@/lib/makiOrders"
+import { getPointsSummary } from "@/lib/points"
 import { setRequestLocale, getTranslations } from "next-intl/server"
 
 // Skip the static cache — admin feature toggles must reflect immediately.
@@ -26,6 +29,18 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
   }
 
   const featureFlags = await getFeatureFlags()
+
+  // เกม Maki: เช็คสถานะออเดอร์ค้างกับ Maki ก่อน (ลูกค้าอาจจ่ายแล้วปิดเบราว์เซอร์) แล้วดึงมาแสดงเป็นส่วนแยก
+  await syncPendingMakiOrders({ userId: session.user.id, limit: 20 }).catch(() => null)
+  const [makiRows, pointsSummary] = await Promise.all([
+    prisma.partner_orders.findMany({
+      where: { user_id: session.user.id, status: { not: "failed" } },
+      orderBy: { created_at: "desc" }, take: 50,
+      include: { partner_product: { select: { external_slug: true, name_th: true, name_en: true, thumbnail_url: true, images: true, plans: true } } },
+    }),
+    getPointsSummary(session.user.id, { entries: 0, reconcile: false }).catch(() => null),
+  ])
+  const makiOrders = makiRows.map((r) => toMakiOrderView(r, r.partner_product))
 
   const rawOrders = await prisma.orders.findMany({
     where: {
@@ -140,7 +155,8 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
         </div>
 
         <div className="relative z-10 page-container py-8 md:py-12">
-          <AccountShell active="orders">
+          <AccountShell active="orders" points={pointsSummary ? { balance: pointsSummary.balance, active: pointsSummary.active } : null}>
+            {makiOrders.length > 0 && <MakiOrdersSection orders={makiOrders} />}
             <OrdersDashboard orders={orders} livegenEnabled={featureFlags.livegen_enabled} />
           </AccountShell>
         </div>

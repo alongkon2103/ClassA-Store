@@ -10,7 +10,7 @@ import RateSettings from "./RateSettings"
 type UserRow = { id: string; username: string; email: string | null; avatar: string | null; balance: number; entries: number; last_at: string | null }
 type Entry = {
   id: string; delta: number; type: string; note: string | null; created_at: string
-  order_id: string | null; product: string | null; reverses_id: string | null; voided: boolean
+  order_id: string | null; order_href?: string | null; product: string | null; reverses_id: string | null; voided: boolean
   by?: string | null; user?: { id: string; username: string; email: string | null }
 }
 type Tab = "users" | "ledger" | "rate"
@@ -213,7 +213,7 @@ function LedgerTab({ refreshKey, onOpenUser }: { refreshKey: number; onOpenUser:
                 <td className="px-4 py-2 text-text-muted whitespace-nowrap">{fmt(e.created_at)}</td>
                 <td className="px-4 py-2"><button onClick={() => e.user && onOpenUser(e.user.id)} className="text-accent-light hover:underline">{e.user?.username ?? "-"}</button><span className="block text-text-muted">{e.user?.email ?? ""}</span></td>
                 <td className="px-4 py-2"><TypeBadge entry={e} /></td>
-                <td className="px-4 py-2 text-text-muted">{e.product ?? e.note ?? "-"}{e.order_id && <Link href={`/orders/${e.order_id}`} className="ml-2 text-accent-light hover:underline">#{e.order_id.slice(0, 8)}</Link>}</td>
+                <td className="px-4 py-2 text-text-muted">{e.product ?? e.note ?? "-"}{e.order_id && <Link href={e.order_href ?? `/orders/${e.order_id}`} className="ml-2 text-accent-light hover:underline">#{e.order_id.slice(0, 8)}</Link>}</td>
                 <td className={`px-4 py-2 text-right font-bold ${e.delta > 0 ? "text-green-400" : "text-red-400"}`}>{e.delta > 0 ? "+" : ""}{e.delta.toLocaleString()}</td>
               </tr>
             ))}
@@ -349,7 +349,7 @@ function UserDrawer({ userId, onClose, onChanged }: { userId: string; onClose: (
                     <li key={e.id} className={`px-4 py-3 flex items-start gap-3 ${e.voided ? "opacity-50" : ""}`}>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap"><TypeBadge entry={e} /><span className="text-[11px] text-text-muted">{fmt(e.created_at)}</span>{e.by && <span className="text-[11px] text-text-muted">{t("by", { name: e.by })}</span>}</div>
-                        <p className="text-[12px] text-text-muted mt-1 break-words">{e.product ?? e.note ?? "-"}{e.order_id && <Link href={`/orders/${e.order_id}`} className="ml-2 text-accent-light hover:underline">#{e.order_id.slice(0, 8)}</Link>}</p>
+                        <p className="text-[12px] text-text-muted mt-1 break-words">{e.product ?? e.note ?? "-"}{e.order_id && <Link href={e.order_href ?? `/orders/${e.order_id}`} className="ml-2 text-accent-light hover:underline">#{e.order_id.slice(0, 8)}</Link>}</p>
                       </div>
                       <div className="text-right shrink-0">
                         <p className={`text-[14px] font-black ${e.delta > 0 ? "text-green-400" : "text-red-400"}`}>{e.delta > 0 ? "+" : ""}{e.delta.toLocaleString()}</p>

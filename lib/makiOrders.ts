@@ -1,0 +1,145 @@
+// ออเดอร์เกม Maki ที่เราขายเอง: สร้างลิงก์จ่าย → ลูกค้าจ่ายที่ Stripe ของ Maki → เรา poll สถานะ → paid = Maki ส่งสิทธิ์
+// เข้าบัญชี Discord/Google ของลูกค้าแล้ว เราแค่บันทึกและให้ AC Points · ไม่มีคีย์ ไม่มี fulfillment ฝั่งเรา
+import { randomUUID } from "crypto"
+import { Prisma } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
+import { MakiError, makiCreateOrder, makiGetOrder, planAvailable, toPlanRows, withLiveMinimums, type MakiAccess, type MakiPlanRow } from "@/lib/maki"
+import { awardPointsForPartnerOrder } from "@/lib/points"
+
+export type MakiCheckoutCode = "not_found" | "unavailable" | "no_identity" | "onboarding" | "below_min" | "maki_error"
+export class MakiCheckoutError extends Error {
+  constructor(public code: MakiCheckoutCode, message?: string) { super(message ?? code); this.name = "MakiCheckoutError" }
+}
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || ""
+
+/** สร้างออเดอร์ + ขอลิงก์จ่ายจาก Maki — ถ้ามีออเดอร์ค้างของแพลนเดียวกันที่ยังไม่หมดอายุ ใช้ลิงก์เดิม */
+export async function createMakiCheckout(input: { userId: string; provider: string | null | undefined; partnerProductId: string; planKey: string; locale: string }) {
+  const row = await prisma.partner_products.findFirst({
+    where: { id: input.partnerProductId, is_visible: true, coming_soon: false, partner: { is_active: true, integration: "maki_api" } },
+  })
+  if (!row) throw new MakiCheckoutError("not_found")
+  const [live] = await withLiveMinimums([row])
+  const plan = live.plans.find((p) => p.key === input.planKey)
+  if (!plan || !planAvailable(plan)) throw new MakiCheckoutError("unavailable")
+
+  // บัญชีที่จะรับสิทธิ์ = provider ที่ล็อกอินอยู่ (ไม่มีค่อยหยิบ discord/google ที่ผูกไว้) — Maki ต้องการ id ตัวเลข ไม่ใช่ชื่อ/อีเมล
+  const accounts = await prisma.accounts.findMany({
+    where: { user_id: input.userId, provider: { in: ["discord", "google"] } },
+    select: { provider: true, provider_account_id: true },
+  })
+  const acct = accounts.find((a) => a.provider === input.provider) ?? accounts[0]
+  if (!acct) throw new MakiCheckoutError("no_identity")
+
+  const existing = await prisma.partner_orders.findFirst({
+    where: { user_id: input.userId, plan_key: input.planKey, status: "pending", payment_url: { not: null }, expires_at: { gt: new Date(Date.now() + 10 * 60_000) } },
+    orderBy: { created_at: "desc" },
+  })
+  if (existing?.payment_url) return { id: existing.id, payment_url: existing.payment_url, reused: true }
+
+  const id = randomUUID()
+  const ref = `ACS-${id}`
+  await prisma.partner_orders.create({
+    data: {
+      id, partner_order_ref: ref, user_id: input.userId, partner_product_id: row.id, plan_key: plan.key,
+      price_thb: plan.sell_price_thb as number, min_price_thb: plan.min_price_thb,
+      customer_provider: acct.provider, customer_id: acct.provider_account_id,
+    },
+  })
+  try {
+    const prefix = input.locale === "en" ? "" : `/${input.locale}`
+    const res = await makiCreateOrder({
+      items: { [plan.key]: 1 },
+      price_thb: plan.sell_price_thb as number,
+      customer: { provider: acct.provider as "discord" | "google", id: acct.provider_account_id },
+      partner_order_ref: ref,
+      ...(APP_URL ? { redirect_link: `${APP_URL}${prefix}/orders/maki/${id}` } : {}),
+    })
+    await prisma.partner_orders.update({
+      where: { id },
+      data: { maki_order_id: res.order_id, payment_url: res.payment_url, expires_at: res.expires_at ? new Date(res.expires_at) : null, status: res.status === "paid" ? "paid" : "pending" },
+    })
+    return { id, payment_url: res.payment_url, reused: false }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    await prisma.partner_orders.update({ where: { id }, data: { status: "failed", note: msg.slice(0, 500) } }).catch(() => {})
+    if (e instanceof MakiError) {
+      if (e.status === 409) throw new MakiCheckoutError("onboarding", msg)
+      if (e.status === 400 && /min/i.test(msg)) throw new MakiCheckoutError("below_min", msg)
+    }
+    throw new MakiCheckoutError("maki_error", msg)
+  }
+}
+
+type Row = Prisma.partner_ordersGetPayload<Record<string, never>>
+
+/** ถามสถานะจาก Maki แล้วอัปเดตของเรา — paid → บันทึก access + ให้ AC Points · Maki ล่มก็คงสถานะเดิม */
+export async function syncMakiOrder(id: string): Promise<Row | null> {
+  const row = await prisma.partner_orders.findUnique({ where: { id } })
+  if (!row || !row.maki_order_id) return row
+  const needAccess = row.status === "paid" && row.access == null
+  if (row.status !== "pending" && !needAccess) return row
+  let m
+  try { m = await makiGetOrder(row.maki_order_id) } catch { return row }
+  if (m.status === "paid") {
+    const updated = await prisma.partner_orders.update({
+      where: { id },
+      data: {
+        status: "paid",
+        paid_at: row.paid_at ?? (m.stripe?.paid_at ? new Date(m.stripe.paid_at) : new Date()),
+        ...(m.access ? { access: m.access as unknown as Prisma.InputJsonValue } : {}),
+      },
+    })
+    await awardPointsForPartnerOrder(id)
+    return updated
+  }
+  if (row.status !== "pending") return row
+  if (m.status === "expired" || m.status === "failed") return prisma.partner_orders.update({ where: { id }, data: { status: m.status } })
+  // ponytail: ถ้าเลยเวลาหมดอายุไป 1 ชม.แล้ว Maki ยังตอบ pending ถือว่าหมดอายุ กัน poll ค้างตลอดไป
+  if (row.expires_at && row.expires_at.getTime() + 60 * 60_000 < Date.now()) return prisma.partner_orders.update({ where: { id }, data: { status: "expired" } })
+  return row
+}
+
+/** กวาดออเดอร์ค้าง (cron รายวัน / ตอนลูกค้าเปิดหน้าออเดอร์) เผื่อลูกค้าจ่ายแล้วปิดเบราว์เซอร์ก่อนกลับมา */
+export async function syncPendingMakiOrders(opts?: { userId?: string; limit?: number }) {
+  const rows = await prisma.partner_orders.findMany({
+    where: { maki_order_id: { not: null }, OR: [{ status: "pending" }, { status: "paid", access: { equals: Prisma.DbNull } }], ...(opts?.userId ? { user_id: opts.userId } : {}) },
+    select: { id: true }, orderBy: { created_at: "asc" }, take: opts?.limit ?? 100,
+  })
+  let paid = 0
+  for (const r of rows) if ((await syncMakiOrder(r.id))?.status === "paid") paid++
+  return { checked: rows.length, paid }
+}
+
+export type MakiOrderView = {
+  id: string
+  status: string
+  plan_key: string
+  plan: Pick<MakiPlanRow, "label_th" | "label_en" | "duration_days" | "is_lifetime"> | null
+  price_thb: number
+  customer_provider: string
+  customer_id: string
+  access: MakiAccess[] | null
+  payment_url: string | null
+  expires_at: string | null
+  paid_at: string | null
+  created_at: string
+  product: { slug: string; name_th: string; name_en: string; image: string | null } | null
+  preset_link: string | null
+}
+type ProductLite = { external_slug: string; name_th: string; name_en: string; thumbnail_url: string | null; images: unknown; plans: unknown } | null
+
+export function toMakiOrderView(row: Row, product: ProductLite): MakiOrderView {
+  const plan = product ? toPlanRows(product.plans).find((p) => p.key === row.plan_key) ?? null : null
+  const images = Array.isArray(product?.images) ? (product!.images as string[]) : []
+  return {
+    id: row.id, status: row.status, plan_key: row.plan_key,
+    plan: plan ? { label_th: plan.label_th, label_en: plan.label_en, duration_days: plan.duration_days, is_lifetime: plan.is_lifetime } : null,
+    price_thb: Number(row.price_thb), customer_provider: row.customer_provider, customer_id: row.customer_id,
+    access: Array.isArray(row.access) ? (row.access as unknown as MakiAccess[]) : null,
+    payment_url: row.status === "pending" ? row.payment_url : null,
+    expires_at: row.expires_at?.toISOString() ?? null, paid_at: row.paid_at?.toISOString() ?? null, created_at: row.created_at.toISOString(),
+    product: product ? { slug: product.external_slug, name_th: product.name_th, name_en: product.name_en, image: product.thumbnail_url ?? images[0] ?? null } : null,
+    preset_link: plan?.preset_link ?? null,
+  }
+}

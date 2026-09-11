@@ -129,7 +129,7 @@ export default async function Page({ params }: Params) {
     // ── เกม Maki ──
     const pp = await getMakiProduct(slug)
     if (!pp) notFound()
-    const [relatedRaw, usdRate] = await Promise.all([
+    const [relatedRaw, usdRate, pointsCfgMaki] = await Promise.all([
       prisma.products.findMany({
         where: { is_active: true },
         orderBy: [{ is_featured: "desc" }, { created_at: "desc" }],
@@ -140,6 +140,7 @@ export default async function Page({ params }: Params) {
         },
       }),
       getThbToUsdRate(),
+      getPointsConfig(),
     ])
     const related = relatedRaw.map((p) => {
       const prices = p.product_variants.filter((v) => v.variant_type !== "premium").map((v) => Number(v.price))
@@ -151,13 +152,14 @@ export default async function Page({ params }: Params) {
         <Navbar />
         <PartnerProductClient
           product={{
-            slug: pp.external_slug, name_th: pp.name_th, name_en: pp.name_en, partner_name: pp.partner.display_name,
+            id: pp.id, slug: pp.external_slug, name_th: pp.name_th, name_en: pp.name_en, partner_name: pp.partner.display_name,
             description_th: pp.description_html_th, description_en: pp.description_html_en,
             images: pp.thumbnail_url && !images.includes(pp.thumbnail_url) ? [pp.thumbnail_url, ...images] : images,
             plans: pp.plans.map((pl) => ({ key: pl.key, plan: pl.plan, label_th: pl.label_th, label_en: pl.label_en, duration_days: pl.duration_days, is_lifetime: pl.is_lifetime, sell_price_thb: pl.sell_price_thb, available: planAvailable(pl), has_preset: !!pl.preset_link })),
           }}
           related={related}
           usdRate={usdRate}
+          pointsPerBaht={pointsActive(pointsCfgMaki) ? pointsCfgMaki.perBaht : null}
         />
         <Footer />
       </div>

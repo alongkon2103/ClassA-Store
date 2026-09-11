@@ -2,16 +2,18 @@
 import { variantLabel } from "@/lib/i18n/locale"
 
 // หน้าสินค้าของเกมพาร์ทเนอร์แบบขายในเว็บเรา (Maki) — โครงเดียวกับหน้าสินค้าเรา
-// เฟส 1: แสดงข้อมูล/ราคา ปุ่มซื้อยังปิดอยู่ (รอ Stripe ของ Maki พร้อม) · ไม่มีรีวิว/รายการโปรด (ยังไม่ผูก products)
+// เฟส 2: กดซื้อ → POST /api/maki/checkout → redirect ไป Stripe ของ Maki → กลับมาที่ /orders/maki/<id>
+// สิทธิ์ส่งเข้าบัญชี Discord/Google ที่ล็อกอินอยู่ จึงต้องโชว์ให้ชัดก่อนจ่ายว่าปลดล็อกให้บัญชีไหน (ส่งผิด = Maki ไม่คืนเงิน)
 import { useState } from "react"
+import { useSession } from "next-auth/react"
 import { useLocale, useTranslations } from "next-intl"
-import { Link } from "@/i18n/routing"
+import { Link, useRouter } from "@/i18n/routing"
 import { getImageUrl } from "@/lib/getImageUrl"
 import ImageCarousel from "@/components/products/ImageCarousel"
 
 export type PartnerPlan = { key: string; plan: "1m" | "perma"; label_th: string; label_en: string; duration_days: number; is_lifetime: boolean; sell_price_thb: number | null; available: boolean; has_preset: boolean }
 export type PartnerProductData = {
-  slug: string; name_th: string; name_en: string; partner_name: string
+  id: string; slug: string; name_th: string; name_en: string; partner_name: string
   description_th: string | null; description_en: string | null
   images: string[]; plans: PartnerPlan[]
 }
@@ -24,11 +26,15 @@ const HIGHLIGHTS: { key: string; icon: React.ReactNode }[] = [
   { key: "presets", icon: <svg {...hlSvg}><rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg> },
   { key: "tikfinity", icon: <svg {...hlSvg}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
 ]
+const ERR_KEYS: Record<string, string> = { onboarding: "partner_err_onboarding", below_min: "partner_err_below_min", no_identity: "partner_err_no_identity", unavailable: "partner_err_unavailable", not_found: "partner_err_unavailable" }
+const btnBase = "w-full py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-accent to-accent-light shadow-[0_4px_24px_rgba(37,99,235,0.3)] transition-all"
 
-export default function PartnerProductClient({ product, related, usdRate }: { product: PartnerProductData; related: Related[]; usdRate: number | null }) {
+export default function PartnerProductClient({ product, related, usdRate, pointsPerBaht = null }: { product: PartnerProductData; related: Related[]; usdRate: number | null; pointsPerBaht?: number | null }) {
   const t = useTranslations("ProductPage")
   const tc = useTranslations("Common")
   const locale = useLocale()
+  const router = useRouter()
+  const { data: session, status: authStatus } = useSession()
   const isTH = locale === "th"
   const name = isTH ? product.name_th : product.name_en
   const desc = isTH ? (product.description_th || product.description_en) : (product.description_en || product.description_th)
@@ -37,8 +43,23 @@ export default function PartnerProductClient({ product, related, usdRate }: { pr
   const sellable = product.plans.filter((p) => p.available)
   const [pkgKey, setPkgKey] = useState<string | null>(sellable.length ? sellable[sellable.length - 1].key : null)
   const cur = product.plans.find((p) => p.key === pkgKey) ?? null
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
   const baht = (n: number) => `฿${n.toLocaleString()}`
   const usd = (n: number) => (usdRate ? ` / $${(n * usdRate).toFixed(2)}` : "")
+  const pts = (n: number) => Math.floor(n * (pointsPerBaht ?? 0)).toLocaleString()
+  const providerLabel = session?.user?.provider === "google" ? "Google" : session?.user?.provider === "discord" ? "Discord" : "Discord / Google"
+
+  const buy = async () => {
+    if (!cur) return
+    setBusy(true); setErr(null)
+    try {
+      const r = await fetch("/api/maki/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product_id: product.id, plan_key: cur.key, locale }) })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok || !d.payment_url) { setErr(t(ERR_KEYS[d.error] ?? "partner_err_generic")); setBusy(false); return }
+      window.location.assign(d.payment_url) // ไปหน้าจ่ายของ Stripe (Maki) — จ่ายเสร็จเด้งกลับมา /orders/maki/<id>
+    } catch { setErr(t("partner_err_generic")); setBusy(false) }
+  }
 
   return (
     <div className="min-h-screen">
@@ -96,7 +117,10 @@ export default function PartnerProductClient({ product, related, usdRate }: { pr
                   className={`text-left rounded-xl border p-4 transition ${pkgKey === p.key ? "border-accent bg-accent/[0.08]" : "border-border-soft bg-bg-card hover:border-border-light"} disabled:opacity-50 disabled:cursor-not-allowed`}>
                   <div className="text-[0.82rem] font-bold mb-1">{variantLabel(p, locale)}</div>
                   {p.available ? (
-                    <div className="text-[1.15rem] font-extrabold text-accent-lighter">{baht(p.sell_price_thb as number)}<span className="text-[0.68rem] text-text-dim font-medium">{usd(p.sell_price_thb as number)}</span></div>
+                    <>
+                      <div className="text-[1.15rem] font-extrabold text-accent-lighter">{baht(p.sell_price_thb as number)}<span className="text-[0.68rem] text-text-dim font-medium">{usd(p.sell_price_thb as number)}</span></div>
+                      {pointsPerBaht != null && <div className="mt-1 text-[0.68rem] font-bold text-gold">+{pts(p.sell_price_thb as number)} {t("points_unit")}</div>}
+                    </>
                   ) : (
                     <div className="text-[0.75rem] text-text-dim">{t("plan_unavailable")}</div>
                   )}
@@ -104,11 +128,36 @@ export default function PartnerProductClient({ product, related, usdRate }: { pr
               ))}
             </div>
 
-            <button disabled className="w-full py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-2 bg-accent opacity-60 cursor-not-allowed">
-              {t("partner_buy_soon")}{cur?.sell_price_thb != null ? ` · ${baht(cur.sell_price_thb)}` : ""}
-            </button>
+            {pointsPerBaht != null && cur?.sell_price_thb != null && (
+              <p className="mb-3 text-[0.78rem] text-gold flex flex-wrap items-center gap-x-1.5">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="shrink-0"><circle cx="12" cy="12" r="10" /></svg>
+                {t("points_earn", { points: pts(cur.sell_price_thb) })}
+                <span className="text-text-dim">· {t("points_note")}</span>
+              </p>
+            )}
+
+            {/* ซื้อ: ต้องล็อกอิน (Discord/Google) เพราะสิทธิ์ส่งเข้าบัญชีนั้นตรงๆ */}
+            {authStatus === "loading" ? (
+              <button disabled className={`${btnBase} opacity-60`}>{tc("buy_now")}</button>
+            ) : !session ? (
+              <button onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`)} className={btnBase}>
+                {t("partner_login_to_buy")}
+              </button>
+            ) : (
+              <>
+                <div className="rounded-xl border border-accent/25 bg-accent/[0.06] px-4 py-3 mb-3">
+                  <p className="text-[0.82rem] font-bold">{t("partner_unlock_for", { provider: providerLabel, name: session.user?.name ?? "" })}</p>
+                  <p className="text-[0.72rem] text-text-dim mt-0.5 leading-relaxed">{t("partner_unlock_hint")}</p>
+                </div>
+                <button onClick={buy} disabled={!cur || busy} className={`${btnBase} hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0`}>
+                  {busy ? t("partner_redirecting") : `${tc("buy_now")}${cur?.sell_price_thb != null ? ` · ${baht(cur.sell_price_thb)}` : ""}`}
+                </button>
+                {err && <p className="text-[0.78rem] text-hot mt-2">{err}</p>}
+              </>
+            )}
             <p className="text-[0.75rem] text-text-dim leading-relaxed mt-3">{t("partner_delivery_note")}</p>
             {product.plans.some((p) => p.has_preset) && <p className="text-[0.75rem] text-text-dim mt-1">✦ {t("partner_preset_note")}</p>}
+            <p className="text-[0.72rem] text-text-dim mt-1">{t("partner_no_refund")}</p>
           </div>
         </div>
 

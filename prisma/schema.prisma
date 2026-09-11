@@ -629,6 +629,7 @@ model users {
   livegen_projects      livegen_projects[]
   livegen_assets        livegen_assets[]
   point_ledger          point_ledger[]
+  partner_orders        partner_orders[]
 }
 
 // Pre-authorized desktop whitelist grants keyed by EMAIL, for buyers who haven't
@@ -687,6 +688,35 @@ model desktop_tokens {
 // In-app notifications (bell + badge). Generic per-user feed; currently used by
 // the affiliate program (payout paid/rejected, new commission) but reusable for
 // any future event. Best-effort: creation never blocks the source transaction.
+// ── ออเดอร์เกมพาร์ทเนอร์ที่เราขายเองผ่าน Maki Partner API (ลูกค้าจ่ายที่ Stripe ของ Maki, สิทธิ์เข้าบัญชี Discord/Google ตรง) ──
+// แยกจาก orders เพราะสินค้าอยู่ใน partner_products ไม่ใช่ products · status ตาม Maki: pending | paid | expired | failed
+model partner_orders {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String    @db.Uuid
+  partner_product_id String    @db.Uuid
+  plan_key           String    @db.VarChar // เช่น maki_boxing_1m
+  price_thb          Decimal   @db.Decimal(10, 2) // ราคาขายของเรา = ยอดที่ลูกค้าจ่าย (ไม่มีค่าธรรมเนียมเพิ่ม)
+  min_price_thb      Decimal   @db.Decimal(10, 2) // ขั้นต่ำ Maki ตอนสั่ง — ส่วนต่างคือกำไรเราก่อนหักค่าธรรมเนียม Stripe
+  status             String    @default("pending") @db.VarChar
+  partner_order_ref  String    @unique @db.VarChar // ref ที่ส่งให้ Maki (idempotent) = ACS-<id>
+  maki_order_id      String?   @unique @db.VarChar
+  payment_url        String?
+  customer_provider  String    @db.VarChar // discord | google — บัญชีที่รับสิทธิ์
+  customer_id        String    @db.VarChar // Discord user id / Google sub
+  access             Json? // access[] จาก Maki ตอน paid
+  note               String? // ข้อความ error ตอนสร้างไม่สำเร็จ
+  expires_at         DateTime? @db.Timestamptz(6) // ลิงก์จ่ายหมดอายุ (~24 ชม.)
+  paid_at            DateTime? @db.Timestamptz(6)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  user               users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  partner_product    partner_products @relation(fields: [partner_product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  point_ledger       point_ledger[]
+
+  @@index([user_id, created_at], map: "idx_partner_orders_user_created")
+  @@index([status], map: "idx_partner_orders_status")
+}
+
 // ── AC Points: สมุดบัญชีแต้มสะสม (เฟส 1 = ได้แต้มจากการซื้อ เก็บไว้ก่อน ระบบแลกค่อยต่อยอด) ──
 // ยอดคงเหลือ = SUM(delta) ต่อผู้ใช้ · ให้แต้มซ้ำต่อออเดอร์ไม่ได้เพราะ unique (order_id, type)
 model point_ledger {
@@ -698,13 +728,16 @@ model point_ledger {
   base_amount Decimal?  @db.Decimal(10, 2) // ยอดที่ใช้คิดแต้ม = ราคาเกมหลังส่วนลด ไม่รวมค่าธรรมเนียม
   note        String?   @db.VarChar
   created_by  String?   @db.Uuid // แอดมินที่ปรับแต้มเอง
+  partner_order_id String? @db.Uuid // แต้มจากออเดอร์เกมพาร์ทเนอร์ (Maki) — ใช้แทน order_id
   reverses_id String?   @unique(map: "uq_point_ledger_reverses") @db.Uuid // รายการนี้ยกเลิก (กลับค่า) รายการไหน — unique = ยกเลิกได้ครั้งเดียว
   expires_at  DateTime? @db.Timestamptz(6) // null = ไม่หมดอายุ (เผื่อกติกาในอนาคต)
   created_at  DateTime  @default(now()) @db.Timestamptz(6)
   user        users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   order       orders?   @relation(fields: [order_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  partner_order partner_orders? @relation(fields: [partner_order_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@unique([order_id, type], map: "uq_point_ledger_order_type")
+  @@unique([partner_order_id, type], map: "uq_point_ledger_partner_order_type")
   @@index([user_id, created_at], map: "idx_point_ledger_user_created")
 }
 
@@ -1012,6 +1045,7 @@ model partner_products {
   updated_at          DateTime?      @default(now()) @db.Timestamptz(6)
   partner             partner_stores @relation(fields: [partner_id], references: [id], onDelete: Cascade)
   splits              partner_commission_splits[]
+  orders              partner_orders[]
 
   @@unique([partner_id, external_slug])
   @@index([partner_id])

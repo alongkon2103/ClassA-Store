@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       where: { user_id: id },
       orderBy: { created_at: "desc" },
       skip: (page - 1) * limit, take: limit,
-      include: { order: { select: { id: true, products: { select: { name_th: true } } } } },
+      include: { order: { select: { id: true, products: { select: { name_th: true } } } }, partner_order: { select: { id: true, partner_product: { select: { name_th: true } } } } },
     }),
   ])
   const [voids, admins] = await Promise.all([
@@ -36,7 +36,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     user, balance, total, page, limit,
     entries: entries.map((e) => ({
       id: e.id, delta: e.delta, type: e.type, note: e.note, created_at: e.created_at,
-      order_id: e.order?.id ?? null, product: e.order?.products.name_th ?? null,
+      order_id: e.order?.id ?? e.partner_order?.id ?? null, product: e.order?.products.name_th ?? e.partner_order?.partner_product.name_th ?? null,
+      order_href: e.order ? `/orders/${e.order.id}` : e.partner_order ? `/orders/maki/${e.partner_order.id}` : null,
       reverses_id: e.reverses_id, voided: voided.has(e.id), by: e.created_by ? adminName.get(e.created_by) ?? null : null,
     })),
   })

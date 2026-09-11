@@ -115,6 +115,35 @@ export async function awardPointsForOrder(orderId: string, opts?: { silent?: boo
   }
 }
 
+/**
+ * ให้แต้มออเดอร์เกมพาร์ทเนอร์ (Maki) ที่ Maki ยืนยันว่าจ่ายแล้ว — ลูกค้าจ่ายเท่าราคาขายเราพอดี ไม่มีค่าธรรมเนียมบวก
+ * จึงคิดจาก price_thb ทั้งก้อน · กติกา/กันซ้ำเหมือน awardPointsForOrder (unique partner_order_id+type)
+ */
+export async function awardPointsForPartnerOrder(partnerOrderId: string, opts?: { silent?: boolean }): Promise<{ points: number; created: boolean } | null> {
+  try {
+    const cfg = await getPointsConfig()
+    if (!pointsActive(cfg)) return null
+    const o = await prisma.partner_orders.findUnique({ where: { id: partnerOrderId }, select: { id: true, user_id: true, status: true, price_thb: true, paid_at: true, created_at: true } })
+    if (!o || o.status !== "paid") return null
+    const paidAt = o.paid_at ?? o.created_at
+    if (paidAt < cfg.startAt!) return null
+    const base = Number(o.price_thb)
+    const points = pointsForAmount(base, cfg.perBaht)
+    if (points <= 0) return null
+    try {
+      await prisma.point_ledger.create({ data: { user_id: o.user_id, delta: points, type: "earn_purchase", partner_order_id: o.id, base_amount: base } })
+    } catch (err) {
+      if ((err as { code?: string })?.code === "P2002") return { points, created: false }
+      throw err
+    }
+    if (!opts?.silent) await notify({ userId: o.user_id, type: "points_earned", data: { points, partner_order_id: o.id }, link: "/account/coins" })
+    return { points, created: true }
+  } catch (err) {
+    console.error("awardPointsForPartnerOrder failed (non-fatal):", err)
+    return null
+  }
+}
+
 /** ออเดอร์ถูกยกเลิก/คืนเงินหลังได้แต้มไปแล้ว → หักคืนเท่าที่เคยให้ (ทำซ้ำได้ ไม่หักซ้ำ) คืนจำนวนที่หัก */
 export async function reversePointsForOrder(orderId: string, db: Db = prisma): Promise<number> {
   const rows = await db.point_ledger.findMany({ where: { order_id: orderId, type: { in: ["earn_purchase", "reverse_purchase"] } } })
@@ -146,20 +175,38 @@ function missingPointsWhere(startAt: Date, userId?: string): Prisma.ordersWhereI
 export async function reconcileUserPoints(userId: string): Promise<number> {
   const cfg = await getPointsConfig()
   if (!pointsActive(cfg)) return 0
-  const orders = await prisma.orders.findMany({ where: missingPointsWhere(cfg.startAt!, userId), select: { id: true }, take: 50 })
+  const [orders, partnerOrders] = await Promise.all([
+    prisma.orders.findMany({ where: missingPointsWhere(cfg.startAt!, userId), select: { id: true }, take: 50 }),
+    prisma.partner_orders.findMany({ where: missingPartnerPointsWhere(cfg.startAt!, userId), select: { id: true }, take: 50 }),
+  ])
   let n = 0
   for (const o of orders) if ((await awardPointsForOrder(o.id))?.created) n++
+  for (const o of partnerOrders) if ((await awardPointsForPartnerOrder(o.id))?.created) n++
   return n
+}
+
+// ออเดอร์ Maki ที่จ่ายแล้วหลังวันเริ่ม แต่ยังไม่ได้แต้ม
+function missingPartnerPointsWhere(startAt: Date, userId?: string): Prisma.partner_ordersWhereInput {
+  return {
+    ...(userId ? { user_id: userId } : {}),
+    status: "paid",
+    OR: [{ paid_at: { gte: startAt } }, { paid_at: null, created_at: { gte: startAt } }],
+    point_ledger: { none: { type: "earn_purchase" } },
+  }
 }
 
 /** แอดมินกดจากหน้า AC Points: กวาดทั้งร้าน (ครั้งละไม่เกิน 500 ออเดอร์) */
 export async function reconcileAllPoints(): Promise<{ awarded: number; scanned: number }> {
   const cfg = await getPointsConfig()
   if (!pointsActive(cfg)) return { awarded: 0, scanned: 0 }
-  const orders = await prisma.orders.findMany({ where: missingPointsWhere(cfg.startAt!), select: { id: true }, take: 500, orderBy: { paid_at: "asc" } })
+  const [orders, partnerOrders] = await Promise.all([
+    prisma.orders.findMany({ where: missingPointsWhere(cfg.startAt!), select: { id: true }, take: 500, orderBy: { paid_at: "asc" } }),
+    prisma.partner_orders.findMany({ where: missingPartnerPointsWhere(cfg.startAt!), select: { id: true }, take: 500, orderBy: { paid_at: "asc" } }),
+  ])
   let awarded = 0
   for (const o of orders) if ((await awardPointsForOrder(o.id))?.created) awarded++
-  return { awarded, scanned: orders.length }
+  for (const o of partnerOrders) if ((await awardPointsForPartnerOrder(o.id))?.created) awarded++
+  return { awarded, scanned: orders.length + partnerOrders.length }
 }
 
 export type LedgerEntry = {
@@ -185,7 +232,10 @@ export async function getPointsSummary(userId: string, opts?: { reconcile?: bool
           where: { user_id: userId },
           orderBy: { created_at: "desc" },
           take: limit,
-          include: { order: { select: { id: true, products: { select: { name_th: true, name_en: true } } } } },
+          include: {
+            order: { select: { id: true, products: { select: { name_th: true, name_en: true } } } },
+            partner_order: { select: { id: true, partner_product: { select: { name_th: true, name_en: true } } } },
+          },
         })
       : Promise.resolve([]),
   ])
@@ -199,7 +249,11 @@ export async function getPointsSummary(userId: string, opts?: { reconcile?: bool
       type: r.type,
       note: r.note,
       created_at: r.created_at.toISOString(),
-      order: r.order ? { id: r.order.id, product_th: r.order.products.name_th, product_en: r.order.products.name_en } : null,
+      order: r.order
+        ? { id: r.order.id, product_th: r.order.products.name_th, product_en: r.order.products.name_en }
+        : r.partner_order
+          ? { id: r.partner_order.id, product_th: r.partner_order.partner_product.name_th, product_en: r.partner_order.partner_product.name_en }
+          : null,
     })),
   }
 }

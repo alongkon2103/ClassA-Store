@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     prisma.point_ledger.count({ where }),
     prisma.point_ledger.findMany({
       where, orderBy: { created_at: "desc" }, skip: (page - 1) * limit, take: limit,
-      include: { user: { select: { id: true, username: true, email: true } }, order: { select: { id: true, products: { select: { name_th: true } } } } },
+      include: { user: { select: { id: true, username: true, email: true } }, order: { select: { id: true, products: { select: { name_th: true } } } }, partner_order: { select: { id: true, partner_product: { select: { name_th: true } } } } },
     }),
   ])
   const voids = await prisma.point_ledger.findMany({ where: { reverses_id: { in: entries.map((e) => e.id) } }, select: { reverses_id: true } })
@@ -32,7 +32,8 @@ export async function GET(req: NextRequest) {
     total, page, limit,
     entries: entries.map((e) => ({
       id: e.id, delta: e.delta, type: e.type, note: e.note, created_at: e.created_at, user: e.user,
-      order_id: e.order?.id ?? null, product: e.order?.products.name_th ?? null, reverses_id: e.reverses_id, voided: voided.has(e.id),
+      order_id: e.order?.id ?? e.partner_order?.id ?? null, product: e.order?.products.name_th ?? e.partner_order?.partner_product.name_th ?? null,
+      order_href: e.order ? `/orders/${e.order.id}` : e.partner_order ? `/orders/maki/${e.partner_order.id}` : null, reverses_id: e.reverses_id, voided: voided.has(e.id),
     })),
   })
 }

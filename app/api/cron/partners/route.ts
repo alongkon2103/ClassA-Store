@@ -4,6 +4,7 @@
 //   0 4 * * *  curl -s -H "Authorization: Bearer $INTERNAL_API_KEY" https://aclassstore.com/api/cron/partners
 import { NextRequest, NextResponse } from "next/server"
 import { syncAllPartners } from "@/lib/partnerSync"
+import { syncPendingMakiOrders } from "@/lib/makiOrders"
 
 export const runtime = "nodejs"
 
@@ -19,6 +20,8 @@ function authorized(req: NextRequest): boolean {
 export async function GET(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   const result = await syncAllPartners()
+  // ออเดอร์ Maki ที่ลูกค้าจ่ายแล้วแต่ไม่ได้กลับมาเปิดหน้าเว็บ — เช็คสถานะให้ครบ (best-effort)
+  const makiOrders = await syncPendingMakiOrders({ limit: 200 }).catch((e) => ({ error: String(e) }))
   const anyOk = Object.values(result).some((r) => r.ok)
-  return NextResponse.json({ result }, { status: anyOk ? 200 : 502 })
+  return NextResponse.json({ result, makiOrders }, { status: anyOk ? 200 : 502 })
 }

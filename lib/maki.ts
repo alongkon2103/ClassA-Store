@@ -129,3 +129,38 @@ export async function withLiveMinimums<T extends { plans: unknown }>(rows: T[]):
     }),
   }))
 }
+
+// ── ออเดอร์ (เฟส 2: ขายจริง) ──
+export type MakiAccess = { key: string; product: string; server_id: string; days: number; expires_at: string }
+export type MakiOrderCreated = { order_id: string; status: string; payment_url: string; expires_at: string | null; partner_order_ref: string }
+export type MakiOrder = {
+  order_id: string
+  status: "pending" | "paid" | "expired" | "failed"
+  partner_order_ref: string
+  price_thb: number
+  min_total_thb: number
+  customer: { provider: string; id: string }
+  access: MakiAccess[] | null
+  stripe?: { paid_at?: string | null } | null
+  expires_at: string | null
+  created_at: string
+}
+export type MakiWhitelistEntry = { game: string; server_id: string; days_remaining: number; expires_at: string; added_by: string; from_your_orders: boolean }
+
+/** POST /orders — ref ซ้ำ = ได้ออเดอร์เดิมกลับมา (retry ปลอดภัย) · 409 = Stripe onboarding ยังไม่เสร็จ */
+export function makiCreateOrder(body: {
+  items: Record<string, number>
+  price_thb: number
+  customer: { provider: "discord" | "google"; id: string }
+  partner_order_ref: string
+  redirect_link?: string
+}) {
+  return makiFetch<MakiOrderCreated>("/orders", { method: "POST", body: JSON.stringify(body) })
+}
+export function makiGetOrder(makiOrderId: string) {
+  return makiFetch<MakiOrder>(`/orders/${encodeURIComponent(makiOrderId)}`)
+}
+/** สิทธิ์ที่ลูกค้ามีอยู่จริงใน launcher (ทุกแหล่ง) — ใช้ตอน support */
+export function makiWhitelist(provider: string, id: string) {
+  return makiFetch<{ customer: { provider: string; id: string }; access: MakiWhitelistEntry[] }>(`/whitelist?provider=${encodeURIComponent(provider)}&id=${encodeURIComponent(id)}`)
+}
