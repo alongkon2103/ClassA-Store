@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import Stars from "@/components/reviews/Stars"
 import ReviewForm from "@/components/reviews/ReviewForm"
+import type { ReviewPointsState } from "@/lib/points"
 
 type Review = {
   id: string
@@ -22,6 +23,7 @@ type Data = {
   distribution: number[] // index 0 = 1 ดาว
   canReview: boolean
   myReview: { rating: number; comment: string | null } | null
+  reviewPoints?: ReviewPointsState | null
   reviews: Review[]
 }
 
@@ -82,6 +84,7 @@ export default function ProductReviews({ slug, onSummary }: { slug: string; onSu
           slug={slug}
           initial={data.myReview}
           canReview={data.canReview}
+          points={data.reviewPoints ?? null}
           onSaved={load}
           onDeleted={load}
         />

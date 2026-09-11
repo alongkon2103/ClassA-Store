@@ -2,6 +2,7 @@
 //   GET    — รายการรีวิว + สรุปคะแนน (ค่าเฉลี่ย/จำนวน/การกระจาย 1-5 ดาว)
 //   POST   — เขียน/แก้รีวิวของตัวเอง  (ต้องล็อกอิน + ต้องเคยซื้อสินค้านี้และจ่ายเงินแล้ว)
 //   DELETE — ลบรีวิวของตัวเอง
+//   แต้มรีวิว: POST ให้แต้มครั้งแรกของเกมนั้น (เฉพาะซื้อจริง) · DELETE หักคืน — กติกาอยู่ใน lib/points.ts
 //
 // เงื่อนไข "ต้องซื้อจริงก่อน" ตั้งใจใส่ไว้ เพราะร้านนี้ขายจริง — ถ้าใครก็รีวิวได้
 // หน้าเว็บจะเต็มไปด้วยคะแนนปลอมและลูกค้าตัดสินใจจากข้อมูลที่เชื่อไม่ได้
@@ -11,6 +12,7 @@ import { routing } from "@/i18n/routing"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { awardPointsForReview, reversePointsForReview, reviewPointsStates } from "@/lib/points"
 
 export const runtime = "nodejs"
 
@@ -48,13 +50,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
 
   const meId = session?.user?.id ?? null
   const canReview = meId ? await hasPurchased(meId, product.id) : false
+  const myRow = meId ? rows.find((r) => r.user_id === meId) ?? null : null
+  // สถานะแต้มรีวิวของฉันสำหรับเกมนี้ (available = รีวิว/บันทึกตอนนี้ได้แต้ม · earned = ได้แล้ว)
+  const reviewPoints = meId && canReview
+    ? (await reviewPointsStates(meId, [{ productId: product.id, reviewCreatedAt: myRow?.created_at ?? null }])).states.get(product.id) ?? null
+    : null
 
   return NextResponse.json({
     average,
     count,
     distribution: dist,
     canReview,
-    myReview: meId ? rows.find((r) => r.user_id === meId) ?? null : null,
+    myReview: myRow,
+    reviewPoints,
     reviews: rows.map((r) => ({
       id: r.id,
       rating: r.rating,
@@ -101,7 +109,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
   })
 
   revalidateProduct(slug)
-  return NextResponse.json({ ok: true, review: saved })
+  // แต้มรีวิว (ครั้งแรกของเกมนี้เท่านั้น — แก้รีวิวไม่ได้ซ้ำ)
+  const pts = await awardPointsForReview(session.user.id, product.id)
+  return NextResponse.json({ ok: true, review: saved, points: pts?.created ? pts.points : null })
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
@@ -112,9 +122,11 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const product = await productBySlug(slug)
   if (!product) return NextResponse.json({ error: "not_found" }, { status: 404 })
 
-  await prisma.product_reviews.deleteMany({
+  const del = await prisma.product_reviews.deleteMany({
     where: { product_id: product.id, user_id: session.user.id },
   })
+  // ลบรีวิวจริง → หักแต้มรีวิวคืน (ถ้าเคยได้)
+  const reversed = del.count > 0 ? await reversePointsForReview(session.user.id, product.id) : 0
   revalidateProduct(slug)
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, reversed })
 }

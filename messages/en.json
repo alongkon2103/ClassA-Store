@@ -647,7 +647,10 @@
     "points_start_required": "Please set the start time before enabling",
     "points_start_now": "Set to now",
     "points_preview_line": "Example: a ฿750 game → {points} points",
-    "maki_orders": "Maki orders"
+    "maki_orders": "Maki orders",
+    "points_per_review_label": "Points per review (per game)",
+    "points_per_review_hint": "Given once per game, only for games actually bought (free trials don't count). Deleting the review takes the points back. 0 = no review points.",
+    "points_per_review_invalid": "Points per review must be 0 or a positive whole number"
   },
   "AdminDiscountCodes": {
     "title": "Discount Codes",
@@ -1824,7 +1827,9 @@
     "points_earned_title": "AC Points earned",
     "points_earned_body": "+{points} points from your purchase",
     "points_adjusted_title": "AC Points adjusted",
-    "points_adjusted_body": "Staff adjusted your points by {points}"
+    "points_adjusted_body": "Staff adjusted your points by {points}",
+    "points_review_title": "AC Points for your review",
+    "points_review_body": "+{points} points for reviewing a game"
   },
   "AdminStripe": {
     "title": "Stripe",
@@ -1979,7 +1984,7 @@
           },
           {
             "q": "What are AC Points and how do they work?",
-            "a": "AC Points are loyalty points you earn on every game purchase: every ฿100 of the game price earns 1,000 AC Points. Points are calculated from the game price after discounts and never include payment fees (card / PayPal) or free trials. They are added automatically once your payment is confirmed, and you can see your balance under \"My Coins\". Redeeming points for discounts and rewards is coming soon — the points you collect now will stay."
+            "a": "AC Points are loyalty points you earn on every game purchase: every ฿100 of the game price earns 1,000 AC Points. Points are calculated from the game price after discounts and never include payment fees (card / PayPal) or free trials. They are added automatically once your payment is confirmed, and you can see your balance under \"My Coins\". Redeeming points for discounts and rewards is coming soon — the points you collect now will stay. Reviewing a game you bought also earns points (once per game)."
           }
         ]
       }
@@ -2002,7 +2007,11 @@
     "tab_detail": "Details",
     "tab_reviews": "Reviews",
     "tab_faq": "FAQ",
-    "no_rating": "No ratings yet"
+    "no_rating": "No ratings yet",
+    "points_hint": "Review this game and earn {points} AC Points",
+    "points_earned_line": "You earned {points} AC Points for this review",
+    "saved_points": "Review saved · you earned {points} AC Points",
+    "delete_points_confirm": "Delete this review? The {points} AC Points you earned from it will be taken back, and reviewing this game again won't earn points."
   },
   "Account": {
     "member": "Member",
@@ -2083,7 +2092,16 @@
     "coins_type_earn_purchase": "Earned from a purchase",
     "coins_type_reverse_purchase": "Reversed (order cancelled)",
     "coins_type_adjust_admin": "Adjusted by staff",
-    "coins_order": "Order: {product}"
+    "coins_order": "Order: {product}",
+    "rev_points_banner": "Review a game you bought and earn {points} AC Points",
+    "rev_points_left": "{n} games still waiting for your review · up to {total} points",
+    "rev_points_rules": "Once per game, only for games you actually paid for (free trials don't count). Editing keeps your points; deleting a review takes them back and that game won't earn again.",
+    "rev_points_badge": "+{points} pts",
+    "rev_points_earned": "Earned {points} pts",
+    "coins_type_earn_review": "Earned from a review",
+    "coins_type_reverse_review": "Taken back (review deleted)",
+    "coins_rule_review": "Review a game you bought = {points} AC Points per game",
+    "coins_go_review": "Go to my reviews"
   },
   "Editor": {
     "untitled": "Untitled project",
@@ -2357,6 +2375,9 @@
     "ledger_search_placeholder": "Search username / email",
     "rate_examples_title": "How points are calculated",
     "rate_example_game": "Game price {amount}",
-    "rate_fee_note": "Card / PayPal fees and free trials never count. Points are calculated from the game price after discounts."
+    "rate_fee_note": "Card / PayPal fees and free trials never count. Points are calculated from the game price after discounts.",
+    "type_review": "Review",
+    "type_reverse_review": "Review taken back",
+    "rate_example_review": "Review a bought game (per game)"
   }
 }

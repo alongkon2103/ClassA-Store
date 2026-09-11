@@ -17,6 +17,8 @@ export default function CoinsClient({ summary }: { summary: PointsSummary }) {
     switch (e.type) {
       case "earn_purchase": return { title: t("coins_type_earn_purchase"), sub: product ? t("coins_order", { product }) : null }
       case "reverse_purchase": return { title: t("coins_type_reverse_purchase"), sub: product ? t("coins_order", { product }) : null }
+      case "earn_review": return { title: t("coins_type_earn_review"), sub: product || null }
+      case "reverse_review": return { title: t("coins_type_reverse_review"), sub: product || null }
       case "adjust_admin": return { title: t("coins_type_adjust_admin"), sub: e.note }
       default: return { title: e.type, sub: e.note }
     }
@@ -52,6 +54,17 @@ export default function CoinsClient({ summary }: { summary: PointsSummary }) {
               <p className="text-[0.78rem] text-text-muted leading-[1.6] mt-1">{t("coins_rule_note")}</p>
             </div>
           </div>
+          {summary.perReview > 0 && (
+            <div className="flex items-start gap-3">
+              <span className="w-9 h-9 rounded-lg bg-gold/10 text-gold flex items-center justify-center shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+              </span>
+              <div>
+                <p className="text-[0.9rem] font-bold">{t("coins_rule_review", { points: summary.perReview.toLocaleString() })}</p>
+                <Link href="/account/reviews" className="text-[0.75rem] text-accent-light hover:underline">{t("coins_go_review")} →</Link>
+              </div>
+            </div>
+          )}
           <div className="rounded-lg border border-accent/20 bg-accent/[0.06] px-4 py-3">
             <p className="text-[0.8rem] font-bold text-accent-light">{t("coins_soon_title")}</p>
             <p className="text-[0.75rem] text-text-muted leading-[1.6] mt-0.5">{t("coins_soon_body")}</p>

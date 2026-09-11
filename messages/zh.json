@@ -371,7 +371,11 @@
     "tab_detail": "详情",
     "tab_reviews": "评价",
     "tab_faq": "常见问题",
-    "no_rating": "暂无评分"
+    "no_rating": "暂无评分",
+    "points_hint": "评价这款游戏可获得 {points} AC Points",
+    "points_earned_line": "已通过此评价获得 {points} AC Points",
+    "saved_points": "评价已保存 · 获得 {points} AC Points",
+    "delete_points_confirm": "删除此评价？通过评价获得的 {points} AC Points 将被扣回，重新评价这款游戏也不会再获得积分。"
   },
   "Faq": {
     "title": "常见问题",
@@ -451,7 +455,7 @@
           },
           {
             "q": "什么是 AC Points？如何使用？",
-            "a": "AC Points 是每次购买游戏时获得的积分：游戏价格每 ฿100 可获得 1,000 AC Points。积分按折后游戏价格计算，不包含支付手续费（银行卡 / PayPal），免费试用也不获得积分。付款确认后积分会自动到账，可在「我的金币」查看余额。兑换折扣和奖励的功能即将开放，现在累积的积分会一直保留。"
+            "a": "AC Points 是每次购买游戏时获得的积分：游戏价格每 ฿100 可获得 1,000 AC Points。积分按折后游戏价格计算，不包含支付手续费（银行卡 / PayPal），免费试用也不获得积分。付款确认后积分会自动到账，可在「我的金币」查看余额。兑换折扣和奖励的功能即将开放，现在累积的积分会一直保留。评价已购买的游戏也能获得积分（每款一次）。"
           }
         ]
       }
@@ -518,7 +522,9 @@
     "points_earned_title": "获得 AC Points",
     "points_earned_body": "购买获得 +{points} 积分",
     "points_adjusted_title": "AC Points 已调整",
-    "points_adjusted_body": "客服调整了你的积分 {points}"
+    "points_adjusted_body": "客服调整了你的积分 {points}",
+    "points_review_title": "评价获得 AC Points",
+    "points_review_body": "评价游戏获得 +{points} 积分"
   },
   "DesktopLogin": {
     "title": "登录应用",
@@ -883,7 +889,16 @@
     "coins_type_earn_purchase": "购买获得",
     "coins_type_reverse_purchase": "已撤销（订单取消）",
     "coins_type_adjust_admin": "客服调整",
-    "coins_order": "订单：{product}"
+    "coins_order": "订单：{product}",
+    "rev_points_banner": "评价已购买的游戏，每款获得 {points} AC Points",
+    "rev_points_left": "还有 {n} 款游戏可评价 · 最多可再获得 {total} 积分",
+    "rev_points_rules": "每款游戏仅一次，仅限实际购买的游戏（免费试用不计）。修改评价积分不变；删除评价会扣回积分，重新评价同一款游戏也不会再获得积分。",
+    "rev_points_badge": "+{points} 积分",
+    "rev_points_earned": "已获得 {points} 积分",
+    "coins_type_earn_review": "评价获得",
+    "coins_type_reverse_review": "扣回（删除评价）",
+    "coins_rule_review": "评价已购买的游戏 = 每款 {points} AC Points",
+    "coins_go_review": "前往我的评价"
   },
   "Editor": {
     "untitled": "未命名项目",

@@ -97,6 +97,8 @@ export default function NotificationBell() {
         return { icon: "coin", tone: "amber", title: t("commission_earned_title"), body: t("commission_earned_body", { amount: baht(d.amount) }) }
       case "points_earned":
         return { icon: "coin", tone: "amber", title: t("points_earned_title"), body: t("points_earned_body", { points: Number(d.points ?? 0).toLocaleString() }) }
+      case "points_review":
+        return { icon: "coin", tone: "amber", title: t("points_review_title"), body: t("points_review_body", { points: Number(d.points ?? 0).toLocaleString() }) }
       case "points_adjusted":
         return { icon: "coin", tone: "amber", title: t("points_adjusted_title"), body: t("points_adjusted_body", { points: (Number(d.points ?? 0) > 0 ? "+" : "") + Number(d.points ?? 0).toLocaleString() }) }
       default:

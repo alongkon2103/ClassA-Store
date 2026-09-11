@@ -9,15 +9,18 @@
 import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import Stars from "./Stars"
+import type { ReviewPointsState } from "@/lib/points"
 
 export type MyReview = { rating: number; comment: string | null } | null
 
-export default function ReviewForm({ slug, initial, canReview, onSaved, onDeleted, compact = false }: {
+export default function ReviewForm({ slug, initial, canReview, points, onSaved, onDeleted, compact = false }: {
   slug: string
   initial?: MyReview
   canReview?: boolean
-  onSaved?: (review: { rating: number; comment: string | null }) => void
-  onDeleted?: () => void
+  /** สถานะแต้มรีวิวของเกมนี้ (available = รีวิวแล้วได้แต้ม · earned = ได้แล้ว) — โหมดโหลดเองอ่านจาก API */
+  points?: ReviewPointsState | null
+  onSaved?: (review: { rating: number; comment: string | null }, pointsEarned: number | null) => void
+  onDeleted?: (pointsReversed: number) => void
   /** ไม่มีกรอบการ์ด (ใช้ตอนวางในการ์ด/โมดัลที่มีกรอบอยู่แล้ว) */
   compact?: boolean
 }) {
@@ -29,6 +32,7 @@ export default function ReviewForm({ slug, initial, canReview, onSaved, onDelete
   const [comment, setComment] = useState(initial?.comment ?? "")
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  const [pts, setPts] = useState<ReviewPointsState | null>(points ?? null)
 
   useEffect(() => {
     if (!selfLoad) return
@@ -42,6 +46,7 @@ export default function ReviewForm({ slug, initial, canReview, onSaved, onDelete
         setAllowed(!!d.canReview)
         setRating(d.myReview?.rating ?? 0)
         setComment(d.myReview?.comment ?? "")
+        setPts(d.reviewPoints ?? null)
       })
     return () => { alive = false }
   }, [selfLoad, slug])
@@ -56,8 +61,13 @@ export default function ReviewForm({ slug, initial, canReview, onSaved, onDelete
         body: JSON.stringify({ rating, comment }),
       })
       if (r.ok) {
+        const d = await r.json().catch(() => ({}))
+        const earned = typeof d.points === "number" && d.points > 0 ? d.points : null
         const saved = { rating, comment: comment.trim() || null }
-        setMine(saved); setMsg(t("saved")); onSaved?.(saved)
+        setMine(saved)
+        setMsg(earned ? t("saved_points", { points: earned.toLocaleString() }) : t("saved"))
+        if (earned) setPts({ state: "earned", points: earned })
+        onSaved?.(saved, earned)
       } else {
         const d = await r.json().catch(() => null)
         setMsg(d?.error === "must_purchase" ? t("must_purchase") : d?.error === "unauthorized" ? t("login_first") : t("error"))
@@ -67,10 +77,17 @@ export default function ReviewForm({ slug, initial, canReview, onSaved, onDelete
 
   const remove = async () => {
     if (busy) return
+    // ได้แต้มจากรีวิวนี้แล้ว → เตือนก่อนว่าลบแล้วโดนหักคืน
+    if (pts?.state === "earned" && !window.confirm(t("delete_points_confirm", { points: pts.points.toLocaleString() }))) return
     setBusy(true)
     try {
       const r = await fetch(`/api/reviews/${slug}`, { method: "DELETE" })
-      if (r.ok) { setMine(null); setRating(0); setComment(""); setMsg(null); onDeleted?.() }
+      if (r.ok) {
+        const d = await r.json().catch(() => ({}))
+        const reversed = Number(d.reversed) || 0
+        if (reversed) setPts({ state: "none", points: 0 })
+        setMine(null); setRating(0); setComment(""); setMsg(null); onDeleted?.(reversed)
+      }
     } finally { setBusy(false) }
   }
 
@@ -82,6 +99,15 @@ export default function ReviewForm({ slug, initial, canReview, onSaved, onDelete
   return (
     <form onSubmit={submit} className={compact ? "" : "bg-bg-card border border-border-soft rounded-[14px] p-5"}>
       <p className="text-[0.9rem] font-bold mb-3">{mine ? t("edit_title") : t("write_title")}</p>
+      {pts?.state === "available" && (
+        <p className="-mt-1.5 mb-3 text-[0.75rem] font-semibold text-gold flex items-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="shrink-0"><circle cx="12" cy="12" r="10" /></svg>
+          {t("points_hint", { points: pts.points.toLocaleString() })}
+        </p>
+      )}
+      {pts?.state === "earned" && (
+        <p className="-mt-1.5 mb-3 text-[0.72rem] text-success">✓ {t("points_earned_line", { points: pts.points.toLocaleString() })}</p>
+      )}
       <div className="flex items-center gap-2 mb-3">
         <Stars value={rating} size={22} onPick={setRating} />
         {rating > 0 && <span className="text-[0.8rem] text-text-muted">{rating}/5</span>}

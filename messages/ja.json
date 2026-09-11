@@ -371,7 +371,11 @@
     "tab_detail": "詳細",
     "tab_reviews": "レビュー",
     "tab_faq": "FAQ",
-    "no_rating": "評価はまだありません"
+    "no_rating": "評価はまだありません",
+    "points_hint": "このゲームをレビューすると {points} AC Points",
+    "points_earned_line": "このレビューで {points} AC Points を獲得しました",
+    "saved_points": "レビューを保存しました · {points} AC Points 獲得",
+    "delete_points_confirm": "このレビューを削除しますか？レビューで獲得した {points} AC Points は差し引かれ、このゲームを再レビューしてもポイントは付きません。"
   },
   "Faq": {
     "title": "よくある質問",
@@ -451,7 +455,7 @@
           },
           {
             "q": "AC Pointsとは？どう使えますか？",
-            "a": "AC Pointsはゲームを購入するたびに貯まるポイントです。ゲーム価格 ฿100 ごとに 1,000 AC Points が付与されます。割引後のゲーム価格から計算し、決済手数料（カード / PayPal）や無料お試しは対象外です。支払いが確認されると自動的に加算され、残高は「マイコイン」で確認できます。割引や特典への交換は近日公開予定で、今貯めたポイントはそのまま残ります。"
+            "a": "AC Pointsはゲームを購入するたびに貯まるポイントです。ゲーム価格 ฿100 ごとに 1,000 AC Points が付与されます。割引後のゲーム価格から計算し、決済手数料（カード / PayPal）や無料お試しは対象外です。支払いが確認されると自動的に加算され、残高は「マイコイン」で確認できます。割引や特典への交換は近日公開予定で、今貯めたポイントはそのまま残ります。購入したゲームをレビューするとポイントももらえます（1ゲーム1回）。"
           }
         ]
       }
@@ -518,7 +522,9 @@
     "points_earned_title": "AC Pointsを獲得",
     "points_earned_body": "購入で +{points} ポイント",
     "points_adjusted_title": "AC Pointsの調整",
-    "points_adjusted_body": "スタッフがポイントを {points} 調整しました"
+    "points_adjusted_body": "スタッフがポイントを {points} 調整しました",
+    "points_review_title": "レビューで AC Points 獲得",
+    "points_review_body": "ゲームのレビューで +{points} ポイント"
   },
   "DesktopLogin": {
     "title": "アプリにログイン",
@@ -883,7 +889,16 @@
     "coins_type_earn_purchase": "購入で獲得",
     "coins_type_reverse_purchase": "取り消し（注文キャンセル）",
     "coins_type_adjust_admin": "スタッフによる調整",
-    "coins_order": "注文: {product}"
+    "coins_order": "注文: {product}",
+    "rev_points_banner": "購入したゲームをレビューすると {points} AC Points",
+    "rev_points_left": "あと {n} 本レビューできます · 最大 {total} ポイント",
+    "rev_points_rules": "1ゲームにつき1回、実際に購入したゲームのみ（無料お試しは対象外）。レビューを編集してもポイントはそのまま。削除するとポイントは差し引かれ、同じゲームを再レビューしてもポイントは付きません。",
+    "rev_points_badge": "+{points} ポイント",
+    "rev_points_earned": "{points} ポイント獲得済み",
+    "coins_type_earn_review": "レビューで獲得",
+    "coins_type_reverse_review": "差し引き（レビュー削除）",
+    "coins_rule_review": "購入したゲームのレビュー = 1ゲームにつき {points} AC Points",
+    "coins_go_review": "マイレビューへ"
   },
   "Editor": {
     "untitled": "無題のプロジェクト",

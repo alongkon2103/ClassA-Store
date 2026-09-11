@@ -8,6 +8,10 @@
 // · ออเดอร์ทดลองใช้ (TRIAL), ยอด ฿0, หรือไม่มี user_id (แอดมินบันทึกเอง) ไม่ได้แต้ม
 // · ให้แต้มซ้ำไม่ได้: unique (order_id, type) → เรียก awardPointsForOrder ซ้ำจากทุกทางที่ออเดอร์กลายเป็น paid ได้ปลอดภัย
 // · ยอดคงเหลือ = SUM(delta) ไม่เก็บซ้ำในตาราง users
+//
+// แต้มรีวิว (2026-09-12): รีวิวเกมที่ซื้อจริง (จ่ายแล้ว ไม่ใช่ทดลองใช้ ยอด > 0) ได้ points_per_review ครั้งเดียวต่อเกม
+// · นับเฉพาะรีวิวที่เขียนหลัง points_start_at (ไม่ย้อนหลัง เหมือนการซื้อ) · แก้รีวิวแต้มไม่หาย
+// · ลบรีวิว → หักคืน และรีวิวเกมเดิมใหม่ไม่ได้แต้มอีก (unique user_id+product_id+type)
 import type { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { notify } from "@/lib/notifications"
@@ -16,11 +20,13 @@ export const POINTS_CONFIG_KEYS = {
   enabled: "points_enabled",
   perBaht: "points_per_baht",
   startAt: "points_start_at",
+  perReview: "points_per_review",
 } as const
 export const POINTS_DEFAULT_PER_BAHT = 10
+export const POINTS_DEFAULT_PER_REVIEW = 100
 
-export type PointsConfig = { enabled: boolean; perBaht: number; startAt: Date | null }
-export type LedgerType = "earn_purchase" | "reverse_purchase" | "adjust_admin"
+export type PointsConfig = { enabled: boolean; perBaht: number; startAt: Date | null; perReview: number }
+export type LedgerType = "earn_purchase" | "reverse_purchase" | "adjust_admin" | "earn_review" | "reverse_review"
 
 type Db = Prisma.TransactionClient | typeof prisma
 
@@ -31,10 +37,14 @@ export async function getPointsConfig(db: Db = prisma): Promise<PointsConfig> {
   const perBaht = Number(map[POINTS_CONFIG_KEYS.perBaht])
   const startRaw = map[POINTS_CONFIG_KEYS.startAt]
   const startAt = startRaw ? new Date(startRaw) : null
+  // ไม่ตั้ง = ค่าเริ่มต้น · 0 = ปิดแต้มรีวิว
+  const reviewRaw = map[POINTS_CONFIG_KEYS.perReview]
+  const perReview = reviewRaw === undefined || reviewRaw === "" ? POINTS_DEFAULT_PER_REVIEW : Math.max(0, Math.floor(Number(reviewRaw) || 0))
   return {
     enabled: map[POINTS_CONFIG_KEYS.enabled] === "true",
     perBaht: Number.isFinite(perBaht) && perBaht > 0 ? perBaht : POINTS_DEFAULT_PER_BAHT,
     startAt: startAt && !Number.isNaN(startAt.getTime()) ? startAt : null,
+    perReview,
   }
 }
 
@@ -155,6 +165,96 @@ export async function reversePointsForOrder(orderId: string, db: Db = prisma): P
   return earn.delta
 }
 
+// ── แต้มรีวิว ──
+/** เกมที่ผู้ใช้ "ซื้อจริง" (จ่ายแล้ว ไม่ใช่ทดลองใช้ ยอด > 0) — ทดลองใช้รีวิวได้ แต่ไม่ได้แต้ม */
+async function realPurchaseIds(userId: string, productIds: string[]): Promise<Set<string>> {
+  if (!productIds.length) return new Set()
+  const rows = await prisma.orders.findMany({
+    where: { user_id: userId, product_id: { in: productIds }, status: "paid", order_type: { not: "TRIAL" }, amount: { gt: 0 } },
+    select: { product_id: true }, distinct: ["product_id"],
+  })
+  return new Set(rows.map((r) => r.product_id))
+}
+
+/** ให้แต้มรีวิว — เรียกหลังบันทึกรีวิวทุกครั้งได้ (แก้รีวิวไม่ได้แต้มซ้ำเพราะ unique) · best-effort ไม่ throw */
+export async function awardPointsForReview(userId: string, productId: string, opts?: { silent?: boolean }): Promise<{ points: number; created: boolean } | null> {
+  try {
+    const cfg = await getPointsConfig()
+    if (!pointsActive(cfg) || cfg.perReview <= 0) return null
+    const [review, bought] = await Promise.all([
+      prisma.product_reviews.findUnique({ where: { product_id_user_id: { product_id: productId, user_id: userId } }, select: { created_at: true } }),
+      realPurchaseIds(userId, [productId]),
+    ])
+    if (!review || !bought.has(productId) || (review.created_at ?? new Date(0)) < cfg.startAt!) return null
+    try {
+      await prisma.point_ledger.create({ data: { user_id: userId, delta: cfg.perReview, type: "earn_review", product_id: productId } })
+    } catch (err) {
+      if ((err as { code?: string })?.code === "P2002") return { points: cfg.perReview, created: false } // เคยได้แล้ว
+      throw err
+    }
+    if (!opts?.silent) await notify({ userId, type: "points_review", data: { points: cfg.perReview }, link: "/account/coins" })
+    return { points: cfg.perReview, created: true }
+  } catch (err) {
+    console.error("awardPointsForReview failed (non-fatal):", err)
+    return null
+  }
+}
+
+/** ลบรีวิว → หักแต้มรีวิวคืนครั้งเดียว (unique กันหักซ้ำ) คืนจำนวนที่หัก */
+export async function reversePointsForReview(userId: string, productId: string): Promise<number> {
+  try {
+    const rows = await prisma.point_ledger.findMany({ where: { user_id: userId, product_id: productId, type: { in: ["earn_review", "reverse_review"] } } })
+    const earn = rows.find((r) => r.type === "earn_review")
+    if (!earn || rows.some((r) => r.type === "reverse_review")) return 0
+    await prisma.point_ledger.create({ data: { user_id: userId, delta: -earn.delta, type: "reverse_review", product_id: productId, note: "review deleted" } })
+    return earn.delta
+  } catch (err) {
+    if ((err as { code?: string })?.code === "P2002") return 0
+    console.error("reversePointsForReview failed (non-fatal):", err)
+    return 0
+  }
+}
+
+export type ReviewPointsState = { state: "earned" | "available" | "none"; points: number }
+
+/**
+ * สถานะแต้มรีวิวต่อเกม สำหรับหน้า "รีวิวของฉัน" / ฟอร์มรีวิว
+ * earned = ได้แล้ว (ยังไม่ถูกหักคืน) · available = รีวิว/บันทึกตอนนี้จะได้ · none = ไม่ได้ (ทดลองใช้, รีวิวก่อนเปิดระบบ, เคยลบรีวิว, ระบบปิด)
+ */
+export async function reviewPointsStates(userId: string, items: { productId: string; reviewCreatedAt: Date | null }[]): Promise<{ perReview: number; active: boolean; states: Map<string, ReviewPointsState> }> {
+  const cfg = await getPointsConfig()
+  const ids = items.map((i) => i.productId)
+  const [rows, bought] = await Promise.all([
+    ids.length ? prisma.point_ledger.findMany({ where: { user_id: userId, product_id: { in: ids }, type: { in: ["earn_review", "reverse_review"] } }, select: { product_id: true, type: true, delta: true } }) : Promise.resolve([]),
+    realPurchaseIds(userId, ids),
+  ])
+  const active = pointsActive(cfg) && cfg.perReview > 0
+  const states = new Map<string, ReviewPointsState>()
+  for (const it of items) {
+    const earn = rows.find((r) => r.product_id === it.productId && r.type === "earn_review")
+    const reversed = rows.some((r) => r.product_id === it.productId && r.type === "reverse_review")
+    if (earn && !reversed) states.set(it.productId, { state: "earned", points: earn.delta })
+    else if (earn || !active || !bought.has(it.productId) || (it.reviewCreatedAt && it.reviewCreatedAt < cfg.startAt!)) states.set(it.productId, { state: "none", points: 0 })
+    else states.set(it.productId, { state: "available", points: cfg.perReview })
+  }
+  return { perReview: cfg.perReview, active, states }
+}
+
+/** รีวิวหลังวันเริ่มที่ยังไม่มีแถว earn_review (ให้ awardPointsForReview ตัดสินสิทธิ์ซื้อจริงอีกที) */
+async function reviewsMissingPoints(startAt: Date, userId?: string) {
+  const reviews = await prisma.product_reviews.findMany({
+    where: { ...(userId ? { user_id: userId } : {}), created_at: { gte: startAt } },
+    select: { user_id: true, product_id: true }, orderBy: { created_at: "asc" }, take: userId ? 100 : 500,
+  })
+  if (!reviews.length) return []
+  const have = await prisma.point_ledger.findMany({
+    where: { type: "earn_review", user_id: { in: [...new Set(reviews.map((r) => r.user_id))] }, product_id: { in: [...new Set(reviews.map((r) => r.product_id))] } },
+    select: { user_id: true, product_id: true },
+  })
+  const got = new Set(have.map((h) => `${h.user_id}:${h.product_id}`))
+  return reviews.filter((r) => !got.has(`${r.user_id}:${r.product_id}`))
+}
+
 export async function getPointsBalance(userId: string, db: Db = prisma): Promise<number> {
   const agg = await db.point_ledger.aggregate({ where: { user_id: userId }, _sum: { delta: true } })
   return agg._sum.delta ?? 0
@@ -182,6 +282,7 @@ export async function reconcileUserPoints(userId: string): Promise<number> {
   let n = 0
   for (const o of orders) if ((await awardPointsForOrder(o.id))?.created) n++
   for (const o of partnerOrders) if ((await awardPointsForPartnerOrder(o.id))?.created) n++
+  if (cfg.perReview > 0) for (const r of await reviewsMissingPoints(cfg.startAt!, userId)) if ((await awardPointsForReview(r.user_id, r.product_id))?.created) n++
   return n
 }
 
@@ -203,10 +304,12 @@ export async function reconcileAllPoints(): Promise<{ awarded: number; scanned: 
     prisma.orders.findMany({ where: missingPointsWhere(cfg.startAt!), select: { id: true }, take: 500, orderBy: { paid_at: "asc" } }),
     prisma.partner_orders.findMany({ where: missingPartnerPointsWhere(cfg.startAt!), select: { id: true }, take: 500, orderBy: { paid_at: "asc" } }),
   ])
+  const reviews = cfg.perReview > 0 ? await reviewsMissingPoints(cfg.startAt!) : []
   let awarded = 0
   for (const o of orders) if ((await awardPointsForOrder(o.id))?.created) awarded++
   for (const o of partnerOrders) if ((await awardPointsForPartnerOrder(o.id))?.created) awarded++
-  return { awarded, scanned: orders.length + partnerOrders.length }
+  for (const r of reviews) if ((await awardPointsForReview(r.user_id, r.product_id))?.created) awarded++
+  return { awarded, scanned: orders.length + partnerOrders.length + reviews.length }
 }
 
 export type LedgerEntry = {
@@ -218,7 +321,7 @@ export type LedgerEntry = {
   order: { id: string; product_th: string; product_en: string } | null
 }
 
-export type PointsSummary = { balance: number; perBaht: number; active: boolean; entries: LedgerEntry[] }
+export type PointsSummary = { balance: number; perBaht: number; perReview: number; active: boolean; entries: LedgerEntry[] }
 
 /** ยอด + ประวัติสำหรับหน้าบัญชี — ระหว่างนี้กวาดออเดอร์ที่ยังไม่ได้แต้มให้ด้วย (reconcile) */
 export async function getPointsSummary(userId: string, opts?: { reconcile?: boolean; entries?: number }): Promise<PointsSummary> {
@@ -235,6 +338,7 @@ export async function getPointsSummary(userId: string, opts?: { reconcile?: bool
           include: {
             order: { select: { id: true, products: { select: { name_th: true, name_en: true } } } },
             partner_order: { select: { id: true, partner_product: { select: { name_th: true, name_en: true } } } },
+            product: { select: { id: true, name_th: true, name_en: true } },
           },
         })
       : Promise.resolve([]),
@@ -242,6 +346,7 @@ export async function getPointsSummary(userId: string, opts?: { reconcile?: bool
   return {
     balance,
     perBaht: cfg.perBaht,
+    perReview: cfg.perReview,
     active: pointsActive(cfg),
     entries: rows.map((r) => ({
       id: r.id,
@@ -253,7 +358,9 @@ export async function getPointsSummary(userId: string, opts?: { reconcile?: bool
         ? { id: r.order.id, product_th: r.order.products.name_th, product_en: r.order.products.name_en }
         : r.partner_order
           ? { id: r.partner_order.id, product_th: r.partner_order.partner_product.name_th, product_en: r.partner_order.partner_product.name_en }
-          : null,
+          : r.product
+            ? { id: r.product.id, product_th: r.product.name_th, product_en: r.product.name_en }
+            : null,
     })),
   }
 }
