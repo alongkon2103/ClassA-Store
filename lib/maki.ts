@@ -52,8 +52,9 @@ function normalizeProduct(p: Partial<MakiProduct> & { key?: string }): MakiProdu
     min_price_thb: Number(p.min_price_thb ?? 0),
     preset_link: p.preset_link ? String(p.preset_link) : null,
     preview_url: p.preview_url ? String(p.preview_url) : null,
-    icon_url: p.icon_url ? String(p.icon_url) : null,
-    banner_url: p.banner_url ? String(p.banner_url) : null,
+    // API ส่งรูปเป็น http:// มา — บังคับ https กัน mixed content บนเว็บเรา (โฮสต์เขารองรับ https)
+    icon_url: p.icon_url ? String(p.icon_url).replace(/^http:\/\//, "https://") : null,
+    banner_url: p.banner_url ? String(p.banner_url).replace(/^http:\/\//, "https://") : null,
   }
 }
 
