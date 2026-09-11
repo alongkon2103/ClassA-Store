@@ -743,6 +743,7 @@ model point_ledger {
   created_by  String?   @db.Uuid // แอดมินที่ปรับแต้มเอง
   partner_order_id String? @db.Uuid // แต้มจากออเดอร์เกมพาร์ทเนอร์ (Maki) — ใช้แทน order_id
   product_id  String?   @db.Uuid // แต้มจากการรีวิวเกมนี้ (earn_review / reverse_review)
+  partner_product_id String? @db.Uuid // แต้มจากการรีวิวเกม Maki นี้
   reverses_id String?   @unique(map: "uq_point_ledger_reverses") @db.Uuid // รายการนี้ยกเลิก (กลับค่า) รายการไหน — unique = ยกเลิกได้ครั้งเดียว
   expires_at  DateTime? @db.Timestamptz(6) // null = ไม่หมดอายุ (เผื่อกติกาในอนาคต)
   created_at  DateTime  @default(now()) @db.Timestamptz(6)
@@ -750,10 +751,12 @@ model point_ledger {
   order       orders?   @relation(fields: [order_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   partner_order partner_orders? @relation(fields: [partner_order_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   product     products? @relation(fields: [product_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  partner_product partner_products? @relation(fields: [partner_product_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@unique([order_id, type], map: "uq_point_ledger_order_type")
   @@unique([partner_order_id, type], map: "uq_point_ledger_partner_order_type")
   @@unique([user_id, product_id, type], map: "uq_point_ledger_user_product_type") // รีวิวได้แต้มครั้งเดียวต่อเกม
+  @@unique([user_id, partner_product_id, type], map: "uq_point_ledger_user_partner_product_type") // เกม Maki ก็ครั้งเดียวต่อเกม
   @@index([user_id, created_at], map: "idx_point_ledger_user_created")
 }
 
@@ -1063,6 +1066,9 @@ model partner_products {
   splits              partner_commission_splits[]
   orders              partner_orders[]
   discount_codes      discount_codes[] @relation("discount_code_partner_product")
+  reviews             product_reviews[]
+  favorites           product_favorites[]
+  point_ledger        point_ledger[]
 
   @@unique([partner_id, external_slug])
   @@index([partner_id])
@@ -1101,33 +1107,41 @@ model newsletter_subscribers {
 // เพื่อไม่ให้เกิดรีวิวปลอมบนร้านที่ขายจริง
 model product_reviews {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  product_id String    @db.Uuid
+  product_id String?   @db.Uuid // เกมเรา — null เมื่อเป็นรีวิวเกม Maki
+  partner_product_id String? @db.Uuid // เกม Maki (หน้าเกมเหมือนเกมเรา มีรีวิวด้วย)
   user_id    String    @db.Uuid
   rating     Int       // 1-5 ดาว
   comment    String?
   created_at DateTime? @default(now()) @db.Timestamptz(6)
   updated_at DateTime? @default(now()) @db.Timestamptz(6)
-  products   products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products   products?  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  partner_product partner_products? @relation(fields: [partner_product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([product_id, user_id])
+  @@unique([partner_product_id, user_id])
   @@index([product_id])
+  @@index([partner_product_id])
 }
 
 // ปุ่ม "กดใจ" และ "รายการโปรด" บนหน้าสินค้า (ตามดีไซน์) — 1 แถวต่อคนต่อสินค้า
 model product_favorites {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  product_id String    @db.Uuid
+  product_id String?   @db.Uuid // เกมเรา — null เมื่อเป็นเกม Maki
+  partner_product_id String? @db.Uuid // เกม Maki
   user_id    String    @db.Uuid
   liked      Boolean   @default(false)
   saved      Boolean   @default(false)
   created_at DateTime? @default(now()) @db.Timestamptz(6)
   updated_at DateTime? @default(now()) @db.Timestamptz(6)
-  products   products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products   products?  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  partner_product partner_products? @relation(fields: [partner_product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([product_id, user_id])
+  @@unique([partner_product_id, user_id])
   @@index([product_id])
+  @@index([partner_product_id])
 }
 
 // ── LiveGen editor (Canva-style) ──

@@ -15,11 +15,7 @@ import { setRequestLocale } from "next-intl/server"
 import { prisma } from "@/lib/prisma"
 import { getImageUrl } from "@/lib/getImageUrl"
 import ProductPageClient from "./ProductPageClient"
-import PartnerProductClient from "./PartnerProductClient"
-import Navbar from "@/components/Navbar"
-import Footer from "@/components/home/Footer"
 import { getPointsConfig, pointsActive } from "@/lib/points"
-import { getThbToUsdRate } from "@/lib/paypal"
 import { withLiveMinimums, planAvailable } from "@/lib/maki"
 
 export const revalidate = 60
@@ -129,7 +125,7 @@ export default async function Page({ params }: Params) {
     // ── เกม Maki ──
     const pp = await getMakiProduct(slug)
     if (!pp) notFound()
-    const [relatedRaw, usdRate, pointsCfgMaki] = await Promise.all([
+    const [relatedRaw, pointsCfgMaki, ratingAgg] = await Promise.all([
       prisma.products.findMany({
         where: { is_active: true },
         orderBy: [{ is_featured: "desc" }, { created_at: "desc" }],
@@ -139,31 +135,42 @@ export default async function Page({ params }: Params) {
           product_variants: { where: { is_active: true }, select: { price: true, variant_type: true } },
         },
       }),
-      getThbToUsdRate(),
       getPointsConfig(),
+      prisma.product_reviews.aggregate({ where: { partner_product_id: pp.id }, _avg: { rating: true }, _count: { _all: true } }),
     ])
     const related = relatedRaw.map((p) => {
       const prices = p.product_variants.filter((v) => v.variant_type !== "premium").map((v) => Number(v.price))
       return { slug: p.slug, name_th: p.name_th, name_en: p.name_en, image: p.product_images[0]?.url ?? null, min_price: prices.length ? Math.min(...prices) : Number(p.price) }
     })
+    // หน้าเกม Maki = คอมโพเนนต์เดียวกับเกมเรา (รีวิว กดใจ รายการโปรด แชร์ FAQ สินค้าอื่น) + โหมด maki ตอนซื้อ
     const images = Array.isArray(pp.images) ? (pp.images as string[]) : []
+    const gallery = pp.thumbnail_url && !images.includes(pp.thumbnail_url) ? [pp.thumbnail_url, ...images] : images
+    const plans = pp.plans.filter(planAvailable)
+    const videos = (Array.isArray(pp.videos) ? (pp.videos as { youtube_url?: string | null; embed_url?: string | null }[]) : [])
+      .map((v) => v.youtube_url || v.embed_url || "").filter(Boolean)
     return (
-      <div className="min-h-screen bg-bg-base flex flex-col">
-        <Navbar />
-        <PartnerProductClient
-          product={{
-            id: pp.id, slug: pp.external_slug, name_th: pp.name_th, name_en: pp.name_en, partner_name: pp.partner.display_name,
-            description_th: pp.description_html_th, description_en: pp.description_html_en,
-            images: pp.thumbnail_url && !images.includes(pp.thumbnail_url) ? [pp.thumbnail_url, ...images] : images,
-            videos: (Array.isArray(pp.videos) ? (pp.videos as { embed_url?: string; youtube_url?: string | null }[]) : []).filter((v) => !!v.embed_url).map((v) => ({ embed_url: v.embed_url as string, youtube_url: v.youtube_url ?? null })),
-            plans: pp.plans.map((pl) => ({ key: pl.key, plan: pl.plan, label_th: pl.label_th, label_en: pl.label_en, duration_days: pl.duration_days, is_lifetime: pl.is_lifetime, sell_price_thb: pl.sell_price_thb, available: planAvailable(pl), has_preset: !!pl.preset_link })),
-          }}
-          related={related}
-          usdRate={usdRate}
-          pointsPerBaht={pointsActive(pointsCfgMaki) ? pointsCfgMaki.perBaht : null}
-        />
-        <Footer />
-      </div>
+      <ProductPageClient
+        product={{
+          id: pp.id, slug: pp.external_slug, name_th: pp.name_th, name_en: pp.name_en,
+          description_th: pp.description_html_th, description_en: pp.description_html_en,
+          videos, preview_video_url: pp.preview_video_url ?? null,
+          price: plans.length ? Math.min(...plans.map((x) => x.sell_price_thb as number)) : 0,
+          product_images: gallery.map((url) => ({ url })),
+          product_variants: plans.map((x) => ({
+            id: x.key, label_th: x.label_th, label_en: x.label_en, price: x.sell_price_thb as number,
+            variant_type: "normal", is_active: true, stock: 999,
+            duration_type: x.is_lifetime ? "permanent" : "rental", duration_days: x.duration_days,
+          })),
+        }}
+        related={related}
+        reviewSummary={{ average: Math.round((ratingAgg._avg.rating ?? 0) * 10) / 10, count: ratingAgg._count._all }}
+        pointsPerBaht={pointsActive(pointsCfgMaki) ? pointsCfgMaki.perBaht : null}
+        maki={{
+          partnerName: pp.partner.display_name,
+          hasPreset: plans.some((x) => !!x.preset_link),
+          plans: plans.map((x) => ({ key: x.key, label_th: x.label_th, label_en: x.label_en, price: x.sell_price_thb as number, min: x.min_price_thb, duration_days: x.duration_days, is_lifetime: x.is_lifetime })),
+        }}
+      />
     )
   }
 

@@ -119,5 +119,16 @@ export function useAutoDiscounts() {
     [codes],
   )
 
-  return { bestDiscountedPrice, bestAutoCode }
+  // เกม Maki: ราคาหลังโค้ด auto ที่ดีที่สุด ตัดไม่ให้ต่ำกว่าขั้นต่ำ Maki — ตรงกับที่ server คิดตอนจ่ายจริง
+  const bestMakiPrice = useCallback(
+    (partnerProductId: string, price: number, minPrice: number): number | null => {
+      const best = bestAutoCode(partnerProductId, price)
+      if (!best) return null
+      const now = Math.max(minPrice, Math.round((price - best.amountOff) * 100) / 100)
+      return now < price ? now : null
+    },
+    [bestAutoCode],
+  )
+
+  return { bestDiscountedPrice, bestAutoCode, bestMakiPrice }
 }

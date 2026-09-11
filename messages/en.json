@@ -1790,15 +1790,12 @@
     "highlight_new_content": "Fresh content updates all the time",
     "highlight_presets": "Presets and images included — ready to use right away",
     "highlight_tikfinity": "Works smoothly with Tikfinity Pro and other programs",
-    "partner_buy_soon": "Ordering opens soon",
     "partner_delivery_note": "After purchase the game unlocks for the Discord/Google account you're signed in with, via the Maki Launcher — no keys, no waiting",
-    "plan_unavailable": "Price updating, please wait",
     "partner_preset_note": "Presets/templates available to download after purchase",
     "partner_by": "Sold by {name} via A Class Store",
     "points_unit": "pts",
     "points_earn": "Earn {points} AC Points when paid",
     "points_note": "from the game price, fees excluded",
-    "partner_login_to_buy": "Sign in with Discord or Google to buy",
     "partner_unlock_for": "Unlocks for your {provider} account: {name}",
     "partner_unlock_hint": "The game is delivered to this account. Make sure it is the same account you use in the Maki Launcher — a wrong account cannot be refunded.",
     "partner_redirecting": "Taking you to payment...",
@@ -1808,9 +1805,7 @@
     "partner_err_no_identity": "Your account is not linked to Discord or Google. Please sign in with one of them.",
     "partner_err_unavailable": "This package is not available right now.",
     "partner_err_generic": "Could not start the payment. Please try again.",
-    "partner_video_title": "Gameplay video",
-    "partner_discount_capped": "Discount on partner games is limited to ฿{amount} for this package",
-    "partner_discount_auto": "Best available code applied automatically"
+    "partner_discount_capped": "Discount on partner games is limited to ฿{amount} for this package"
   },
   "Notifications": {
     "title": "Notifications",

@@ -1793,15 +1793,12 @@
     "highlight_new_content": "อัปเดตคอนเทนต์ใหม่เสมอ",
     "highlight_presets": "พร้อมพรีเซ็ตและรูปภาพ พร้อมใช้งานได้ทันที",
     "highlight_tikfinity": "รองรับการใช้งานร่วมกับ Tikfinity Pro และโปรแกรมอื่น ๆ ได้อย่างสะดวก",
-    "partner_buy_soon": "เปิดให้สั่งซื้อเร็วๆ นี้",
     "partner_delivery_note": "ซื้อแล้วเกมจะปลดล็อกให้บัญชี Discord/Google ที่คุณล็อกอินไว้ ใช้งานผ่าน Maki Launcher — ไม่มีคีย์ ไม่ต้องรอแอดมิน",
-    "plan_unavailable": "ราคาปรับ รอแอดมิน",
     "partner_preset_note": "มีพรีเซ็ต/เทมเพลตให้ดาวน์โหลดหลังซื้อ",
     "partner_by": "จำหน่ายโดย {name} ผ่าน A Class Store",
     "points_unit": "แต้ม",
     "points_earn": "รับ {points} AC Points เมื่อชำระเงินสำเร็จ",
     "points_note": "คิดจากราคาเกม ไม่รวมค่าธรรมเนียม",
-    "partner_login_to_buy": "เข้าสู่ระบบด้วย Discord หรือ Google เพื่อซื้อ",
     "partner_unlock_for": "ปลดล็อกให้บัญชี {provider}: {name}",
     "partner_unlock_hint": "เกมจะเข้าบัญชีนี้ ตรวจสอบให้แน่ใจว่าเป็นบัญชีเดียวกับที่ใช้ล็อกอิน Maki Launcher — ส่งผิดบัญชีขอคืนเงินไม่ได้",
     "partner_redirecting": "กำลังพาไปหน้าชำระเงิน...",
@@ -1811,9 +1808,7 @@
     "partner_err_no_identity": "บัญชีของคุณไม่ได้ผูกกับ Discord หรือ Google กรุณาเข้าสู่ระบบด้วยช่องทางใดช่องทางหนึ่ง",
     "partner_err_unavailable": "แพ็กเกจนี้ยังไม่พร้อมขายในตอนนี้",
     "partner_err_generic": "เริ่มการชำระเงินไม่สำเร็จ กรุณาลองใหม่",
-    "partner_video_title": "วิดีโอตัวอย่างการเล่น",
-    "partner_discount_capped": "ส่วนลดสำหรับเกมพาร์ทเนอร์แพ็กเกจนี้ใช้ได้สูงสุด ฿{amount}",
-    "partner_discount_auto": "ใส่โค้ดที่ลดได้มากที่สุดให้อัตโนมัติ"
+    "partner_discount_capped": "ส่วนลดสำหรับเกมพาร์ทเนอร์แพ็กเกจนี้ใช้ได้สูงสุด ฿{amount}"
   },
   "Notifications": {
     "title": "การแจ้งเตือน",

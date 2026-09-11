@@ -323,15 +323,12 @@
     "highlight_new_content": "持续更新新内容",
     "highlight_presets": "附带预设和图片 — 开箱即用",
     "highlight_tikfinity": "可与 Tikfinity Pro 及其他软件顺畅配合",
-    "partner_buy_soon": "即将开放购买",
     "partner_delivery_note": "购买后，游戏将通过 Maki Launcher 解锁到你当前登录的 Discord/Google 账号 — 无需密钥，无需等待",
-    "plan_unavailable": "价格更新中，请稍候",
     "partner_preset_note": "购买后可下载预设/模板",
     "partner_by": "由 {name} 通过 A Class Store 销售",
     "points_unit": "积分",
     "points_earn": "付款完成后获得 {points} AC Points",
     "points_note": "按游戏价格计算，不含手续费",
-    "partner_login_to_buy": "使用 Discord 或 Google 登录后购买",
     "partner_unlock_for": "将解锁到你的 {provider} 账号：{name}",
     "partner_unlock_hint": "游戏会发放到此账号。请确认它与你在 Maki Launcher 登录的账号相同——发放到错误账号无法退款。",
     "partner_redirecting": "正在前往付款页面...",
@@ -341,9 +338,7 @@
     "partner_err_no_identity": "你的账号未绑定 Discord 或 Google，请使用其中之一登录。",
     "partner_err_unavailable": "该套餐目前不可购买。",
     "partner_err_generic": "无法发起付款，请重试。",
-    "partner_video_title": "游戏视频",
-    "partner_discount_capped": "该套餐的合作伙伴游戏折扣上限为 ฿{amount}",
-    "partner_discount_auto": "已自动应用最优折扣码"
+    "partner_discount_capped": "该套餐的合作伙伴游戏折扣上限为 ฿{amount}"
   },
   "PartnerModal": {
     "partner_product": "合作伙伴商品",

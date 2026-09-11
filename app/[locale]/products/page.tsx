@@ -84,7 +84,12 @@ export default async function Page({
         ...partnerRowsRaw.filter((r) => r.partner.integration !== "maki_api"),
         ...makiRows.filter((r) => r.plans.some(planAvailable)),
     ]
-    const partnerItems = partnerRows.map((pp) => pp.partner.integration === "maki_api" ? normalizeMaki(pp, ourRate) : normalizePartner(pp, ourRate))
+    // ดาวรีวิวของเกม Maki (มีระบบรีวิวเหมือนเกมเราแล้ว)
+    const makiRatingRows = makiRows.length
+        ? await prisma.product_reviews.groupBy({ by: ["partner_product_id"], where: { partner_product_id: { in: makiRows.map((r) => r.id) } }, _avg: { rating: true }, _count: { _all: true } })
+        : []
+    const makiRatings = new Map(makiRatingRows.map((r) => [r.partner_product_id as string, { avg: r._avg.rating ?? 0, count: r._count._all }]))
+    const partnerItems = partnerRows.map((pp) => pp.partner.integration === "maki_api" ? normalizeMaki(pp, ourRate, makiRatings.get(pp.id)) : normalizePartner(pp, ourRate))
 
     // Unified storefront order. Items the admin placed (display_order != null)
     // come first in that order — real and partner games freely interleaved.
@@ -188,7 +193,7 @@ function normalizePartner(pp: any, fallbackRate: number) {
 // เกม Maki: ขายในเว็บเรา (ไม่มี modal ลิงก์ออก) → การ์ดชี้ไปหน้าสินค้า /products/<slug>
 // แพลน = ราคาที่แอดมินตั้ง (ไม่มีส่วนลด) · USD ใช้เรทเรา
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function normalizeMaki(pp: any, ourRate: number) {
+function normalizeMaki(pp: any, ourRate: number, rating?: { avg: number; count: number }) {
     const plans = toPlanRows(pp.plans).filter(planAvailable)
     const images: string[] = Array.isArray(pp.images) ? pp.images : []
     const from = plans.length ? Math.min(...plans.map((p) => p.sell_price_thb as number)) : 0
@@ -211,8 +216,8 @@ function normalizeMaki(pp: any, ourRate: number) {
         partner_name: pp.partner?.display_name ?? "Partner",
         product_images: (pp.thumbnail_url ? [{ url: pp.thumbnail_url }] : images.slice(0, 1).map((url) => ({ url }))),
         preview_video_url: pp.preview_video_url ?? null,
-        rating_avg: null,
-        rating_count: 0,
+        rating_avg: rating ? rating.avg : null,
+        rating_count: rating?.count ?? 0,
         product_variants: plans.map((pl) => ({
             id: `${pp.id}-${pl.key}`,
             label_th: pl.label_th,

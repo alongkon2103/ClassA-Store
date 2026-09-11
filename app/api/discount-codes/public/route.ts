@@ -22,8 +22,10 @@ export const runtime = "nodejs"
 
 export async function GET(req: NextRequest) {
   try {
+    // productId = เกมเรา · partnerProductId = เกม Maki (popup ซื้อเกม Maki ใช้การ์ดโค้ดชุดเดียวกัน)
     const productId = req.nextUrl.searchParams.get("productId")?.trim()
-    if (!productId) {
+    const partnerProductId = req.nextUrl.searchParams.get("partnerProductId")?.trim()
+    if (!productId && !partnerProductId) {
       return NextResponse.json({ error: "productId required" }, { status: 400 })
     }
 
@@ -35,8 +37,10 @@ export async function GET(req: NextRequest) {
         AND: [
           { OR: [{ starts_at: null }, { starts_at: { lte: now } }] },
           { OR: [{ expires_at: null }, { expires_at: { gt: now } }] },
-          // global codes + codes tied to this product
-          { OR: [{ product_id: null, partner_product_id: null }, { product_id: productId }] },
+          // global codes + codes tied to this product (โค้ดนายหน้าใช้กับเกม Maki ไม่ได้ จึงตัดออกด้วย)
+          partnerProductId
+            ? { owner_user_id: null, OR: [{ product_id: null, partner_product_id: null }, { partner_product_id: partnerProductId }] }
+            : { OR: [{ product_id: null, partner_product_id: null }, { product_id: productId }] },
         ],
       },
       orderBy: { created_at: "desc" },

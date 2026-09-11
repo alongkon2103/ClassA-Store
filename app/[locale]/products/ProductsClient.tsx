@@ -53,7 +53,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
   const locale = useLocale()
   const isTH = locale === "th"
   const searchParams = useSearchParams()
-  const { bestDiscountedPrice, bestAutoCode } = useAutoDiscounts()
+  const { bestDiscountedPrice, bestMakiPrice } = useAutoDiscounts()
 
   const [selected, setSelected] = useState<Item | null>(null)
   const [search, setSearch] = useState("")
@@ -280,9 +280,8 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
                   const base = cheapest ? Number(cheapest.price) : Number(p.price ?? 0)
                   // Judy มีราคาลดมากับข้อมูลอยู่แล้ว · เกมเราและเกม Maki คิดจากโค้ดลดอัตโนมัติ
                   // (Maki: ไม่รวมโค้ดนายหน้า และตัดไม่ให้ต่ำกว่าขั้นต่ำ Maki เหมือนตอนจ่ายจริง)
-                  const makiAuto = p.partner_integration === "maki_api" && cheapest ? bestAutoCode(String(p.id).replace(/^partner:/, ""), base) : null
                   const deal = p.partner_integration === "maki_api"
-                    ? (makiAuto ? Math.max(Number(cheapest.min_price ?? 0), Math.round((base - makiAuto.amountOff) * 100) / 100) : null)
+                    ? (cheapest ? bestMakiPrice(String(p.id).replace(/^partner:/, ""), base, Number(cheapest.min_price ?? 0)) : null)
                     : p.is_partner
                       ? (cheapest ? Number(cheapest.discounted_price) : null)
                       : (cheapest ? bestDiscountedPrice(p.id, base) : null)

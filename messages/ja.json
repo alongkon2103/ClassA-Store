@@ -323,15 +323,12 @@
     "highlight_new_content": "常に新しいコンテンツを追加",
     "highlight_presets": "プリセットと画像付き — すぐに使えます",
     "highlight_tikfinity": "Tikfinity Proや他のアプリともスムーズに連携",
-    "partner_buy_soon": "まもなく販売開始",
     "partner_delivery_note": "購入後、ログイン中のDiscord/GoogleアカウントでMaki Launcherからゲームが解放されます — キー不要、待ち時間なし",
-    "plan_unavailable": "価格更新中です。しばらくお待ちください",
     "partner_preset_note": "購入後にプリセット/テンプレートをダウンロードできます",
     "partner_by": "{name}よりA Class Store経由で販売",
     "points_unit": "ポイント",
     "points_earn": "支払い完了で {points} AC Points 獲得",
     "points_note": "ゲーム価格から計算、手数料を除く",
-    "partner_login_to_buy": "購入するにはDiscordまたはGoogleでログイン",
     "partner_unlock_for": "{provider}アカウント「{name}」でアンロックされます",
     "partner_unlock_hint": "ゲームはこのアカウントに届きます。Maki Launcherで使うアカウントと同じか確認してください。別のアカウントに届いた場合は返金できません。",
     "partner_redirecting": "お支払いページへ移動中...",
@@ -341,9 +338,7 @@
     "partner_err_no_identity": "アカウントがDiscordまたはGoogleと連携していません。いずれかでログインしてください。",
     "partner_err_unavailable": "このパッケージは現在購入できません。",
     "partner_err_generic": "お支払いを開始できませんでした。もう一度お試しください。",
-    "partner_video_title": "ゲームプレイ動画",
-    "partner_discount_capped": "このパッケージのパートナーゲーム割引は最大 ฿{amount} です",
-    "partner_discount_auto": "最もお得なコードを自動適用しました"
+    "partner_discount_capped": "このパッケージのパートナーゲーム割引は最大 ฿{amount} です"
   },
   "PartnerModal": {
     "partner_product": "パートナー商品",

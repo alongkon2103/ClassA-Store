@@ -12,6 +12,7 @@ import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import ProductReviews from "@/components/products/ProductReviews"
 import ProductModal from "@/components/products/ProductModal"
+import MakiBuyModal, { type MakiBuyPlan } from "@/components/products/MakiBuyModal"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { useAutoDiscounts } from "@/lib/useAutoDiscounts"
 
@@ -26,6 +27,8 @@ type Variant = {
   variant_type?: string | null
   is_active?: boolean | null
   stock: number
+  duration_type?: string | null // ใช้ทำป้ายแพ็กเกจภาษา ja/zh (แพลน Maki ส่งมาด้วย)
+  duration_days?: number | null
 }
 type ProductImage = { url: string; alt_text?: string | null }
 type Product = {
@@ -56,8 +59,11 @@ const HIGHLIGHTS: { key: string; icon: React.ReactNode }[] = [
   { key: "tikfinity", icon: <svg {...hlSvg}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
 ]
 
+/** เกม Maki ใช้หน้าเดียวกับเกมเรา — ต่างแค่ราคาโค้ด (ไม่ต่ำกว่าขั้นต่ำ Maki) ป้ายพาร์ทเนอร์ และ popup ซื้อของ Maki */
+export type MakiPageInfo = { partnerName: string; plans: MakiBuyPlan[]; hasPreset: boolean }
+
 export default function ProductPageClient({
-  product, related, reviewSummary, functions = [], features = [], pointsPerBaht = null
+  product, related, reviewSummary, functions = [], features = [], pointsPerBaht = null, maki = null
 }: {
   product: Product
   related: Related[]
@@ -65,6 +71,7 @@ export default function ProductPageClient({
   functions?: { id: string; name: string; label_th: string | null; label_en: string | null }[]
   features?: { id: string; text_th: string; text_en: string | null }[]
   pointsPerBaht?: number | null // อัตรา AC Points ต่อบาท (null = ระบบแต้มปิด) — โชว์แต้มต่อแพ็กเกจและตรงปุ่มซื้อ
+  maki?: MakiPageInfo | null
 }) {
   const t = useTranslations("ProductPage")
   const tc = useTranslations("Common")
@@ -84,7 +91,7 @@ export default function ProductPageClient({
     }
   }, [searchParams])
 
-  const { bestDiscountedPrice } = useAutoDiscounts()
+  const { bestDiscountedPrice, bestMakiPrice } = useAutoDiscounts()
 
   const [buyOpen, setBuyOpen] = useState(false)
   const [imgIdx, setImgIdx] = useState(0)
@@ -106,7 +113,9 @@ export default function ProductPageClient({
 
   // Lowest live price for the headline + sticky bar (with best discount applied).
   const priced = displayVariants.map((v) => {
-    const d = bestDiscountedPrice(product.id, v.price)
+    const d = maki
+      ? bestMakiPrice(product.id, v.price, maki.plans.find((p) => p.key === v.id)?.min ?? 0)
+      : bestDiscountedPrice(product.id, v.price)
     return { v, price: v.price, discounted: d != null && d < v.price ? d : null }
   })
   const cheapest = priced.reduce<(typeof priced)[number] | null>((min, cur) => {
@@ -162,7 +171,7 @@ export default function ProductPageClient({
   // ป้าย "16 ฟังก์ชัน" ยังนับจาก product_functions · รายการจุดเด่นในแท็บรายละเอียดมาจากที่แอดมินพิมพ์เอง (product_features)
   const functionCount = functions.length
   const featureList = features.map((f) => (isTH ? f.text_th : f.text_en || f.text_th) || f.text_th)
-  const typeChip = (product as unknown as { type?: string }).type === "desktop_program" ? "PC" : "Roblox"
+  const typeChip = maki ? `${tc("partner")} · ${maki.partnerName}` : (product as unknown as { type?: string }).type === "desktop_program" ? "PC" : "Roblox"
 
   return (
     <>
@@ -255,6 +264,9 @@ export default function ProductPageClient({
 
               <div className="flex gap-2 mb-4 flex-wrap">
                 <span className="px-4 py-1.5 rounded-lg text-[0.78rem] font-semibold bg-accent/[0.08] border border-accent/[0.12] text-accent-lighter">{typeChip}</span>
+                {maki && (
+                  <span className="px-4 py-1.5 rounded-lg text-[0.78rem] font-semibold bg-violet-500/10 border border-violet-500/20 text-violet-300">{t("partner_by", { name: maki.partnerName })}</span>
+                )}
                 {functionCount > 0 && (
                   <span className="px-4 py-1.5 rounded-lg text-[0.78rem] font-semibold bg-accent/[0.08] border border-accent/[0.12] text-accent-lighter">
                     {t("functions_count", { count: functionCount })}
@@ -332,6 +344,13 @@ export default function ProductPageClient({
                     {tc("buy_now")}
                     {selectedPriced && <span className="opacity-80 font-semibold">· {baht(selectedPriced.discounted ?? selectedPriced.price)}</span>}
                   </button>
+                  {maki && (
+                    <div className="mt-3 text-[0.75rem] text-text-dim leading-relaxed space-y-1">
+                      <p>{t("partner_delivery_note")}</p>
+                      {maki.hasPreset && <p>✦ {t("partner_preset_note")}</p>}
+                      <p>{t("partner_no_refund")}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -456,7 +475,17 @@ export default function ProductPageClient({
 
       {/* ขั้นตอนซื้อใช้ modal เดิม ไม่ทำ checkout ซ้ำ */}
       <AnimatePresence>
-        {buyOpen && <ProductModal product={product} initialVariantId={pkgId ?? undefined} onClose={() => setBuyOpen(false)} />}
+        {buyOpen && (maki ? (
+          <MakiBuyModal
+            product={{ id: product.id, name_th: product.name_th, name_en: product.name_en, image: product.product_images[0]?.url ?? null }}
+            plan={maki.plans.find((p) => p.key === pkgId) ?? maki.plans[0]}
+            pointsPerBaht={pointsPerBaht}
+            hasPreset={maki.hasPreset}
+            onClose={() => setBuyOpen(false)}
+          />
+        ) : (
+          <ProductModal product={product} initialVariantId={pkgId ?? undefined} onClose={() => setBuyOpen(false)} />
+        ))}
       </AnimatePresence>
     </>
   )
