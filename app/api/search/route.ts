@@ -4,6 +4,7 @@
 // partner → หน้าสินค้าพร้อม ?slug= ให้เปิด modal ของ partner (ไม่มีหน้าในเว็บเรา)
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { categorySelect, visibleCategory } from "@/lib/gameCategories"
 
 export const runtime = "nodejs"
 
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
       take: 8,
       orderBy: [{ is_featured: "desc" }, { created_at: "desc" }],
       select: {
-        slug: true, name_th: true, name_en: true, price: true, type: true,
+        slug: true, name_th: true, name_en: true, price: true, category: categorySelect,
         product_images: { orderBy: { sort_order: "asc" }, take: 1, select: { url: true } },
         product_variants: { where: { is_active: true }, select: { price: true, variant_type: true } },
       },
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
         ],
       },
       take: 4,
-      select: { partner: { select: { integration: true } }, external_slug: true, name_th: true, name_en: true, thumbnail_url: true, price_from_thb: true },
+      select: { partner: { select: { integration: true } }, external_slug: true, name_th: true, name_en: true, thumbnail_url: true, price_from_thb: true, category: categorySelect },
     }),
   ])
 
@@ -51,7 +52,8 @@ export async function GET(req: NextRequest) {
         name_en: p.name_en,
         image: p.product_images[0]?.url ?? null,
         price: prices.length ? Math.min(...prices) : Number(p.price),
-        kind: p.type === "desktop_program" ? "PC" : "Roblox",
+        partner: false,
+        category: visibleCategory(p.category),
         href: `/products/${p.slug}`,
       }
     }),
@@ -61,7 +63,8 @@ export async function GET(req: NextRequest) {
       name_en: p.name_en,
       image: p.thumbnail_url,
       price: p.price_from_thb == null ? null : Number(p.price_from_thb),
-      kind: "Partner",
+      partner: true, // รูปเป็น URL เต็มของร้านพาร์ทเนอร์
+      category: visibleCategory(p.category),
       href: p.partner?.integration === "maki_api" ? `/products/${p.external_slug}` : `/products?slug=${encodeURIComponent(p.external_slug)}`,
     })),
   ].slice(0, 8)

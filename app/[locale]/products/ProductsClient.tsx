@@ -1,14 +1,13 @@
 "use client"
 
 // หน้า "สินค้าทั้งหมด" ตามดีไซน์ใหม่: หัวเรื่อง + แบนเนอร์เกมเด่น + ตัวกรองข้าง + แถบค้นหา/เรียง + กริด
-// ตัวกรอง "หมวดหมู่" อิงจาก products.type จริง (Roblox / โปรแกรม PC / Partner)
-// ดีไซน์ต้นแบบมีตัวกรอง "ประเภทเกม" (Adventure/RPG/…) ด้วย แต่ฐานข้อมูลยังไม่มีฟิลด์นั้น
-// เลยยังไม่ใส่ — ถ้าอยากได้ต้องเพิ่มฟิลด์หมวดในสินค้าก่อน
+// ตัวกรอง "หมวดหมู่" = หมวดหมู่เกมที่แอดมินตั้งเอง (game_categories ใช้ร่วมทั้งเกมเราและเกมพาร์ทเนอร์) + "Partner"
 
 import { useEffect, useMemo, useState } from "react"
 import ProductModal from "@/components/products/ProductModal"
 import PartnerModal from "@/components/products/PartnerModal"
 import GameCard from "@/components/GameCard"
+import { categoryName } from "@/lib/gameCategories"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import { Link } from "@/i18n/routing"
@@ -57,7 +56,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
 
   const [selected, setSelected] = useState<Item | null>(null)
   const [search, setSearch] = useState("")
-  const [cat, setCat] = useState<"all" | "roblox" | "pc" | "partner">("all")
+  const [cat, setCat] = useState<string>("all") // "all" | "partner" | id ของหมวด
   const [range, setRange] = useState<(typeof RANGES)[number]["key"]>("all")
   const [sort, setSort] = useState<"latest" | "price_asc" | "price_desc" | "name">("latest")
   const [view, setView] = useState<"grid" | "list">("grid")
@@ -71,19 +70,25 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
     }
   }, [searchParams, initialProducts])
 
-  const catOf = (p: Item) => (p.is_partner ? "partner" : p.type === "desktop_program" ? "pc" : "roblox")
-
-  const counts = useMemo(() => {
-    const c = { all: initialProducts.length, roblox: 0, pc: 0, partner: 0 }
-    for (const p of initialProducts) c[catOf(p) as "roblox" | "pc" | "partner"]++
-    return c
-  }, [initialProducts])
+  // หมวดที่มีเกมอยู่จริง เรียงตามลำดับที่แอดมินตั้ง (หมวดที่ซ่อน server ส่งมาเป็น null อยู่แล้ว)
+  const cats = useMemo(() => {
+    const m = new Map<string, { k: string; label: string; sort: number; n: number }>()
+    for (const p of initialProducts) {
+      const c = p.category
+      if (!c) continue
+      const e = m.get(c.id) ?? { k: c.id, label: categoryName(c, isTH) ?? "", sort: c.sort_order, n: 0 }
+      e.n++
+      m.set(c.id, e)
+    }
+    return [...m.values()].sort((a, b) => a.sort - b.sort || a.label.localeCompare(b.label))
+  }, [initialProducts, isTH])
+  const partnerCount = useMemo(() => initialProducts.filter((p) => p.is_partner).length, [initialProducts])
 
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase()
     const r = RANGES.find((x) => x.key === range)!
     const list = initialProducts.filter((p) => {
-      if (cat !== "all" && catOf(p) !== cat) return false
+      if (cat === "partner" ? !p.is_partner : cat !== "all" && p.category?.id !== cat) return false
       const price = itemPrice(p)
       if (price < r.min || price >= r.max) return false
       if (!q) return true
@@ -178,12 +183,11 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
               <div className="bg-bg-card border border-border-soft rounded-xl p-[18px]">
                 <h3 className="text-[0.82rem] font-bold mb-3.5">{t("category")}</h3>
                 <ul>
-                  {([
-                    { k: "all", label: t("cat_all"), n: counts.all },
-                    { k: "roblox", label: "Roblox", n: counts.roblox },
-                    { k: "pc", label: t("cat_pc"), n: counts.pc },
-                    { k: "partner", label: "Partner", n: counts.partner },
-                  ] as const).filter((c) => c.k === "all" || c.n > 0).map((c) => {
+                  {[
+                    { k: "all", label: t("cat_all"), n: initialProducts.length },
+                    ...cats,
+                    { k: "partner", label: "Partner", n: partnerCount },
+                  ].filter((c) => c.k === "all" || c.n > 0).map((c) => {
                     const active = cat === c.k
                     return (
                       <li key={c.k}>
@@ -294,7 +298,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
                         description={plain(isTH ? p.description_th : p.description_en)}
                         image={p.product_images?.[0]?.url}
                         previewVideo={p.preview_video_url}
-                        platform={p.is_partner ? (p.show_partner_badge ? p.partner_name : undefined) : p.type === "desktop_program" ? "PC" : "Roblox"}
+                        platform={categoryName(p.category, isTH)}
                         badge={p.is_partner ? (p.show_partner_badge ? { text: "PARTNER", kind: "partner" } : null) : p.is_featured ? { text: "HOT", kind: "hot" } : null}
                         price={hasDeal ? (deal as number) : base}
                         oldPrice={hasDeal ? base : null}

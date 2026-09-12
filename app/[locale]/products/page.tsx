@@ -3,6 +3,7 @@ import ProductsClient from "./ProductsClient"
 import { prisma } from "@/lib/prisma"
 import { getThbToUsdRate } from "@/lib/paypal"
 import { withLiveMinimums, planAvailable, toPlanRows } from "@/lib/maki"
+import { categorySelect, visibleCategory } from "@/lib/gameCategories"
 import { setRequestLocale } from "next-intl/server";
 
 // ISR cache the catalog page for 60s. Stock counts may be slightly stale, but
@@ -20,6 +21,7 @@ export default async function Page({
     const products = await prisma.products.findMany({
         where: { is_active: true },
         include: {
+            category: categorySelect,
             product_images: true,
             product_variants: {
                 where: { is_active: true },
@@ -57,6 +59,7 @@ export default async function Page({
         price: Number(p.price),
         commission_pct: Number(p.commission_pct ?? 0),
         is_partner: false,
+        category: visibleCategory(p.category),
         rating_avg: ratings.get(p.id)?.avg ?? null,
         rating_count: ratings.get(p.id)?.count ?? 0,
 
@@ -75,7 +78,7 @@ export default async function Page({
     // to the partner site. Only visible rows from active partners.
     const partnerRowsRaw = await prisma.partner_products.findMany({
         where: { is_visible: true, coming_soon: false, partner: { is_active: true } },
-        include: { partner: { select: { display_name: true, integration: true } } },
+        include: { partner: { select: { display_name: true, integration: true } }, category: categorySelect },
         orderBy: { sort_order: "asc" },
     })
     // เกม Maki: ทับขั้นต่ำด้วยค่าสด แล้วโชว์เฉพาะที่มีแพลนขายได้ (ราคาแอดมิน ≥ ขั้นต่ำ)
@@ -160,6 +163,7 @@ function normalizePartner(pp: any, fallbackRate: number) {
         sort_order: pp.sort_order ?? 0,
         partner_name: pp.partner?.display_name ?? "Partner",
         show_partner_badge: pp.show_partner_badge !== false,
+        category: visibleCategory(pp.category),
         product_images: pp.thumbnail_url ? [{ url: pp.thumbnail_url }] : images.slice(0, 1).map((url) => ({ url })),
         preview_video_url: pp.preview_video_url ?? null,
         // Card display: full (list) price with the final price as the "deal".
@@ -216,6 +220,7 @@ function normalizeMaki(pp: any, ourRate: number, rating?: { avg: number; count: 
         sort_order: pp.sort_order ?? 0,
         partner_name: pp.partner?.display_name ?? "Partner",
         show_partner_badge: pp.show_partner_badge !== false,
+        category: visibleCategory(pp.category),
         product_images: (pp.thumbnail_url ? [{ url: pp.thumbnail_url }] : images.slice(0, 1).map((url) => ({ url }))),
         preview_video_url: pp.preview_video_url ?? null,
         rating_avg: rating ? rating.avg : null,

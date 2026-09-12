@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { Link } from "@/i18n/routing"
 import GameCard from "@/components/GameCard"
+import { categoryName, type CategoryLabel } from "@/lib/gameCategories"
 import { useTranslations, useLocale } from "next-intl"
 import { useAutoDiscounts } from "@/lib/useAutoDiscounts"
 
@@ -31,6 +32,7 @@ export type Product = {
   product_variants: Variant[]
   rating_avg?: number | null
   rating_count?: number | null
+  category?: CategoryLabel | null
 }
 
 type Props = {
@@ -88,7 +90,7 @@ export default function BestSeller({ products, onSelect, usdRate }: Props) {
                   description={plain(isTH ? p.description_th : p.description_en)}
                   image={p.product_images?.[0]?.url}
                   previewVideo={p.preview_video_url}
-                  platform={p.type === "desktop_program" ? "PC" : "Roblox"}
+                  platform={categoryName(p.category, isTH)}
                   badge={p.is_featured ? { text: "HOT", kind: "hot" } : null}
                   price={hasDeal ? (deal as number) : base}
                   oldPrice={hasDeal ? base : null}

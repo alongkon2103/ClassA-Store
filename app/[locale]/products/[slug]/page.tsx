@@ -16,6 +16,7 @@ import { getImageUrl } from "@/lib/getImageUrl"
 import ProductPageClient from "./ProductPageClient"
 import { getPointsConfig, pointsActive } from "@/lib/points"
 import { withLiveMinimums, planAvailable } from "@/lib/maki"
+import { categorySelect, visibleCategory } from "@/lib/gameCategories"
 
 export const revalidate = 60
 
@@ -48,6 +49,7 @@ async function getProduct(slug: string) {
   return prisma.products.findFirst({
     where: { slug, is_active: true },
     include: {
+      category: categorySelect,
       product_images: { orderBy: { sort_order: "asc" } },
       product_videos: { orderBy: { sort_order: "asc" } },
       product_variants: {
@@ -63,7 +65,7 @@ async function getProduct(slug: string) {
 async function getMakiProduct(slug: string) {
   const row = await prisma.partner_products.findFirst({
     where: { external_slug: slug, is_visible: true, coming_soon: false, partner: { is_active: true, integration: "maki_api" } },
-    include: { partner: { select: { display_name: true } } },
+    include: { partner: { select: { display_name: true } }, category: categorySelect },
   })
   if (!row) return null
   const [live] = await withLiveMinimums([row])
@@ -151,6 +153,7 @@ export default async function Page({ params }: Params) {
       <ProductPageClient
         product={{
           id: pp.id, slug: pp.external_slug, name_th: pp.name_th, name_en: pp.name_en,
+          category: visibleCategory(pp.category),
           description_th: pp.description_html_th, description_en: pp.description_html_en,
           videos, preview_video_url: pp.preview_video_url ?? null,
           price: plans.length ? Math.min(...plans.map((x) => x.sell_price_thb as number)) : 0,
@@ -189,6 +192,7 @@ export default async function Page({ params }: Params) {
   const safeProduct = {
     ...product,
     videos: product.product_videos.map((v) => v.url),
+    category: visibleCategory(product.category),
     price: Number(product.price),
     commission_pct: Number(product.commission_pct ?? 0),
     created_at: product.created_at?.toISOString() ?? null,

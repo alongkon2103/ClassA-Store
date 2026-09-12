@@ -116,14 +116,13 @@ export default function GameCard({
       </div>
 
       <div className={`px-3.5 flex-1 flex flex-col justify-center ${isList ? "py-3.5" : "pt-3.5"}`}>
-        {platform && (
-          <span className="text-[0.65rem] font-semibold text-accent-light uppercase tracking-[0.05em] mb-1">{platform}</span>
-        )}
+        {/* จองบรรทัดป้ายหมวดไว้เสมอ (เกมไม่มีหมวด/หมวดถูกซ่อน) ให้การ์ดสูงเท่ากันทุกใบ */}
+        <span className={`text-[0.65rem] font-semibold text-accent-light uppercase tracking-[0.05em] mb-1 ${platform ? "" : "invisible"}`}>{platform || "\u00a0"}</span>
         <h3 className="text-[0.88rem] font-bold mb-1 leading-[1.3] truncate">{name}</h3>
         {/* จองที่ 2 บรรทัดเสมอ (แม้คำอธิบายสั้น/ไม่มี) ให้แถวดาวกับราคาอยู่ระดับเดียวกันทุกใบ */}
         <p className="text-[0.7rem] text-text-dim leading-[1.5] mb-2.5 line-clamp-2 min-h-[2.1rem]">{description}</p>
-        {/* คะแนนรีวิว (ตามดีไซน์ .game-rating) — โชว์เสมอเพื่อให้การ์ดสูงเท่ากัน */}
-        <div className={`flex items-center gap-1 ${isList ? "" : "mb-3"}`}>
+        {/* คะแนนรีวิว (ตามดีไซน์ .game-rating) — โชว์เสมอ + สูงคงที่ (ตัวเลขดาวตัวใหญ่กว่า "ยังไม่มีรีวิว") ให้การ์ดสูงเท่ากัน */}
+        <div className={`flex items-center gap-1 h-5 ${isList ? "" : "mb-3"}`}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className={hasRating ? "text-gold" : "text-border-light"}>
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>

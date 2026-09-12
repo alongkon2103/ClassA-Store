@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { categorySelect, visibleCategory } from "@/lib/gameCategories"
 import { requireUser } from "@/lib/requireUser"
 import { getThbToUsdRate } from "@/lib/paypal"
 import { setRequestLocale } from "next-intl/server"
@@ -26,12 +27,13 @@ export default async function FavoritesPage({ params }: { params: Promise<{ loca
     include: {
       products: {
         include: {
+          category: categorySelect,
           product_images: { orderBy: { sort_order: "asc" }, take: 1 },
           product_variants: { where: { is_active: true }, orderBy: { sort_order: "asc" }, select: { price: true } },
         },
       },
       partner_product: {
-        select: { id: true, external_slug: true, name_th: true, name_en: true, description_html_th: true, description_html_en: true, thumbnail_url: true, images: true, plans: true, preview_video_url: true, show_partner_badge: true },
+        select: { id: true, external_slug: true, name_th: true, name_en: true, description_html_th: true, description_html_en: true, thumbnail_url: true, images: true, plans: true, preview_video_url: true, category: categorySelect },
       },
     },
   })
@@ -56,6 +58,7 @@ export default async function FavoritesPage({ params }: { params: Promise<{ loca
         type: p.type ?? null, price: Number(p.price), preview_video_url: p.preview_video_url ?? null, is_featured: !!p.is_featured,
         image: p.product_images[0]?.url ?? null,
         variants: p.product_variants.map((v) => ({ price: Number(v.price) })),
+        category: visibleCategory(p.category),
         rating_avg: ratings.get(p.id)?.avg ?? null, rating_count: ratings.get(p.id)?.count ?? 0,
       }]
     }
@@ -71,7 +74,7 @@ export default async function FavoritesPage({ params }: { params: Promise<{ loca
       image: m.thumbnail_url ?? images[0] ?? null,
       variants: plans.map((x) => ({ price: x.sell_price_thb as number, min: x.min_price_thb })),
       rating_avg: ratings.get(m.id)?.avg ?? null, rating_count: ratings.get(m.id)?.count ?? 0,
-      maki: true, show_partner_badge: m.show_partner_badge,
+      maki: true, category: visibleCategory(m.category),
     }]
   })
 

@@ -419,6 +419,9 @@ model products {
   type           String   @default("roblox_whitelist") @db.VarChar
   program_key    String?  @unique @db.VarChar
   download_url   String?  // desktop_program: installer (.exe) download link
+  // หมวดหมู่เกม (แอดมินตั้งในหน้า หมวดหมู่เกม) = ป้ายบนการ์ด/ชิปหน้าเกม/ตัวกรองหน้าร้าน · null = ไม่มีหมวด
+  category_id    String?  @db.Uuid
+  category       game_categories? @relation(fields: [category_id], references: [id], onDelete: SetNull)
 
   // New Discount Toggle
   has_limited_discount Boolean? @default(false)
@@ -1050,6 +1053,8 @@ model partner_products {
   coming_soon         Boolean        @default(false)
   is_visible          Boolean        @default(true) // admin show/hide; PRESERVED across syncs
   show_partner_badge  Boolean        @default(true) // ป้าย Partner ในหน้าร้าน/หน้าเกม แอดมินปิดได้ต่อเกม; PRESERVED across syncs
+  category_id         String?        @db.Uuid // หมวดหมู่เกม (ใช้ร่วมกับ products); PRESERVED across syncs
+  category            game_categories? @relation(fields: [category_id], references: [id], onDelete: SetNull)
   sort_order          Int            @default(0) // default order from the partner API
   // Manual storefront position (shared scale with products.display_order).
   // Lower = earlier. null = unordered. PRESERVED across syncs.
@@ -1075,6 +1080,19 @@ model partner_products {
 
   @@unique([partner_id, external_slug])
   @@index([partner_id])
+}
+
+// หมวดหมู่เกมที่แอดมินสร้างเอง ใช้ร่วมกันทั้งเกมเรา (products) และเกมพาร์ทเนอร์ (partner_products)
+// = ป้ายบนการ์ด ชิปหน้าเกม และตัวกรองหน้าร้าน · is_visible=false = ไม่โชว์ป้ายและไม่อยู่ในตัวกรอง
+model game_categories {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name_th          String             @db.VarChar
+  name_en          String             @db.VarChar
+  sort_order       Int                @default(0)
+  is_visible       Boolean            @default(true)
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  products         products[]
+  partner_products partner_products[]
 }
 
 // How one partner game's commission is split among our internal `partners`

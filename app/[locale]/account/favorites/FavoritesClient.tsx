@@ -5,6 +5,7 @@ import { useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import { Link } from "@/i18n/routing"
 import GameCard from "@/components/GameCard"
+import { categoryName, type CategoryLabel } from "@/lib/gameCategories"
 import { useAutoDiscounts } from "@/lib/useAutoDiscounts"
 
 export type FavoriteItem = {
@@ -13,8 +14,8 @@ export type FavoriteItem = {
   type: string | null; price: number; preview_video_url: string | null; is_featured: boolean
   image: string | null; variants: { price: number; min?: number }[] // min = ขั้นต่ำ Maki (เกม Maki เท่านั้น)
   rating_avg: number | null; rating_count: number
-  maki?: boolean // เกมพาร์ทเนอร์ Maki — ราคาขีดฆ่าคิดแบบ Maki ป้ายแพลตฟอร์มเป็น Maki
-  show_partner_badge?: boolean // false = แอดมินปิดป้าย Partner ของเกมนี้ → ไม่โชว์ป้าย "Maki"
+  maki?: boolean // เกมพาร์ทเนอร์ Maki — ราคาขีดฆ่าคิดแบบ Maki (ไม่ต่ำกว่าขั้นต่ำ Maki)
+  category?: CategoryLabel | null // หมวดหมู่เกม → ป้ายบนการ์ด
 }
 
 function plain(html: string | null | undefined, max = 90) {
@@ -70,7 +71,7 @@ export default function FavoritesClient({ items: initial, usdRate }: { items: Fa
                   description={plain(isTH ? p.description_th : p.description_en)}
                   image={p.image}
                   previewVideo={p.preview_video_url}
-                  platform={p.maki ? (p.show_partner_badge === false ? undefined : "Maki") : p.type === "desktop_program" ? "PC" : "Roblox"}
+                  platform={categoryName(p.category, isTH)}
                   badge={p.is_featured ? { text: "HOT", kind: "hot" } : null}
                   price={hasDeal ? (deal as number) : base}
                   oldPrice={hasDeal ? base : null}

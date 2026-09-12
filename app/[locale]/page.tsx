@@ -6,6 +6,7 @@ export const revalidate = 60;
 import HomeClient from "./HomeClient"
 import { prisma } from "@/lib/prisma"
 import { getThbToUsdRate } from "@/lib/paypal"
+import { categorySelect, visibleCategory } from "@/lib/gameCategories"
 import { setRequestLocale } from "next-intl/server";
 
 export default async function Home({
@@ -19,6 +20,7 @@ export default async function Home({
   const rawProducts = await prisma.products.findMany({
     where: { is_active: true, is_featured: true },
     include: {
+      category: categorySelect,
       product_images: true,
       product_variants: {
         where: { is_active: true },
@@ -48,6 +50,7 @@ export default async function Home({
   ...p,
   rating_avg: ratings.get(p.id)?.avg ?? null,
   rating_count: ratings.get(p.id)?.count ?? 0,
+  category: visibleCategory(p.category),
   price: Number(p.price),
   commission_pct: Number(p.commission_pct ?? 0),
 

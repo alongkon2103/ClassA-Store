@@ -1,6 +1,7 @@
 "use client"
 import { variantLabel } from "@/lib/i18n/locale"
 import { youtubeEmbed } from "@/lib/video"
+import { categoryName, type CategoryLabel } from "@/lib/gameCategories"
 
 import { useEffect, useMemo, useState } from "react"
 import ImageCarousel from "@/components/products/ImageCarousel"
@@ -42,6 +43,7 @@ type Product = {
   price: number
   product_images: ProductImage[]
   product_variants: Variant[]
+  category?: CategoryLabel | null // หมวดหมู่เกม (ซ่อน/ไม่มี = null) → ชิปประเภท + breadcrumb
 }
 type Related = { slug: string; name_th: string; name_en: string; image: string | null; min_price: number }
 
@@ -170,8 +172,8 @@ export default function ProductPageClient({
   // ป้าย "16 ฟังก์ชัน" ยังนับจาก product_functions · รายการจุดเด่นในแท็บรายละเอียดมาจากที่แอดมินพิมพ์เอง (product_features)
   const functionCount = functions.length
   const featureList = features.map((f) => (isTH ? f.text_th : f.text_en || f.text_th) || f.text_th)
-  // เกม Maki ที่แอดมินปิดป้าย Partner = ไม่มีชิปประเภท/ชิป "จำหน่ายโดย" และ breadcrumb ข้ามชั้นกลาง
-  const typeChip = maki ? (maki.showBadge ? `${tc("partner")} · ${maki.partnerName}` : null) : (product as unknown as { type?: string }).type === "desktop_program" ? "PC" : "Roblox"
+  // ชิปประเภท + ชั้นกลางของ breadcrumb = หมวดหมู่เกม (ไม่มีหมวด = ไม่มีชิป/ข้ามชั้น) · เกม Maki มีชิป "จำหน่ายโดย" เพิ่มเมื่อเปิดป้าย Partner
+  const typeChip = categoryName(product.category, isTH) ?? null
 
   return (
     <>

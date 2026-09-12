@@ -4,12 +4,13 @@
 // ดึงจาก /api/search (debounce 200ms) · Esc หรือคลิกข้างนอกเพื่อปิด
 import { useEffect, useRef, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
+import { categoryName, type CategoryLabel } from "@/lib/gameCategories"
 import { Link } from "@/i18n/routing"
 import { getImageUrl } from "@/lib/getImageUrl"
 
 type Item = {
   slug: string; name_th: string; name_en: string
-  image: string | null; price: number | null; kind: string; href: string
+  image: string | null; price: number | null; partner: boolean; category: CategoryLabel | null; href: string
 }
 
 export default function NavSearch() {
@@ -86,14 +87,14 @@ export default function NavSearch() {
           {loading && items.length === 0 && <p className="px-3 py-3 text-[0.8rem] text-text-dim">…</p>}
           {!loading && items.length === 0 && <p className="px-3 py-3 text-[0.8rem] text-text-dim">{t("no_result")}</p>}
           {items.map((it) => (
-            <Link key={`${it.kind}-${it.slug}`} href={it.href} onClick={close}
+            <Link key={`${it.partner ? "p" : "o"}-${it.slug}`} href={it.href} onClick={close}
               className="flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-white/[0.04] transition-colors">
               <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0" style={{ background: "var(--gradient-thumb)" }}>
-                {it.image && <img src={it.kind === "Partner" ? it.image : getImageUrl(it.image)} alt="" className="w-full h-full object-cover" />}
+                {it.image && <img src={it.partner ? it.image : getImageUrl(it.image)} alt="" className="w-full h-full object-cover" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[0.82rem] font-semibold truncate">{isTH ? it.name_th : it.name_en}</p>
-                <p className="text-[0.68rem] text-text-dim">{it.kind}</p>
+                <p className="text-[0.68rem] text-text-dim">{categoryName(it.category, isTH)}</p>
               </div>
               {it.price != null && <span className="text-[0.82rem] font-bold text-accent-lighter shrink-0">฿{it.price.toLocaleString()}</span>}
             </Link>
