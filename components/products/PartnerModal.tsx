@@ -30,6 +30,7 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
   const locale = useLocale()
   const isTH = locale === "th"
   const partnerName: string = product.partner_name ?? "Partner"
+  const showBadge = product.show_partner_badge !== false // แอดมินปิดป้าย Partner ได้ต่อเกม (ปุ่มซื้อยังบอกชื่อร้านเพราะลิงก์ออกไปร้านเขา)
   const data: PartnerData = product.partner
 
   const images = data.images ?? []
@@ -95,9 +96,11 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
           </div>
 
           {/* Partner badge, top-left */}
-          <span className="absolute top-3 left-3 bg-violet-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase z-10">
-            {partnerName}
-          </span>
+          {showBadge && (
+            <span className="absolute top-3 left-3 bg-violet-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase z-10">
+              {partnerName}
+            </span>
+          )}
 
           <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center transition">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -139,9 +142,11 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg font-bold text-text-base">{name}</h2>
-            <span className="text-[10px] font-semibold text-violet-300 bg-violet-500/15 border border-violet-500/30 px-2 py-0.5 rounded-full">
-              {t("partner_product")}
-            </span>
+            {showBadge && (
+              <span className="text-[10px] font-semibold text-violet-300 bg-violet-500/15 border border-violet-500/30 px-2 py-0.5 rounded-full">
+                {t("partner_product")}
+              </span>
+            )}
           </div>
 
           {descHtml && (

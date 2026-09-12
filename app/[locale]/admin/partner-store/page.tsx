@@ -51,6 +51,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
       price_from_thb: p.price_from_thb == null ? null : Number(p.price_from_thb),
       plans_count: Array.isArray(p.plans) ? p.plans.length : 0,
       is_visible: p.is_visible,
+      show_partner_badge: p.show_partner_badge,
       sort_order: p.sort_order,
       preview_video_url: p.preview_video_url ?? null,
       description_html_th: p.description_html_th ?? null,

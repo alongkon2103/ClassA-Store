@@ -1049,6 +1049,7 @@ model partner_products {
   commission_pct      Decimal?       @db.Decimal(5, 2)
   coming_soon         Boolean        @default(false)
   is_visible          Boolean        @default(true) // admin show/hide; PRESERVED across syncs
+  show_partner_badge  Boolean        @default(true) // ป้าย Partner ในหน้าร้าน/หน้าเกม แอดมินปิดได้ต่อเกม; PRESERVED across syncs
   sort_order          Int            @default(0) // default order from the partner API
   // Manual storefront position (shared scale with products.display_order).
   // Lower = earlier. null = unordered. PRESERVED across syncs.

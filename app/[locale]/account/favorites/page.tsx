@@ -31,7 +31,7 @@ export default async function FavoritesPage({ params }: { params: Promise<{ loca
         },
       },
       partner_product: {
-        select: { id: true, external_slug: true, name_th: true, name_en: true, description_html_th: true, description_html_en: true, thumbnail_url: true, images: true, plans: true, preview_video_url: true },
+        select: { id: true, external_slug: true, name_th: true, name_en: true, description_html_th: true, description_html_en: true, thumbnail_url: true, images: true, plans: true, preview_video_url: true, show_partner_badge: true },
       },
     },
   })
@@ -71,7 +71,7 @@ export default async function FavoritesPage({ params }: { params: Promise<{ loca
       image: m.thumbnail_url ?? images[0] ?? null,
       variants: plans.map((x) => ({ price: x.sell_price_thb as number, min: x.min_price_thb })),
       rating_avg: ratings.get(m.id)?.avg ?? null, rating_count: ratings.get(m.id)?.count ?? 0,
-      maki: true,
+      maki: true, show_partner_badge: m.show_partner_badge,
     }]
   })
 

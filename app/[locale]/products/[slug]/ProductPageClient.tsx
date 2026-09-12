@@ -59,7 +59,7 @@ const HIGHLIGHTS: { key: string; icon: React.ReactNode }[] = [
 ]
 
 /** เกม Maki ใช้หน้าเดียวกับเกมเรา — ต่างแค่ราคาโค้ด (ไม่ต่ำกว่าขั้นต่ำ Maki) ป้ายพาร์ทเนอร์ และ popup ซื้อของ Maki */
-export type MakiPageInfo = { partnerName: string; plans: MakiBuyPlan[]; hasPreset: boolean }
+export type MakiPageInfo = { partnerName: string; plans: MakiBuyPlan[]; hasPreset: boolean; showBadge: boolean }
 
 export default function ProductPageClient({
   product, related, reviewSummary, functions = [], features = [], pointsPerBaht = null, maki = null
@@ -170,7 +170,8 @@ export default function ProductPageClient({
   // ป้าย "16 ฟังก์ชัน" ยังนับจาก product_functions · รายการจุดเด่นในแท็บรายละเอียดมาจากที่แอดมินพิมพ์เอง (product_features)
   const functionCount = functions.length
   const featureList = features.map((f) => (isTH ? f.text_th : f.text_en || f.text_th) || f.text_th)
-  const typeChip = maki ? `${tc("partner")} · ${maki.partnerName}` : (product as unknown as { type?: string }).type === "desktop_program" ? "PC" : "Roblox"
+  // เกม Maki ที่แอดมินปิดป้าย Partner = ไม่มีชิปประเภท/ชิป "จำหน่ายโดย" และ breadcrumb ข้ามชั้นกลาง
+  const typeChip = maki ? (maki.showBadge ? `${tc("partner")} · ${maki.partnerName}` : null) : (product as unknown as { type?: string }).type === "desktop_program" ? "PC" : "Roblox"
 
   return (
     <>
@@ -182,8 +183,12 @@ export default function ProductPageClient({
           <div className="py-5 text-xs text-text-dim flex items-center gap-1.5 flex-wrap">
             <Link href="/products" className="text-accent-light">{t("breadcrumb_shop")}</Link>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-            <span className="text-accent-light">{typeChip}</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+            {typeChip && (
+              <>
+                <span className="text-accent-light">{typeChip}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+              </>
+            )}
             <span className="truncate max-w-[180px] sm:max-w-none">{name}</span>
           </div>
         </div>
@@ -262,8 +267,8 @@ export default function ProductPageClient({
               <h1 className="text-[1.6rem] sm:text-[2rem] font-black tracking-tight mb-4 leading-tight">{name}</h1>
 
               <div className="flex gap-2 mb-4 flex-wrap">
-                <span className="px-4 py-1.5 rounded-lg text-[0.78rem] font-semibold bg-accent/[0.08] border border-accent/[0.12] text-accent-lighter">{typeChip}</span>
-                {maki && (
+                {typeChip && <span className="px-4 py-1.5 rounded-lg text-[0.78rem] font-semibold bg-accent/[0.08] border border-accent/[0.12] text-accent-lighter">{typeChip}</span>}
+                {maki?.showBadge && (
                   <span className="px-4 py-1.5 rounded-lg text-[0.78rem] font-semibold bg-violet-500/10 border border-violet-500/20 text-violet-300">{t("partner_by", { name: maki.partnerName })}</span>
                 )}
                 {functionCount > 0 && (

@@ -294,8 +294,8 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
                         description={plain(isTH ? p.description_th : p.description_en)}
                         image={p.product_images?.[0]?.url}
                         previewVideo={p.preview_video_url}
-                        platform={p.is_partner ? p.partner_name : p.type === "desktop_program" ? "PC" : "Roblox"}
-                        badge={p.is_partner ? { text: "PARTNER", kind: "partner" } : p.is_featured ? { text: "HOT", kind: "hot" } : null}
+                        platform={p.is_partner ? (p.show_partner_badge ? p.partner_name : undefined) : p.type === "desktop_program" ? "PC" : "Roblox"}
+                        badge={p.is_partner ? (p.show_partner_badge ? { text: "PARTNER", kind: "partner" } : null) : p.is_featured ? { text: "HOT", kind: "hot" } : null}
                         price={hasDeal ? (deal as number) : base}
                         oldPrice={hasDeal ? base : null}
                         usdRate={cheapest?.usd_rate}

@@ -14,6 +14,7 @@ export type FavoriteItem = {
   image: string | null; variants: { price: number; min?: number }[] // min = ขั้นต่ำ Maki (เกม Maki เท่านั้น)
   rating_avg: number | null; rating_count: number
   maki?: boolean // เกมพาร์ทเนอร์ Maki — ราคาขีดฆ่าคิดแบบ Maki ป้ายแพลตฟอร์มเป็น Maki
+  show_partner_badge?: boolean // false = แอดมินปิดป้าย Partner ของเกมนี้ → ไม่โชว์ป้าย "Maki"
 }
 
 function plain(html: string | null | undefined, max = 90) {
@@ -69,7 +70,7 @@ export default function FavoritesClient({ items: initial, usdRate }: { items: Fa
                   description={plain(isTH ? p.description_th : p.description_en)}
                   image={p.image}
                   previewVideo={p.preview_video_url}
-                  platform={p.maki ? "Maki" : p.type === "desktop_program" ? "PC" : "Roblox"}
+                  platform={p.maki ? (p.show_partner_badge === false ? undefined : "Maki") : p.type === "desktop_program" ? "PC" : "Roblox"}
                   badge={p.is_featured ? { text: "HOT", kind: "hot" } : null}
                   price={hasDeal ? (deal as number) : base}
                   oldPrice={hasDeal ? base : null}

@@ -1,5 +1,5 @@
 // PATCH /api/admin/partner-store/products/[id] — แก้ค่าที่เป็นของแอดมินบนเกมพาร์ทเนอร์
-//   ทุกร้าน: is_visible / sort_order / preview_video_url
+//   ทุกร้าน: is_visible / show_partner_badge / sort_order / preview_video_url
 //   ร้านแบบ maki_api เพิ่ม: ชื่อ TH/EN, คำอธิบาย, รูปปก/แกลเลอรี, ราคาขายต่อแพลน (ต้อง ≥ ขั้นต่ำสดจาก Maki)
 // ค่าพวกนี้ PRESERVED ตอน sync — sync ทับเฉพาะขั้นต่ำ/ลิงก์พรีเซ็ต
 import { NextRequest, NextResponse } from "next/server"
@@ -23,6 +23,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const data: Record<string, unknown> = { updated_at: new Date() }
   if (typeof body.is_visible === "boolean") data.is_visible = body.is_visible
+  if (typeof body.show_partner_badge === "boolean") data.show_partner_badge = body.show_partner_badge
   if (typeof body.sort_order === "number") data.sort_order = body.sort_order
   // "" หรือ null = ล้างคลิป · string = ตั้ง
   if ("preview_video_url" in body) data.preview_video_url = body.preview_video_url ? String(body.preview_video_url) : null

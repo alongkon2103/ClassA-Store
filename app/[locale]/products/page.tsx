@@ -159,6 +159,7 @@ function normalizePartner(pp: any, fallbackRate: number) {
         display_order: pp.display_order ?? null,
         sort_order: pp.sort_order ?? 0,
         partner_name: pp.partner?.display_name ?? "Partner",
+        show_partner_badge: pp.show_partner_badge !== false,
         product_images: pp.thumbnail_url ? [{ url: pp.thumbnail_url }] : images.slice(0, 1).map((url) => ({ url })),
         preview_video_url: pp.preview_video_url ?? null,
         // Card display: full (list) price with the final price as the "deal".
@@ -214,6 +215,7 @@ function normalizeMaki(pp: any, ourRate: number, rating?: { avg: number; count: 
         display_order: pp.display_order ?? null,
         sort_order: pp.sort_order ?? 0,
         partner_name: pp.partner?.display_name ?? "Partner",
+        show_partner_badge: pp.show_partner_badge !== false,
         product_images: (pp.thumbnail_url ? [{ url: pp.thumbnail_url }] : images.slice(0, 1).map((url) => ({ url }))),
         preview_video_url: pp.preview_video_url ?? null,
         rating_avg: rating ? rating.avg : null,

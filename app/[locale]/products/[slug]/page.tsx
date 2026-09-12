@@ -82,7 +82,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const first = Array.isArray(pp.images) ? (pp.images as string[])[0] : undefined
     const img = pp.thumbnail_url || first
     return {
-      title: `${name} — ${pp.partner.display_name}`,
+      title: pp.show_partner_badge ? `${name} — ${pp.partner.display_name}` : name,
       description: desc || undefined,
       openGraph: { type: "website", title: name, description: desc || undefined, ...(img ? { images: [{ url: absUrl(img), alt: name }] } : {}) },
     }
@@ -166,6 +166,7 @@ export default async function Page({ params }: Params) {
         pointsPerBaht={pointsActive(pointsCfgMaki) ? pointsCfgMaki.perBaht : null}
         maki={{
           partnerName: pp.partner.display_name,
+          showBadge: pp.show_partner_badge,
           hasPreset: plans.some((x) => !!x.preset_link),
           plans: plans.map((x) => ({ key: x.key, label_th: x.label_th, label_en: x.label_en, price: x.sell_price_thb as number, min: x.min_price_thb, duration_days: x.duration_days, is_lifetime: x.is_lifetime })),
         }}

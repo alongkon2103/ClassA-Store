@@ -17,6 +17,7 @@ type PartnerProduct = {
   price_from_thb: number | null
   plans_count: number
   is_visible: boolean
+  show_partner_badge: boolean
   sort_order: number
   preview_video_url: string | null
   commission_pending_thb: number
@@ -92,12 +93,12 @@ export default function PartnerStoreClient({
     } finally { setSyncing(null) }
   }
 
-  const toggleVisible = async (p: PartnerProduct) => {
+  const toggle = async (p: PartnerProduct, field: "is_visible" | "show_partner_badge") => {
     setBusy(p.id)
     try {
       const r = await fetch(`/api/admin/partner-store/products/${p.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_visible: !p.is_visible }),
+        body: JSON.stringify({ [field]: !p[field] }),
       })
       if (r.ok) router.refresh()
     } finally { setBusy(null) }
@@ -217,7 +218,14 @@ export default function PartnerStoreClient({
                       {t("split_commission")}{p.splits.length ? ` (${p.splits.length})` : ""}
                     </button>
 
-                    <button onClick={() => toggleVisible(p)} disabled={busy === p.id}
+                    {/* ป้าย Partner ในหน้าร้าน/หน้าเกม: สีม่วง = แสดง · ขีดฆ่า = ซ่อน */}
+                    <button onClick={() => toggle(p, "show_partner_badge")} disabled={busy === p.id}
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border transition disabled:opacity-50 ${p.show_partner_badge ? "bg-violet-500 border-violet-500 text-white" : "border-white/15 text-text-muted line-through"}`}
+                      title={`${t("partner_badge")}: ${p.show_partner_badge ? t("visible") : t("hidden")}`}>
+                      {t("partner_badge")}
+                    </button>
+
+                    <button onClick={() => toggle(p, "is_visible")} disabled={busy === p.id}
                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${p.is_visible ? "bg-green-500" : "bg-white/15"} disabled:opacity-50`}
                       title={p.is_visible ? t("visible") : t("hidden")}>
                       <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${p.is_visible ? "translate-x-4" : "translate-x-0.5"}`} />
