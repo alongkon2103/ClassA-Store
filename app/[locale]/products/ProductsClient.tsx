@@ -159,7 +159,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
               <div className="px-7 py-6 flex sm:flex-col items-center sm:items-end justify-between gap-3 sm:border-l border-border-soft">
                 <div className="sm:text-right">
                   <div className="text-[1.4rem] font-extrabold text-text-base whitespace-nowrap">
-                    <span className="text-[0.85rem] font-semibold">฿</span>249
+                    <span className="text-[0.85rem] font-semibold">฿</span>319
                     <span className="text-[0.75rem] font-medium text-text-dim"> / {t("tikkies_unit")}</span>
                   </div>
                   <div className="text-[0.7rem] text-text-dim">{t("tikkies_price_sub")}</div>
