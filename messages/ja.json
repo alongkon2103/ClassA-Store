@@ -903,6 +903,11 @@
     "coins_type_earn_daily": "デイリーボーナス"
   },
   "Editor": {
+    "tab_functions": "機能",
+    "search_functions": "機能を検索...",
+    "no_functions": "機能の画像はまだありません",
+    "export_template": "テンプレートファイル",
+    "export_template_hint": "このデザインをテンプレートファイルとして書き出し、管理画面の Game Templates でアップロードします",
     "untitled": "無題のプロジェクト",
     "download": "ダウンロード",
     "downloading": "書き出し中...",

@@ -9,7 +9,7 @@ import { Link } from "@/i18n/routing"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { FONT_OPTIONS } from "@/lib/livegen/fonts"
 import { BACKGROUNDS, bgPreviewStyle, type BgPreset } from "@/lib/livegen/backgrounds"
-import type { Asset, Game, Gift, Orientation, ProjectSummary, TextKind } from "./types"
+import type { Asset, Game, GameFunction, Gift, Orientation, ProjectSummary, StoreTemplate, TextKind } from "./types"
 
 const CloseIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -56,20 +56,18 @@ const tile = "relative overflow-hidden rounded-[10px] border-2 border-border-sof
 const tileBg = { background: "var(--gradient-thumb)" }
 const tileLabel = "absolute bottom-1.5 left-1.5 right-1.5 text-[0.6rem] text-text-dim text-center bg-black/50 px-1.5 py-[3px] rounded leading-tight truncate"
 
-/* ── เท็มเพลต: แบบเปล่า / พื้นหลัง / จากเกม ── */
-export function TemplatesPanel({ games, busyGameId, onClose, onBlank, onBackground, onGame }: {
-  games: Game[]
-  busyGameId: string | null
+/* ── เท็มเพลต: แบบเปล่า / พื้นหลัง / เท็มเพลตจากเกม (แอดมินทำในหน้า Game Templates) ── */
+export function TemplatesPanel({ templates, busyId, onClose, onBlank, onBackground, onTemplate }: {
+  templates: StoreTemplate[]
+  busyId: string | null
   onClose: () => void
   onBlank: (o: Orientation) => void
   onBackground: (p: BgPreset) => void
-  onGame: (id: string) => void
+  onTemplate: (id: string) => void
 }) {
   const t = useTranslations("Editor")
-  const locale = useLocale()
-  const isTH = locale === "th"
   const [q, setQ] = useState("")
-  const filtered = games.filter((g) => `${g.name_th} ${g.name_en}`.toLowerCase().includes(q.trim().toLowerCase()))
+  const filtered = templates.filter((x) => x.name.toLowerCase().includes(q.trim().toLowerCase()))
 
   return (
     <Panel title={t("tab_templates")} onClose={onClose} search={{ value: q, onChange: setQ, placeholder: t("search_templates") }}>
@@ -98,11 +96,54 @@ export function TemplatesPanel({ games, busyGameId, onClose, onBlank, onBackgrou
         <p className="text-[0.75rem] text-text-dim">{t("no_templates")}</p>
       ) : (
         <div className="grid grid-cols-2 gap-2">
-          {filtered.map((g) => (
-            <button key={g.id} onClick={() => onGame(g.id)} disabled={!!busyGameId} className={`${tile} aspect-[9/16] disabled:opacity-60`} style={tileBg}>
-              {g.image ? <img src={getImageUrl(g.image)} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" /> : <FrameIcon />}
-              {busyGameId === g.id && <span className="absolute inset-0 flex items-center justify-center bg-black/40"><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /></span>}
-              <span className={tileLabel}>{isTH ? g.name_th : g.name_en}</span>
+          {filtered.map((x) => (
+            <button key={x.id} onClick={() => onTemplate(x.id)} disabled={!!busyId} className={`${tile} aspect-[9/16] disabled:opacity-60`} style={tileBg}>
+              {x.preview ? <img src={x.preview.startsWith("data:") ? x.preview : getImageUrl(x.preview)} alt="" className="absolute inset-0 w-full h-full object-cover" /> : <FrameIcon />}
+              {busyId === x.id && <span className="absolute inset-0 flex items-center justify-center bg-black/40"><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /></span>}
+              <span className={tileLabel}>{x.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </Panel>
+  )
+}
+
+/* ── ฟังก์ชัน: เลือกเกม แล้วกดรูปฟังก์ชันเพื่อวางลง canvas ทีละรูป ── */
+export function FunctionsPanel({ games, initialGameId, onClose, onAdd }: {
+  games: Game[]
+  initialGameId: string | null
+  onClose: () => void
+  onAdd: (url: string) => void
+}) {
+  const t = useTranslations("Editor")
+  const isTH = useLocale() === "th"
+  const [gameId, setGameId] = useState(() => (games.some((g) => g.id === initialGameId) ? initialGameId : games[0]?.id ?? null))
+  const [q, setQ] = useState("")
+  const label = (f: GameFunction) => (isTH ? f.label_th : f.label_en) || f.label_th || f.label_en || f.name
+  const fns = (games.find((g) => g.id === gameId)?.functions ?? []).filter((f) => label(f).toLowerCase().includes(q.trim().toLowerCase()))
+
+  return (
+    <Panel title={t("tab_functions")} onClose={onClose} search={{ value: q, onChange: setQ, placeholder: t("search_functions") }}>
+      {games.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {games.map((g) => (
+            <button key={g.id} onClick={() => setGameId(g.id)}
+                    className={`px-2.5 py-1 rounded-full text-[0.7rem] font-semibold border transition-colors ${
+                      g.id === gameId ? "bg-accent/15 border-accent/40 text-accent-light" : "border-border-soft text-text-muted hover:text-text-base"}`}>
+              {isTH ? g.name_th : g.name_en}
+            </button>
+          ))}
+        </div>
+      )}
+      {fns.length === 0 ? (
+        <p className="text-[0.75rem] text-text-dim">{t("no_functions")}</p>
+      ) : (
+        <div className="grid grid-cols-3 gap-2">
+          {fns.map((f) => (
+            <button key={f.id} onClick={() => onAdd(f.image_url)} title={label(f)} className={`${tile} aspect-square`} style={tileBg}>
+              <img src={getImageUrl(f.image_url)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-contain p-1.5 pb-5" />
+              <span className={tileLabel}>{label(f)}</span>
             </button>
           ))}
         </div>

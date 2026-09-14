@@ -1198,6 +1198,22 @@ model livegen_assets {
   @@index([user_id], map: "idx_livegen_assets_user")
 }
 
+// เท็มเพลตรูปไลฟ์ที่แอดมินอัปโหลด (หน้า admin: Game Templates) ให้ลูกค้าเลือกใน livegen แล้วแก้ต่อได้
+// kind: "image" = รูปเต็มพื้น (image_url) · "canvas" = ไฟล์ดีไซน์ที่ส่งออกจาก editor (canvas_json แก้ได้ทุกชิ้น)
+model livegen_templates {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar
+  kind        String   @db.VarChar // image | canvas
+  orientation String   @default("portrait") @db.VarChar // portrait | landscape
+  image_url   String? // kind=image
+  canvas_json Json? // kind=canvas
+  thumbnail   String? // kind=canvas: data URL จากไฟล์ที่ส่งออก (kind=image ใช้ image_url เป็นรูปตัวอย่าง)
+  cover_url   String? // รูปปกที่แอดมินอัปโหลด = การ์ดในแท็บเท็มเพลต · ไม่มี = ใช้ thumbnail/image_url
+  is_visible  Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+}
+
 // จุดเด่น/ฟีเจอร์ของสินค้าที่แอดมินพิมพ์เอง (โชว์เป็นเช็คลิสต์ 2 คอลัมน์ในแท็บรายละเอียดของหน้าสินค้า)
 model product_features {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

@@ -31,3 +31,29 @@ export function parseProjectBody(body: unknown):
 
   return { data: { name, orientation, canvas_json: b.canvas_json as Prisma.InputJsonValue, thumbnail, product_id } }
 }
+
+/** path รูปที่อัปโหลดผ่าน /api/admin/upload (ขึ้นต้น /uploads/) · อย่างอื่น = null */
+export function uploadPath(v: unknown): string | null {
+  const s = typeof v === "string" ? v.trim() : ""
+  return s.startsWith("/uploads/") && !s.includes("..") && s.length <= 300 ? s : null
+}
+
+/** body ของ admin ตอนเพิ่มเท็มเพลต: image = รูปที่อัปโหลดผ่าน /api/admin/upload · canvas = ใช้กติกาเดียวกับโปรเจค */
+export function parseTemplateBody(body: unknown):
+  | { data: { name: string; kind: "image" | "canvas"; orientation: string; image_url: string | null; canvas_json?: Prisma.InputJsonValue; thumbnail: string | null; cover_url: string | null } }
+  | { error: string } {
+  if (!body || typeof body !== "object") return { error: "invalid_body" }
+  const b = body as Record<string, unknown>
+  if (b.kind === "canvas") {
+    const p = parseProjectBody(b)
+    if ("error" in p) return p
+    return { data: { name: p.data.name, kind: "canvas", orientation: p.data.orientation, image_url: null, canvas_json: p.data.canvas_json, thumbnail: p.data.thumbnail, cover_url: uploadPath(b.cover_url) } }
+  }
+  if (b.kind !== "image") return { error: "invalid_kind" }
+  const name = typeof b.name === "string" ? b.name.trim().slice(0, 80) : ""
+  if (!name) return { error: "invalid_name" }
+  const url = uploadPath(b.image_url)
+  if (!url) return { error: "invalid_image" }
+  const orientation = typeof b.orientation === "string" && ORIENTATIONS.has(b.orientation) ? b.orientation : "portrait"
+  return { data: { name, kind: "image", orientation, image_url: url, thumbnail: null, cover_url: uploadPath(b.cover_url) } }
+}

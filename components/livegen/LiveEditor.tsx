@@ -16,10 +16,9 @@ import { FONT_LINK_HREF, DEFAULT_FONT, ensureFont, fontWeightFor } from "@/lib/l
 import { BACKGROUNDS, type BgPreset } from "@/lib/livegen/backgrounds"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { attachSmartGuides } from "@/lib/livegen/guides"
-import { splitSides } from "@/lib/livegen/templateLayout"
-import { TemplatesPanel, TextPanel, ImagesPanel, GiftsPanel, ProjectsPanel } from "./panels"
+import { TemplatesPanel, FunctionsPanel, TextPanel, ImagesPanel, GiftsPanel, ProjectsPanel } from "./panels"
 import SelectionBar from "./SelectionBar"
-import { CANVAS_SIZES, type Asset, type Game, type Gift, type Orientation, type PanelKey, type ProjectSummary, type SelectionInfo, type TextKind } from "./types"
+import { TEMPLATE_FILE_FORMAT, type StoreTemplate, CANVAS_SIZES, type Asset, type Game, type Gift, type Orientation, type PanelKey, type ProjectSummary, type SelectionInfo, type TextKind } from "./types"
 
 type FabricNS = typeof import("fabric")
 // วัตถุของเราแนบ data ไว้บอกบทบาท (เช่น พื้นหลัง) — Fabric ยอมให้ใส่ prop เพิ่มได้
@@ -38,7 +37,7 @@ function canvasSafeUrl(url: string) {
     return `/api/livegen/img?u=${encodeURIComponent(full)}`
   } catch { return full }
 }
-const TABS: PanelKey[] = ["templates", "text", "images", "gifts", "projects"]
+const TABS: PanelKey[] = ["templates", "functions", "text", "images", "gifts", "projects"]
 
 // ขนาดแสดงผลตาม design: 320×568 · ≤1024 → 280 · ≤768 → 220
 function baseShort(vw: number) {
@@ -47,17 +46,21 @@ function baseShort(vw: number) {
 
 const TAB_ICONS: Record<PanelKey, React.ReactNode> = {
   templates: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>,
+  functions: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" /></svg>,
   text: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4 7 4 4 20 4 20 7" /><line x1="9.5" y1="20" x2="14.5" y2="20" /><line x1="12" y1="4" x2="12" y2="20" /></svg>,
   images: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
   gifts: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 12 20 22 4 22 4 12" /><rect x="2" y="7" width="20" height="5" /><line x1="12" y1="22" x2="12" y2="7" /><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" /></svg>,
   projects: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>,
 }
 
-export default function LiveEditor({ isAuthenticated, gifts, games, initialGameId, initialProjectId }: {
+export default function LiveEditor({ isAuthenticated, isAdmin = false, gifts, games, templates = [], initialGameId, initialTemplateId = null, initialProjectId }: {
   isAuthenticated: boolean
+  isAdmin?: boolean // แอดมินเห็นปุ่มส่งออกไฟล์เท็มเพลต
   gifts: Gift[]
   games: Game[]
+  templates?: StoreTemplate[] // เท็มเพลตที่แอดมินเปิดแสดง (หน้า Game Templates)
   initialGameId: string | null
+  initialTemplateId?: string | null
   initialProjectId: string | null
 }) {
   const t = useTranslations("Editor")
@@ -84,7 +87,7 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
 
   // ── state ของ UI ──
   const [ready, setReady] = useState(false)
-  const [panel, setPanel] = useState<PanelKey | null>("templates")
+  const [panel, setPanel] = useState<PanelKey | null>(initialGameId ? "functions" : "templates") // ?game= → เปิดรูปฟังก์ชันของเกมนั้น
   const [orientation, setOrientationState] = useState<Orientation>("portrait")
   const [zoom, setZoomState] = useState(100)
   const [display, setDisplay] = useState({ w: 320, h: 569 })
@@ -97,7 +100,7 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [downloading, setDownloading] = useState(false)
-  const [busyGameId, setBusyGameId] = useState<string | null>(null)
+  const [busyTemplateId, setBusyTemplateId] = useState<string | null>(null)
   const [assets, setAssets] = useState<Asset[]>([])
   const [assetsLoaded, setAssetsLoaded] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -374,83 +377,6 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
     setSelection(null)
   }, [applyViewport])
 
-  // เท็มเพลตจากเกม: การ์ดละ ตัวละคร + ของขวัญ (มุมซ้ายบน) + ป้ายชื่อ — วางเป็นวัตถุแยก แก้ได้อิสระ
-  const applyGameTemplate = useCallback(async (gameId: string) => {
-    const f = fabricRef.current, c = canvasRef.current
-    if (!f || !c) return
-    setBusyGameId(gameId)
-    try {
-      const r = await fetch(`/api/livegen/templates/${gameId}`)
-      if (!r.ok) throw new Error("template")
-      const d = await r.json() as { product: { name_th: string; name_en: string }; functions: { id: string; name: string; label_th: string | null; label_en: string | null; image_url: string | null; gift_image_url: string | null }[] }
-      await ensureFont(DEFAULT_FONT)
-      clearCanvas()
-      const { w, h } = size()
-      // สองฝั่งชิดขอบซ้าย/ขวา เว้นกลางไว้ให้ภาพเกม: เรียงตามลำดับใน admin ครึ่งแรกซ้าย ครึ่งหลังขวา (ดู lib/livegen/templateLayout)
-      // แนวตั้ง = ฝั่งละ 1 คอลัมน์ · แนวนอน = ฝั่งละ 2 · แบ่งความสูงพอดีทั้งหน้า ขนาดการ์ดคิดจากจำนวน (มาก = เล็ก) ไม่ทะลุจอ
-      const { left, right } = splitSides(d.functions)
-      const sideCols = orientationRef.current === "portrait" ? 1 : 2
-      const rows = Math.max(1, Math.ceil(Math.max(left.length, right.length) / sideCols))
-      const marginX = w * 0.03, marginY = h * 0.03
-      const gapY = Math.min(h * 0.015, 24), gapX = w * 0.015
-      const tileH = (h - marginY * 2 - gapY * (rows - 1)) / rows
-      const maxTileW = (w * 0.44 - gapX * (sideCols - 1)) / sideCols // ฝั่งละไม่เกิน 44% ของความกว้าง
-      const tileW = Math.min((tileH * 9) / 7, maxTileW)
-      // ของในการ์ดขยายให้เต็มกรอบที่มี (ทั้งกว้างและสูง) การ์ดเตี้ยก็ยังได้รูปกว้างสุดเท่าที่ใส่ได้
-      const imgBoxW = tileW * 0.86, imgBoxH = tileH * 0.6
-      const giftSize = Math.min(tileW * 0.3, tileH * 0.3)
-      const fontSize = Math.round(Math.max(16, Math.min(tileW * 0.11, tileH * 0.14)))
-      suspendRef.current = true
-      const placeTile = async (fn: (typeof d.functions)[number], cx: number, cy: number) => {
-        if (fn.image_url) {
-          try {
-            const img = await f.FabricImage.fromURL(canvasSafeUrl(fn.image_url), { crossOrigin: "anonymous" })
-            img.scale(Math.min(imgBoxW / img.width, imgBoxH / img.height))
-            img.set({ left: cx, top: cy - tileH * 0.06, originX: "center", originY: "center" })
-            c.add(img)
-          } catch { /* รูปตัวละครโหลดไม่ได้ก็ข้าม */ }
-        }
-        if (fn.gift_image_url) {
-          try {
-            const g = await f.FabricImage.fromURL(canvasSafeUrl(fn.gift_image_url), { crossOrigin: "anonymous" })
-            g.scaleToWidth(giftSize)
-            g.set({ left: cx - tileW / 2 + giftSize * 0.65, top: cy - tileH / 2 + giftSize * 0.65, originX: "center", originY: "center" })
-            c.add(g)
-          } catch { /* ข้าม */ }
-        }
-        const label = (locale === "th" ? fn.label_th : fn.label_en) || fn.label_th || fn.label_en || fn.name
-        c.add(new f.Textbox(label, {
-          width: tileW * 0.94, fontSize, fontFamily: DEFAULT_FONT, fontWeight: 700,
-          fill: "#ffffff", stroke: "#0b0f1a", strokeWidth: Math.max(2, Math.round(fontSize * 0.1)), paintFirst: "stroke", strokeUniform: true,
-          textAlign: "center", originX: "center", originY: "center", left: cx, top: cy + tileH / 2 - fontSize * 0.95,
-        }))
-      }
-      for (const [sideIdx, side] of [left, right].entries()) {
-        for (let j = 0; j < side.length; j++) {
-          const col = j % sideCols, row = Math.floor(j / sideCols)
-          const cx = sideIdx === 0
-            ? marginX + tileW / 2 + col * (tileW + gapX)
-            : w - marginX - tileW / 2 - col * (tileW + gapX)
-          const cy = marginY + tileH / 2 + row * (tileH + gapY)
-          await placeTile(side[j], cx, cy)
-        }
-      }
-      suspendRef.current = false
-      c.requestRenderAll()
-      productIdRef.current = gameId
-      if (!projectNameRef.current || projectNameRef.current === t("untitled")) {
-        const nm = locale === "th" ? d.product.name_th : d.product.name_en
-        setProjectName(nm); projectNameRef.current = nm
-      }
-      pushHistory()
-    } catch {
-      suspendRef.current = false
-      alert(t("template_error"))
-    } finally {
-      setBusyGameId(null)
-    }
-  }, [clearCanvas, locale, pushHistory, t])
-
   /* ══ undo / redo / คีย์ลัด ══ */
   const undo = useCallback(async () => {
     if (historyIdxRef.current <= 0) return
@@ -616,6 +542,44 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
     if (r.ok) setAssets((xs) => xs.filter((a) => a.id !== id))
   }, [])
 
+  // เท็มเพลตที่แอดมินทำ (หน้า Game Templates): canvas = โหลดดีไซน์ทั้งชุด แก้ได้ทุกชิ้น · image = วางรูปเต็มพื้นเป็นชั้นล่างสุด ขยับ/ลบได้
+  const applyStoreTemplate = useCallback(async (id: string) => {
+    const f = fabricRef.current, c = canvasRef.current
+    if (!f || !c) return
+    setBusyTemplateId(id)
+    try {
+      const r = await fetch(`/api/livegen/store-templates/${id}`)
+      if (!r.ok) throw new Error("template")
+      const { template } = await r.json() as { template: { name: string; kind: string; orientation: string; image_url: string | null; canvas_json: object | null } }
+      clearCanvas(template.orientation === "landscape" ? "landscape" : "portrait")
+      if (template.kind === "canvas" && template.canvas_json) {
+        await loadJson(template.canvas_json)
+      } else if (template.image_url) {
+        const img = await f.FabricImage.fromURL(canvasSafeUrl(template.image_url), { crossOrigin: "anonymous" })
+        const { w, h } = size()
+        img.scale(Math.max(w / img.width, h / img.height)) // เต็มพื้น (cover)
+        img.set({ left: w / 2, top: h / 2, originX: "center", originY: "center" })
+        suspendRef.current = true
+        c.add(img)
+        c.sendObjectToBack(img)
+        suspendRef.current = false
+        c.requestRenderAll()
+      } else {
+        throw new Error("template")
+      }
+      productIdRef.current = null
+      if (!projectNameRef.current || projectNameRef.current === t("untitled")) {
+        setProjectName(template.name); projectNameRef.current = template.name
+      }
+      pushHistory()
+    } catch {
+      suspendRef.current = false
+      alert(t("template_error"))
+    } finally {
+      setBusyTemplateId(null)
+    }
+  }, [clearCanvas, loadJson, pushHistory, t])
+
   /* ══ โปรเจค ══ */
   const loadProjects = useCallback(async () => {
     if (!isAuthenticated) { setProjectsLoaded(true); return }
@@ -709,13 +673,13 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
     }
   }, [newProject, t])
 
-  // เปิดครั้งแรก: ?project= → โหลดโปรเจค · ?game= → เท็มเพลตเกม
+  // เปิดครั้งแรก: ?project= → โหลดโปรเจค · ?template= → เท็มเพลตที่แอดมินทำ (?game= เปิดแท็บฟังก์ชันไว้ตั้งแต่ตั้ง state)
   useEffect(() => {
     if (!ready) return
     // เลื่อนไป tick ถัดไป จะได้ไม่ setState ซ้อนใน effect ตอน mount
     const id = setTimeout(() => {
       if (initialProjectId && isAuthenticated) void openProject(initialProjectId)
-      else if (initialGameId) void applyGameTemplate(initialGameId)
+      else if (initialTemplateId) void applyStoreTemplate(initialTemplateId)
     }, 0)
     return () => clearTimeout(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -748,6 +712,21 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
     }
   }, [t])
 
+  /* ══ ส่งออกไฟล์เท็มเพลต (แอดมิน) → เอาไปอัปโหลดในหน้า admin: Game Templates ══ */
+  const exportTemplate = () => {
+    const c = canvasRef.current
+    if (!c) return
+    c.discardActiveObject()
+    c.requestRenderAll()
+    const { name, orientation, canvas_json, thumbnail } = payload()
+    const blob = new Blob([JSON.stringify({ format: TEMPLATE_FILE_FORMAT, version: 1, name, orientation, canvas_json, thumbnail })], { type: "application/json" })
+    const a = document.createElement("a")
+    a.href = URL.createObjectURL(blob)
+    a.download = `${(name || "template").replace(/[\\/:*?"<>|]+/g, "_")}.template.json`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+  }
+
   /* ══ render ══ */
   const saveLabel = !isAuthenticated
     ? t("login_to_save")
@@ -772,6 +751,12 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
           <span className="text-[0.72rem] text-text-dim hidden sm:inline truncate">{saveLabel}</span>
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
+          {isAdmin && (
+            <button onClick={exportTemplate} disabled={!ready} title={t("export_template_hint")}
+                    className="px-4 py-2 rounded-lg border border-violet-500/40 text-violet-300 hover:bg-violet-500/10 text-[0.82rem] font-semibold transition-colors disabled:opacity-50">
+              {t("export_template")}
+            </button>
+          )}
           <button onClick={() => void saveProject(true)} disabled={saveState === "saving"}
                   className="px-4 py-2 rounded-lg border border-border-soft text-text-muted hover:text-text-base hover:border-border-light text-[0.82rem] font-semibold transition-colors disabled:opacity-50">
             {t("save")}
@@ -797,9 +782,13 @@ export default function LiveEditor({ isAuthenticated, gifts, games, initialGameI
         </div>
 
         {panel === "templates" && (
-          <TemplatesPanel games={games} busyGameId={busyGameId} onClose={() => setPanel(null)}
+          <TemplatesPanel templates={templates} busyId={busyTemplateId} onClose={() => setPanel(null)}
                           onBlank={(o) => { if (!isEmpty && !confirm(t("confirm_discard"))) return; clearCanvas(o); pushHistory() }}
-                          onBackground={applyBackground} onGame={(id) => { if (!isEmpty && !confirm(t("confirm_discard"))) return; void applyGameTemplate(id) }} />
+                          onTemplate={(id) => { if (!isEmpty && !confirm(t("confirm_discard"))) return; void applyStoreTemplate(id) }}
+                          onBackground={applyBackground} />
+        )}
+        {panel === "functions" && (
+          <FunctionsPanel games={games} initialGameId={initialGameId} onClose={() => setPanel(null)} onAdd={(url) => void addImage(url, 0.3)} />
         )}
         {panel === "text" && (
           <TextPanel currentFont={selection?.kind === "text" ? selection.fontFamily ?? null : null} onClose={() => setPanel(null)}

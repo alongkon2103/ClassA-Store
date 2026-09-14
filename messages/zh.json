@@ -903,6 +903,11 @@
     "coins_type_earn_daily": "每日签到"
   },
   "Editor": {
+    "tab_functions": "功能",
+    "search_functions": "搜索功能...",
+    "no_functions": "暂无功能图片",
+    "export_template": "模板文件",
+    "export_template_hint": "将此设计导出为模板文件，到后台 Game Templates 上传",
     "untitled": "未命名项目",
     "download": "下载",
     "downloading": "渲染中...",

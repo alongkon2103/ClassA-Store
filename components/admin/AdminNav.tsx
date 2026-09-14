@@ -22,6 +22,7 @@ const groups = [
       { href: "/admin/products", key: "products", roles: ["admin", "partnership"] },
       { href: "/admin/storefront-order", key: "storefront_order", roles: ["admin"] },
       { href: "/admin/game-categories", key: "game_categories", roles: ["admin"] },
+      { href: "/admin/game-templates", key: "game_templates", roles: ["admin"] },
       { href: "/admin/partner-store", key: "partner_store", roles: ["admin"] },
       { href: "/admin/partner-store/transactions", key: "partner_transactions", roles: ["admin"] },
       { href: "/admin/maki-orders", key: "maki_orders", roles: ["admin"] },
