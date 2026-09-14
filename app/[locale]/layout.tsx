@@ -1,6 +1,7 @@
 import "../globals.css"
 import Providers from "@/components/home/Providers"
 import PageTracker from "@/components/PageTracker"
+import DailyLoginPopup from "@/components/points/DailyLoginPopup"
 import { Inter, Noto_Sans_Thai } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server"
@@ -79,6 +80,7 @@ export default async function RootLayout({
       <body suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
           <Providers>
+            <DailyLoginPopup />
             <PageTracker />
             {children}
           </Providers>

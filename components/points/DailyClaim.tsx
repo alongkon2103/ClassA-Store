@@ -9,7 +9,11 @@ import { useCallback, useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { useRouter } from "@/i18n/routing"
 
-type Status = { enabled: boolean; points: number; claimedToday: boolean; nextResetAt: string; signedIn: boolean }
+export type DailyStatusView = {
+  enabled: boolean; points: number; claimedToday: boolean; nextResetAt: string; signedIn: boolean
+  todayKey: string; streak: number; week: { key: string; claimed: boolean }[]
+}
+type Status = DailyStatusView
 const EVT = "daily-points-changed"
 
 // หลายตัวบนหน้าเดียวกันขอสถานะพร้อมกัน → ใช้ request เดียว (เก็บไว้ 3 วิ)
@@ -19,6 +23,12 @@ function fetchStatus(force = false): Promise<Status | null> {
   const p = fetch("/api/points/daily", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
   shared = { at: Date.now(), p }
   return p
+}
+// ให้หน้าต่าง Daily Login ใช้ cache + event เดียวกัน (กดรับที่ไหนก็ sync ทุกปุ่ม)
+export const fetchDailyStatus = (force = false) => fetchStatus(force)
+export function notifyDailyChanged() {
+  shared = null
+  window.dispatchEvent(new Event(EVT))
 }
 
 const GiftIcon = ({ size = 18 }: { size?: number }) => (
@@ -71,8 +81,7 @@ export default function DailyClaim({ variant }: { variant: "icon" | "compact" | 
       if (r.ok || d.error === "already_claimed") {
         setSt((s) => (s ? { ...s, ...d, claimedToday: true } : s))
         if (r.ok) { setFlash(d.points); setTimeout(() => setFlash(null), 2500) }
-        shared = null
-        window.dispatchEvent(new Event(EVT))
+        notifyDailyChanged()
         router.refresh() // ยอดแต้มใน sidebar / หน้า Coins มาจาก server
       } else setErr(true)
     } catch { setErr(true) } finally { setBusy(false) }
@@ -120,6 +129,7 @@ export default function DailyClaim({ variant }: { variant: "icon" | "compact" | 
       <div className="min-w-0 flex-1">
         <p className="text-[0.95rem] font-bold">{t("daily_title")}</p>
         <p className="text-[0.78rem] text-text-muted mt-0.5">{t("daily_sub", { points: pts })}</p>
+        {st.streak > 0 && <p className="text-[0.75rem] font-semibold text-gold mt-1">{t("daily_streak", { n: st.streak })}</p>}
         {err && <p className="text-[0.75rem] text-hot mt-1">{t("daily_error")}</p>}
       </div>
       {claimed ? (

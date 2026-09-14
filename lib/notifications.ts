@@ -16,6 +16,7 @@ export type NotificationType =
   | "points_earned"     // data: { points, order_id? } — AC Points จากการซื้อ
   | "points_adjusted"   // data: { points } — แอดมินปรับแต้ม (+/−)
   | "points_review"     // data: { points } — แต้มจากการรีวิวเกมที่ซื้อ
+  | "points_redeemed"   // data: { points, title } — แลกแต้มเป็นของรางวัล
 
 type NotifyInput = {
   userId: string

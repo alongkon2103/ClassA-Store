@@ -10,12 +10,13 @@ import { useTranslations } from "next-intl"
 import { Link } from "@/i18n/routing"
 import DailyClaim from "@/components/points/DailyClaim"
 
-export type AccountSection = "account" | "orders" | "coins" | "coupons" | "reviews" | "favorites"
+export type AccountSection = "account" | "orders" | "coins" | "redeem" | "coupons" | "reviews" | "favorites"
 
 const ITEMS: { key: AccountSection; href: string }[] = [
   { key: "account", href: "/account" },
   { key: "orders", href: "/orders" },
   { key: "coins", href: "/account/coins" },
+  { key: "redeem", href: "/account/redeem" },
   { key: "coupons", href: "/account/coupons" },
   { key: "reviews", href: "/account/reviews" },
   { key: "favorites", href: "/account/favorites" },
@@ -26,6 +27,7 @@ const ICONS: Record<AccountSection | "affiliate", React.ReactNode> = {
   account: <svg {...svgProps}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
   orders: <svg {...svgProps}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>,
   coins: <svg {...svgProps}><circle cx="12" cy="12" r="9" /><path d="M14.5 9.5a2.5 2.5 0 0 0-5 0c0 2.5 5 2.5 5 5a2.5 2.5 0 0 1-5 0" /><path d="M12 6v1.5M12 16.5V18" /></svg>,
+  redeem: <svg {...svgProps}><polyline points="20 12 20 22 4 22 4 12" /><rect x="2" y="7" width="20" height="5" /><line x1="12" y1="22" x2="12" y2="7" /><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" /></svg>,
   coupons: <svg {...svgProps}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>,
   reviews: <svg {...svgProps}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
   favorites: <svg {...svgProps}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>,

@@ -640,6 +640,7 @@ model users {
   livegen_projects      livegen_projects[]
   livegen_assets        livegen_assets[]
   point_ledger          point_ledger[]
+  point_redemptions     point_redemptions[]
   partner_orders        partner_orders[]
 }
 
@@ -763,6 +764,64 @@ model point_ledger {
   @@unique([user_id, partner_product_id, type], map: "uq_point_ledger_user_partner_product_type") // เกม Maki ก็ครั้งเดียวต่อเกม
   @@unique([user_id, day_key, type], map: "uq_point_ledger_user_day_type") // แต้มรายวันกดรับได้วันละครั้ง
   @@index([user_id, created_at], map: "idx_point_ledger_user_created")
+}
+
+// ── แลก AC Points (เฟส 2, 2026-09-14) ──
+// ของรางวัลที่แอดมินตั้งในหน้า AC Points › ของรางวัล · kind:
+//   discount_code = ออกโค้ดส่วนลดร้านให้คนแลก (โค้ดใหม่ต่อครั้ง ใช้ได้ครั้งเดียว) config {type:"fixed"|"percent", value, product_id|null, valid_days}
+//   external_code = แจกโค้ดโปรแกรมอื่นจากคลัง point_reward_codes ทีละโค้ด            config {}
+//   game_days     = ต่อวันเกม A Class ที่ระบุให้บัญชี/IGN ของคนแลก                 config {product_id, days}
+model point_rewards {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind           String   @db.VarChar
+  title_th       String   @db.VarChar
+  title_en       String   @db.VarChar
+  description_th String?
+  description_en String?
+  image_url      String?
+  cost           Int // แต้มที่ใช้แลก
+  config         Json
+  stock          Int? // จำนวนที่แลกได้ที่เหลือ (null = ไม่จำกัด) · external_code ใช้จำนวนโค้ดที่ยังไม่แจกแทน
+  per_user_limit Int? // แลกได้กี่ครั้งต่อคน (null = ไม่จำกัด)
+  is_active      Boolean  @default(true)
+  sort_order     Int      @default(0)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+  codes          point_reward_codes[]
+  redemptions    point_redemptions[]
+}
+
+// คลังโค้ดของรางวัล external_code — แอดมินวางหลายบรรทัด ระบบแจกทีละแถว (redemption_id = แจกแล้วให้ใคร)
+model point_reward_codes {
+  id            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reward_id     String             @db.Uuid
+  code          String             @db.VarChar
+  redemption_id String?            @unique @db.Uuid
+  created_at    DateTime           @default(now()) @db.Timestamptz(6)
+  reward        point_rewards      @relation(fields: [reward_id], references: [id], onDelete: Cascade)
+  redemption    point_redemptions? @relation(fields: [redemption_id], references: [id], onDelete: SetNull)
+
+  @@unique([reward_id, code])
+  @@index([reward_id, redemption_id])
+}
+
+// ประวัติการแลก 1 แถวต่อครั้ง · แต้มที่หัก = point_ledger type "redeem" (ledger_id)
+// result ตาม kind: discount_code {code, expires_at} · external_code {code} · game_days {product_id, ign|null, expires_at}
+model point_redemptions {
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String              @db.Uuid
+  reward_id  String              @db.Uuid
+  kind       String              @db.VarChar
+  cost       Int
+  result     Json
+  ledger_id  String?             @unique @db.Uuid
+  created_at DateTime            @default(now()) @db.Timestamptz(6)
+  user       users               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  reward     point_rewards       @relation(fields: [reward_id], references: [id], onDelete: Restrict) // มีประวัติแล้วลบของรางวัลไม่ได้ ให้ปิดแทน
+  code       point_reward_codes?
+
+  @@index([user_id, created_at])
+  @@index([reward_id])
 }
 
 model notifications {

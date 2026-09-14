@@ -21,6 +21,7 @@ export default function CoinsClient({ summary }: { summary: PointsSummary }) {
       case "earn_review": return { title: t("coins_type_earn_review"), sub: product || null }
       case "reverse_review": return { title: t("coins_type_reverse_review"), sub: product || null }
       case "earn_daily": return { title: t("coins_type_earn_daily"), sub: null }
+      case "redeem": return { title: t("coins_type_redeem"), sub: e.note }
       case "adjust_admin": return { title: t("coins_type_adjust_admin"), sub: e.note }
       default: return { title: e.type, sub: e.note }
     }
@@ -70,10 +71,10 @@ export default function CoinsClient({ summary }: { summary: PointsSummary }) {
               </div>
             </div>
           )}
-          <div className="rounded-lg border border-accent/20 bg-accent/[0.06] px-4 py-3">
-            <p className="text-[0.8rem] font-bold text-accent-light">{t("coins_soon_title")}</p>
-            <p className="text-[0.75rem] text-text-muted leading-[1.6] mt-0.5">{t("coins_soon_body")}</p>
-          </div>
+          <Link href="/account/redeem" className="rounded-lg border border-gold/30 bg-gold/[0.06] px-4 py-3 hover:bg-gold/10 transition-colors">
+            <p className="text-[0.8rem] font-bold text-gold">{t("coins_redeem_title")} →</p>
+            <p className="text-[0.75rem] text-text-muted leading-[1.6] mt-0.5">{t("coins_redeem_body")}</p>
+          </Link>
           <Link href="/products" className="self-start text-[0.78rem] font-semibold text-accent-light hover:underline">{t("browse")} →</Link>
         </div>
       </div>

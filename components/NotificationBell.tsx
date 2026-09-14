@@ -87,7 +87,7 @@ export default function NotificationBell() {
   if (!isAffiliate) return null
 
   const content = (n: Notif) => {
-    const d = n.data as { amount?: number; reason?: string; points?: number }
+    const d = n.data as { amount?: number; reason?: string; points?: number; title?: string }
     switch (n.type) {
       case "payout_paid":
         return { icon: "check", tone: "green", title: t("payout_paid_title"), body: t("payout_paid_body", { amount: baht(d.amount) }) }
@@ -99,6 +99,8 @@ export default function NotificationBell() {
         return { icon: "coin", tone: "amber", title: t("points_earned_title"), body: t("points_earned_body", { points: Number(d.points ?? 0).toLocaleString() }) }
       case "points_review":
         return { icon: "coin", tone: "amber", title: t("points_review_title"), body: t("points_review_body", { points: Number(d.points ?? 0).toLocaleString() }) }
+      case "points_redeemed":
+        return { icon: "coin", tone: "amber", title: t("points_redeemed_title"), body: t("points_redeemed_body", { points: Number(d.points ?? 0).toLocaleString(), title: d.title ?? "" }) }
       case "points_adjusted":
         return { icon: "coin", tone: "amber", title: t("points_adjusted_title"), body: t("points_adjusted_body", { points: (Number(d.points ?? 0) > 0 ? "+" : "") + Number(d.points ?? 0).toLocaleString() }) }
       default:

@@ -33,7 +33,7 @@ export const POINTS_DEFAULT_PER_REVIEW = 100
 export const POINTS_DEFAULT_PER_DAILY = 100
 
 export type PointsConfig = { enabled: boolean; perBaht: number; startAt: Date | null; perReview: number; perDaily: number }
-export type LedgerType = "earn_purchase" | "reverse_purchase" | "adjust_admin" | "earn_review" | "reverse_review" | "earn_daily"
+export type LedgerType = "earn_purchase" | "reverse_purchase" | "adjust_admin" | "earn_review" | "reverse_review" | "earn_daily" | "redeem"
 
 type Db = Prisma.TransactionClient | typeof prisma
 
@@ -268,7 +268,18 @@ async function reviewsMissingPoints(startAt: Date, userId?: string) {
 }
 
 // ── แต้มรายวัน ──
-export type DailyStatus = { enabled: boolean; points: number; claimedToday: boolean; nextResetAt: string }
+export type DailyStatus = {
+  enabled: boolean; points: number; claimedToday: boolean; nextResetAt: string
+  todayKey: string // วันนี้ตามเวลาไทย "YYYY-MM-DD"
+  streak: number // จำนวนวันที่รับต่อเนื่อง นับถึงวันนี้ (หรือถึงเมื่อวานถ้าวันนี้ยังไม่รับ)
+  week: { key: string; claimed: boolean }[] // สัปดาห์นี้ จันทร์–อาทิตย์ สำหรับปฏิทิน Daily Login
+}
+
+// บวก/ลบวันของ "YYYY-MM-DD" แบบปฏิทินล้วน (Date.UTC) ไม่ขึ้นกับ timezone ของเครื่อง
+const shiftDay = (key: string, days: number) => {
+  const [y, m, d] = key.split("-").map(Number)
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+}
 
 /** เที่ยงคืนถัดไปตามเวลาไทย (ไทยไม่มี DST — +24 ชม. จากต้นวันปัจจุบันเสมอ) */
 export const nextBangkokMidnight = (now = new Date()) => new Date(bangkokDayStart(now).getTime() + 24 * 3600_000)
@@ -276,10 +287,25 @@ export const nextBangkokMidnight = (now = new Date()) => new Date(bangkokDayStar
 export async function getDailyStatus(userId: string | null): Promise<DailyStatus> {
   const cfg = await getPointsConfig()
   const enabled = pointsActive(cfg) && cfg.perDaily > 0
-  const claimed = enabled && userId
-    ? (await prisma.point_ledger.count({ where: { user_id: userId, type: "earn_daily", day_key: bangkokDayKey(new Date()) } })) > 0
-    : false
-  return { enabled, points: cfg.perDaily, claimedToday: claimed, nextResetAt: nextBangkokMidnight().toISOString() }
+  const todayKey = bangkokDayKey(new Date())
+  const [y, m, d] = todayKey.split("-").map(Number)
+  const mondayOffset = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7
+  const week = Array.from({ length: 7 }, (_, i) => shiftDay(todayKey, i - mondayOffset))
+  const claimed = new Set(
+    enabled && userId
+      ? (await prisma.point_ledger.findMany({
+          where: { user_id: userId, type: "earn_daily", day_key: { gte: shiftDay(todayKey, -400) } },
+          select: { day_key: true },
+        })).map((r) => r.day_key as string)
+      : [],
+  )
+  const claimedToday = claimed.has(todayKey)
+  let streak = 0
+  for (let k = claimedToday ? todayKey : shiftDay(todayKey, -1); claimed.has(k); k = shiftDay(k, -1)) streak++
+  return {
+    enabled, points: cfg.perDaily, claimedToday, nextResetAt: nextBangkokMidnight().toISOString(),
+    todayKey, streak, week: week.map((key) => ({ key, claimed: claimed.has(key) })),
+  }
 }
 
 /** กดรับแต้มรายวัน — วันละครั้งตามเวลาไทย · ซ้ำ/กดพร้อมกันหลายแท็บ → already_claimed (unique) */
