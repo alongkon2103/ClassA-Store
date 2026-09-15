@@ -1,6 +1,7 @@
 "use client"
 
 // หน้าต่าง Daily Login: เด้งวันละครั้งตอนเข้าเว็บ ถ้าล็อกอินแล้วและวันนี้ยังไม่ได้รับแต้มรายวัน
+// + เปิดซ้ำได้จากไอคอนของขวัญบน Navbar (event daily-popup-open) แม้รับแล้ว — โชว์ปฏิทิน/วันต่อเนื่อง/นับถอยหลังถึงเที่ยงคืน
 // ปฏิทินสัปดาห์นี้ (จันทร์–อาทิตย์ ตามเวลาไทย) ติ๊กวันที่รับแล้ว + จำนวนวันที่เข้าต่อเนื่อง
 // ปิดแล้วไม่เด้งซ้ำทั้งวัน (จำใน localStorage ตามวันไทย) · ไม่เด้งในหน้า admin / ชำระเงิน / editor รูปไลฟ์
 import { useEffect, useState } from "react"
@@ -8,7 +9,7 @@ import { usePathname } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "@/i18n/routing"
 import { localeTag } from "@/lib/i18n/locale"
-import { fetchDailyStatus, notifyDailyChanged, type DailyStatusView } from "./DailyClaim"
+import { DAILY_POPUP_OPEN_EVT, fetchDailyStatus, notifyDailyChanged, useCountdown, type DailyStatusView } from "./DailyClaim"
 
 const SKIP = ["/admin", "/checkout", "/livegen"]
 const seenKey = (day: string) => `daily-popup:${day}`
@@ -25,6 +26,19 @@ export default function DailyLoginPopup() {
   const [busy, setBusy] = useState(false)
   const [got, setGot] = useState<number | null>(null)
   const [err, setErr] = useState(false)
+  const cd = useCountdown(st?.nextResetAt ?? null, open && !!st?.claimedToday)
+
+  // กดไอคอนของขวัญบน Navbar → เปิดดูปฏิทินได้ทุกเมื่อ (สถานะสดจาก server ไม่ใช้ cache)
+  useEffect(() => {
+    const onOpen = () => {
+      fetchDailyStatus(true).then((d) => {
+        if (!d || !d.signedIn || !d.enabled) return
+        setSt(d); setGot(null); setErr(false); setOpen(true)
+      })
+    }
+    window.addEventListener(DAILY_POPUP_OPEN_EVT, onOpen)
+    return () => window.removeEventListener(DAILY_POPUP_OPEN_EVT, onOpen)
+  }, [])
 
   useEffect(() => {
     if (skip) return
@@ -104,6 +118,7 @@ export default function DailyLoginPopup() {
         {got != null || st.claimedToday ? (
           <div className="mt-4 text-center">
             <p className="text-[0.95rem] font-bold text-success">✓ {got != null ? t("daily_done", { points: got.toLocaleString() }) : t("daily_claimed")}</p>
+            {cd && <p className="text-[0.75rem] text-text-dim mt-1">{t("daily_next", { time: cd.text })}</p>}
             <button onClick={close} className="mt-4 w-full py-3 rounded-xl border border-border-soft text-[0.85rem] font-semibold text-text-muted hover:text-text-base transition-colors">
               {t("daily_popup_close")}
             </button>

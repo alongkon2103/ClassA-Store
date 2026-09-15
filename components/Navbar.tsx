@@ -136,7 +136,7 @@ export default function Navbar() {
             <NavSearch />
           </div>
 
-          {/* แต้มรายวัน — ไอคอนของขวัญโชว์เฉพาะตอนล็อกอินและยังไม่ได้รับวันนี้ */}
+          {/* แต้มรายวัน — ไอคอนของขวัญ (ทอง = ยังไม่รับ · ขาว = รับแล้ว) กดเปิดปฏิทิน Daily Login */}
           {session && <DailyClaim variant="icon" />}
 
           {/* NOTIFICATION BELL (affiliates only) */}

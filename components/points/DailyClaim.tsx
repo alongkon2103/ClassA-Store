@@ -1,7 +1,7 @@
 "use client"
 
 // ปุ่มรับแต้มรายวัน (วันละครั้ง รีเซ็ตเที่ยงคืนเวลาไทย) — 3 ขนาด:
-//   icon    = ไอคอนของขวัญบน Navbar โชว์เฉพาะตอนมีให้รับ
+//   icon    = ไอคอนของขวัญบน Navbar โชว์ตลอด (ทอง = ยังไม่รับ · ขาว = รับแล้ว) กดแล้วเปิดหน้าต่างปฏิทิน Daily Login
 //   compact = ปุ่มใต้ป้าย AC Points ใน sidebar บัญชี
 //   card    = การ์ดใหญ่ในหน้า Coins ของฉัน พร้อมนับถอยหลังถึงเที่ยงคืน
 // หลายตัวบนหน้าเดียวกัน sync กันผ่าน event + router.refresh() ให้ยอดแต้มฝั่ง server อัปเดต
@@ -30,6 +30,9 @@ export function notifyDailyChanged() {
   shared = null
   window.dispatchEvent(new Event(EVT))
 }
+// ไอคอนบน Navbar ขอเปิดหน้าต่างปฏิทิน (DailyLoginPopup ฟัง event นี้) — ดูซ้ำได้ทั้งวัน ไม่ว่าจะรับแล้วหรือยัง
+export const DAILY_POPUP_OPEN_EVT = "daily-popup-open"
+export const openDailyPopup = () => window.dispatchEvent(new Event(DAILY_POPUP_OPEN_EVT))
 
 const GiftIcon = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -38,7 +41,7 @@ const GiftIcon = ({ size = 18 }: { size?: number }) => (
   </svg>
 )
 
-function useCountdown(target: string | null, active: boolean) {
+export function useCountdown(target: string | null, active: boolean) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (!active) return
@@ -91,20 +94,16 @@ export default function DailyClaim({ variant }: { variant: "icon" | "compact" | 
   const pts = st.points.toLocaleString()
 
   if (variant === "icon") {
-    if (claimed && flash == null) return null
+    const label = claimed ? t("daily_claimed") : t("daily_claim", { points: pts })
     return (
-      <div className="relative">
-        <button onClick={claim} disabled={busy || claimed} title={t("daily_claim", { points: pts })} aria-label={t("daily_claim", { points: pts })}
-          className="relative w-[38px] h-[38px] flex items-center justify-center rounded-[10px] border border-gold/30 text-gold bg-gold/10 hover:bg-gold/20 transition-all disabled:opacity-70">
-          <GiftIcon />
-          {!claimed && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-hot ring-2 ring-bg-base animate-pulse" />}
-        </button>
-        {flash != null && (
-          <span className="absolute top-full mt-2 right-0 whitespace-nowrap px-3 py-1.5 rounded-lg bg-gold text-[#1a1200] text-[0.75rem] font-bold shadow-lg z-50">
-            +{flash.toLocaleString()} AC Points
-          </span>
-        )}
-      </div>
+      <button onClick={openDailyPopup} title={label} aria-label={label}
+        className={`relative w-[38px] h-[38px] flex items-center justify-center rounded-[10px] border transition-all ${
+          claimed
+            ? "border-border-soft text-text-base hover:border-border-light hover:bg-white/[0.03]"
+            : "border-gold/30 text-gold bg-gold/10 hover:bg-gold/20"}`}>
+        <GiftIcon />
+        {!claimed && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-hot ring-2 ring-bg-base animate-pulse" />}
+      </button>
     )
   }
 
