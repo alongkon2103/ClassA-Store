@@ -108,6 +108,20 @@ export default function MakiOrderClient({ initial, initialPoints }: { initial: M
           ) : (
             <p className="text-[0.8rem] text-text-muted mb-3">{t("maki_access_pending")}</p>
           )}
+          {order.downloads.length > 0 && (
+            <div className="mb-3">
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-text-dim mb-2">{t("maki_downloads")}</p>
+              <div className="flex flex-wrap gap-2">
+                {order.downloads.map((d, i) => (
+                  <a key={i} href={d.url} target="_blank" rel="noopener noreferrer"
+                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-accent/40 text-accent-light hover:bg-accent/10 text-[0.8rem] font-semibold transition-colors">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                    {d.name}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2.5 items-center">
             {order.preset_link && (
               <a href={order.preset_link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent hover:bg-accent-light text-white text-[0.8rem] font-semibold transition-colors">

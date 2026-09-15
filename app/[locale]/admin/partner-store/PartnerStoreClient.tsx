@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations, useLocale } from "next-intl"
 import MakiProductEditor, { type MakiPlanView } from "./MakiProductEditor"
+import type { MakiDownload } from "@/lib/maki"
 
 type Split = { partner_id: string; pct: number }
 type PartnerProduct = {
@@ -30,6 +31,7 @@ type PartnerProduct = {
   images: string[]
   coming_soon: boolean
   plans: MakiPlanView[]
+  downloads: MakiDownload[]
 }
 type Store = {
   id: string

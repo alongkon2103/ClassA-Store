@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 import PartnerStoreClient from "./PartnerStoreClient"
 import { setRequestLocale } from "next-intl/server"
 import { PARTNERS } from "@/lib/partnerSync"
-import { withLiveMinimums, toPlanRows } from "@/lib/maki"
+import { withLiveMinimums, toPlanRows, toDownloads } from "@/lib/maki"
 
 // Admin management for the PARTNER STORE (external reseller games). Separate from
 // /admin/partners (internal revenue-share partners). Lets admin sync the catalog
@@ -58,6 +58,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
       description_html_en: p.description_html_en ?? null,
       images: Array.isArray(p.images) ? (p.images as string[]) : [],
       coming_soon: p.coming_soon,
+      downloads: toDownloads(p.downloads),
       plans: s.integration === "maki_api"
         ? toPlanRows(p.plans).map((pl) => ({ key: pl.key, plan: pl.plan, label_th: pl.label_th, label_en: pl.label_en, min_price_thb: pl.min_price_thb, sell_price_thb: pl.sell_price_thb, preset_link: pl.preset_link }))
         : [],

@@ -115,6 +115,20 @@ export function planAvailable(p: MakiPlanRow) {
 export function toPlanRows(plans: unknown): MakiPlanRow[] {
   return Array.isArray(plans) ? (plans as MakiPlanRow[]) : []
 }
+// โปรแกรมที่ลูกค้าต้องโหลดหลังซื้อ (แอดมินตั้งต่อเกมในหน้า partner-store) — เก็บเฉพาะรายการที่ครบและลิงก์เป็น http(s) สูงสุด 20
+export type MakiDownload = { name: string; url: string }
+export function toDownloads(v: unknown): MakiDownload[] {
+  if (!Array.isArray(v)) return []
+  const out: MakiDownload[] = []
+  for (const x of v as { name?: unknown; url?: unknown }[]) {
+    const name = typeof x?.name === "string" ? x.name.trim().slice(0, 80) : ""
+    const url = typeof x?.url === "string" ? x.url.trim() : ""
+    if (name && url.length <= 500 && /^https?:\/\/\S+$/.test(url)) out.push({ name, url })
+    if (out.length >= 20) break
+  }
+  return out
+}
+
 export function priceFrom(plans: MakiPlanRow[]): number | null {
   const ok = plans.filter(planAvailable).map((p) => p.sell_price_thb as number)
   return ok.length ? Math.min(...ok) : null

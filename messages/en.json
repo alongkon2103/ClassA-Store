@@ -1155,6 +1155,7 @@
     "orientation_horizontal": "Horizontal"
   },
   "Orders": {
+    "maki_downloads": "Downloads",
     "title": "Game Settings",
     "subtitle": "Manage your TikTok and Gift settings",
     "secure_inventory": "Secure Inventory",
@@ -2319,6 +2320,13 @@
     "meta_desc": "How A Class Store collects, uses and protects your data"
   },
   "AdminMaki": {
+    "downloads": "Programs to download",
+    "downloads_hint": "Shown as download buttons on the order page after payment (max 20)",
+    "download_name": "Program name",
+    "download_url": "https://… download link",
+    "add_download": "Add program",
+    "remove": "Remove",
+    "download_invalid": "Fill in both name and link for every row; links must start with http:// or https://",
     "edit": "Edit",
     "gone": "No longer in catalog",
     "min": "min",

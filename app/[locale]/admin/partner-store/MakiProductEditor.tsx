@@ -1,16 +1,18 @@
 "use client"
 
-// แก้ไขเกม Maki: ชื่อ TH/EN · คำอธิบาย · ราคาขายต่อแพลน (≥ ขั้นต่ำสด) · เปิด/ปิดแสดง
+// แก้ไขเกม Maki: ชื่อ TH/EN · คำอธิบาย · ราคาขายต่อแพลน (≥ ขั้นต่ำสด) · โปรแกรมที่ต้องโหลด (ชื่อ+ลิงก์ โชว์ในหน้าออเดอร์หลังจ่าย) · เปิด/ปิดแสดง
 // รูปปก/แบนเนอร์/วิดีโอดึงจาก Maki อัตโนมัติตอน sync (API v1.1) — ไม่ต้องอัปโหลดเอง โชว์ให้ดูเฉย ๆ
 import { useState } from "react"
 import { useTranslations } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
+import type { MakiDownload } from "@/lib/maki"
 
 export type MakiPlanView = { key: string; plan: "1m" | "perma"; label_th: string; label_en: string; min_price_thb: number; sell_price_thb: number | null; preset_link: string | null }
 export type MakiProductView = {
   id: string; external_slug: string; name_th: string; name_en: string
   description_html_th: string | null; description_html_en: string | null
   thumbnail_url: string | null; is_visible: boolean; coming_soon: boolean; plans: MakiPlanView[]
+  downloads: MakiDownload[]
 }
 
 export default function MakiProductEditor({ product, onClose, onSaved }: { product: MakiProductView; onClose: () => void; onSaved: () => void }) {
@@ -21,6 +23,7 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
   const [descEn, setDescEn] = useState(product.description_html_en ?? "")
   const [prices, setPrices] = useState<Record<string, string>>(Object.fromEntries(product.plans.map((p) => [p.key, p.sell_price_thb == null ? "" : String(p.sell_price_thb)])))
   const [visible, setVisible] = useState(product.is_visible)
+  const [downloads, setDownloads] = useState<MakiDownload[]>(product.downloads)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -31,7 +34,7 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
       for (const p of product.plans) sell_prices[p.key] = prices[p.key] === "" ? null : Number(prices[p.key])
       const r = await fetch(`/api/admin/partner-store/products/${product.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name_th: nameTh, name_en: nameEn, description_html_th: descTh, description_html_en: descEn, sell_prices, is_visible: visible }),
+        body: JSON.stringify({ name_th: nameTh, name_en: nameEn, description_html_th: descTh, description_html_en: descEn, sell_prices, is_visible: visible, downloads }),
       })
       if (r.ok) { setMsg({ ok: true, text: t("saved") }); onSaved() }
       else {
@@ -45,6 +48,8 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
   const input = "w-full px-3 py-2 rounded-lg border border-border-soft bg-bg-input text-text-base text-[13px] outline-none focus:border-accent transition-colors placeholder:text-text-dim"
   const label = "block text-[11px] font-semibold text-text-dim uppercase tracking-[0.04em] mb-1"
   const belowMin = product.plans.some((p) => prices[p.key] !== "" && Number(prices[p.key]) < p.min_price_thb)
+  const isBadDownload = (d: MakiDownload) => !d.name.trim() || !/^https?:\/\/\S+$/.test(d.url.trim())
+  const badDownload = downloads.some(isBadDownload)
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: "var(--color-overlay)" }} onClick={onClose}>
@@ -108,6 +113,28 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
           <p className="text-[11px] text-text-dim mt-1.5">{t("prices_hint")}</p>
         </div>
 
+        {/* โปรแกรมที่ต้องโหลด — โชว์เป็นปุ่มดาวน์โหลดในหน้าออเดอร์หลังชำระเงินสำเร็จ */}
+        <div>
+          <span className={label}>{t("downloads")}</span>
+          <div className="space-y-2">
+            {downloads.map((d, i) => (
+              <div key={i} className={`flex flex-col sm:flex-row gap-2 px-3 py-2.5 rounded-lg border ${isBadDownload(d) ? "border-hot/50 bg-hot/5" : "border-border-soft bg-bg-base/40"}`}>
+                <input value={d.name} maxLength={80} placeholder={t("download_name")}
+                       onChange={(e) => setDownloads((xs) => xs.map((x, k) => (k === i ? { ...x, name: e.target.value } : x)))} className={`${input} sm:!w-[200px]`} />
+                <input value={d.url} maxLength={500} placeholder={t("download_url")}
+                       onChange={(e) => setDownloads((xs) => xs.map((x, k) => (k === i ? { ...x, url: e.target.value } : x)))} className={`${input} font-mono !text-[12px]`} />
+                <button onClick={() => setDownloads((xs) => xs.filter((_, k) => k !== i))} className="shrink-0 px-3 py-2 rounded-lg border border-hot/30 text-hot text-[12px] hover:bg-hot/10 transition">{t("remove")}</button>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            <button onClick={() => setDownloads((xs) => [...xs, { name: "", url: "" }])} disabled={downloads.length >= 20}
+                    className="px-3 py-1.5 rounded-lg border border-accent/40 text-accent-light text-[12px] font-semibold hover:bg-accent/10 transition disabled:opacity-50">+ {t("add_download")}</button>
+            <span className="text-[11px] text-text-dim">{t("downloads_hint")}</span>
+          </div>
+          {badDownload && <p className="text-[11px] text-hot mt-1">{t("download_invalid")}</p>}
+        </div>
+
         {/* แสดงในร้าน */}
         <label className="flex items-center gap-2.5 text-[13px] text-text-base">
           <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} className="accent-accent w-4 h-4" />
@@ -118,7 +145,7 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-soft">
           {msg && <span className={`text-[12px] mr-auto ${msg.ok ? "text-success" : "text-hot"}`}>{msg.text}</span>}
           <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border-soft text-text-muted text-[13px] hover:text-text-base transition">{t("cancel")}</button>
-          <button onClick={save} disabled={saving || belowMin} className="px-5 py-2 rounded-lg bg-accent hover:bg-accent-light text-white text-[13px] font-semibold transition disabled:opacity-50">
+          <button onClick={save} disabled={saving || belowMin || badDownload} className="px-5 py-2 rounded-lg bg-accent hover:bg-accent-light text-white text-[13px] font-semibold transition disabled:opacity-50">
             {saving ? t("saving") : t("save")}
           </button>
         </div>
