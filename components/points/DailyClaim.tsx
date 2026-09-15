@@ -99,7 +99,7 @@ export default function DailyClaim({ variant }: { variant: "icon" | "compact" | 
       <button onClick={openDailyPopup} title={label} aria-label={label}
         className={`relative w-[38px] h-[38px] flex items-center justify-center rounded-[10px] border transition-all ${
           claimed
-            ? "border-border-soft text-text-base hover:border-border-light hover:bg-white/[0.03]"
+            ? "border-border-soft text-text-muted hover:text-text-base hover:border-border-light hover:bg-white/[0.03]" // ชุดเดียวกับปุ่มค้นหา/ภาษา/ธีม
             : "border-gold/30 text-gold bg-gold/10 hover:bg-gold/20"}`}>
         <GiftIcon />
         {!claimed && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-hot ring-2 ring-bg-base animate-pulse" />}
