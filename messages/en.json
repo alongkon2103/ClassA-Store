@@ -688,6 +688,10 @@
     "points_per_daily_invalid": "Daily points must be 0 or a positive whole number"
   },
   "AdminDiscountCodes": {
+    "option_all_ours": "All A Class games (excl. Maki)",
+    "option_all_partner": "All Maki games (excl. A Class)",
+    "cell_ours": "All A Class games",
+    "cell_partner": "All Maki games",
     "title": "Discount Codes",
     "subtitle": "Create and manage promotional codes for customers.",
     "new_code": "+ New Code",
@@ -2051,6 +2055,8 @@
     "delete_points_confirm": "Delete this review? The {points} AC Points you earned from it will be taken back, and reviewing this game again won't earn points."
   },
   "Account": {
+    "cp_ours_only": "Valid on all A Class games",
+    "cp_partner_only": "Valid on all Maki games",
     "nav_redeem": "Redeem rewards",
     "coins_type_redeem": "Reward redeemed",
     "coins_redeem_title": "Redeem rewards with AC Points",

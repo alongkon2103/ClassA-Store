@@ -14,6 +14,7 @@ type DiscountCode = {
   min_amount: number | null
   product_id: string | null
   partner_product_id: string | null
+  game_scope: string // all | ours | partner (มีผลเมื่อไม่ได้ผูกเกมเดียว)
   product_name: string | null
   starts_at: string | null
   expires_at: string | null
@@ -25,8 +26,10 @@ type DiscountCode = {
 }
 
 type Product = { id: string; name: string }
-// ค่าใน dropdown: "<products.id>" = เกมเรา · "maki:<partner_products.id>" = เกม Maki · "" = ทุกเกม
+// ค่าใน dropdown: "" = ทุกเกม · "scope:ours" = ทุกเกม A Class · "scope:partner" = ทุกเกม Maki · "<products.id>" = เกมเรา · "maki:<partner_products.id>" = เกม Maki
 const MAKI_PREFIX = "maki:"
+const SCOPE_OURS = "scope:ours", SCOPE_PARTNER = "scope:partner"
+const isGroupScope = (v: string) => v === SCOPE_OURS || v === SCOPE_PARTNER
 
 type FormState = {
   code: string
@@ -76,7 +79,7 @@ function codeToForm(c: DiscountCode): FormState {
     max_uses: c.max_uses === null ? "" : String(c.max_uses),
     per_user_limit: c.per_user_limit === null ? "" : String(c.per_user_limit),
     min_amount: c.min_amount === null ? "" : String(c.min_amount),
-    product_id: c.partner_product_id ? MAKI_PREFIX + c.partner_product_id : c.product_id ?? "",
+    product_id: c.partner_product_id ? MAKI_PREFIX + c.partner_product_id : c.product_id ?? (c.game_scope === "ours" ? SCOPE_OURS : c.game_scope === "partner" ? SCOPE_PARTNER : ""),
     starts_at: toLocalDatetime(c.starts_at),
     expires_at: toLocalDatetime(c.expires_at),
     is_public: c.is_public,
@@ -140,7 +143,8 @@ export default function DiscountCodeManager({
         max_uses: form.max_uses ? Number(form.max_uses) : null,
         per_user_limit: form.per_user_limit === "" ? null : Number(form.per_user_limit),
         min_amount: form.min_amount ? Number(form.min_amount) : null,
-        product_id: form.product_id && !form.product_id.startsWith(MAKI_PREFIX) ? form.product_id : null,
+        product_id: form.product_id && !form.product_id.startsWith(MAKI_PREFIX) && !isGroupScope(form.product_id) ? form.product_id : null,
+        game_scope: form.product_id === SCOPE_OURS ? "ours" : form.product_id === SCOPE_PARTNER ? "partner" : "all",
         partner_product_id: form.product_id.startsWith(MAKI_PREFIX) ? form.product_id.slice(MAKI_PREFIX.length) : null,
         starts_at: form.starts_at || null,
         expires_at: form.expires_at || null,
@@ -167,7 +171,7 @@ export default function DiscountCodeManager({
       const maki = form.product_id.startsWith(MAKI_PREFIX) ? makiGames.find((g) => MAKI_PREFIX + g.id === form.product_id) : null
       const productName = maki
         ? `Maki · ${maki.name}`
-        : form.product_id
+        : form.product_id && !isGroupScope(form.product_id)
           ? products.find((p) => p.id === form.product_id)?.name ?? null
           : null
 
@@ -182,6 +186,7 @@ export default function DiscountCodeManager({
         min_amount: data.min_amount ? Number(data.min_amount) : null,
         product_id: data.product_id,
         partner_product_id: data.partner_product_id ?? null,
+        game_scope: data.game_scope ?? "all",
         product_name: productName,
         starts_at: data.starts_at,
         expires_at: data.expires_at,
@@ -338,6 +343,8 @@ export default function DiscountCodeManager({
                 className="w-full bg-bg-base border border-accent/15 rounded-xl px-3 py-2 text-[14px]"
               >
                 <option value="">{t("option_all_products")}</option>
+                <option value={SCOPE_OURS}>{t("option_all_ours")}</option>
+                {makiGames.length > 0 && <option value={SCOPE_PARTNER}>{t("option_all_partner")}</option>}
                 <optgroup label={t("group_our_games")}>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -355,7 +362,7 @@ export default function DiscountCodeManager({
                   </optgroup>
                 )}
               </select>
-              {form.product_id.startsWith(MAKI_PREFIX) && (
+              {(form.product_id.startsWith(MAKI_PREFIX) || form.product_id === SCOPE_PARTNER) && (
                 <p className="text-[11px] text-text-muted mt-1.5 leading-relaxed">{t("hint_maki")}</p>
               )}
             </div>
@@ -507,7 +514,7 @@ export default function DiscountCodeManager({
                     <td className="px-4 py-3 text-text-muted">
                       {c.per_user_limit === null ? "∞" : c.per_user_limit}
                     </td>
-                    <td className="px-4 py-3 text-text-muted">{c.product_name ?? t("cell_all")}</td>
+                    <td className="px-4 py-3 text-text-muted">{c.product_name ?? (c.game_scope === "ours" ? t("cell_ours") : c.game_scope === "partner" ? t("cell_partner") : t("cell_all"))}</td>
                     <td className="px-4 py-3 text-text-muted">{fmt(c.expires_at)}</td>
                     <td className="px-4 py-3">
                       <span

@@ -47,7 +47,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     // flipping is_public=true on an already-owned code would leak it.
     const existing = await prisma.discount_codes.findUnique({
       where: { id },
-      select: { owner_user_id: true, product_id: true, partner_product_id: true },
+      select: { owner_user_id: true, product_id: true, partner_product_id: true, game_scope: true },
     })
     const effectiveOwner =
       body.owner_user_id !== undefined ? (body.owner_user_id?.trim() || null) : existing?.owner_user_id ?? null
@@ -108,7 +108,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     // ตรวจกับค่าที่จะเป็นจริงหลังบันทึก (ค่าที่ไม่ได้ส่งมาใช้ของเดิม)
     const effProduct = data.product_id !== undefined ? (data.product_id as string | null) : existing?.product_id ?? null
     const effPartner = data.partner_product_id !== undefined ? (data.partner_product_id as string | null) : existing?.partner_product_id ?? null
-    const scopeError = await checkPartnerScope(effProduct, effPartner, effectiveOwner)
+    // ขอบเขตกลุ่มมีผลเฉพาะตอนไม่ได้ผูกเกมเดียว — ผูกเกมเดียวเมื่อไหร่ล้างกลับเป็น all
+    if (body.game_scope !== undefined || data.product_id !== undefined || data.partner_product_id !== undefined) {
+      const wanted = body.game_scope !== undefined ? body.game_scope : existing?.game_scope
+      data.game_scope = effProduct || effPartner ? "all" : wanted === "ours" || wanted === "partner" ? wanted : "all"
+    }
+    const effScope = (data.game_scope as string | undefined) ?? existing?.game_scope ?? "all"
+    const scopeError = await checkPartnerScope(effProduct, effPartner, effectiveOwner, effScope)
     if (scopeError) return NextResponse.json({ error: scopeError }, { status: 400 })
 
     if (body.starts_at !== undefined) {

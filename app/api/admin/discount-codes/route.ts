@@ -53,6 +53,8 @@ export async function POST(req: NextRequest) {
     const minAmount = body.min_amount === null || body.min_amount === "" ? null : Number(body.min_amount)
     const productId = body.product_id?.trim() || null
     const partnerProductId: string | null = body.partner_product_id?.trim() || null
+    // ขอบเขตกลุ่ม (เมื่อไม่ได้ผูกเกมเดียว): all = ทุกเกม · ours = เฉพาะเกม A Class · partner = เฉพาะเกม Maki
+    const gameScope: string = productId || partnerProductId ? "all" : body.game_scope === "ours" || body.game_scope === "partner" ? body.game_scope : "all"
     const startsAt = body.starts_at ? new Date(body.starts_at) : null
     const expiresAt = body.expires_at ? new Date(body.expires_at) : null
     const note: string | null = body.note?.trim() || null
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
     if (commissionPct !== null && (!Number.isFinite(commissionPct) || commissionPct < 0 || commissionPct > 100)) {
       return NextResponse.json({ error: "commission_pct must be 0-100 or empty" }, { status: 400 })
     }
-    const scopeError = await checkPartnerScope(productId, partnerProductId, ownerUserId)
+    const scopeError = await checkPartnerScope(productId, partnerProductId, ownerUserId, gameScope)
     if (scopeError) return NextResponse.json({ error: scopeError }, { status: 400 })
 
     if (!code) {
@@ -114,6 +116,7 @@ export async function POST(req: NextRequest) {
         min_amount: minAmount,
         product_id: productId,
         partner_product_id: partnerProductId,
+        game_scope: gameScope,
         starts_at: startsAt,
         expires_at: expiresAt,
         // Affiliate codes are private (link-applied), so an owned code is never

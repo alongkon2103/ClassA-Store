@@ -66,6 +66,10 @@ export function evaluateDiscount(
   } else if (code.partner_product_id || (code.product_id && code.product_id !== productId)) {
     return { ok: false, errorCode: "WRONG_PRODUCT" }
   }
+  // game_scope (มีผลเมื่อไม่ได้ผูกเกมเดียว): ours = เฉพาะเกม A Class · partner = เฉพาะเกมพาร์ทเนอร์ (Maki) · all = ทุกเกม
+  if (!code.product_id && !code.partner_product_id && code.game_scope === (opts?.partner ? "ours" : "partner")) {
+    return { ok: false, errorCode: "WRONG_PRODUCT" }
+  }
   const minAmount = code.min_amount ? Number(code.min_amount) : 0
   if (subtotal < minAmount) {
     return { ok: false, errorCode: "BELOW_MIN_AMOUNT", params: { minAmount } }
@@ -178,7 +182,12 @@ export async function releasePartnerOrderDiscount(tx: Prisma.TransactionClient, 
   await tx.partner_orders.update({ where: { id: partnerOrderId }, data: { discount_code_id: null, discount_amount: null } })
 }
 
-/** โค้ด (ข้อมูลพรีวิว) ใช้กับเกมนี้ได้ไหม — id เป็น products.id หรือ partner_products.id ก็ได้ (uuid คนละตาราง ไม่ชนกัน) */
-export function codeAppliesTo(c: { product_id: string | null; partner_product_id?: string | null }, id: string): boolean {
-  return (c.product_id === null && !c.partner_product_id) || c.product_id === id || c.partner_product_id === id
+/**
+ * โค้ด (ข้อมูลพรีวิว) ใช้กับเกมนี้ได้ไหม — id เป็น products.id หรือ partner_products.id (uuid คนละตาราง ไม่ชนกัน)
+ * partner = true เมื่อ id เป็นเกมพาร์ทเนอร์ · กติกาเดียวกับ evaluateDiscount (game_scope: all / ours / partner)
+ */
+export function codeAppliesTo(c: { product_id: string | null; partner_product_id?: string | null; game_scope?: string | null }, id: string, partner = false): boolean {
+  if (c.product_id || c.partner_product_id) return c.product_id === id || c.partner_product_id === id
+  const scope = c.game_scope ?? "all"
+  return scope === "all" || scope === (partner ? "partner" : "ours")
 }

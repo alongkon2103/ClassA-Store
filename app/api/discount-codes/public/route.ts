@@ -39,8 +39,8 @@ export async function GET(req: NextRequest) {
           { OR: [{ expires_at: null }, { expires_at: { gt: now } }] },
           // global codes + codes tied to this product (โค้ดนายหน้าใช้กับเกม Maki ไม่ได้ จึงตัดออกด้วย)
           partnerProductId
-            ? { owner_user_id: null, OR: [{ product_id: null, partner_product_id: null }, { partner_product_id: partnerProductId }] }
-            : { OR: [{ product_id: null, partner_product_id: null }, { product_id: productId }] },
+            ? { owner_user_id: null, OR: [{ product_id: null, partner_product_id: null, game_scope: { in: ["all", "partner"] } }, { partner_product_id: partnerProductId }] }
+            : { OR: [{ product_id: null, partner_product_id: null, game_scope: { in: ["all", "ours"] } }, { product_id: productId }] },
         ],
       },
       orderBy: { created_at: "desc" },

@@ -55,6 +55,7 @@ export default async function CouponsPage({ params }: { params: Promise<{ locale
       : c.partner_product
         ? { slug: c.partner_product.external_slug, name_th: c.partner_product.name_th, name_en: c.partner_product.name_en }
         : null,
+    game_scope: (c.game_scope === "ours" || c.game_scope === "partner" ? c.game_scope : "all") as "all" | "ours" | "partner",
     expires_at: c.expires_at?.toISOString() ?? null,
     remaining: c.max_uses != null ? Math.max(0, c.max_uses - c.used_count) : null,
     used_by_me: paidUsesOf(c.id),

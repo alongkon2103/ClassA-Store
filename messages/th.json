@@ -691,6 +691,10 @@
     "points_per_daily_invalid": "แต้มรายวันต้องเป็นจำนวนเต็ม 0 ขึ้นไป"
   },
   "AdminDiscountCodes": {
+    "option_all_ours": "ทุกเกมของ A Class (ไม่รวมเกม Maki)",
+    "option_all_partner": "ทุกเกมของ Maki (ไม่รวมเกม A Class)",
+    "cell_ours": "ทุกเกม A Class",
+    "cell_partner": "ทุกเกม Maki",
     "title": "โค้ดส่วนลด",
     "subtitle": "สร้างและจัดการโค้ดส่วนลดสำหรับลูกค้า",
     "new_code": "+ สร้างโค้ดใหม่",
@@ -2054,6 +2058,8 @@
     "delete_points_confirm": "ลบรีวิวนี้? แต้ม {points} AC Points ที่ได้จากรีวิวจะถูกหักคืน และรีวิวเกมนี้ใหม่จะไม่ได้แต้มอีก"
   },
   "Account": {
+    "cp_ours_only": "ใช้ได้กับเกม A Class ทุกเกม",
+    "cp_partner_only": "ใช้ได้กับเกม Maki ทุกเกม",
     "nav_redeem": "แลกของรางวัล",
     "coins_type_redeem": "แลกของรางวัล",
     "coins_redeem_title": "แลกของรางวัลด้วย AC Points",

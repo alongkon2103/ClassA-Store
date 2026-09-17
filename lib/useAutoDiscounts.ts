@@ -23,6 +23,7 @@ type AutoPreviewCode = {
   min_amount: number | null
   product_id: string | null
   partner_product_id: string | null
+  game_scope?: string | null
   sold_out: boolean
   already_used: boolean
 }
@@ -89,7 +90,7 @@ export function useAutoDiscounts() {
       // 2) Fall back to the best global auto-select code.
       if (!codes || codes.length === 0) return null
       const candidates: AutoCodeCandidate[] = codes
-        .filter((c) => codeAppliesTo(c, productId))
+        .filter((c) => codeAppliesTo(c, productId, false))
         .map((c) => ({
           code: c.code,
           type: c.type,
@@ -107,12 +108,12 @@ export function useAutoDiscounts() {
     [codes, refInfo],
   )
 
-  // โค้ด auto ที่ดีที่สุด (ไม่รวมโค้ดนายหน้าจากลิงก์ /r) — หน้าเกมพาร์ทเนอร์ใช้ส่งไป validate/checkout
+  // โค้ด auto ที่ดีที่สุดของ "เกมพาร์ทเนอร์" (ไม่รวมโค้ดนายหน้าจากลิงก์ /r) — ใช้ส่งไป validate/checkout · productId = partner_products.id
   const bestAutoCode = useCallback(
     (productId: string, price: number): { code: string; amountOff: number } | null => {
       if (!codes || codes.length === 0) return null
       const candidates: AutoCodeCandidate[] = codes
-        .filter((c) => codeAppliesTo(c, productId))
+        .filter((c) => codeAppliesTo(c, productId, true))
         .map((c) => ({ code: c.code, type: c.type, value: c.value, minAmount: c.min_amount, isAutoSelect: true, soldOut: c.sold_out, alreadyUsed: c.already_used }))
       return pickBestAutoCode(candidates, price)
     },

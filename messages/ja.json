@@ -809,6 +809,8 @@
     "tutorial_video_title": "チュートリアル動画"
   },
   "Account": {
+    "cp_ours_only": "A Class の全ゲームで使用可能",
+    "cp_partner_only": "Maki の全ゲームで使用可能",
     "nav_redeem": "特典と交換",
     "coins_type_redeem": "特典と交換",
     "coins_redeem_title": "AC Points を特典と交換",

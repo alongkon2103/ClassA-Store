@@ -9,6 +9,7 @@ export type Coupon = {
   id: string; code: string; type: "fixed" | "percent"; value: number
   min_amount: number | null
   product: { slug: string; name_th: string; name_en: string } | null
+  game_scope: "all" | "ours" | "partner" // เมื่อไม่ได้ผูกเกมเดียว: ทุกเกม / เฉพาะเกม A Class / เฉพาะเกม Maki
   expires_at: string | null
   remaining: number | null
   used_by_me: number
@@ -76,7 +77,7 @@ export default function CouponsClient({ coupons, history }: { coupons: Coupon[];
                     </button>
                   </div>
                   <ul className="text-[0.7rem] text-text-dim space-y-0.5">
-                    <li>{c.product ? t("cp_product_only", { name: isTH ? c.product.name_th : c.product.name_en }) : t("cp_all_products")}</li>
+                    <li>{c.product ? t("cp_product_only", { name: isTH ? c.product.name_th : c.product.name_en }) : c.game_scope === "ours" ? t("cp_ours_only") : c.game_scope === "partner" ? t("cp_partner_only") : t("cp_all_products")}</li>
                     {c.min_amount != null && c.min_amount > 0 && <li>{t("cp_min", { amount: c.min_amount.toLocaleString() })}</li>}
                     <li>{c.expires_at ? t("cp_expires", { date: fmt(c.expires_at) }) : t("cp_no_expiry")}</li>
                     {c.remaining != null && <li>{t("cp_left", { n: c.remaining })}</li>}

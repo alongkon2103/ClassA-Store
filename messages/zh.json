@@ -809,6 +809,8 @@
     "tutorial_video_title": "教程视频"
   },
   "Account": {
+    "cp_ours_only": "适用于所有 A Class 游戏",
+    "cp_partner_only": "适用于所有 Maki 游戏",
     "nav_redeem": "兑换奖励",
     "coins_type_redeem": "兑换奖励",
     "coins_redeem_title": "用 AC Points 兑换奖励",

@@ -42,6 +42,7 @@ export default async function DiscountCodesAdminPage() {
           min_amount: c.min_amount ? Number(c.min_amount) : null,
           product_id: c.product_id,
           partner_product_id: c.partner_product_id,
+          game_scope: c.game_scope,
           product_name: c.product?.name_en ?? (c.partner_product ? `Maki · ${c.partner_product.name_en}` : null),
           starts_at: c.starts_at?.toISOString() ?? null,
           expires_at: c.expires_at?.toISOString() ?? null,
