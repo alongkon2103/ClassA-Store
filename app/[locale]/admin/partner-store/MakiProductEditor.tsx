@@ -1,11 +1,11 @@
 "use client"
 
-// แก้ไขเกม Maki: ชื่อ TH/EN · คำอธิบาย · ราคาขายต่อแพลน (≥ ขั้นต่ำสด) · โปรแกรมที่ต้องโหลด (ชื่อ+ลิงก์ โชว์ในหน้าออเดอร์หลังจ่าย) · เปิด/ปิดแสดง
+// แก้ไขเกม Maki: ชื่อ TH/EN · คำอธิบาย · ราคาขายต่อแพลน (≥ ขั้นต่ำสด) · โปรแกรมที่ต้องโหลด (ชื่อ+ลิงก์ โชว์ในหน้าออเดอร์หลังจ่าย) · รูปฟังก์ชันสำหรับหน้าสร้างรูปไลฟ์ · เปิด/ปิดแสดง
 // รูปปก/แบนเนอร์/วิดีโอดึงจาก Maki อัตโนมัติตอน sync (API v1.1) — ไม่ต้องอัปโหลดเอง โชว์ให้ดูเฉย ๆ
 import { useState } from "react"
 import { useTranslations } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
-import type { MakiDownload } from "@/lib/maki"
+import type { MakiDownload, MakiLivegenFunction } from "@/lib/maki"
 
 export type MakiPlanView = { key: string; plan: "1m" | "perma"; label_th: string; label_en: string; min_price_thb: number; sell_price_thb: number | null; preset_link: string | null }
 export type MakiProductView = {
@@ -13,6 +13,7 @@ export type MakiProductView = {
   description_html_th: string | null; description_html_en: string | null
   thumbnail_url: string | null; is_visible: boolean; coming_soon: boolean; plans: MakiPlanView[]
   downloads: MakiDownload[]
+  livegen_functions: MakiLivegenFunction[]
 }
 
 export default function MakiProductEditor({ product, onClose, onSaved }: { product: MakiProductView; onClose: () => void; onSaved: () => void }) {
@@ -24,6 +25,8 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
   const [prices, setPrices] = useState<Record<string, string>>(Object.fromEntries(product.plans.map((p) => [p.key, p.sell_price_thb == null ? "" : String(p.sell_price_thb)])))
   const [visible, setVisible] = useState(product.is_visible)
   const [downloads, setDownloads] = useState<MakiDownload[]>(product.downloads)
+  const [functions, setFunctions] = useState<MakiLivegenFunction[]>(product.livegen_functions)
+  const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -34,7 +37,7 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
       for (const p of product.plans) sell_prices[p.key] = prices[p.key] === "" ? null : Number(prices[p.key])
       const r = await fetch(`/api/admin/partner-store/products/${product.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name_th: nameTh, name_en: nameEn, description_html_th: descTh, description_html_en: descEn, sell_prices, is_visible: visible, downloads }),
+        body: JSON.stringify({ name_th: nameTh, name_en: nameEn, description_html_th: descTh, description_html_en: descEn, sell_prices, is_visible: visible, downloads, livegen_functions: functions }),
       })
       if (r.ok) { setMsg({ ok: true, text: t("saved") }); onSaved() }
       else {
@@ -50,6 +53,26 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
   const belowMin = product.plans.some((p) => prices[p.key] !== "" && Number(prices[p.key]) < p.min_price_thb)
   const isBadDownload = (d: MakiDownload) => !d.name.trim() || !/^https?:\/\/\S+$/.test(d.url.trim())
   const badDownload = downloads.some(isBadDownload)
+  const badFunction = functions.some((f) => !f.name.trim())
+  const MAX_FUNCTIONS = 60
+
+  // อัปโหลดรูปฟังก์ชันทีละหลายไฟล์ → แต่ละรูปเป็น 1 แถว ตั้งชื่อเริ่มต้นจากชื่อไฟล์ (แก้ได้) · บันทึกจริงตอนกด "บันทึก"
+  const uploadFunctions = async (files: File[]) => {
+    const room = MAX_FUNCTIONS - functions.length
+    if (!files.length || room <= 0) return
+    setUploading(true); setMsg(null)
+    try {
+      for (const file of files.slice(0, room)) {
+        const fd = new FormData()
+        fd.append("file", file)
+        fd.append("type", "image")
+        const r = await fetch("/api/admin/upload", { method: "POST", body: fd })
+        const d = await r.json().catch(() => null)
+        if (!r.ok || !d?.url) { setMsg({ ok: false, text: t("lg_upload_error", { error: d?.error ?? String(r.status) }) }); continue }
+        setFunctions((xs) => [...xs, { name: file.name.replace(/\.[a-z0-9]+$/i, "").slice(0, 80), image_url: d.url }])
+      }
+    } finally { setUploading(false) }
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: "var(--color-overlay)" }} onClick={onClose}>
@@ -135,6 +158,34 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
           {badDownload && <p className="text-[11px] text-hot mt-1">{t("download_invalid")}</p>}
         </div>
 
+        {/* รูปฟังก์ชันสำหรับหน้าสร้างรูปไลฟ์ — ลูกค้าเลือกไปวางเองในแท็บ "ฟังก์ชัน" */}
+        <div>
+          <span className={label}>{t("lg_functions")} ({functions.length}/{MAX_FUNCTIONS})</span>
+          {functions.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+              {functions.map((f, i) => (
+                <div key={f.image_url} className={`rounded-lg border p-2 flex flex-col gap-1.5 ${f.name.trim() ? "border-border-soft bg-bg-base/40" : "border-hot/50 bg-hot/5"}`}>
+                  <div className="aspect-square rounded-md overflow-hidden" style={{ background: "var(--gradient-thumb)" }}>
+                    <img src={getImageUrl(f.image_url)} alt="" className="w-full h-full object-contain" />
+                  </div>
+                  <input value={f.name} maxLength={80} placeholder={t("lg_name")}
+                         onChange={(e) => setFunctions((xs) => xs.map((x, k) => (k === i ? { ...x, name: e.target.value } : x)))} className={`${input} !py-1.5 !text-[12px]`} />
+                  <button onClick={() => setFunctions((xs) => xs.filter((_, k) => k !== i))} className="self-end text-[11px] text-hot hover:underline">{t("remove")}</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            <label className={`px-3 py-1.5 rounded-lg border border-accent/40 text-accent-light text-[12px] font-semibold hover:bg-accent/10 transition cursor-pointer ${uploading || functions.length >= MAX_FUNCTIONS ? "opacity-50 pointer-events-none" : ""}`}>
+              + {uploading ? t("lg_uploading") : t("lg_upload")}
+              <input type="file" accept="image/png,image/jpeg,image/webp" multiple hidden
+                     onChange={(e) => { const fs = Array.from(e.target.files ?? []); e.target.value = ""; void uploadFunctions(fs) }} />
+            </label>
+            <span className="text-[11px] text-text-dim">{t("lg_functions_hint")}</span>
+          </div>
+          {badFunction && <p className="text-[11px] text-hot mt-1">{t("lg_name_required")}</p>}
+        </div>
+
         {/* แสดงในร้าน */}
         <label className="flex items-center gap-2.5 text-[13px] text-text-base">
           <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} className="accent-accent w-4 h-4" />
@@ -145,7 +196,7 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-soft">
           {msg && <span className={`text-[12px] mr-auto ${msg.ok ? "text-success" : "text-hot"}`}>{msg.text}</span>}
           <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border-soft text-text-muted text-[13px] hover:text-text-base transition">{t("cancel")}</button>
-          <button onClick={save} disabled={saving || belowMin || badDownload} className="px-5 py-2 rounded-lg bg-accent hover:bg-accent-light text-white text-[13px] font-semibold transition disabled:opacity-50">
+          <button onClick={save} disabled={saving || uploading || belowMin || badDownload || badFunction} className="px-5 py-2 rounded-lg bg-accent hover:bg-accent-light text-white text-[13px] font-semibold transition disabled:opacity-50">
             {saving ? t("saving") : t("save")}
           </button>
         </div>

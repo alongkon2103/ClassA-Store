@@ -6,6 +6,7 @@ import { setRequestLocale } from "next-intl/server"
 import { getFeatureFlags } from "@/lib/featureFlags"
 import Navbar from "@/components/Navbar"
 import LiveEditor from "@/components/livegen/LiveEditor"
+import { toLivegenFunctions } from "@/lib/maki"
 
 // สร้างรูปไลฟ์ — editor แบบ Canva (Fabric.js) ตาม designer.html
 // ดู/ใช้/ดาวน์โหลดได้โดยไม่ต้องล็อกอิน · บันทึกโปรเจค/อัปโหลดรูปต้องล็อกอิน
@@ -21,7 +22,7 @@ export default async function LiveGenPage({ params, searchParams }: {
   const flags = await getFeatureFlags()
   if (!flags.livegen_enabled) notFound()
 
-  const [sp, session, gifts, games, templates] = await Promise.all([
+  const [sp, session, gifts, games, templates, makiGames] = await Promise.all([
     searchParams,
     getServerSession(authOptions),
     prisma.gifts.findMany({
@@ -48,7 +49,19 @@ export default async function LiveGenPage({ params, searchParams }: {
       orderBy: { created_at: "desc" },
       select: { id: true, name: true, kind: true, orientation: true, image_url: true, thumbnail: true, cover_url: true },
     }),
+    // เกม Maki ที่เปิดขายในร้าน — รูปฟังก์ชันที่แอดมินอัปโหลดไว้ (partner_products.livegen_functions)
+    prisma.partner_products.findMany({
+      where: { is_visible: true, coming_soon: false, partner: { is_active: true, integration: "maki_api" } },
+      orderBy: { sort_order: "asc" },
+      select: { id: true, name_th: true, name_en: true, livegen_functions: true },
+    }),
   ])
+  const makiFunctionGames = makiGames.flatMap((g) => {
+    const fns = toLivegenFunctions(g.livegen_functions)
+    return fns.length
+      ? [{ id: g.id, name_th: g.name_th, name_en: g.name_en, functions: fns.map((f, i) => ({ id: `${g.id}:${i}`, name: f.name, label_th: null, label_en: null, image_url: f.image_url })) }]
+      : []
+  })
 
   return (
     <div className="min-h-screen bg-bg-base flex flex-col">
@@ -57,10 +70,13 @@ export default async function LiveGenPage({ params, searchParams }: {
         isAuthenticated={!!session?.user?.id}
         isAdmin={session?.user?.role === "admin"}
         gifts={gifts}
-        games={games.map((g) => ({
-          id: g.id, name_th: g.name_th, name_en: g.name_en,
-          functions: g.product_functions.flatMap((f) => (f.image_url ? [{ id: f.id, name: f.name, label_th: f.label_th, label_en: f.label_en, image_url: f.image_url }] : [])),
-        }))}
+        games={[
+          ...games.map((g) => ({
+            id: g.id, name_th: g.name_th, name_en: g.name_en,
+            functions: g.product_functions.flatMap((f) => (f.image_url ? [{ id: f.id, name: f.name, label_th: f.label_th, label_en: f.label_en, image_url: f.image_url }] : [])),
+          })),
+          ...makiFunctionGames,
+        ]}
         templates={templates.map((x) => ({
           id: x.id, name: x.name, kind: x.kind === "canvas" ? "canvas" : "image",
           orientation: x.orientation === "landscape" ? "landscape" : "portrait",

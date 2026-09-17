@@ -115,6 +115,21 @@ export function planAvailable(p: MakiPlanRow) {
 export function toPlanRows(plans: unknown): MakiPlanRow[] {
   return Array.isArray(plans) ? (plans as MakiPlanRow[]) : []
 }
+// รูปฟังก์ชันของเกม Maki สำหรับแท็บ "ฟังก์ชัน" ในหน้าสร้างรูปไลฟ์ (แอดมินอัปโหลดต่อเกม) — รูปต้องมาจาก /api/admin/upload หรือเป็น http(s) สูงสุด 60
+export type MakiLivegenFunction = { name: string; image_url: string }
+export function toLivegenFunctions(v: unknown): MakiLivegenFunction[] {
+  if (!Array.isArray(v)) return []
+  const out: MakiLivegenFunction[] = []
+  for (const x of v as { name?: unknown; image_url?: unknown }[]) {
+    const name = typeof x?.name === "string" ? x.name.trim().slice(0, 80) : ""
+    const image_url = typeof x?.image_url === "string" ? x.image_url.trim() : ""
+    const okUrl = image_url.length <= 500 && !image_url.includes("..") && (image_url.startsWith("/uploads/") || /^https?:\/\/\S+$/.test(image_url))
+    if (name && okUrl) out.push({ name, image_url })
+    if (out.length >= 60) break
+  }
+  return out
+}
+
 // โปรแกรมที่ลูกค้าต้องโหลดหลังซื้อ (แอดมินตั้งต่อเกมในหน้า partner-store) — เก็บเฉพาะรายการที่ครบและลิงก์เป็น http(s) สูงสุด 20
 export type MakiDownload = { name: string; url: string }
 export function toDownloads(v: unknown): MakiDownload[] {
