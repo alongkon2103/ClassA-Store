@@ -1,6 +1,6 @@
 // รูปที่ผู้ใช้อัปโหลดเข้า editor — GET รายการ / POST อัปโหลด (แปลงเป็น webp ≤ 2MB)
 // Dev  → <project>/public/uploads/livegen/<user>/…  (เข้าผ่าน /uploads/…)
-// Prod → /var/www/uploads/livegen/<user>/…           (nginx เสิร์ฟ /uploads/…)
+// Prod → /var/www/uploads/uploads/livegen/<user>/…   (nginx root = /var/www/uploads → URL /uploads/… · ดู lib/livegen/assetPaths.ts)
 import { mkdir, writeFile } from "fs/promises"
 import path from "path"
 import { randomUUID } from "crypto"
@@ -10,11 +10,10 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getFeatureFlags } from "@/lib/featureFlags"
+import { livegenAssetDiskPath } from "@/lib/livegen/assetPaths"
 
 export const runtime = "nodejs"
 
-const BASE_UPLOAD_DIR =
-  process.env.NODE_ENV === "production" ? "/var/www/uploads" : path.join(process.cwd(), "public", "uploads")
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"])
 const MAX_INPUT = 12 * 1024 * 1024 // ไฟล์ต้นทาง
 const MAX_OUTPUT = 2 * 1024 * 1024 // หลังแปลง webp
@@ -55,11 +54,11 @@ export async function POST(req: NextRequest) {
   if (out.data.length > MAX_OUTPUT) out = await encode(60)
   if (out.data.length > MAX_OUTPUT) return NextResponse.json({ error: "file_too_large" }, { status: 413 })
 
-  const dir = path.join(BASE_UPLOAD_DIR, "livegen", userId)
-  await mkdir(dir, { recursive: true })
   const name = `${Date.now()}-${randomUUID().slice(0, 8)}.webp`
-  await writeFile(path.join(dir, name), out.data)
   const url = `/uploads/livegen/${userId}/${name}`
+  const diskPath = livegenAssetDiskPath(url) // ต้องเป็นตำแหน่งที่ URL นี้ถูกเสิร์ฟจริง
+  await mkdir(path.dirname(diskPath), { recursive: true })
+  await writeFile(diskPath, out.data)
 
   const row = await prisma.livegen_assets.create({
     data: { user_id: userId, url, filename: file.name.slice(0, 120), width: out.info.width, height: out.info.height, size: out.data.length },
