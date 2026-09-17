@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations, useLocale } from "next-intl"
 import MakiProductEditor, { type MakiPlanView } from "./MakiProductEditor"
-import type { MakiDownload, MakiLivegenFunction } from "@/lib/maki"
+import type { MakiDownload, MakiGuideVideo, MakiLivegenFunction } from "@/lib/maki"
 
 type Split = { partner_id: string; pct: number }
 type PartnerProduct = {
@@ -32,6 +32,7 @@ type PartnerProduct = {
   coming_soon: boolean
   plans: MakiPlanView[]
   downloads: MakiDownload[]
+  guide_videos: MakiGuideVideo[]
   livegen_functions: MakiLivegenFunction[]
 }
 type Store = {

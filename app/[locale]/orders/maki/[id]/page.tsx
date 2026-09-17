@@ -18,7 +18,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
   const row = await syncMakiOrder(id)
   if (!row || (row.user_id !== userId && session.user.role !== "admin")) notFound()
   const [product, points] = await Promise.all([
-    prisma.partner_products.findUnique({ where: { id: row.partner_product_id }, select: { external_slug: true, name_th: true, name_en: true, thumbnail_url: true, images: true, plans: true, downloads: true } }),
+    prisma.partner_products.findUnique({ where: { id: row.partner_product_id }, select: { external_slug: true, name_th: true, name_en: true, thumbnail_url: true, images: true, plans: true, downloads: true, guide_videos: true } }),
     prisma.point_ledger.findFirst({ where: { partner_order_id: id, type: "earn_purchase" }, select: { delta: true } }),
   ])
   return (

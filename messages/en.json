@@ -1155,6 +1155,7 @@
     "orientation_horizontal": "Horizontal"
   },
   "Orders": {
+    "maki_videos": "Guide videos",
     "maki_downloads": "Downloads",
     "title": "Game Settings",
     "subtitle": "Manage your TikTok and Gift settings",
@@ -2320,6 +2321,12 @@
     "meta_desc": "How A Class Store collects, uses and protects your data"
   },
   "AdminMaki": {
+    "videos": "Videos (YouTube)",
+    "videos_hint": "Shown as embedded videos on the order page after payment, e.g. setup or how-to guides (max 20)",
+    "video_title": "Video title (optional)",
+    "video_url": "https://youtu.be/… YouTube link",
+    "add_video": "Add video",
+    "video_invalid": "Links must be YouTube: youtube.com/watch?v=… , youtu.be/… or shorts",
     "lg_functions": "Function images for the live image maker",
     "lg_functions_hint": "Customers pick these in the maker's “Functions” tab and place them themselves (only for games listed in the shop) · PNG/JPG/WebP up to 5MB each; select several at once",
     "lg_upload": "Upload function images",

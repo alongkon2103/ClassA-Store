@@ -1,11 +1,12 @@
 "use client"
 
-// แก้ไขเกม Maki: ชื่อ TH/EN · คำอธิบาย · ราคาขายต่อแพลน (≥ ขั้นต่ำสด) · โปรแกรมที่ต้องโหลด (ชื่อ+ลิงก์ โชว์ในหน้าออเดอร์หลังจ่าย) · รูปฟังก์ชันสำหรับหน้าสร้างรูปไลฟ์ · เปิด/ปิดแสดง
+// แก้ไขเกม Maki: ชื่อ TH/EN · คำอธิบาย · ราคาขายต่อแพลน (≥ ขั้นต่ำสด) · โปรแกรมที่ต้องโหลด (ชื่อ+ลิงก์ โชว์ในหน้าออเดอร์หลังจ่าย) · วิดีโอ YouTube หลังซื้อ · รูปฟังก์ชันสำหรับหน้าสร้างรูปไลฟ์ · เปิด/ปิดแสดง
 // รูปปก/แบนเนอร์/วิดีโอดึงจาก Maki อัตโนมัติตอน sync (API v1.1) — ไม่ต้องอัปโหลดเอง โชว์ให้ดูเฉย ๆ
 import { useState } from "react"
 import { useTranslations } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
-import type { MakiDownload, MakiLivegenFunction } from "@/lib/maki"
+import type { MakiDownload, MakiGuideVideo, MakiLivegenFunction } from "@/lib/maki"
+import { youtubeId } from "@/lib/video"
 
 export type MakiPlanView = { key: string; plan: "1m" | "perma"; label_th: string; label_en: string; min_price_thb: number; sell_price_thb: number | null; preset_link: string | null }
 export type MakiProductView = {
@@ -13,6 +14,7 @@ export type MakiProductView = {
   description_html_th: string | null; description_html_en: string | null
   thumbnail_url: string | null; is_visible: boolean; coming_soon: boolean; plans: MakiPlanView[]
   downloads: MakiDownload[]
+  guide_videos: MakiGuideVideo[]
   livegen_functions: MakiLivegenFunction[]
 }
 
@@ -25,6 +27,7 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
   const [prices, setPrices] = useState<Record<string, string>>(Object.fromEntries(product.plans.map((p) => [p.key, p.sell_price_thb == null ? "" : String(p.sell_price_thb)])))
   const [visible, setVisible] = useState(product.is_visible)
   const [downloads, setDownloads] = useState<MakiDownload[]>(product.downloads)
+  const [videos, setVideos] = useState<MakiGuideVideo[]>(product.guide_videos)
   const [functions, setFunctions] = useState<MakiLivegenFunction[]>(product.livegen_functions)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -37,7 +40,7 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
       for (const p of product.plans) sell_prices[p.key] = prices[p.key] === "" ? null : Number(prices[p.key])
       const r = await fetch(`/api/admin/partner-store/products/${product.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name_th: nameTh, name_en: nameEn, description_html_th: descTh, description_html_en: descEn, sell_prices, is_visible: visible, downloads, livegen_functions: functions }),
+        body: JSON.stringify({ name_th: nameTh, name_en: nameEn, description_html_th: descTh, description_html_en: descEn, sell_prices, is_visible: visible, downloads, guide_videos: videos, livegen_functions: functions }),
       })
       if (r.ok) { setMsg({ ok: true, text: t("saved") }); onSaved() }
       else {
@@ -53,6 +56,8 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
   const belowMin = product.plans.some((p) => prices[p.key] !== "" && Number(prices[p.key]) < p.min_price_thb)
   const isBadDownload = (d: MakiDownload) => !d.name.trim() || !/^https?:\/\/\S+$/.test(d.url.trim())
   const badDownload = downloads.some(isBadDownload)
+  const isBadVideo = (v: MakiGuideVideo) => !/^https?:\/\//.test(v.url.trim()) || !youtubeId(v.url.trim())
+  const badVideo = videos.some(isBadVideo)
   const badFunction = functions.some((f) => !f.name.trim())
   const MAX_FUNCTIONS = 60
 
@@ -158,6 +163,28 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
           {badDownload && <p className="text-[11px] text-hot mt-1">{t("download_invalid")}</p>}
         </div>
 
+        {/* วิดีโอ YouTube — โชว์ในหน้าออเดอร์หลังชำระเงินสำเร็จ (เช่น วิธีติดตั้ง/วิธีใช้) */}
+        <div>
+          <span className={label}>{t("videos")}</span>
+          <div className="space-y-2">
+            {videos.map((v, i) => (
+              <div key={i} className={`flex flex-col sm:flex-row gap-2 px-3 py-2.5 rounded-lg border ${isBadVideo(v) ? "border-hot/50 bg-hot/5" : "border-border-soft bg-bg-base/40"}`}>
+                <input value={v.title} maxLength={80} placeholder={t("video_title")}
+                       onChange={(e) => setVideos((xs) => xs.map((x, k) => (k === i ? { ...x, title: e.target.value } : x)))} className={`${input} sm:!w-[200px]`} />
+                <input value={v.url} maxLength={300} placeholder={t("video_url")}
+                       onChange={(e) => setVideos((xs) => xs.map((x, k) => (k === i ? { ...x, url: e.target.value } : x)))} className={`${input} font-mono !text-[12px]`} />
+                <button onClick={() => setVideos((xs) => xs.filter((_, k) => k !== i))} className="shrink-0 px-3 py-2 rounded-lg border border-hot/30 text-hot text-[12px] hover:bg-hot/10 transition">{t("remove")}</button>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            <button onClick={() => setVideos((xs) => [...xs, { title: "", url: "" }])} disabled={videos.length >= 20}
+                    className="px-3 py-1.5 rounded-lg border border-accent/40 text-accent-light text-[12px] font-semibold hover:bg-accent/10 transition disabled:opacity-50">+ {t("add_video")}</button>
+            <span className="text-[11px] text-text-dim">{t("videos_hint")}</span>
+          </div>
+          {badVideo && <p className="text-[11px] text-hot mt-1">{t("video_invalid")}</p>}
+        </div>
+
         {/* รูปฟังก์ชันสำหรับหน้าสร้างรูปไลฟ์ — ลูกค้าเลือกไปวางเองในแท็บ "ฟังก์ชัน" */}
         <div>
           <span className={label}>{t("lg_functions")} ({functions.length}/{MAX_FUNCTIONS})</span>
@@ -196,7 +223,7 @@ export default function MakiProductEditor({ product, onClose, onSaved }: { produ
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-soft">
           {msg && <span className={`text-[12px] mr-auto ${msg.ok ? "text-success" : "text-hot"}`}>{msg.text}</span>}
           <button onClick={onClose} className="px-4 py-2 rounded-lg border border-border-soft text-text-muted text-[13px] hover:text-text-base transition">{t("cancel")}</button>
-          <button onClick={save} disabled={saving || uploading || belowMin || badDownload || badFunction} className="px-5 py-2 rounded-lg bg-accent hover:bg-accent-light text-white text-[13px] font-semibold transition disabled:opacity-50">
+          <button onClick={save} disabled={saving || uploading || belowMin || badDownload || badVideo || badFunction} className="px-5 py-2 rounded-lg bg-accent hover:bg-accent-light text-white text-[13px] font-semibold transition disabled:opacity-50">
             {saving ? t("saving") : t("save")}
           </button>
         </div>

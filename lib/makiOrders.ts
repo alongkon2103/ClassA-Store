@@ -3,7 +3,7 @@
 import { randomUUID } from "crypto"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
-import { MakiError, makiCreateOrder, makiGetOrder, makiListOrders, planAvailable, toPlanRows, toDownloads, withLiveMinimums, type MakiAccess, type MakiDownload, type MakiPlanRow } from "@/lib/maki"
+import { MakiError, makiCreateOrder, makiGetOrder, makiListOrders, planAvailable, toPlanRows, toDownloads, toGuideVideos, withLiveMinimums, type MakiAccess, type MakiDownload, type MakiGuideVideo, type MakiPlanRow } from "@/lib/maki"
 import { awardPointsForPartnerOrder } from "@/lib/points"
 import { capPartnerDiscount, countUserRedemptions, evaluateDiscount, releasePartnerOrderDiscount } from "@/lib/discountCodes"
 import type { discount_codes } from "@prisma/client"
@@ -172,8 +172,9 @@ export type MakiOrderView = {
   product: { slug: string; name_th: string; name_en: string; image: string | null } | null
   preset_link: string | null
   downloads: MakiDownload[] // โปรแกรมที่ต้องโหลด (แอดมินตั้งต่อเกม) โชว์เมื่อจ่ายแล้ว
+  guide_videos: MakiGuideVideo[] // วิดีโอ YouTube (แอดมินตั้งต่อเกม) โชว์เมื่อจ่ายแล้ว
 }
-type ProductLite = { external_slug: string; name_th: string; name_en: string; thumbnail_url: string | null; images: unknown; plans: unknown; downloads?: unknown } | null // downloads ไม่บังคับ: หน้ารายการออเดอร์ไม่ต้องดึง
+type ProductLite = { external_slug: string; name_th: string; name_en: string; thumbnail_url: string | null; images: unknown; plans: unknown; downloads?: unknown; guide_videos?: unknown } | null // downloads ไม่บังคับ: หน้ารายการออเดอร์ไม่ต้องดึง
 
 export function toMakiOrderView(row: Row, product: ProductLite): MakiOrderView {
   const plan = product ? toPlanRows(product.plans).find((p) => p.key === row.plan_key) ?? null : null
@@ -189,6 +190,7 @@ export function toMakiOrderView(row: Row, product: ProductLite): MakiOrderView {
     product: product ? { slug: product.external_slug, name_th: product.name_th, name_en: product.name_en, image: product.thumbnail_url ?? images[0] ?? null } : null,
     preset_link: plan?.preset_link ?? null,
     downloads: product ? toDownloads(product.downloads) : [],
+    guide_videos: product ? toGuideVideos(product.guide_videos) : [],
   }
 }
 

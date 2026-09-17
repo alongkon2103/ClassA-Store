@@ -8,6 +8,7 @@ import { Link } from "@/i18n/routing"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { fmtDate, variantLabel } from "@/lib/i18n/locale"
 import type { MakiOrderView } from "@/lib/makiOrders"
+import { youtubeEmbed } from "@/lib/video"
 
 const TONE: Record<string, string> = { pending: "bg-gold/10 text-gold border-gold/25", paid: "bg-success/10 text-success border-success/25", expired: "bg-hot/10 text-hot border-hot/25", failed: "bg-hot/10 text-hot border-hot/25" }
 
@@ -119,6 +120,27 @@ export default function MakiOrderClient({ initial, initialPoints }: { initial: M
                     {d.name}
                   </a>
                 ))}
+              </div>
+            </div>
+          )}
+          {order.guide_videos.length > 0 && (
+            <div className="mb-3">
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-text-dim mb-2">{t("maki_videos")}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {order.guide_videos.map((v, i) => {
+                  const embed = youtubeEmbed(v.url)
+                  if (!embed) return null
+                  return (
+                    <div key={i}>
+                      <div className="relative aspect-video rounded-lg overflow-hidden bg-black">
+                        <iframe src={embed} title={v.title || `video ${i + 1}`} loading="lazy" allowFullScreen
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                className="absolute inset-0 w-full h-full" />
+                      </div>
+                      {v.title && <p className="text-[0.78rem] text-text-muted mt-1.5">{v.title}</p>}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}

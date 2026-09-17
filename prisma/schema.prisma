@@ -1113,6 +1113,7 @@ model partner_products {
   is_visible          Boolean        @default(true) // admin show/hide; PRESERVED across syncs
   show_partner_badge  Boolean        @default(true) // ป้าย Partner ในหน้าร้าน/หน้าเกม แอดมินปิดได้ต่อเกม; PRESERVED across syncs
   category_id         String?        @db.Uuid // หมวดหมู่เกม (ใช้ร่วมกับ products); PRESERVED across syncs
+  guide_videos        Json? // เกม Maki: วิดีโอ YouTube ที่โชว์ในหน้าออเดอร์หลังจ่าย [{title, url}] แอดมินตั้งในหน้า partner-store; PRESERVED across syncs
   livegen_functions   Json? // เกม Maki: รูปฟังก์ชันให้ลูกค้าเลือกวางในหน้าสร้างรูปไลฟ์ [{name, image_url}] แอดมินอัปโหลดในหน้า partner-store; PRESERVED across syncs
   downloads           Json? // เกม Maki: โปรแกรมที่ลูกค้าต้องโหลดหลังซื้อ [{name, url}] แอดมินตั้งในหน้า partner-store โชว์ในหน้าออเดอร์เมื่อจ่ายแล้ว; PRESERVED across syncs
   category            game_categories? @relation(fields: [category_id], references: [id], onDelete: SetNull)

@@ -3,6 +3,7 @@
 //   MAKI_API_MODE     = "test" → ใช้ sandbox /test ของเขา (ไม่มีเงินจริง) · ไม่ตั้ง = ของจริง
 // dev ที่ยังไม่มี key จะได้แคตตาล็อกจำลอง (ตัวอย่างจากเอกสาร) เพื่อทำ UI ได้ก่อน — production ไม่มี key = error
 import type { Prisma } from "@prisma/client"
+import { youtubeId } from "./video"
 
 export const MAKI_BASE = process.env.MAKI_API_BASE || "https://maki-website.onrender.com/api/partner/v1"
 export type MakiPlan = "1m" | "perma"
@@ -126,6 +127,20 @@ export function toLivegenFunctions(v: unknown): MakiLivegenFunction[] {
     const okUrl = image_url.length <= 500 && !image_url.includes("..") && (image_url.startsWith("/uploads/") || /^https?:\/\/\S+$/.test(image_url))
     if (name && okUrl) out.push({ name, image_url })
     if (out.length >= 60) break
+  }
+  return out
+}
+
+// วิดีโอ YouTube ที่โชว์ในหน้าออเดอร์หลังจ่าย (แอดมินตั้งต่อเกม) — เก็บเฉพาะลิงก์ http(s) ที่เป็น YouTube จริง ชื่อไม่บังคับ สูงสุด 20
+export type MakiGuideVideo = { title: string; url: string }
+export function toGuideVideos(v: unknown): MakiGuideVideo[] {
+  if (!Array.isArray(v)) return []
+  const out: MakiGuideVideo[] = []
+  for (const x of v as { title?: unknown; url?: unknown }[]) {
+    const title = typeof x?.title === "string" ? x.title.trim().slice(0, 80) : ""
+    const url = typeof x?.url === "string" ? x.url.trim() : ""
+    if (url.length <= 300 && /^https?:\/\//.test(url) && youtubeId(url)) out.push({ title, url })
+    if (out.length >= 20) break
   }
   return out
 }

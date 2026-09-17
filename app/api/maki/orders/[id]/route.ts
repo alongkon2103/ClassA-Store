@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const row = await syncMakiOrder(id)
   if (!row || (row.user_id !== session.user.id && session.user.role !== "admin")) return NextResponse.json({ error: "not_found" }, { status: 404 })
   const [product, points] = await Promise.all([
-    prisma.partner_products.findUnique({ where: { id: row.partner_product_id }, select: { external_slug: true, name_th: true, name_en: true, thumbnail_url: true, images: true, plans: true, downloads: true } }),
+    prisma.partner_products.findUnique({ where: { id: row.partner_product_id }, select: { external_slug: true, name_th: true, name_en: true, thumbnail_url: true, images: true, plans: true, downloads: true, guide_videos: true } }),
     prisma.point_ledger.findFirst({ where: { partner_order_id: id, type: "earn_purchase" }, select: { delta: true } }),
   ])
   return NextResponse.json({ order: toMakiOrderView(row, product), points: points?.delta ?? null })
