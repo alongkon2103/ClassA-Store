@@ -5,6 +5,7 @@ import DiscordProvider from "next-auth/providers/discord"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
+import { findAccountUserId, findExistingUserId } from "@/lib/authIdentity"
 
 export const authOptions: AuthOptions = {
     providers: [
@@ -58,9 +59,16 @@ export const authOptions: AuthOptions = {
             try {
                 const email = user.email ?? null
 
-                let dbUser = email
-                    ? await prisma.users.findFirst({ where: { email } })
-                    : null
+                // หา user เดิมจากบัญชี provider ที่ผูกไว้ก่อน แล้วค่อยจากอีเมล (ดู lib/authIdentity.ts)
+                // — หาจากอีเมลอย่างเดียวไม่ได้: Discord บางบัญชีไม่ส่งอีเมลมา → เคยสร้าง user ใหม่ทุกครั้งที่ล็อกอิน
+                const existingId = account.provider === "dev-admin"
+                    ? null
+                    : await findExistingUserId(prisma, account.provider, account.providerAccountId, email)
+                let dbUser = existingId
+                    ? await prisma.users.findUnique({ where: { id: existingId } })
+                    : email
+                        ? await prisma.users.findFirst({ where: { email } }) // dev-admin
+                        : null
 
                 if (!dbUser) {
                     dbUser = await prisma.users.create({
@@ -159,10 +167,19 @@ export const authOptions: AuthOptions = {
                 const lastFetched = (token.roleLastFetched as number) ?? 0
 
                 if (now - lastFetched > 60 * 5) {
-                    const dbUser = await prisma.users.findUnique({
+                    let dbUser = await prisma.users.findUnique({
                         where: { id: token.id as string },
                         select: { role: true },
                     })
+                    // user แถวนี้ไม่มีแล้ว = ถูกรวมเข้าบัญชีหลัก (ล้าง user ซ้ำจากบั๊กอีเมลว่าง) → ย้าย session ไปบัญชีที่ผูกกับ provider account เดิม
+                    // ลูกค้าไม่ต้องล็อกอินใหม่ก็กลับมาเห็นออเดอร์ของตัวเอง
+                    if (!dbUser && token.provider && token.providerAccountId) {
+                        const mergedInto = await findAccountUserId(prisma, token.provider as string, token.providerAccountId as string)
+                        if (mergedInto) {
+                            token.id = mergedInto
+                            dbUser = await prisma.users.findUnique({ where: { id: mergedInto }, select: { role: true } })
+                        }
+                    }
                     token.role = dbUser?.role ?? "user"
                     token.roleLastFetched = now
                 }
