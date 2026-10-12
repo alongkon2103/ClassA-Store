@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { validateProductEditor } from "@/lib/adminAuth"
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  const admin = await validateProductEditor(id)
+  if (!admin.isValid) return admin.response
+
   const { url, filename, filesize, sort_order } = await req.json()
 
   if (!url || !filename) return NextResponse.json({ error: "url and filename required" }, { status: 400 })

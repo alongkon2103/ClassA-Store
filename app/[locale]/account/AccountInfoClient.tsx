@@ -5,6 +5,7 @@ import { localeTag } from "@/lib/i18n/locale"
 import { useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
 import { Link, useRouter } from "@/i18n/routing"
+import { REVIEWS_ENABLED } from "@/lib/reviewConfig"
 
 type User = { username: string; email: string | null; avatar: string | null; role: string; created_at: string | null }
 
@@ -88,13 +89,13 @@ export default function AccountInfoClient({ user, provider, stats }: {
       </div>
 
       {/* สถิติ → ลิงก์ไปหน้าที่เกี่ยวข้อง */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className={`grid grid-cols-2 ${REVIEWS_ENABLED ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-3`}>
         {[
           { href: "/orders", n: stats.orders, label: t("stat_orders") },
           { href: "/account/coins", n: stats.points, label: t("stat_points") },
           { href: "/account/favorites", n: stats.favorites, label: t("stat_favorites") },
           { href: "/account/reviews", n: stats.reviews, label: t("stat_reviews") },
-        ].map((x) => (
+        ].filter((x) => REVIEWS_ENABLED || x.href !== "/account/reviews").map((x) => (
           <Link key={x.href} href={x.href} className="bg-bg-card border border-border-soft rounded-[14px] p-5 hover:border-accent/40 transition-colors">
             <div className="text-[1.6rem] font-black text-accent-light leading-none mb-1">{x.n.toLocaleString()}</div>
             <div className="text-[0.78rem] text-text-muted">{x.label}</div>

@@ -1,9 +1,11 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import { setRequestLocale } from "next-intl/server"
 import GameCategoriesClient, { type CatRow, type GameRow } from "./GameCategoriesClient"
 
 // หมวดหมู่เกม: สร้าง/แก้ชื่อ/ซ่อน/เรียง/ลบหมวด แล้วใส่หมวดให้ทุกเกมในหน้าเดียว ทั้งเกมเราและเกมพาร์ทเนอร์
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  await requireAdminPage()
   const { locale } = await params
   setRequestLocale(locale)
 

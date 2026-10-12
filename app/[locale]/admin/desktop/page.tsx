@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import { setRequestLocale } from "next-intl/server"
 import { Monitor, Users, ShieldCheck, Megaphone, Activity } from "lucide-react"
@@ -9,6 +10,7 @@ export default async function AdminDesktopOverviewPage({
 }: {
   params: Promise<{ locale: string }>
 }) {
+  await requireAdminPage()
   const { locale } = await params
   setRequestLocale(locale)
   

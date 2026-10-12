@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import { setRequestLocale } from "next-intl/server"
 import { getPointsConfig, pointsActive, POINTS_CONFIG_KEYS } from "@/lib/points"
@@ -7,6 +8,7 @@ export const dynamic = "force-dynamic"
 
 // AC Points (แอดมิน): ผู้ใช้และยอดแต้ม (เพิ่ม/หัก/ตั้งยอด/ยกเลิกรายการ) · ประวัติทั้งหมด · ตั้งค่าเรท
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  await requireAdminPage()
   const { locale } = await params
   setRequestLocale(locale)
 

@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import { setRequestLocale } from "next-intl/server"
 import PartnerManagerClient from "./PartnerManagerClient"
@@ -7,6 +8,7 @@ export default async function PartnerManagementPage({
 }: {
   params: Promise<{ locale: string }>
 }) {
+  await requireAdminPage()
   const { locale } = await params
   setRequestLocale(locale)
 

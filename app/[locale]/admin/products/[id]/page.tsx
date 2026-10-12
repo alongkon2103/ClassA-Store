@@ -3,12 +3,14 @@ import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import ProductForm from "@/components/admin/products/ProductForm"
 import { setRequestLocale } from "next-intl/server"
+import { requireAdminPage } from "@/lib/adminAuth"
 
 export default async function EditProductPage({
   params
 }: {
   params: Promise<{ id: string, locale: string }>
 }) {
+  const session = await requireAdminPage(["admin", "partnership"])
   const { id, locale } = await params
   setRequestLocale(locale)
 
@@ -27,6 +29,8 @@ export default async function EditProductPage({
     },
   })
   if (!product) notFound()
+  // Partnership edits only their own products (same rule as /api/admin/products/[id])
+  if (session.user.role === "partnership" && product.created_by_id !== session.user.id) notFound()
 
   const gifts = await prisma.gifts.findMany({
     orderBy: { sort_order: "asc" }

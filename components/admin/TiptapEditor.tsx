@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { useEditor, EditorContent } from "@tiptap/react"
 import type { Editor } from "@tiptap/core"
 import StarterKit from "@tiptap/starter-kit"
@@ -23,15 +23,19 @@ import {
   Undo, Redo, Link as LinkIcon, Image as ImageIcon,
   Heading1, Heading2, AlignLeft, AlignCenter, AlignRight,
   Highlighter, Play as YoutubeIcon, Table as TableIcon,
-  Eraser
+  Eraser, Upload
 } from "lucide-react"
 
 interface TiptapEditorProps {
   content: string
   onChange: (content: string) => void
+  onImageUpload?: (file: File) => Promise<string>
+  uploadImageLabel?: string
 }
 
-const MenuBar = ({ editor }: { editor: Editor | null }) => {
+const MenuBar = ({ editor, onImageUpload, uploadImageLabel }: { editor: Editor | null } & Pick<TiptapEditorProps, "onImageUpload" | "uploadImageLabel">) => {
+  const imageInput = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
   if (!editor) return null
 
   const addLink = () => {
@@ -91,6 +95,18 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
       <div className="flex gap-1 pl-1 border-l border-accent/10 ml-1">
         <button type="button" onClick={addLink} className={`p-2 rounded-lg hover:bg-accent/10 transition ${editor.isActive("link") ? "text-accent-light bg-accent/10" : "text-text-muted"}`} title="Add Link"><LinkIcon size={16} /></button>
         <button type="button" onClick={addImage} className="p-2 rounded-lg hover:bg-accent/10 transition text-text-muted" title="Add Image (URL)"><ImageIcon size={16} /></button>
+        {onImageUpload && <>
+          <button type="button" disabled={uploading} onClick={() => imageInput.current?.click()} className="p-2 rounded-lg hover:bg-accent/10 transition text-text-muted disabled:opacity-50" title={uploadImageLabel} aria-label={uploadImageLabel}><Upload size={16} /></button>
+          <input ref={imageInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={async (e) => {
+            const file = e.target.files?.[0]
+            e.target.value = ""
+            if (!file) return
+            setUploading(true)
+            try { const src = await onImageUpload(file); editor.chain().focus().setImage({ src }).run() }
+            catch { /* The caller displays the upload error and keeps the draft. */ }
+            finally { setUploading(false) }
+          }} />
+        </>}
         <button type="button" onClick={addYoutube} className="p-2 rounded-lg hover:bg-accent/10 transition text-red-500" title="Add YouTube Video"><YoutubeIcon size={16} /></button>
         <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className="p-2 rounded-lg hover:bg-accent/10 transition text-text-muted" title="Insert Table"><TableIcon size={16} /></button>
       </div>
@@ -103,8 +119,9 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
   )
 }
 
-export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
+export default function TiptapEditor({ content, onChange, onImageUpload, uploadImageLabel }: TiptapEditorProps) {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
       Underline,
@@ -144,7 +161,7 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
 
   return (
     <div className="w-full bg-white/[0.03] border border-accent/15 rounded-2xl overflow-hidden focus-within:border-accent/40 transition-all shadow-inner">
-      <MenuBar editor={editor} />
+      <MenuBar editor={editor} onImageUpload={onImageUpload} uploadImageLabel={uploadImageLabel} />
       <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
         <EditorContent editor={editor} />
       </div>

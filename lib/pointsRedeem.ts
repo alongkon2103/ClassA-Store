@@ -61,8 +61,15 @@ export function parseRewardInput(body: unknown): { data: RewardInput } | { error
   const stock = optInt(b.stock, 0), per_user_limit = optInt(b.per_user_limit, 1)
   if (stock === undefined) return { error: "invalid_stock" }
   if (per_user_limit === undefined) return { error: "invalid_per_user_limit" }
+  const validImage = (v: unknown): v is string => {
+    if (typeof v !== "string" || !v || v.length > 500 || /[\s\\\u0000-\u001f]/.test(v)) return false
+    if (v.startsWith("/uploads/")) return true
+    try { const u = new URL(v); return ["http:", "https:"].includes(u.protocol) && !!u.hostname && !u.username && !u.password } catch { return false }
+  }
   const image = str(b.image_url, 500)
-  if (image && !/^(\/uploads\/|https?:\/\/)/.test(image)) return { error: "invalid_image" }
+  if (b.image_urls === undefined && image && !validImage(image)) return { error: "invalid_image" }
+  if (b.image_urls !== undefined && (!Array.isArray(b.image_urls) || b.image_urls.length > 20 || !b.image_urls.every(validImage))) return { error: "invalid_images" }
+  const images = [...new Set((b.image_urls as string[] | undefined) ?? (image ? [image] : []))]
   const c = (b.config && typeof b.config === "object" ? b.config : {}) as Record<string, unknown>
   let config: Prisma.InputJsonValue
   if (kind === "discount_code") {
@@ -83,7 +90,8 @@ export function parseRewardInput(body: unknown): { data: RewardInput } | { error
     data: {
       kind, title_th: title_th || title_en, title_en: title_en || title_th,
       description_th: str(b.description_th, 2000) || null, description_en: str(b.description_en, 2000) || null,
-      image_url: image || null, cost, config, stock, per_user_limit,
+      // Keep the existing cover column; gallery metadata fits the reward's JSON config.
+      image_url: images[0] ?? null, cost, config: { ...(config as Prisma.InputJsonObject), image_urls: images }, stock, per_user_limit,
       is_active: b.is_active !== false, sort_order: Number.isInteger(Number(b.sort_order)) ? Number(b.sort_order) : 0,
     },
   }
@@ -101,7 +109,7 @@ export async function rewardProductError(input: RewardInput): Promise<string | n
 export type RewardProduct = { id: string; name_th: string; name_en: string; type: string }
 export type RewardView = {
   id: string; kind: RewardKind; title_th: string; title_en: string; description_th: string | null; description_en: string | null
-  image_url: string | null; cost: number
+  image_url: string | null; image_urls: string[]; cost: number
   available: number | null // ที่เหลือให้แลก (null = ไม่จำกัด)
   per_user_limit: number | null; mine: number // จำนวนครั้งที่ผู้ใช้คนนี้แลกไปแล้ว
   product: RewardProduct | null // game_days: เกมที่ต่อวัน · discount_code: เกมที่โค้ดใช้ได้ (null = ทุกเกม)
@@ -118,6 +126,11 @@ async function productsById(ids: string[]): Promise<Map<string, RewardProduct>> 
 const cfgProductId = (kind: string, config: unknown): string | null =>
   kind === "game_days" ? gameDaysCfg(config).product_id : kind === "discount_code" ? discountCfg(config).product_id : null
 
+export function rewardImages(r: { image_url: string | null; config: unknown }): string[] {
+  const gallery = (r.config as { image_urls?: unknown } | null)?.image_urls
+  return [...new Set([...(r.image_url ? [r.image_url] : []), ...(Array.isArray(gallery) ? gallery.filter((s): s is string => typeof s === "string" && !!s) : [])])]
+}
+
 export async function listRewards(userId: string | null): Promise<RewardView[]> {
   const rewards = await prisma.point_rewards.findMany({ where: { is_active: true }, orderBy: [{ sort_order: "asc" }, { created_at: "asc" }] })
   const ids = rewards.map((r) => r.id)
@@ -133,7 +146,7 @@ export async function listRewards(userId: string | null): Promise<RewardView[]> 
     const pid = cfgProductId(kind, r.config)
     return {
       id: r.id, kind, title_th: r.title_th, title_en: r.title_en, description_th: r.description_th, description_en: r.description_en,
-      image_url: r.image_url, cost: r.cost,
+      image_url: r.image_url, image_urls: rewardImages(r), cost: r.cost,
       available: kind === "external_code" ? left.get(r.id) ?? 0 : r.stock,
       per_user_limit: r.per_user_limit, mine: mineMap.get(r.id) ?? 0,
       product: pid ? products.get(pid) ?? null : null,
@@ -294,7 +307,7 @@ export async function adminListRewards() {
     const pid = cfgProductId(r.kind, r.config)
     return {
       id: r.id, kind: r.kind as RewardKind, title_th: r.title_th, title_en: r.title_en, description_th: r.description_th, description_en: r.description_en,
-      image_url: r.image_url, cost: r.cost, config: r.config as Record<string, unknown>, stock: r.stock, per_user_limit: r.per_user_limit,
+      image_url: r.image_url, image_urls: rewardImages(r), cost: r.cost, config: r.config as Record<string, unknown>, stock: r.stock, per_user_limit: r.per_user_limit,
       is_active: r.is_active, sort_order: r.sort_order, created_at: r.created_at.toISOString(),
       redemptions: r._count.redemptions, codes_total: r._count.codes, codes_left: leftMap.get(r.id) ?? 0,
       product: pid ? products.get(pid) ?? null : null,

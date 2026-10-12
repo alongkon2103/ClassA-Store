@@ -246,7 +246,8 @@
     "payment_method": "Payment Method",
     "promptpay_label": "Prompt Pay",
     "promptpay_desc": "0% Fee",
-    "promptpay_note": "For Thai customers",
+    "promptpay_note": "Thai bank accounts only",
+    "promptpay_warning": "PromptPay requires a Thai bank account. If you're outside Thailand, please choose credit/debit card or PayPal instead.",
     "payment_swap": "Switch payment method",
     "swap_to_promptpay": "Switch to PromptPay — for Thai customers",
     "swap_to_card": "Switch to Card — for international customers or anyone preferring card payment",
@@ -685,7 +686,18 @@
     "points_per_review_invalid": "Points per review must be 0 or a positive whole number",
     "points_per_daily_label": "Daily check-in points",
     "points_per_daily_hint": "Customers can claim once per day, resetting at midnight Thai time. 0 = off.",
-    "points_per_daily_invalid": "Daily points must be 0 or a positive whole number"
+    "points_per_daily_invalid": "Daily points must be 0 or a positive whole number",
+    "web_announcements": "Website announcements",
+    "navigation": {
+      "open_menu": "Open admin menu",
+      "close_menu": "Close admin menu",
+      "search_label": "Search admin menus",
+      "search_placeholder": "Search menus...",
+      "clear_search": "Clear search",
+      "result_count": "{count, plural, one {# menu found} other {# menus found}}",
+      "no_results": "No menus match “{query}”",
+      "pending_count": "{count, plural, one {# pending action} other {# pending actions}}"
+    }
   },
   "AdminDiscountCodes": {
     "option_all_ours": "All A Class games (excl. Maki)",
@@ -1814,6 +1826,7 @@
     "order_id": "Order number"
   },
   "ProductPage": {
+    "price_includes_card_fee": "USD prices include the 6% card fee.",
     "breadcrumb_home": "Home",
     "breadcrumb_shop": "Shop",
     "from": "from",
@@ -2055,6 +2068,11 @@
     "delete_points_confirm": "Delete this review? The {points} AC Points you earned from it will be taken back, and reviewing this game again won't earn points."
   },
   "Account": {
+    "redeem_details": "View details",
+    "redeem_images": "{n} images",
+    "redeem_image": "{title} — image {n}",
+    "redeem_previous_image": "Previous image",
+    "redeem_next_image": "Next image",
     "cp_ours_only": "Valid on all A Class games",
     "cp_partner_only": "Valid on all Maki games",
     "nav_redeem": "Redeem rewards",
@@ -2424,6 +2442,14 @@
     "twitter_description": "Stop map leaks today. Professional Whitelist systems and premium assets for Roblox developers."
   },
   "AdminPoints": {
+    "rw_images_hint": "Up to 20 images, PNG / JPG / WebP, 5 MB each. The first image is the cover.",
+    "rw_images_limit": "You can add up to 20 images.",
+    "rw_images_invalid": "Choose PNG, JPG or WebP images up to 5 MB each.",
+    "rw_cover": "Cover image",
+    "rw_set_cover": "Set as cover",
+    "rw_image_number": "Image {n}",
+    "rw_remove_image": "Remove image {n}",
+    "rw_network_error": "Connection failed. Please try again.",
     "tab_rewards": "Rewards",
     "type_redeem": "Redeemed",
     "rw_add": "Add reward",
@@ -2553,5 +2579,61 @@
     "rate_example_review": "Review a bought game (per game)",
     "type_daily": "Daily check-in",
     "rate_example_daily": "Daily check-in (per day)"
+  },
+  "WebAnnouncements": {
+    "announcement": "Announcement",
+    "admin_title": "Website announcements",
+    "admin_description": "Create storefront popups with images and rich content. Announcements appear only during their scheduled period.",
+    "create": "New announcement",
+    "edit": "Edit announcement",
+    "title": "Title",
+    "content": "Details",
+    "content_hint": "Format text, add headings, lists, links, images, tables and YouTube videos.",
+    "cover": "Cover image",
+    "upload_cover": "Upload cover image",
+    "remove_cover": "Remove cover",
+    "upload_inline": "Upload image into content",
+    "uploading": "Uploading…",
+    "upload_hint": "PNG, JPG, WebP or GIF · maximum 5 MB per image",
+    "schedule": "Display schedule",
+    "timezone": "All dates and times use Thailand time (Asia/Bangkok, UTC+7).",
+    "timezone_short": "Thailand time",
+    "starts_at": "Start date and time",
+    "ends_at": "End date and time",
+    "end_hint": "Leave the end date empty to keep displaying until you disable it.",
+    "enabled": "Publish during the scheduled period",
+    "dismiss_hint": "Closing remembers this announcement in the visitor’s browser. Saving changes allows it to appear again. Hidden on admin, checkout and the image editor.",
+    "preview": "Preview popup",
+    "cancel": "Cancel",
+    "save": "Save announcement",
+    "saving": "Saving…",
+    "empty": "No website announcements yet. Create one to get started.",
+    "updated_at": "Last updated",
+    "no_end": "No end date",
+    "delete": "Delete announcement",
+    "delete_confirm": "Delete “{title}”? This cannot be undone.",
+    "close": "Close announcement",
+    "acknowledge": "Got it",
+    "status": {
+      "draft": "Draft / disabled",
+      "scheduled": "Scheduled",
+      "active": "Showing now",
+      "expired": "Ended"
+    },
+    "errors": {
+      "invalid_body": "Invalid announcement data.",
+      "invalid_title": "Enter a title of up to 200 characters.",
+      "invalid_content": "Content must be at most 100,000 characters.",
+      "invalid_enabled": "Choose a valid publication setting.",
+      "invalid_dates": "Enter valid dates and times.",
+      "invalid_range": "The end must be later than the start.",
+      "invalid_image": "Use an HTTP(S) image URL or a site upload.",
+      "invalid_upload": "Choose a supported image no larger than 5 MB.",
+      "upload_failed": "Image upload failed. Your draft is still here.",
+      "load_failed": "Could not load announcements. Reload the page to try again.",
+      "save_failed": "Could not save. Your draft is still here; please try again.",
+      "delete_failed": "Could not delete this announcement. Try again.",
+      "not_found": "This announcement no longer exists. Reload the page."
+    }
   }
 }

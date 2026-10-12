@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import TransactionsClient from "./TransactionsClient"
 import { setRequestLocale } from "next-intl/server"
@@ -5,6 +6,7 @@ import { setRequestLocale } from "next-intl/server"
 // Partner transactions: the sales that came through OUR affiliate links, read
 // from the earnings snapshot we store each sync (partner_stores.dashboard_json).
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  await requireAdminPage()
   const { locale } = await params
   setRequestLocale(locale)
 

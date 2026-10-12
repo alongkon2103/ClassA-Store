@@ -307,6 +307,7 @@
     "view_list": "列表视图"
   },
   "ProductPage": {
+    "price_includes_card_fee": "美元价格已包含 6% 的银行卡手续费。",
     "breadcrumb_home": "首页",
     "breadcrumb_shop": "商店",
     "from": "起",
@@ -569,7 +570,8 @@
     "payment_method": "付款方式",
     "promptpay_label": "PromptPay",
     "promptpay_desc": "0% 手续费",
-    "promptpay_note": "适用于泰国用户",
+    "promptpay_note": "仅限泰国银行账户",
+    "promptpay_warning": "PromptPay 付款需要泰国银行账户。如果您在泰国境外，请选择信用卡／借记卡或 PayPal 付款。",
     "payment_swap": "更换付款方式",
     "swap_to_promptpay": "改用 PromptPay — 适用于泰国用户",
     "swap_to_card": "改用银行卡 — 适用于海外用户或偏好刷卡的用户",
@@ -809,6 +811,11 @@
     "tutorial_video_title": "教程视频"
   },
   "Account": {
+    "redeem_details": "查看详情",
+    "redeem_images": "{n} 张图片",
+    "redeem_image": "{title} — 图片 {n}",
+    "redeem_previous_image": "上一张图片",
+    "redeem_next_image": "下一张图片",
     "cp_ours_only": "适用于所有 A Class 游戏",
     "cp_partner_only": "适用于所有 Maki 游戏",
     "nav_redeem": "兑换奖励",
@@ -1146,5 +1153,84 @@
     "og_image_alt": "A-Class Store Whitelist 系统",
     "twitter_title": "A-Class Store | 安全的 Roblox 资产市场",
     "twitter_description": "杜绝地图泄露。为 Roblox 开发者提供专业的 Whitelist 系统与高品质资源。"
-  }
+  },
+  "WebAnnouncements": {
+    "announcement": "商店公告",
+    "admin_title": "网站公告",
+    "admin_description": "创建带图片和详细内容的弹窗公告，并设置展示日期和时间。",
+    "create": "创建公告",
+    "edit": "编辑公告",
+    "title": "公告标题",
+    "content": "详细内容",
+    "content_hint": "支持文字格式、标题、列表、链接、图片、表格和YouTube视频。",
+    "cover": "公告封面",
+    "upload_cover": "上传封面",
+    "remove_cover": "移除封面",
+    "upload_inline": "上传正文图片",
+    "uploading": "正在上传…",
+    "upload_hint": "PNG、JPG、WebP或GIF · 每张图片不超过5 MB",
+    "schedule": "展示时间",
+    "timezone": "所有日期和时间均为泰国时间（Asia/Bangkok，UTC+7）。",
+    "timezone_short": "泰国时间",
+    "starts_at": "开始日期和时间",
+    "ends_at": "结束日期和时间",
+    "end_hint": "留空结束日期可持续展示，直到手动关闭。",
+    "enabled": "在指定时间内发布",
+    "dismiss_hint": "关闭后会在访客浏览器中记住此公告。保存修改可再次展示。管理、结账和图片编辑页面不展示。",
+    "preview": "预览弹窗",
+    "cancel": "取消",
+    "save": "保存公告",
+    "saving": "正在保存…",
+    "empty": "还没有网站公告，创建第一条公告吧。",
+    "updated_at": "最后更新",
+    "no_end": "无结束日期",
+    "delete": "删除公告",
+    "delete_confirm": "要删除“{title}”吗？此操作无法撤销。",
+    "close": "关闭公告",
+    "acknowledge": "知道了",
+    "status": {
+      "draft": "草稿 / 已关闭",
+      "scheduled": "等待展示",
+      "active": "正在展示",
+      "expired": "已结束"
+    },
+    "errors": {
+      "invalid_body": "公告数据无效。",
+      "invalid_title": "请输入不超过200个字符的标题。",
+      "invalid_content": "正文不得超过100,000个字符。",
+      "invalid_enabled": "发布设置无效。",
+      "invalid_dates": "请输入有效的日期和时间。",
+      "invalid_range": "结束时间必须晚于开始时间。",
+      "invalid_image": "请使用HTTP(S)图片链接或网站上传图片。",
+      "invalid_upload": "请选择支持的图片格式，大小不超过5 MB。",
+      "upload_failed": "图片上传失败，已保留输入内容，请重试。",
+      "load_failed": "加载失败，请刷新页面后重试。",
+      "save_failed": "保存失败，已保留输入内容，请重试。",
+      "delete_failed": "删除失败，请重试。",
+      "not_found": "公告已不存在，请刷新页面。"
+    }
+  },
+  "Admin": {
+    "web_announcements": "网站公告",
+    "navigation": {
+      "open_menu": "打开管理菜单",
+      "close_menu": "关闭管理菜单",
+      "search_label": "搜索管理菜单",
+      "search_placeholder": "搜索菜单...",
+      "clear_search": "清除搜索",
+      "result_count": "找到 {count} 个菜单",
+      "no_results": "没有与“{query}”匹配的菜单",
+      "pending_count": "{count} 项待处理"
+    }
+  },
+  "AdminPoints": {
+    "rw_images_hint": "最多20张图片，支持PNG / JPG / WebP，每张不超过5 MB。第一张为封面。",
+    "rw_images_limit": "最多可添加20张图片。",
+    "rw_images_invalid": "请选择不超过5 MB的PNG、JPG或WebP图片。",
+    "rw_cover": "封面图片",
+    "rw_set_cover": "设为封面",
+    "rw_image_number": "图片 {n}",
+    "rw_remove_image": "删除图片 {n}",
+    "rw_network_error": "连接失败，请重试。"
+}
 }

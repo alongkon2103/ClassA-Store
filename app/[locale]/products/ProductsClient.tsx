@@ -20,6 +20,8 @@ import { getImageUrl } from "@/lib/getImageUrl"
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const TIKKIES_URL = "https://tikkies.aclassstore.com/en"
+// Temporarily hidden until the program update and AC Slash launch are ready.
+const TIKKIES_PROMOTION_ENABLED = false
 type Item = any
 
 const RANGES = [
@@ -133,7 +135,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
 
           {/* แบนเนอร์แนะนำ: Tikkies — โปรแกรมเชื่อมของขวัญ TikTok LIVE ของร้านเอง
               ขายบนเว็บแยก (tikkies.aclassstore.com) ปุ่มจึงลิงก์ออกไปที่นั่น */}
-          <div className="mb-7">
+          {TIKKIES_PROMOTION_ENABLED && <div className="mb-7">
             <h2 className="text-[1.2rem] font-extrabold mb-1">{t("featured_title")}</h2>
             <p className="text-[0.82rem] text-text-dim mb-[18px]">{t("featured_sub")}</p>
             <a
@@ -174,7 +176,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
                 </span>
               </div>
             </a>
-          </div>
+          </div>}
 
           {/* เนื้อหา: ตัวกรอง + กริด */}
           <div className="grid gap-6 grid-cols-1 lg:grid-cols-[240px_1fr] mb-12">

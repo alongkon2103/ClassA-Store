@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import PartnerStoreClient from "./PartnerStoreClient"
 import { setRequestLocale } from "next-intl/server"
@@ -8,6 +9,7 @@ import { withLiveMinimums, toPlanRows, toDownloads, toGuideVideos, toLivegenFunc
 // /admin/partners (internal revenue-share partners). Lets admin sync the catalog
 // and show/hide individual games.
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  await requireAdminPage()
   const { locale } = await params
   setRequestLocale(locale)
 

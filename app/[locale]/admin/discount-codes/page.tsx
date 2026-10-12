@@ -1,11 +1,13 @@
 // app/[locale]/admin/discount-codes/page.tsx
 
+import { requireAdminPage } from "@/lib/adminAuth"
 import DiscountCodeManager from "./DiscountCodeManager"
 import { prisma } from "@/lib/prisma"
 
 export const dynamic = "force-dynamic"
 
 export default async function DiscountCodesAdminPage() {
+  await requireAdminPage()
   const [codes, products, makiGames] = await Promise.all([
     prisma.discount_codes.findMany({
       orderBy: { created_at: "desc" },

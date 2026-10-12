@@ -17,6 +17,8 @@ import ProductPageClient from "./ProductPageClient"
 import { getPointsConfig, pointsActive } from "@/lib/points"
 import { withLiveMinimums, planAvailable } from "@/lib/maki"
 import { categorySelect, visibleCategory } from "@/lib/gameCategories"
+import { getThbToUsdRate } from "@/lib/paypal"
+import { productDisplayPrice } from "@/lib/productPrice"
 
 export const revalidate = 60
 
@@ -120,6 +122,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function Page({ params }: Params) {
   const { locale, slug } = await params
   setRequestLocale(locale)
+  const usdRate = locale === "th" ? 1 : await getThbToUsdRate()
 
   const product = await getProduct(slug)
   if (!product) {
@@ -165,6 +168,7 @@ export default async function Page({ params }: Params) {
           })),
         }}
         related={related}
+        usdRate={usdRate}
         reviewSummary={{ average: Math.round((ratingAgg._avg.rating ?? 0) * 10) / 10, count: ratingAgg._count._all }}
         pointsPerBaht={pointsActive(pointsCfgMaki) ? pointsCfgMaki.perBaht : null}
         maki={{
@@ -259,8 +263,8 @@ export default async function Page({ params }: Params) {
     ...(product.product_images[0]?.url ? { image: absUrl(product.product_images[0].url) } : {}),
     offers: {
       "@type": "Offer",
-      priceCurrency: "THB",
-      price: lowPrice,
+      priceCurrency: isTH ? "THB" : "USD",
+      price: productDisplayPrice(lowPrice, locale, usdRate),
       availability: "https://schema.org/InStock",
       url: `${APP_URL}${isTH ? "/th" : ""}/products/${product.slug}`,
     },
@@ -269,7 +273,7 @@ export default async function Page({ params }: Params) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <ProductPageClient product={safeProduct} related={related} reviewSummary={reviewSummary} functions={functions} features={features} pointsPerBaht={pointsPerBaht} />
+      <ProductPageClient product={safeProduct} related={related} usdRate={usdRate} reviewSummary={reviewSummary} functions={functions} features={features} pointsPerBaht={pointsPerBaht} />
     </>
   )
 }

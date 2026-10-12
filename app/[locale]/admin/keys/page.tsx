@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import KeysClient from "./KeysClient"
 import { setRequestLocale } from "next-intl/server"
@@ -7,6 +8,7 @@ export default async function AdminKeysPage({
 }: {
     params: Promise<{ locale: string }>
 }) {
+    await requireAdminPage()
     const { locale } = await params
     setRequestLocale(locale)
     // app/admin/keys/page.tsx

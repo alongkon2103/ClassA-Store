@@ -307,6 +307,7 @@
     "view_list": "リスト表示"
   },
   "ProductPage": {
+    "price_includes_card_fee": "USD表示価格には6%のカード手数料が含まれています。",
     "breadcrumb_home": "ホーム",
     "breadcrumb_shop": "ショップ",
     "from": "から",
@@ -569,7 +570,8 @@
     "payment_method": "支払い方法",
     "promptpay_label": "PromptPay",
     "promptpay_desc": "手数料0%",
-    "promptpay_note": "タイ国内のお客様向け",
+    "promptpay_note": "タイの銀行口座のみ",
+    "promptpay_warning": "PromptPayのお支払いにはタイの銀行口座が必要です。タイ国外にお住まいの方は、クレジット／デビットカードまたはPayPalをご利用ください。",
     "payment_swap": "支払い方法を変更",
     "swap_to_promptpay": "PromptPayに変更 — タイ国内のお客様向け",
     "swap_to_card": "カードに変更 — 海外のお客様やカード払いをご希望の方向け",
@@ -809,6 +811,11 @@
     "tutorial_video_title": "チュートリアル動画"
   },
   "Account": {
+    "redeem_details": "詳細を見る",
+    "redeem_images": "画像 {n} 枚",
+    "redeem_image": "{title} — 画像 {n}",
+    "redeem_previous_image": "前の画像",
+    "redeem_next_image": "次の画像",
     "cp_ours_only": "A Class の全ゲームで使用可能",
     "cp_partner_only": "Maki の全ゲームで使用可能",
     "nav_redeem": "特典と交換",
@@ -1146,5 +1153,84 @@
     "og_image_alt": "A-Class StoreのWhitelistシステム",
     "twitter_title": "A-Class Store | 安全なRobloxアセットマーケット",
     "twitter_description": "マップの流出を防止。Roblox開発者向けのプロフェッショナルなWhitelistシステムとプレミアムアセット。"
-  }
+  },
+  "WebAnnouncements": {
+    "announcement": "お知らせ",
+    "admin_title": "ウェブサイトのお知らせ",
+    "admin_description": "画像と詳細な内容を含むポップアップを作成し、表示期間を設定できます。",
+    "create": "お知らせを作成",
+    "edit": "お知らせを編集",
+    "title": "タイトル",
+    "content": "詳細内容",
+    "content_hint": "書式、見出し、リスト、リンク、画像、表、YouTube動画を追加できます。",
+    "cover": "カバー画像",
+    "upload_cover": "カバー画像をアップロード",
+    "remove_cover": "カバーを削除",
+    "upload_inline": "本文に画像をアップロード",
+    "uploading": "アップロード中…",
+    "upload_hint": "PNG、JPG、WebP、GIF · 画像1枚につき最大5 MB",
+    "schedule": "表示スケジュール",
+    "timezone": "日時はすべてタイ時間（Asia/Bangkok、UTC+7）です。",
+    "timezone_short": "タイ時間",
+    "starts_at": "表示開始日時",
+    "ends_at": "表示終了日時",
+    "end_hint": "終了日時を空欄にすると、無効にするまで表示します。",
+    "enabled": "指定期間に公開する",
+    "dismiss_hint": "閉じたお知らせはブラウザーに記録されます。変更を保存すると再表示できます。管理画面、決済画面、画像編集画面では表示しません。",
+    "preview": "ポップアップをプレビュー",
+    "cancel": "キャンセル",
+    "save": "お知らせを保存",
+    "saving": "保存中…",
+    "empty": "ウェブサイトのお知らせはまだありません。",
+    "updated_at": "最終更新",
+    "no_end": "終了日時なし",
+    "delete": "お知らせを削除",
+    "delete_confirm": "「{title}」を削除しますか？元に戻せません。",
+    "close": "お知らせを閉じる",
+    "acknowledge": "確認しました",
+    "status": {
+      "draft": "下書き / 無効",
+      "scheduled": "表示予約済み",
+      "active": "表示中",
+      "expired": "終了"
+    },
+    "errors": {
+      "invalid_body": "お知らせのデータが無効です。",
+      "invalid_title": "タイトルは200文字以内で入力してください。",
+      "invalid_content": "本文は100,000文字以内にしてください。",
+      "invalid_enabled": "公開設定が無効です。",
+      "invalid_dates": "有効な日時を入力してください。",
+      "invalid_range": "終了日時は開始日時より後にしてください。",
+      "invalid_image": "HTTP(S)画像URLまたはアップロード画像を使用してください。",
+      "invalid_upload": "対応する5 MB以下の画像を選択してください。",
+      "upload_failed": "画像のアップロードに失敗しました。入力内容は保持されています。",
+      "load_failed": "読み込みに失敗しました。ページを再読み込みしてください。",
+      "save_failed": "保存に失敗しました。入力内容は保持されています。",
+      "delete_failed": "削除に失敗しました。もう一度お試しください。",
+      "not_found": "お知らせが見つかりません。ページを再読み込みしてください。"
+    }
+  },
+  "Admin": {
+    "web_announcements": "ウェブサイトのお知らせ",
+    "navigation": {
+      "open_menu": "管理メニューを開く",
+      "close_menu": "管理メニューを閉じる",
+      "search_label": "管理メニューを検索",
+      "search_placeholder": "メニューを検索...",
+      "clear_search": "検索をクリア",
+      "result_count": "{count} 件のメニュー",
+      "no_results": "「{query}」に一致するメニューはありません",
+      "pending_count": "対応待ち {count} 件"
+    }
+  },
+  "AdminPoints": {
+    "rw_images_hint": "最大20枚、PNG / JPG / WebP、1枚5 MBまで。最初の画像が表紙になります。",
+    "rw_images_limit": "画像は最大20枚まで追加できます。",
+    "rw_images_invalid": "5 MB以下のPNG、JPG、WebP画像を選択してください。",
+    "rw_cover": "表紙画像",
+    "rw_set_cover": "表紙に設定",
+    "rw_image_number": "画像 {n}",
+    "rw_remove_image": "画像 {n} を削除",
+    "rw_network_error": "接続に失敗しました。もう一度お試しください。"
+}
 }

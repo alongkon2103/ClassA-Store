@@ -1,7 +1,9 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import { getTranslations, setRequestLocale } from "next-intl/server"
 
 export default async function ConsignmentPage({ params }: { params: Promise<{ locale: string }> }) {
+  await requireAdminPage()
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations("Consignment")

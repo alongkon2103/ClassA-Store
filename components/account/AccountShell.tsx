@@ -7,6 +7,7 @@
 // การ์ดผู้ใช้โชว์ยอด AC Points (AccountFrame ส่งมา) + เมนู "Coins ของฉัน" ตามดีไซน์ — ระบบแลกแต้มเป็นเฟสถัดไป
 import { useSession, signOut } from "next-auth/react"
 import { useTranslations } from "next-intl"
+import { REVIEWS_ENABLED } from "@/lib/reviewConfig"
 import { Link } from "@/i18n/routing"
 import DailyClaim from "@/components/points/DailyClaim"
 
@@ -83,7 +84,7 @@ export default function AccountShell({ active, children, points }: {
         </div>
 
         <ul className="bg-bg-card border border-border-soft rounded-[14px] p-2 list-none">
-          {ITEMS.map((i) => item(i.key, i.href))}
+          {ITEMS.filter((i) => REVIEWS_ENABLED || i.key !== "reviews").map((i) => item(i.key, i.href))}
           {isAffiliate && item("affiliate", "/affiliate")}
           <div className="h-px bg-border-soft mx-3.5 my-1.5" />
           <li>
@@ -109,7 +110,7 @@ export default function AccountShell({ active, children, points }: {
 
       {/* ── เมนูจอเล็ก: ชิปเลื่อนแนวนอน ── */}
       <nav className="lg:hidden flex gap-2 overflow-x-auto pb-1 -mb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {ITEMS.map((i) => (
+        {ITEMS.filter((i) => REVIEWS_ENABLED || i.key !== "reviews").map((i) => (
           <Link key={i.key} href={i.href}
             className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[0.78rem] font-semibold border transition-colors ${
               i.key === active ? "bg-accent/10 border-accent/30 text-accent-light" : "border-border-soft text-text-muted hover:text-text-base"}`}>

@@ -8,7 +8,6 @@ import { dateFnsLocale } from "@/lib/i18n/locale"
 import { Link } from "@/i18n/routing"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { FONT_OPTIONS } from "@/lib/livegen/fonts"
-import { BACKGROUNDS, bgPreviewStyle, type BgPreset } from "@/lib/livegen/backgrounds"
 import type { Asset, Game, GameFunction, Gift, Orientation, ProjectSummary, StoreTemplate, TextKind } from "./types"
 
 const CloseIcon = () => (
@@ -21,7 +20,7 @@ const LinesIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 text-accent-light"><line x1="17" y1="10" x2="3" y2="10" /><line x1="21" y1="6" x2="3" y2="6" /><line x1="21" y1="14" x2="3" y2="14" /><line x1="17" y1="18" x2="3" y2="18" /></svg>
 )
 const FrameIcon = ({ size = 24 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-border-light"><rect x="3" y="3" width="18" height="18" rx="2" /></svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-text-muted"><rect x="3" y="3" width="18" height="18" rx="2" /></svg>
 )
 
 /* ── กรอบแผง: หัวเรื่อง + ปุ่มปิด + ช่องค้นหา (ถ้ามี) + เนื้อหาเลื่อนได้ ── */
@@ -54,15 +53,14 @@ export function Panel({ title, onClose, search, children }: {
 const sectionTitle = "text-[0.75rem] font-semibold text-text-dim mb-2"
 const tile = "relative overflow-hidden rounded-[10px] border-2 border-border-soft hover:border-accent-light hover:-translate-y-0.5 transition-[border-color,transform] duration-200 flex items-center justify-center"
 const tileBg = { background: "var(--gradient-thumb)" }
-const tileLabel = "absolute bottom-1.5 left-1.5 right-1.5 text-[0.6rem] text-text-dim text-center bg-black/50 px-1.5 py-[3px] rounded leading-tight truncate"
+const tileLabel = "absolute bottom-1.5 left-1.5 right-1.5 text-[0.7rem] font-semibold text-white text-center bg-black/80 px-1.5 py-1 rounded leading-snug break-words"
 
-/* ── เท็มเพลต: แบบเปล่า / พื้นหลัง / เท็มเพลตจากเกม (แอดมินทำในหน้า Game Templates) ── */
-export function TemplatesPanel({ templates, busyId, onClose, onBlank, onBackground, onTemplate }: {
+/* ── เท็มเพลต: แบบเปล่า / เท็มเพลตจากเกม (แอดมินทำในหน้า Game Templates) ── */
+export function TemplatesPanel({ templates, busyId, onClose, onBlank, onTemplate }: {
   templates: StoreTemplate[]
   busyId: string | null
   onClose: () => void
   onBlank: (o: Orientation) => void
-  onBackground: (p: BgPreset) => void
   onTemplate: (id: string) => void
 }) {
   const t = useTranslations("Editor")
@@ -73,22 +71,13 @@ export function TemplatesPanel({ templates, busyId, onClose, onBlank, onBackgrou
     <Panel title={t("tab_templates")} onClose={onClose} search={{ value: q, onChange: setQ, placeholder: t("search_templates") }}>
       <h4 className={sectionTitle}>{t("blank")}</h4>
       <div className="grid grid-cols-2 gap-2 mb-4">
-        <button onClick={() => onBlank("portrait")} className={`${tile} aspect-[9/16]`} style={tileBg}>
-          <FrameIcon /><span className={tileLabel}>{t("blank_portrait")}</span>
+        <button onClick={() => onBlank("portrait")} className={`${tile} aspect-[9/16]`} style={tileBg} title={t("blank_portrait")}>
+          <FrameIcon size={36} /><span className={tileLabel}>{t("blank_portrait")}</span>
         </button>
-        <button onClick={() => onBlank("landscape")} className={`${tile} aspect-[9/16]`} style={tileBg}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-border-light"><rect x="2" y="6" width="20" height="12" rx="2" /></svg>
+        <button onClick={() => onBlank("landscape")} className={`${tile} aspect-[9/16]`} style={tileBg} title={t("blank_landscape")}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-text-muted"><rect x="2" y="6" width="20" height="12" rx="2" /></svg>
           <span className={tileLabel}>{t("blank_landscape")}</span>
         </button>
-      </div>
-
-      <h4 className={sectionTitle}>{t("backgrounds")}</h4>
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        {BACKGROUNDS.map((p) => (
-          <button key={p.id} onClick={() => onBackground(p)} className={`${tile} aspect-square`} style={bgPreviewStyle(p)} title={t(`bg_${p.id}`)}>
-            <span className={tileLabel}>{t(`bg_${p.id}`)}</span>
-          </button>
-        ))}
       </div>
 
       <h4 className={sectionTitle}>{t("game_templates")}</h4>
@@ -97,7 +86,7 @@ export function TemplatesPanel({ templates, busyId, onClose, onBlank, onBackgrou
       ) : (
         <div className="grid grid-cols-2 gap-2">
           {filtered.map((x) => (
-            <button key={x.id} onClick={() => onTemplate(x.id)} disabled={!!busyId} className={`${tile} aspect-[9/16] disabled:opacity-60`} style={tileBg}>
+            <button key={x.id} onClick={() => onTemplate(x.id)} disabled={!!busyId} className={`${tile} aspect-[9/16] disabled:opacity-60`} style={tileBg} title={x.name}>
               {x.preview ? <img src={x.preview.startsWith("data:") ? x.preview : getImageUrl(x.preview)} alt="" className="absolute inset-0 w-full h-full object-cover" /> : <FrameIcon />}
               {busyId === x.id && <span className="absolute inset-0 flex items-center justify-center bg-black/40"><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /></span>}
               <span className={tileLabel}>{x.name}</span>
@@ -260,10 +249,9 @@ export function GiftsPanel({ gifts, onClose, onPick }: { gifts: Gift[]; onClose:
         <div className="grid grid-cols-3 gap-2">
           {filtered.map((g) => (
             <button key={g.id} onClick={() => onPick(g)} title={`${g.name} · ${g.diamonds} 💎`}
-                    className="aspect-square rounded-[10px] border-2 border-border-soft hover:border-violet-400 hover:-translate-y-0.5 transition-[border-color,transform] duration-200 flex flex-col items-center justify-center gap-1 p-1.5"
-                    style={{ background: "linear-gradient(145deg,#1a1028,#140e22)" }}>
+                    className="aspect-square rounded-[10px] border-2 border-border-soft bg-bg-card hover:border-accent-light hover:-translate-y-0.5 transition-[border-color,transform] duration-200 flex flex-col items-center justify-center gap-1 p-1.5">
               <img src={getImageUrl(g.image_url!)} alt="" loading="lazy" className="w-7 h-7 object-contain" />
-              <span className="text-[0.55rem] text-text-dim text-center leading-tight line-clamp-1 w-full">{g.name}</span>
+              <span className="text-[0.65rem] text-text-muted text-center leading-tight line-clamp-2 w-full">{g.name}</span>
             </button>
           ))}
         </div>

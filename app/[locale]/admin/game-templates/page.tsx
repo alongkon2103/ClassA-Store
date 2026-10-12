@@ -1,9 +1,11 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import { setRequestLocale } from "next-intl/server"
 import GameTemplatesClient, { type TemplateRow } from "./GameTemplatesClient"
 
 // Game Templates: เท็มเพลตรูปไลฟ์ที่แอดมินอัปโหลด ให้ลูกค้าเลือกในหน้าสร้างรูปไลฟ์ (livegen) แล้วแก้ต่อได้
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  await requireAdminPage()
   const { locale } = await params
   setRequestLocale(locale)
 

@@ -8,6 +8,7 @@ import { useRef, useState } from "react"
 import { Link } from "@/i18n/routing"
 import { useTranslations } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
+import { REVIEWS_ENABLED } from "@/lib/reviewConfig"
 
 export type CardBadge = { text: string; kind: "hot" | "new" | "best" | "partner" }
 
@@ -122,7 +123,7 @@ export default function GameCard({
         {/* จองที่ 2 บรรทัดเสมอ (แม้คำอธิบายสั้น/ไม่มี) ให้แถวดาวกับราคาอยู่ระดับเดียวกันทุกใบ */}
         <p className="text-[0.7rem] text-text-dim leading-[1.5] mb-2.5 line-clamp-2 min-h-[2.1rem]">{description}</p>
         {/* คะแนนรีวิว (ตามดีไซน์ .game-rating) — โชว์เสมอ + สูงคงที่ (ตัวเลขดาวตัวใหญ่กว่า "ยังไม่มีรีวิว") ให้การ์ดสูงเท่ากัน */}
-        <div className={`flex items-center gap-1 h-5 ${isList ? "" : "mb-3"}`}>
+        {REVIEWS_ENABLED && <div className={`flex items-center gap-1 h-5 ${isList ? "" : "mb-3"}`}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className={hasRating ? "text-gold" : "text-border-light"}>
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
@@ -134,7 +135,7 @@ export default function GameCard({
           ) : (
             <span className="text-[0.68rem] text-text-dim">{tc("no_rating")}</span>
           )}
-        </div>
+        </div>}
       </div>
 
       <div className={`px-3.5 py-3 flex items-center gap-2 ${isList ? "sm:flex-col sm:items-end sm:justify-center sm:border-l sm:border-t-0 border-t border-white/[0.06]" : "mt-auto border-t border-white/[0.06]"}`}>

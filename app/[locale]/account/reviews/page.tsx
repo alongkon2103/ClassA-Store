@@ -5,12 +5,15 @@ import AccountFrame from "@/components/account/AccountFrame"
 import MyReviewsClient from "./MyReviewsClient"
 import { reconcileUserPoints, reviewPointsStates } from "@/lib/points"
 import type { GameRef } from "@/lib/games"
+import { notFound } from "next/navigation"
+import { REVIEWS_ENABLED } from "@/lib/reviewConfig"
 
 export const dynamic = "force-dynamic"
 
 // รีวิวของฉัน = เกมที่ซื้อ (จ่ายแล้ว) ทุกเกม รวมเกม Maki — เกมไหนยังไม่รีวิวชวนให้รีวิว เกมไหนรีวิวแล้วให้แก้ได้
 // + แต้มรีวิว: ป้าย "+x แต้ม" สำหรับเกมที่รีวิวแล้วจะได้ · "ได้รับแล้ว" สำหรับเกมที่ได้แต้มไปแล้ว
 export default async function MyReviewsPage({ params }: { params: Promise<{ locale: string }> }) {
+  if (!REVIEWS_ENABLED) notFound()
   const { locale } = await params
   setRequestLocale(locale)
   const { userId } = await requireUser(locale)

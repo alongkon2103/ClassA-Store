@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { validateAdmin } from "@/lib/adminAuth"
 
+// Admin only: key_value is the sold secret, and no partnership screen uses keys.
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const admin = await validateAdmin(["admin"])
+  if (!admin.isValid) return admin.response
+
   const { id } = await params
 
   const keys = await prisma.game_keys.findMany({
@@ -22,6 +27,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const admin = await validateAdmin(["admin"])
+  if (!admin.isValid) return admin.response
+
   const { id } = await params
   const body = await req.json()
   const { keys, variant_id } = body

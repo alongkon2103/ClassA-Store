@@ -901,6 +901,8 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                         key={m}
                         type="button"
                         onClick={() => setPaymentMethod(m)}
+                        aria-pressed={on}
+                        title={m === "promptpay" ? t("promptpay_warning") : undefined}
                         className={`flex-1 p-4 rounded-xl border-2 text-center relative transition ${
                           on
                             ? "border-accent bg-accent/[0.04] shadow-[0_0_0_1px_rgba(37,99,235,0.15)]"
@@ -926,10 +928,24 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                         <div className={`text-[0.68rem] ${fee > 0 ? "text-text-dim" : "text-success font-semibold"}`}>
                           {fee > 0 ? t("fee_plus", { pct: fee }) : t("fee_zero")}
                         </div>
+                        {m === "promptpay" && (
+                          <span className="mt-1.5 inline-block rounded px-1.5 py-0.5 text-[0.65rem] font-semibold" style={{ color: "var(--color-stock-low)", background: "color-mix(in srgb, var(--color-stock-low) 10%, transparent)" }}>
+                            {t("promptpay_note")}
+                          </span>
+                        )}
                       </button>
                     )
                   })}
               </div>
+              {paymentMethod === "promptpay" && (
+                <p role="status" className="mt-3 flex items-start gap-2 text-[12px] leading-relaxed" style={{ color: "var(--color-stock-low)" }}>
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="mt-0.5 shrink-0">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 11v5M12 7h.01" />
+                  </svg>
+                  <span>{t("promptpay_warning")}</span>
+                </p>
+              )}
             </div>
 
             {/* DISCOUNT CODE */}

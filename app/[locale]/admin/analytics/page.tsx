@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import { Prisma } from "@prisma/client"
 import AnalyticsClient from "./AnalyticsClient"
@@ -20,6 +21,7 @@ export default async function AnalyticsPage({
 }: {
   searchParams: Promise<{ from?: string; to?: string }>
 }) {
+  await requireAdminPage()
   const sp = await searchParams
   const from = parseBangkokDay(sp.from, false)
   const to = parseBangkokDay(sp.to, true)

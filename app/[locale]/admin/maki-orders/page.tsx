@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import { setRequestLocale } from "next-intl/server"
 import MakiOrdersAdminClient from "./MakiOrdersAdminClient"
@@ -6,6 +7,7 @@ export const dynamic = "force-dynamic"
 
 // ออเดอร์เกม Maki ที่ขายผ่านเว็บเรา: ยอด/กำไร/สถานะ + เช็คสิทธิ์จริงของลูกค้าใน Maki (support)
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  await requireAdminPage()
   const { locale } = await params
   setRequestLocale(locale)
   const rows = await prisma.partner_orders.findMany({

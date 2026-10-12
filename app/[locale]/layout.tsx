@@ -2,6 +2,7 @@ import "../globals.css"
 import Providers from "@/components/home/Providers"
 import PageTracker from "@/components/PageTracker"
 import DailyLoginPopup from "@/components/points/DailyLoginPopup"
+import WebAnnouncementPopup from "@/components/announcements/WebAnnouncementPopup"
 import { Inter, Noto_Sans_Thai } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server"
@@ -81,6 +82,7 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <Providers>
             <DailyLoginPopup />
+            <WebAnnouncementPopup />
             <PageTracker />
             {children}
           </Providers>

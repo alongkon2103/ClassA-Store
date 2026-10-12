@@ -5,14 +5,15 @@ import { useTranslations } from "next-intl"
 import { FONT_OPTIONS } from "@/lib/livegen/fonts"
 import type { SelectionInfo } from "./types"
 
-type TextPatch = { fontFamily?: string; fontSize?: number; fill?: string; stroke?: string; strokeWidth?: number; bold?: boolean; textAlign?: "left" | "center" | "right" }
+type TextPatch = { fontFamily?: string; fontSize?: number; fill?: string; bold?: boolean; textAlign?: "left" | "center" | "right" }
 
 const btn = "w-8 h-8 rounded-md flex items-center justify-center text-text-muted hover:bg-white/[0.05] hover:text-text-base transition-colors disabled:opacity-40"
 const sep = <div className="w-px h-5 bg-border-soft" />
 
-export default function SelectionBar({ sel, onText, onOpacity, onLayer, onDuplicate, onDelete }: {
+export default function SelectionBar({ sel, onText, onOutline, onOpacity, onLayer, onDuplicate, onDelete }: {
   sel: SelectionInfo
   onText: (p: TextPatch) => void
+  onOutline: (p: { stroke?: string; strokeWidth?: number }) => void
   onOpacity: (v: number) => void
   onLayer: (dir: "up" | "down") => void
   onDuplicate: () => void
@@ -20,6 +21,7 @@ export default function SelectionBar({ sel, onText, onOpacity, onLayer, onDuplic
 }) {
   const t = useTranslations("Editor")
   const isText = sel.kind === "text" && !sel.multiple
+  const canOutline = !sel.multiple && (sel.kind === "text" || sel.kind === "image")
   const input = "h-8 rounded-md border border-border-soft bg-bg-base text-text-base text-[0.72rem] px-2 outline-none focus:border-accent"
 
   return (
@@ -31,17 +33,11 @@ export default function SelectionBar({ sel, onText, onOpacity, onLayer, onDuplic
           </select>
           <input type="number" min={8} max={600} value={sel.fontSize ?? 40} onChange={(e) => onText({ fontSize: Math.max(8, Math.min(600, Number(e.target.value) || 8)) })}
                  className={`${input} w-[62px]`} title={t("size")} />
-          <label className={`${btn} cursor-pointer relative`} title={t("color")}>
-            <span className="w-4 h-4 rounded-sm border border-white/30" style={{ background: sel.fill ?? "#fff" }} />
-            <input type="color" value={sel.fill ?? "#ffffff"} onChange={(e) => onText({ fill: e.target.value })} className="absolute inset-0 opacity-0 cursor-pointer" />
+          <label className="relative flex h-8 items-center gap-1.5 rounded-md border border-border-soft bg-bg-base px-2 cursor-pointer focus-within:ring-2 focus-within:ring-accent" title={t("color")}>
+            <span className="w-5 h-5 shrink-0 rounded-sm border border-text-muted" style={{ background: sel.fill ?? "#fff" }} />
+            <span className="text-[0.65rem] text-text-base">{t("color")}</span>
+            <input aria-label={t("color")} type="color" value={sel.fill ?? "#ffffff"} onInput={(e) => onText({ fill: e.currentTarget.value })} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
           </label>
-          <label className={`${btn} cursor-pointer relative`} title={t("stroke_color")}>
-            <span className="w-4 h-4 rounded-sm border-2" style={{ borderColor: sel.stroke ?? "#000", background: "transparent" }} />
-            <input type="color" value={sel.stroke ?? "#000000"} onChange={(e) => onText({ stroke: e.target.value })} className="absolute inset-0 opacity-0 cursor-pointer" />
-          </label>
-          <select value={sel.strokeWidth ?? 0} onChange={(e) => onText({ strokeWidth: Number(e.target.value) })} className={`${input} w-[58px]`} title={t("stroke_width")}>
-            {[0, 2, 4, 6, 8, 12, 16].map((n) => <option key={n} value={n}>{n === 0 ? t("no_stroke") : n}</option>)}
-          </select>
           <button onClick={() => onText({ bold: !sel.bold })} className={`${btn} font-black text-[0.85rem] ${sel.bold ? "bg-accent/15 text-accent-light" : ""}`} title={t("bold")}>B</button>
           {(["left", "center", "right"] as const).map((a) => (
             <button key={a} onClick={() => onText({ textAlign: a })} className={`${btn} ${sel.textAlign === a ? "bg-accent/15 text-accent-light" : ""}`} title={t(`align_${a}`)}>
@@ -51,6 +47,23 @@ export default function SelectionBar({ sel, onText, onOpacity, onLayer, onDuplic
               </svg>
             </button>
           ))}
+          {sep}
+        </>
+      )}
+      {canOutline && (
+        <>
+          <label className="relative flex h-8 items-center gap-1.5 rounded-md border border-border-soft bg-bg-base px-2 cursor-pointer focus-within:ring-2 focus-within:ring-accent" title={t("stroke_color")}>
+            <span className="w-5 h-5 shrink-0 rounded-sm border border-text-muted p-[3px]">
+              <span className="block w-full h-full border-[3px]" style={{ borderColor: sel.stroke ?? "#0b0f1a" }} />
+            </span>
+            <span className="text-[0.65rem] text-text-base">{t("stroke_color")}</span>
+            <input aria-label={t("stroke_color")} type="color" value={sel.stroke ?? "#0b0f1a"} onInput={(e) => onOutline({ stroke: e.currentTarget.value })} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+          </label>
+          <label className="flex items-center gap-1.5 text-[0.65rem] text-text-base">
+            {t("stroke_width")}
+            <input aria-label={t("stroke_width")} type="number" min={0} max={80} step={1} value={sel.strokeWidth ?? 0}
+                   onChange={(e) => onOutline({ strokeWidth: Math.max(0, Math.min(80, Number(e.target.value) || 0)) })} className={`${input} w-[58px]`} />
+          </label>
           {sep}
         </>
       )}

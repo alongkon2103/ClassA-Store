@@ -15,6 +15,8 @@ import ProductModal from "@/components/products/ProductModal"
 import MakiBuyModal, { type MakiBuyPlan } from "@/components/products/MakiBuyModal"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { useAutoDiscounts } from "@/lib/useAutoDiscounts"
+import { productDisplayPrice } from "@/lib/productPrice"
+import { REVIEWS_ENABLED } from "@/lib/reviewConfig"
 
 // Same session key /r/<code> and useAutoDiscounts use for affiliate attribution.
 const AFF_REF_KEY = "aff_ref"
@@ -64,10 +66,11 @@ const HIGHLIGHTS: { key: string; icon: React.ReactNode }[] = [
 export type MakiPageInfo = { partnerName: string; plans: MakiBuyPlan[]; hasPreset: boolean; showBadge: boolean }
 
 export default function ProductPageClient({
-  product, related, reviewSummary, functions = [], features = [], pointsPerBaht = null, maki = null
+  product, related, usdRate, reviewSummary, functions = [], features = [], pointsPerBaht = null, maki = null
 }: {
   product: Product
   related: Related[]
+  usdRate: number
   reviewSummary?: { average: number; count: number }
   functions?: { id: string; name: string; label_th: string | null; label_en: string | null }[]
   features?: { id: string; text_th: string; text_en: string | null }[]
@@ -80,6 +83,8 @@ export default function ProductPageClient({
   const tFaq = useTranslations("Faq")
   const locale = useLocale()
   const isTH = locale === "th"
+  const priceLabel = (thb: number, feePct = maki ? 0 : 6) =>
+    isTH ? baht(thb) : `$${productDisplayPrice(thb, locale, usdRate, feePct).toFixed(2)}`
   // 1) Persist the affiliate ref (?ref=CODE) BEFORE useAutoDiscounts resolves.
   //    Registered first so its effect runs before the hook reads aff_ref.
   //    Last-click: a newer ref overwrites the old one, matching /r/<code>.
@@ -280,7 +285,7 @@ export default function ProductPageClient({
                 )}
               </div>
 
-              <button onClick={() => goSection("reviews")} className="flex items-center gap-2 mb-6 text-left">
+              {REVIEWS_ENABLED && <button onClick={() => goSection("reviews")} className="flex items-center gap-2 mb-6 text-left">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-gold">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
@@ -292,7 +297,7 @@ export default function ProductPageClient({
                 ) : (
                   <span className="text-text-dim text-sm">{tr("no_rating")}</span>
                 )}
-              </button>
+              </button>}
 
               {/* จุดเด่นคงที่ของทุกเกม (ตามที่เจ้าของร้านกำหนด) */}
               <ul className="list-none flex flex-col gap-3 mb-7">
@@ -322,8 +327,8 @@ export default function ProductPageClient({
                             )}
                           </div>
                           <div className="text-[1.3rem] font-black tracking-tight text-accent-lighter">
-                            {discounted != null && <span className="text-[0.8rem] text-text-dim line-through mr-1.5 font-semibold">฿{price.toLocaleString()}</span>}
-                            <span className="text-sm">฿</span>{(discounted ?? price).toLocaleString()}
+                            {discounted != null && <span className="text-[0.8rem] text-text-dim line-through mr-1.5 font-semibold">{priceLabel(price)}</span>}
+                            {priceLabel(discounted ?? price)}
                           </div>
                           {pointsPerBaht != null && (
                             <div className="mt-1 text-[0.68rem] font-bold text-gold">+{Math.floor((discounted ?? price) * pointsPerBaht).toLocaleString()} {t("points_unit")}</div>
@@ -332,6 +337,10 @@ export default function ProductPageClient({
                       )
                     })}
                   </div>
+
+                  {!isTH && !maki && (
+                    <p className="mb-3 text-xs text-text-dim">{t("price_includes_card_fee")}</p>
+                  )}
 
                   {/* AC Points ของแพ็กเกจที่เลือก — คิดจากราคาเกมหลังส่วนลด ไม่รวมค่าธรรมเนียม */}
                   {pointsPerBaht != null && selectedPriced && (
@@ -348,7 +357,7 @@ export default function ProductPageClient({
                       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                     </svg>
                     {tc("buy_now")}
-                    {selectedPriced && <span className="opacity-80 font-semibold">· {baht(selectedPriced.discounted ?? selectedPriced.price)}</span>}
+                    {selectedPriced && <span className="opacity-80 font-semibold">· {priceLabel(selectedPriced.discounted ?? selectedPriced.price)}</span>}
                   </button>
                   {maki && (
                     <div className="mt-3 text-[0.75rem] text-text-dim leading-relaxed space-y-1">
@@ -371,7 +380,7 @@ export default function ProductPageClient({
                 { k: "about", label: tr("tab_detail") },
                 { k: "reviews", label: `${tr("tab_reviews")}${summary.count ? ` (${summary.count})` : ""}` },
                 { k: "faq", label: tr("tab_faq") },
-              ] as const).map((x) => (
+              ] as const).filter((x) => REVIEWS_ENABLED || x.k !== "reviews").map((x) => (
                 <button key={x.k} onClick={() => goSection(x.k)}
                   className={`px-5 sm:px-7 py-[18px] text-[0.88rem] font-semibold whitespace-nowrap relative transition-colors ${tab === x.k ? "text-accent-light" : "text-text-dim hover:text-text-muted"}`}>
                   {x.label}
@@ -414,13 +423,13 @@ export default function ProductPageClient({
                 </div>
 
                 {/* รีวิว */}
-                <div id="reviews" className="scroll-mt-24">
+                {REVIEWS_ENABLED && <div id="reviews" className="scroll-mt-24">
                   <h3 className="text-lg font-extrabold mb-4">
                     {tr("tab_reviews")}{" "}
                     {summary.count ? <span className="text-[0.78rem] text-text-dim font-medium">({tr("count", { count: summary.count })})</span> : null}
                   </h3>
                   <ProductReviews slug={product.slug} onSummary={setSummary} />
-                </div>
+                </div>}
 
                 {/* คำถามที่พบบ่อย */}
                 <div id="faq" className="scroll-mt-24">
@@ -453,7 +462,7 @@ export default function ProductPageClient({
                         <div className="flex-1 flex flex-col justify-center min-w-0">
                           <h4 className="text-[0.82rem] font-bold mb-0.5 truncate">{isTH ? r.name_th : r.name_en}</h4>
                           <div className="text-[0.68rem] text-text-dim mb-1">{t("from")}</div>
-                          <div className="text-sm font-extrabold text-accent-lighter">{baht(r.min_price)}</div>
+                          <div className="text-sm font-extrabold text-accent-lighter">{priceLabel(r.min_price, 6)}</div>
                         </div>
                       </Link>
                     ))}
@@ -471,7 +480,7 @@ export default function ProductPageClient({
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-bg-surface/95 backdrop-blur border-t border-border-soft px-4 py-3 flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-[11px] text-text-dim">{t("from")}</p>
-          <p className="text-[17px] font-bold text-accent-light leading-none">{baht(headlineNow)}</p>
+          <p className="text-[17px] font-bold text-accent-light leading-none">{priceLabel(headlineNow)}</p>
         </div>
         <button onClick={() => setBuyOpen(true)}
           className="flex-1 py-3 rounded-xl text-white font-bold text-[15px] active:scale-[0.98] transition-all bg-gradient-to-r from-accent to-accent-light">

@@ -13,7 +13,6 @@ import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "@/i18n/routing"
 import type { Canvas, FabricObject } from "fabric"
 import { FONT_LINK_HREF, DEFAULT_FONT, ensureFont, fontWeightFor } from "@/lib/livegen/fonts"
-import { BACKGROUNDS, type BgPreset } from "@/lib/livegen/backgrounds"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { attachSmartGuides } from "@/lib/livegen/guides"
 import { TemplatesPanel, FunctionsPanel, TextPanel, ImagesPanel, GiftsPanel, ProjectsPanel } from "./panels"
@@ -127,15 +126,15 @@ export default function LiveEditor({ isAuthenticated, isAdmin = false, gifts, ga
     if (active.length === 0) { setSelection(null); return }
     const o = active[0] as Obj
     const isText = o instanceof f.IText
-    const txt = o as unknown as { fontFamily?: string; fontSize?: number; fill?: unknown; stroke?: unknown; strokeWidth?: number; fontWeight?: string | number; textAlign?: string }
+    const txt = o as unknown as { fontFamily?: string; fontSize?: number; fill?: unknown; fontWeight?: string | number; textAlign?: string }
     setSelection({
       kind: isText ? "text" : o instanceof f.FabricImage ? "image" : "other",
       multiple: active.length > 1,
       fontFamily: isText ? txt.fontFamily : undefined,
       fontSize: isText ? txt.fontSize : undefined,
       fill: isText && typeof txt.fill === "string" ? txt.fill : undefined,
-      stroke: isText && typeof txt.stroke === "string" ? txt.stroke : undefined,
-      strokeWidth: isText ? txt.strokeWidth : undefined,
+      stroke: typeof o.stroke === "string" ? o.stroke : undefined,
+      strokeWidth: o.stroke ? o.strokeWidth : 0,
       bold: isText ? String(txt.fontWeight) === "700" || txt.fontWeight === "bold" : undefined,
       textAlign: isText ? txt.textAlign : undefined,
       opacity: o.opacity ?? 1,
@@ -342,30 +341,6 @@ export default function LiveEditor({ isAuthenticated, isAdmin = false, gifts, ga
     c.requestRenderAll()
   }, [])
 
-  const applyBackground = useCallback((p: BgPreset) => {
-    const f = fabricRef.current, c = canvasRef.current
-    if (!f || !c) return
-    const old = bgObject(c)
-    suspendRef.current = true
-    if (old) c.remove(old)
-    suspendRef.current = false
-    if (p.kind !== "none") {
-      const { w, h } = size()
-      const fill = p.kind === "solid"
-        ? p.color
-        : new f.Gradient({ type: "linear", gradientUnits: "percentage", coords: { x1: 0, y1: 0, x2: 1, y2: 1 }, colorStops: [{ offset: 0, color: p.stops[0] }, { offset: 1, color: p.stops[1] }] })
-      // Fabric 7 ค่าเริ่มต้น origin เป็น center — ต้องบอก left/top ชัดๆ ไม่งั้นสี่เหลี่ยมไปอยู่แค่มุมขวาล่าง
-      const rect = new f.Rect({ left: 0, top: 0, originX: "left", originY: "top", width: w, height: h, fill, selectable: false, evented: false, hoverCursor: "default" }) as Obj
-      rect.data = { role: "background", preset: p.id }
-      suspendRef.current = true
-      c.add(rect)
-      c.sendObjectToBack(rect)
-      suspendRef.current = false
-    }
-    c.requestRenderAll()
-    pushHistory()
-  }, [pushHistory])
-
   const clearCanvas = useCallback((o?: Orientation) => {
     const c = canvasRef.current
     if (!c) return
@@ -467,7 +442,7 @@ export default function LiveEditor({ isAuthenticated, isAdmin = false, gifts, ga
   }, [undo, redo, duplicateSelected, deleteSelected, copySelected, pasteClipboard])
 
   /* ══ แถบเครื่องมือของวัตถุที่เลือก ══ */
-  const patchText = useCallback(async (p: { fontFamily?: string; fontSize?: number; fill?: string; stroke?: string; strokeWidth?: number; bold?: boolean; textAlign?: "left" | "center" | "right" }) => {
+  const patchText = useCallback(async (p: { fontFamily?: string; fontSize?: number; fill?: string; bold?: boolean; textAlign?: "left" | "center" | "right" }) => {
     const f = fabricRef.current, c = canvasRef.current
     if (!f || !c) return
     const o = c.getActiveObject()
@@ -476,11 +451,25 @@ export default function LiveEditor({ isAuthenticated, isAdmin = false, gifts, ga
     if (p.fontFamily) { await ensureFont(p.fontFamily); f.cache.clearFontCache(p.fontFamily); patch.fontFamily = p.fontFamily; patch.fontWeight = fontWeightFor(p.fontFamily, String(o.fontWeight) === "700") }
     if (p.fontSize != null) patch.fontSize = p.fontSize
     if (p.fill) patch.fill = p.fill
-    if (p.stroke) patch.stroke = p.stroke
-    if (p.strokeWidth != null) patch.strokeWidth = p.strokeWidth
     if (p.bold != null) patch.fontWeight = fontWeightFor(String(o.fontFamily), p.bold)
     if (p.textAlign) patch.textAlign = p.textAlign
     o.set(patch)
+    o.setCoords()
+    c.requestRenderAll()
+    readSelection()
+    pushHistory()
+  }, [pushHistory, readSelection])
+
+  const patchOutline = useCallback((p: { stroke?: string; strokeWidth?: number }) => {
+    const f = fabricRef.current, c = canvasRef.current
+    if (!f || !c) return
+    const o = c.getActiveObject()
+    if (!o || !(o instanceof f.IText || o instanceof f.FabricImage)) return
+    o.set({
+      stroke: p.stroke ?? o.stroke ?? "#0b0f1a",
+      strokeWidth: p.strokeWidth ?? (o.stroke && o.strokeWidth ? o.strokeWidth : 8),
+      strokeUniform: true,
+    })
     o.setCoords()
     c.requestRenderAll()
     readSelection()
@@ -784,8 +773,7 @@ export default function LiveEditor({ isAuthenticated, isAdmin = false, gifts, ga
         {panel === "templates" && (
           <TemplatesPanel templates={templates} busyId={busyTemplateId} onClose={() => setPanel(null)}
                           onBlank={(o) => { if (!isEmpty && !confirm(t("confirm_discard"))) return; clearCanvas(o); pushHistory() }}
-                          onTemplate={(id) => { if (!isEmpty && !confirm(t("confirm_discard"))) return; void applyStoreTemplate(id) }}
-                          onBackground={applyBackground} />
+                          onTemplate={(id) => { if (!isEmpty && !confirm(t("confirm_discard"))) return; void applyStoreTemplate(id) }} />
         )}
         {panel === "functions" && (
           <FunctionsPanel games={games} initialGameId={initialGameId} onClose={() => setPanel(null)} onAdd={(url) => void addImage(url, 0.3)} />
@@ -828,7 +816,7 @@ export default function LiveEditor({ isAuthenticated, isAdmin = false, gifts, ga
           </div>
 
           {selection && (
-            <SelectionBar sel={selection} onText={(p) => void patchText(p)} onOpacity={setOpacity} onLayer={moveLayer}
+            <SelectionBar sel={selection} onText={(p) => void patchText(p)} onOutline={patchOutline} onOpacity={setOpacity} onLayer={moveLayer}
                           onDuplicate={() => void duplicateSelected()} onDelete={deleteSelected} />
           )}
 

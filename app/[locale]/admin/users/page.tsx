@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import UsersClient from "./UsersClient"
 import { setRequestLocale } from "next-intl/server"
@@ -7,6 +8,7 @@ export default async function AdminUsersPage({
 }: {
   params: Promise<{ locale: string }>
 }) {
+  await requireAdminPage(["admin", "partnership"])
   const { locale } = await params
   setRequestLocale(locale)
   const users = await prisma.users.findMany({

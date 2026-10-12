@@ -7,6 +7,7 @@ import { useRouter } from "@/i18n/routing"
 import { localeTag } from "@/lib/i18n/locale"
 import { getImageUrl } from "@/lib/getImageUrl"
 import type { RedemptionView, RewardView } from "@/lib/pointsRedeem"
+import RewardDetailsDialog from "@/components/points/RewardDetailsDialog"
 
 type Props = { active: boolean; balance: number; rewards: RewardView[]; history: RedemptionView[]; ignHints: Record<string, string | null> }
 type IgnCheck = { state: "idle" | "checking" | "ok" | "bad"; name?: string }
@@ -21,6 +22,7 @@ export default function RedeemClient({ active, balance, rewards, history, ignHin
   const isTH = locale === "th"
   const router = useRouter()
   const [sel, setSel] = useState<RewardView | null>(null)
+  const [details, setDetails] = useState<RewardView | null>(null)
   const [ign, setIgn] = useState("")
   const [check, setCheck] = useState<IgnCheck>({ state: "idle" })
   const [busy, setBusy] = useState(false)
@@ -100,16 +102,19 @@ export default function RedeemClient({ active, balance, rewards, history, ignHin
             const why = blocked(r)
             return (
               <div key={r.id} className="bg-bg-card border border-border-soft rounded-[14px] overflow-hidden flex flex-col">
-                <div className="aspect-video bg-bg-base relative" style={{ background: "var(--gradient-thumb)" }}>
+                <button type="button" onClick={() => setDetails(r)} aria-label={`${t("redeem_details")}: ${name(r)}`}
+                  className="aspect-video bg-bg-base relative w-full text-left focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2" style={{ background: "var(--gradient-thumb)" }}>
                   {r.image_url && <img src={getImageUrl(r.image_url)} alt="" className="absolute inset-0 w-full h-full object-cover" />}
                   <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[0.62rem] font-bold bg-black/55 text-white">{t(`redeem_kind_${r.kind}`)}</span>
                   {r.available != null && <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md text-[0.62rem] font-bold bg-black/55 text-white">{t("redeem_left", { n: r.available })}</span>}
-                </div>
+                  {r.image_urls.length > 1 && <span className="absolute bottom-2 right-2 rounded-md bg-black/55 px-2 py-0.5 text-[0.62rem] font-bold text-white">{t("redeem_images", { n: r.image_urls.length })}</span>}
+                </button>
                 <div className="p-4 flex-1 flex flex-col gap-1.5">
-                  <p className="text-[0.95rem] font-bold leading-snug">{name(r)}</p>
+                  <button type="button" onClick={() => setDetails(r)} className="text-left text-[0.95rem] font-bold leading-snug hover:text-accent-light focus-visible:outline-2 focus-visible:outline-accent">{name(r)}</button>
                   <p className="text-[0.75rem] text-accent-light">{meta(r)}</p>
                   {(isTH ? r.description_th : r.description_en) && <p className="text-[0.75rem] text-text-dim leading-[1.5] line-clamp-3">{isTH ? r.description_th : r.description_en}</p>}
                   {r.per_user_limit != null && <p className="text-[0.7rem] text-text-dim">{t("redeem_limit", { n: r.per_user_limit })}</p>}
+                  <button type="button" onClick={() => setDetails(r)} className="mt-auto min-h-9 self-start text-xs font-semibold text-accent-light hover:underline focus-visible:outline-2 focus-visible:outline-accent">{t("redeem_details")} →</button>
                 </div>
                 <div className="px-4 py-3 border-t border-white/[0.06] flex items-center justify-between gap-3">
                   <span className="text-[1rem] font-black text-gold">{t("redeem_cost", { points: r.cost.toLocaleString() })}</span>
@@ -144,6 +149,10 @@ export default function RedeemClient({ active, balance, rewards, history, ignHin
           </ul>
         )}
       </div>
+
+      {details && <RewardDetailsDialog key={details.id} reward={details} meta={meta(details)} onClose={() => setDetails(null)}>
+        <button type="button" onClick={() => { setDetails(null); open(details) }} disabled={!!blocked(details)} className={gold}>{blocked(details) ?? t("redeem_btn")}</button>
+      </RewardDetailsDialog>}
 
       {/* ยืนยันก่อนแลก */}
       {sel && (

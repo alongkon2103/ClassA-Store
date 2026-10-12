@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import DashboardClient from "./DashboardClient"
 import { setRequestLocale } from "next-intl/server"
@@ -9,6 +10,7 @@ export default async function AdminDashboard({
 }: {
   params: Promise<{ locale: string }>
 }) {
+  await requireAdminPage()
   const { locale } = await params
   setRequestLocale(locale)
 

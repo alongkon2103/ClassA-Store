@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import StorefrontOrderClient from "./StorefrontOrderClient"
 import { setRequestLocale } from "next-intl/server"
@@ -5,6 +6,7 @@ import { setRequestLocale } from "next-intl/server"
 // Drag-to-reorder page for the whole storefront grid: our products + partner
 // games in one list. Save writes display_order to both tables.
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
+  await requireAdminPage()
   const { locale } = await params
   setRequestLocale(locale)
 

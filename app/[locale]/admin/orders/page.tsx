@@ -1,9 +1,11 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import AdminOrdersClient from "./AdminOrdersClient"
 
 export const dynamic = "force-dynamic"
 
 export default async function AdminOrdersPage() {
+  await requireAdminPage(["admin", "partnership"])
   const orders = await prisma.orders.findMany({
     where: {
       NOT: { order_type: "TRIAL" },

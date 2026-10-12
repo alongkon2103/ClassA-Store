@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import PayPalReviewClient from "./PayPalReviewClient"
 import { setRequestLocale } from "next-intl/server"
@@ -9,6 +10,7 @@ export default async function PayPalReviewPage({
 }: {
   params: Promise<{ locale: string }>
 }) {
+  await requireAdminPage()
   const { locale } = await params
   setRequestLocale(locale)
 

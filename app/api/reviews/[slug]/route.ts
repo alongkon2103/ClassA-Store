@@ -15,11 +15,13 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { awardPointsForReview, reversePointsForReview, reviewPointsStates } from "@/lib/points"
 import { gameBySlug, gameUserKey, gameWhere, hasPurchased } from "@/lib/games"
+import { REVIEWS_ENABLED } from "@/lib/reviewConfig"
 
 export const runtime = "nodejs"
 
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  if (!REVIEWS_ENABLED) return NextResponse.json({ error: "reviews_disabled" }, { status: 503 })
   const { slug } = await params
   const game = await gameBySlug(slug)
   if (!game) return NextResponse.json({ error: "not_found" }, { status: 404 })
@@ -74,6 +76,7 @@ function revalidateProduct(slug: string) {
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  if (!REVIEWS_ENABLED) return NextResponse.json({ error: "reviews_disabled" }, { status: 503 })
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: "unauthorized" }, { status: 401 })
 
@@ -106,6 +109,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  if (!REVIEWS_ENABLED) return NextResponse.json({ error: "reviews_disabled" }, { status: 503 })
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: "unauthorized" }, { status: 401 })
 

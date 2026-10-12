@@ -8,13 +8,13 @@ import type { AdminRewardRow, RewardKind } from "@/lib/pointsRedeem"
 
 type Product = { id: string; name_th: string; name_en: string; type: string }
 type Form = {
-  id?: string; kind: RewardKind; title_th: string; title_en: string; description_th: string; description_en: string; image_url: string
+  id?: string; kind: RewardKind; title_th: string; title_en: string; description_th: string; description_en: string; image_urls: string[]
   cost: string; stock: string; per_user_limit: string; sort_order: string; is_active: boolean
   d_type: "fixed" | "percent"; d_value: string; d_product: string; d_valid_days: string; g_product: string; g_days: string
 }
-const blank = (): Form => ({ kind: "discount_code", title_th: "", title_en: "", description_th: "", description_en: "", image_url: "", cost: "", stock: "", per_user_limit: "", sort_order: "0", is_active: true, d_type: "fixed", d_value: "", d_product: "", d_valid_days: "30", g_product: "", g_days: "7" })
+const blank = (): Form => ({ kind: "discount_code", title_th: "", title_en: "", description_th: "", description_en: "", image_urls: [], cost: "", stock: "", per_user_limit: "", sort_order: "0", is_active: true, d_type: "fixed", d_value: "", d_product: "", d_valid_days: "30", g_product: "", g_days: "7" })
 const input = "bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[14px] text-text-base outline-none focus:border-accent/50 w-full"
-const btnPrimary = "px-5 py-2.5 rounded-xl bg-accent hover:opacity-90 text-white text-[13px] font-bold disabled:opacity-50 transition"
+const btnPrimary = "px-5 py-2.5 rounded-xl bg-accent hover:opacity-90 text-on-accent text-[13px] font-bold disabled:opacity-50 transition"
 const btnGhost = "px-4 py-2 rounded-xl border border-white/10 text-[13px] text-text-muted hover:text-text-base hover:border-white/20 transition disabled:opacity-50"
 const API = "/api/admin/points/rewards"
 
@@ -41,13 +41,13 @@ export default function RewardsTab() {
       if (!r.ok) { setMsg(t("rw_err", { error: d.error === "has_redemptions" ? t("rw_has_redemptions") : String(d.error ?? r.status) })); return null }
       await load()
       return d
-    } finally { setBusy(false) }
+    } catch { setMsg(t("rw_err", { error: t("rw_network_error") })); return null } finally { setBusy(false) }
   }
   const edit = (r: AdminRewardRow) => {
     const c = r.config
     setCodes("")
     setForm({
-      id: r.id, kind: r.kind, title_th: r.title_th, title_en: r.title_en, description_th: r.description_th ?? "", description_en: r.description_en ?? "", image_url: r.image_url ?? "",
+      id: r.id, kind: r.kind, title_th: r.title_th, title_en: r.title_en, description_th: r.description_th ?? "", description_en: r.description_en ?? "", image_urls: r.image_urls,
       cost: String(r.cost), stock: r.stock == null ? "" : String(r.stock), per_user_limit: r.per_user_limit == null ? "" : String(r.per_user_limit), sort_order: String(r.sort_order), is_active: r.is_active,
       d_type: c.type === "percent" ? "percent" : "fixed", d_value: c.value == null ? "" : String(c.value), d_product: (r.kind === "discount_code" ? (c.product_id as string | null) : "") ?? "", d_valid_days: c.valid_days == null ? "30" : String(c.valid_days),
       g_product: (r.kind === "game_days" ? (c.product_id as string) : "") ?? "", g_days: c.days == null ? "7" : String(c.days),
@@ -57,19 +57,25 @@ export default function RewardsTab() {
     if (!form) return
     const config = form.kind === "discount_code" ? { type: form.d_type, value: Number(form.d_value), product_id: form.d_product || null, valid_days: Number(form.d_valid_days) }
       : form.kind === "game_days" ? { product_id: form.g_product, days: Number(form.g_days) } : {}
-    const body = { id: form.id, kind: form.kind, title_th: form.title_th, title_en: form.title_en, description_th: form.description_th, description_en: form.description_en, image_url: form.image_url || null,
+    const body = { id: form.id, kind: form.kind, title_th: form.title_th, title_en: form.title_en, description_th: form.description_th, description_en: form.description_en, image_urls: form.image_urls,
       cost: Number(form.cost), stock: form.stock === "" ? null : Number(form.stock), per_user_limit: form.per_user_limit === "" ? null : Number(form.per_user_limit), sort_order: Number(form.sort_order), is_active: form.is_active, config }
     const d = await call(form.id ? "PATCH" : "POST", body)
     if (d) { setForm(null); setMsg(t("rw_saved")) }
   }
-  const upload = async (file: File) => {
-    const fd = new FormData(); fd.append("file", file); fd.append("type", "image")
-    setBusy(true)
+  const upload = async (files: File[]) => {
+    if (!form || busy) return
+    if (form.image_urls.length + files.length > 20) { setMsg(t("rw_images_limit")); return }
+    if (files.some((f) => !["image/png", "image/jpeg", "image/webp"].includes(f.type) || f.size > 5 * 1024 * 1024)) { setMsg(t("rw_images_invalid")); return }
+    setBusy(true); setMsg(null)
     try {
-      const r = await fetch("/api/admin/upload", { method: "POST", body: fd })
-      const d = await r.json().catch(() => null)
-      if (r.ok && d?.url) setForm((f) => (f ? { ...f, image_url: d.url } : f)); else setMsg(t("rw_err", { error: d?.error ?? r.status }))
-    } finally { setBusy(false) }
+      for (const file of files) {
+        const fd = new FormData(); fd.append("file", file); fd.append("type", "image")
+        const r = await fetch("/api/admin/upload", { method: "POST", body: fd })
+        const d = await r.json().catch(() => null)
+        if (!r.ok || !d?.url) { setMsg(t("rw_err", { error: d?.error ?? r.status })); break }
+        setForm((f) => f ? { ...f, image_urls: [...f.image_urls, d.url] } : f)
+      }
+    } catch { setMsg(t("rw_err", { error: t("rw_network_error") })) } finally { setBusy(false) }
   }
   const addCodes = async () => {
     if (!form?.id || !codes.trim()) return
@@ -98,8 +104,8 @@ export default function RewardsTab() {
           {field(t("rw_cost"), <input type="number" min={1} value={form.cost} onChange={(e) => set({ cost: e.target.value })} className={input} />)}
           {field(t("rw_title_th"), <input value={form.title_th} onChange={(e) => set({ title_th: e.target.value })} maxLength={120} className={input} />)}
           {field(t("rw_title_en"), <input value={form.title_en} onChange={(e) => set({ title_en: e.target.value })} maxLength={120} className={input} />)}
-          {field(t("rw_desc_th"), <textarea value={form.description_th} onChange={(e) => set({ description_th: e.target.value })} rows={2} className={input} />)}
-          {field(t("rw_desc_en"), <textarea value={form.description_en} onChange={(e) => set({ description_en: e.target.value })} rows={2} className={input} />)}
+          {field(t("rw_desc_th"), <textarea value={form.description_th} onChange={(e) => set({ description_th: e.target.value })} rows={4} maxLength={2000} className={input} />)}
+          {field(t("rw_desc_en"), <textarea value={form.description_en} onChange={(e) => set({ description_en: e.target.value })} rows={4} maxLength={2000} className={input} />)}
           {form.kind === "discount_code" && (<>
             {field(t("rw_discount_type"), (
               <select value={form.d_type} onChange={(e) => set({ d_type: e.target.value as "fixed" | "percent" })} className={input}>
@@ -127,13 +133,28 @@ export default function RewardsTab() {
           {form.kind !== "external_code" && field(t("rw_stock"), <input type="number" min={0} value={form.stock} onChange={(e) => set({ stock: e.target.value })} className={input} />)}
           {field(t("rw_per_user"), <input type="number" min={1} value={form.per_user_limit} onChange={(e) => set({ per_user_limit: e.target.value })} className={input} />)}
           {field(t("rw_sort"), <input type="number" value={form.sort_order} onChange={(e) => set({ sort_order: e.target.value })} className={input} />)}
-          {field(t("rw_image"), (
-            <div className="flex items-center gap-3">
-              {form.image_url && <img src={getImageUrl(form.image_url)} alt="" className="w-16 h-10 rounded-lg object-cover" />}
-              <label className={`${btnGhost} cursor-pointer`}>{t("rw_upload")}<input type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload(f) }} /></label>
-              {form.image_url && <button onClick={() => set({ image_url: "" })} className="text-[12px] text-text-dim hover:text-hot">✕</button>}
+          <div className="md:col-span-2 space-y-3">
+            <p className="text-[12px] text-text-muted">{t("rw_image")}</p>
+            <p className="text-[12px] text-text-dim">{t("rw_images_hint")}</p>
+            <div className="flex flex-wrap gap-3">
+              {form.image_urls.map((url, index) => (
+                <div key={`${url}-${index}`} className="w-32 overflow-hidden rounded-xl border border-border-soft bg-bg-base">
+                  <img src={getImageUrl(url)} alt={t("rw_image_number", { n: index + 1 })} className="aspect-video w-full object-cover" />
+                  <div className="p-2 space-y-1.5">
+                    <button type="button" disabled={busy || index === 0} onClick={() => set({ image_urls: [url, ...form.image_urls.filter((_, i) => i !== index)] })}
+                      className="w-full min-h-8 text-[11px] text-accent-light enabled:hover:underline disabled:text-text-muted">{t(index === 0 ? "rw_cover" : "rw_set_cover")}</button>
+                    <button type="button" disabled={busy} onClick={() => set({ image_urls: form.image_urls.filter((_, i) => i !== index) })}
+                      aria-label={t("rw_remove_image", { n: index + 1 })} className="w-full min-h-8 rounded-lg border border-border-soft text-[11px] text-hot enabled:hover:bg-hot/10 disabled:opacity-50">{t("rw_delete")}</button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+            <label className={`${btnGhost} inline-flex cursor-pointer ${busy ? "opacity-50" : ""}`}>
+              {busy ? t("loading") : t("rw_upload")}
+              <input type="file" multiple accept="image/png,image/jpeg,image/webp" disabled={busy || form.image_urls.length >= 20} className="sr-only"
+                onChange={(e) => { const files = Array.from(e.target.files ?? []); e.target.value = ""; if (files.length) void upload(files) }} />
+            </label>
+          </div>
           <label className="flex items-center gap-2 text-[13px] text-text-muted"><input type="checkbox" checked={form.is_active} onChange={(e) => set({ is_active: e.target.checked })} />{t("rw_active")}</label>
           {form.kind === "external_code" && form.id && (
             <div className="md:col-span-2 rounded-xl border border-white/10 p-4">
@@ -168,7 +189,7 @@ export default function RewardsTab() {
                       {` · ${t("rw_redeemed", { n: r.redemptions })}`}
                     </p>
                   </div>
-                  <button onClick={() => edit(r)} className={btnGhost}>{t("rw_edit")}</button>
+                  <button onClick={() => edit(r)} disabled={busy} className={btnGhost}>{t("rw_edit")}</button>
                   <button onClick={() => call("PATCH", { id: r.id, is_active: !r.is_active })} disabled={busy}
                           className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${r.is_active ? "bg-green-500" : "bg-white/15"} disabled:opacity-50`} title={t("rw_active")}>
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${r.is_active ? "translate-x-4" : "translate-x-0.5"}`} />

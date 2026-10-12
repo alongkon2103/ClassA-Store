@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import BankSettingsClient from "./BankSettingsClient"
 import GlobalSettingsClient from "./GlobalSettingsClient"
@@ -11,6 +12,7 @@ export default async function SettingsPage({
 }: {
     params: Promise<{ locale: string }>
 }) {
+    await requireAdminPage()
     const { locale } = await params
     setRequestLocale(locale)
 

@@ -1,26 +1,18 @@
 "use client"
 
-// หน้าต่าง Daily Login: เด้งวันละครั้งตอนเข้าเว็บ ถ้าล็อกอินแล้วและวันนี้ยังไม่ได้รับแต้มรายวัน
-// + เปิดซ้ำได้จากไอคอนของขวัญบน Navbar (event daily-popup-open) แม้รับแล้ว — โชว์ปฏิทิน/วันต่อเนื่อง/นับถอยหลังถึงเที่ยงคืน
+// เปิดเฉพาะตอนกดไอคอนของขวัญบน Navbar (event daily-popup-open)
+// ไม่เด้งอัตโนมัติเมื่อเข้าเว็บ แต่ยังรับแต้ม/ดูปฏิทินได้เหมือนเดิม
 // ปฏิทินสัปดาห์นี้ (จันทร์–อาทิตย์ ตามเวลาไทย) ติ๊กวันที่รับแล้ว + จำนวนวันที่เข้าต่อเนื่อง
-// ปิดแล้วไม่เด้งซ้ำทั้งวัน (จำใน localStorage ตามวันไทย) · ไม่เด้งในหน้า admin / ชำระเงิน / editor รูปไลฟ์
 import { useEffect, useState } from "react"
-import { usePathname } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "@/i18n/routing"
 import { localeTag } from "@/lib/i18n/locale"
 import { DAILY_POPUP_OPEN_EVT, fetchDailyStatus, notifyDailyChanged, useCountdown, type DailyStatusView } from "./DailyClaim"
 
-const SKIP = ["/admin", "/checkout", "/livegen"]
-const seenKey = (day: string) => `daily-popup:${day}`
-const markSeen = (day: string) => { try { localStorage.setItem(seenKey(day), "1") } catch { /* storage ปิดอยู่ */ } }
-
 export default function DailyLoginPopup() {
   const t = useTranslations("Account")
   const locale = useLocale()
   const router = useRouter()
-  const pathname = usePathname() ?? ""
-  const skip = SKIP.some((p) => pathname.includes(p))
   const [st, setSt] = useState<DailyStatusView | null>(null)
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -40,20 +32,7 @@ export default function DailyLoginPopup() {
     return () => window.removeEventListener(DAILY_POPUP_OPEN_EVT, onOpen)
   }, [])
 
-  useEffect(() => {
-    if (skip) return
-    let alive = true
-    fetchDailyStatus().then((d) => {
-      if (!alive || !d || !d.signedIn || !d.enabled || d.claimedToday) return
-      try { if (localStorage.getItem(seenKey(d.todayKey))) return } catch { /* อ่านไม่ได้ก็เด้งตามปกติ */ }
-      setSt(d)
-      setOpen(true)
-    })
-    return () => { alive = false }
-  }, [skip])
-
   const close = () => {
-    if (st) markSeen(st.todayKey)
     setOpen(false)
   }
 
@@ -66,7 +45,6 @@ export default function DailyLoginPopup() {
       if (r.ok || d.error === "already_claimed") {
         setSt((s) => (s ? { ...s, ...d, claimedToday: true } : s))
         if (r.ok) setGot(d.points)
-        markSeen(st.todayKey)
         notifyDailyChanged()
         router.refresh() // ยอดแต้มใน sidebar / หน้า Coins มาจาก server
       } else setErr(true)

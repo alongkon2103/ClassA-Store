@@ -1,11 +1,13 @@
 // app/admin/gifts/page.tsx
 
+import { requireAdminPage } from "@/lib/adminAuth"
 import GiftManagerAdmin from "./GiftManagerAdmin"
 import { prisma } from "@/lib/prisma"
 
 export const dynamic = "force-dynamic"
 
 export default async function GiftsAdminPage() {
+  await requireAdminPage()
   const gifts = await prisma.gifts.findMany({
     orderBy: [
       { sort_order: "asc" },
