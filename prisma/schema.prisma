@@ -153,6 +153,7 @@ model discount_codes {
   per_user_limit Int?                   @default(1)
   min_amount     Decimal?               @db.Decimal(10, 2)
   product_id     String?                @db.Uuid
+  product_ids    String[]               @default([]) @db.Uuid // Selected A Class games; empty retains legacy single/group scope.
   // จำกัดให้ใช้กับเกม Maki เกมเดียว (ไม่พร้อมกับ product_id) · ทั้งคู่ว่าง = ใช้ได้ทุกเกมรวม Maki
   partner_product_id String?            @db.Uuid
   game_scope     String                 @default("all") @db.VarChar // ขอบเขตเมื่อไม่ได้ผูกเกมเดียว: all = ทุกเกม · ours = เฉพาะเกม A Class · partner = เฉพาะเกมพาร์ทเนอร์ (Maki)

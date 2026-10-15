@@ -19,6 +19,7 @@
 //     create is added to the same transaction that flips the order to paid.
 
 import type { Prisma } from "@prisma/client"
+import { codeAppliesTo } from "@/lib/discountCodes"
 import { prisma } from "@/lib/prisma"
 import { getPaymentConfig, type PaymentConfig, type PaymentMethodKey } from "@/lib/paymentConfig"
 
@@ -57,10 +58,10 @@ export async function resolveReferralCodeId(
   if (!refCode || typeof refCode !== "string") return null
   const code = await prisma.discount_codes.findUnique({
     where: { code: refCode.trim().toUpperCase() },
-    select: { id: true, owner_user_id: true, product_id: true, is_active: true },
+    select: { id: true, owner_user_id: true, product_id: true, product_ids: true, partner_product_id: true, game_scope: true, is_active: true },
   })
   if (!code || !code.owner_user_id || code.is_active === false) return null
-  if (!(code.product_id === null || code.product_id === productId)) return null
+  if (!codeAppliesTo(code, productId)) return null
   return code.id
 }
 
@@ -80,14 +81,14 @@ export async function prepareAffiliateEarning(
   const amount = Number(order.amount)
   if (!(amount > 0)) return null
 
-  type CodeRow = { id: string; owner_user_id: string | null; commission_pct: Prisma.Decimal | null; product_id: string | null }
+  type CodeRow = { id: string; owner_user_id: string | null; commission_pct: Prisma.Decimal | null; product_id: string | null; product_ids: string[]; partner_product_id: string | null; game_scope: string }
   let code: CodeRow | null = null
 
   // 1) Applied discount code, if it's an affiliate code.
   if (order.discount_code_id) {
     const dc = await prisma.discount_codes.findUnique({
       where: { id: order.discount_code_id },
-      select: { id: true, owner_user_id: true, commission_pct: true, product_id: true },
+      select: { id: true, owner_user_id: true, commission_pct: true, product_id: true, product_ids: true, partner_product_id: true, game_scope: true },
     })
     if (dc?.owner_user_id) code = dc
   }
@@ -95,9 +96,9 @@ export async function prepareAffiliateEarning(
   if (!code && order.referral_code_id) {
     const rc = await prisma.discount_codes.findUnique({
       where: { id: order.referral_code_id },
-      select: { id: true, owner_user_id: true, commission_pct: true, product_id: true },
+      select: { id: true, owner_user_id: true, commission_pct: true, product_id: true, product_ids: true, partner_product_id: true, game_scope: true },
     })
-    if (rc?.owner_user_id && (rc.product_id === null || rc.product_id === order.product_id)) code = rc
+    if (rc?.owner_user_id && codeAppliesTo(rc, order.product_id)) code = rc
   }
   if (!code?.owner_user_id) return null // no affiliate attribution
 

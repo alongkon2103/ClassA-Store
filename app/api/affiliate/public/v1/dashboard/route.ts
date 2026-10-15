@@ -40,6 +40,7 @@ export async function GET(req: Request) {
       select: {
         code: true, type: true, value: true, commission_pct: true, is_active: true,
         used_count: true, max_uses: true, per_user_limit: true,
+        product_ids: true,
         product: { select: { name_en: true } },
       },
     }),
@@ -105,6 +106,7 @@ export async function GET(req: Request) {
       value: Number(c.value),
       commission_pct: c.commission_pct === null ? null : Number(c.commission_pct),
       product: c.product?.name_en ?? null,
+      product_ids: c.product_ids,
       is_active: c.is_active,
       used_count: c.used_count,
       max_uses: c.max_uses,

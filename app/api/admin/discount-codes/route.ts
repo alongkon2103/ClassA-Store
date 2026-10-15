@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { randomBytes } from "crypto"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
+import { parseDiscountProductIds } from "@/lib/discountCodes"
 import { checkPartnerScope } from "./scope"
 
 // A → Z and 2 → 9 (no I/O/0/1 to avoid look-alikes)
@@ -51,10 +52,16 @@ export async function POST(req: NextRequest) {
         ? 1
         : Number(body.per_user_limit)
     const minAmount = body.min_amount === null || body.min_amount === "" ? null : Number(body.min_amount)
+    let productIds: string[] = []
+    if (body.product_ids !== undefined) {
+      try { productIds = parseDiscountProductIds(body.product_ids) }
+      catch (error) { return NextResponse.json({ error: (error as Error).message }, { status: 400 }) }
+      if (productIds.length && (body.product_id || body.partner_product_id)) return NextResponse.json({ error: "Choose a game list or a single game, not both" }, { status: 400 })
+    }
     const productId = body.product_id?.trim() || null
     const partnerProductId: string | null = body.partner_product_id?.trim() || null
     // ขอบเขตกลุ่ม (เมื่อไม่ได้ผูกเกมเดียว): all = ทุกเกม · ours = เฉพาะเกม A Class · partner = เฉพาะเกม Maki
-    const gameScope: string = productId || partnerProductId ? "all" : body.game_scope === "ours" || body.game_scope === "partner" ? body.game_scope : "all"
+    const gameScope: string = productId || partnerProductId || productIds.length ? "all" : body.game_scope === "ours" || body.game_scope === "partner" ? body.game_scope : "all"
     const startsAt = body.starts_at ? new Date(body.starts_at) : null
     const expiresAt = body.expires_at ? new Date(body.expires_at) : null
     const note: string | null = body.note?.trim() || null
@@ -83,7 +90,7 @@ export async function POST(req: NextRequest) {
     if (commissionPct !== null && (!Number.isFinite(commissionPct) || commissionPct < 0 || commissionPct > 100)) {
       return NextResponse.json({ error: "commission_pct must be 0-100 or empty" }, { status: 400 })
     }
-    const scopeError = await checkPartnerScope(productId, partnerProductId, ownerUserId, gameScope)
+    const scopeError = await checkPartnerScope(productId, partnerProductId, ownerUserId, gameScope, productIds)
     if (scopeError) return NextResponse.json({ error: scopeError }, { status: 400 })
 
     if (!code) {
@@ -115,6 +122,7 @@ export async function POST(req: NextRequest) {
         per_user_limit: Number.isFinite(perUserLimit) ? (perUserLimit as number) : null,
         min_amount: minAmount,
         product_id: productId,
+        product_ids: productIds,
         partner_product_id: partnerProductId,
         game_scope: gameScope,
         starts_at: startsAt,

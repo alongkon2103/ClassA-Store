@@ -1,5 +1,6 @@
 "use client"
 
+import ProductScopePicker from "@/components/admin/ProductScopePicker"
 import { useState } from "react"
 import { useTranslations, useLocale } from "next-intl"
 
@@ -13,6 +14,7 @@ type DiscountCode = {
   per_user_limit: number | null
   min_amount: number | null
   product_id: string | null
+  product_ids: string[]
   partner_product_id: string | null
   game_scope: string // all | ours | partner (มีผลเมื่อไม่ได้ผูกเกมเดียว)
   product_name: string | null
@@ -39,6 +41,7 @@ type FormState = {
   per_user_limit: string
   min_amount: string
   product_id: string
+  product_ids: string[] | null
   starts_at: string
   expires_at: string
   is_public: boolean
@@ -54,6 +57,7 @@ const EMPTY_FORM: FormState = {
   per_user_limit: "1",
   min_amount: "",
   product_id: "",
+  product_ids: null,
   starts_at: "",
   expires_at: "",
   is_public: false,
@@ -80,6 +84,7 @@ function codeToForm(c: DiscountCode): FormState {
     per_user_limit: c.per_user_limit === null ? "" : String(c.per_user_limit),
     min_amount: c.min_amount === null ? "" : String(c.min_amount),
     product_id: c.partner_product_id ? MAKI_PREFIX + c.partner_product_id : c.product_id ?? (c.game_scope === "ours" ? SCOPE_OURS : c.game_scope === "partner" ? SCOPE_PARTNER : ""),
+    product_ids: c.product_ids.length ? c.product_ids : null,
     starts_at: toLocalDatetime(c.starts_at),
     expires_at: toLocalDatetime(c.expires_at),
     is_public: c.is_public,
@@ -98,6 +103,7 @@ export default function DiscountCodeManager({
   makiGames?: Product[]
 }) {
   const t = useTranslations("AdminDiscountCodes")
+  const scopeT = useTranslations("AdminAffiliates")
   const locale = useLocale()
   const dateLocale = locale === "th" ? "th-TH" : "en-GB"
 
@@ -134,6 +140,7 @@ export default function DiscountCodeManager({
       setError(t("error_value_required"))
       return
     }
+    if (form.product_ids?.length === 0) { setError(scopeT("select_products_required")); return }
     setSaving(true)
     try {
       const payload = {
@@ -143,7 +150,8 @@ export default function DiscountCodeManager({
         max_uses: form.max_uses ? Number(form.max_uses) : null,
         per_user_limit: form.per_user_limit === "" ? null : Number(form.per_user_limit),
         min_amount: form.min_amount ? Number(form.min_amount) : null,
-        product_id: form.product_id && !form.product_id.startsWith(MAKI_PREFIX) && !isGroupScope(form.product_id) ? form.product_id : null,
+        product_ids: form.product_ids ?? (editingId && codes.find(c => c.id === editingId)?.product_ids.length ? null : undefined),
+        product_id: !form.product_ids && form.product_id && !form.product_id.startsWith(MAKI_PREFIX) && !isGroupScope(form.product_id) ? form.product_id : null,
         game_scope: form.product_id === SCOPE_OURS ? "ours" : form.product_id === SCOPE_PARTNER ? "partner" : "all",
         partner_product_id: form.product_id.startsWith(MAKI_PREFIX) ? form.product_id.slice(MAKI_PREFIX.length) : null,
         starts_at: form.starts_at || null,
@@ -169,7 +177,7 @@ export default function DiscountCodeManager({
       }
 
       const maki = form.product_id.startsWith(MAKI_PREFIX) ? makiGames.find((g) => MAKI_PREFIX + g.id === form.product_id) : null
-      const productName = maki
+      const productName = form.product_ids?.length ? form.product_ids.map(id => products.find(p => p.id === id)?.name ?? id).join(", ") : maki
         ? `Maki · ${maki.name}`
         : form.product_id && !isGroupScope(form.product_id)
           ? products.find((p) => p.id === form.product_id)?.name ?? null
@@ -185,6 +193,7 @@ export default function DiscountCodeManager({
         per_user_limit: data.per_user_limit,
         min_amount: data.min_amount ? Number(data.min_amount) : null,
         product_id: data.product_id,
+        product_ids: data.product_ids ?? [],
         partner_product_id: data.partner_product_id ?? null,
         game_scope: data.game_scope ?? "all",
         product_name: productName,
@@ -337,6 +346,7 @@ export default function DiscountCodeManager({
               <label className="block text-[11px] text-text-muted mb-1.5 uppercase tracking-wider">
                 {t("field_product")}
               </label>
+              {form.product_ids !== null ? <ProductScopePicker products={products} value={form.product_ids} onChange={value => setForm({ ...form, product_ids: value, product_id: "" })} /> : <>
               <select
                 value={form.product_id}
                 onChange={(e) => setForm({ ...form, product_id: e.target.value })}
@@ -362,6 +372,7 @@ export default function DiscountCodeManager({
                   </optgroup>
                 )}
               </select>
+              </>}
               {(form.product_id.startsWith(MAKI_PREFIX) || form.product_id === SCOPE_PARTNER) && (
                 <p className="text-[11px] text-text-muted mt-1.5 leading-relaxed">{t("hint_maki")}</p>
               )}

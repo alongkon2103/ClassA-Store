@@ -10,7 +10,7 @@ import { Link, useRouter } from "@/i18n/routing"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslations, useLocale } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
-import { previewDiscountAmount, pickBestAutoCode, type AutoCodeCandidate } from "@/lib/discountCodes"
+import { codeAppliesTo, previewDiscountAmount, pickBestAutoCode, type AutoCodeCandidate } from "@/lib/discountCodes"
 
 // --- ส่วน LoginModal ---
 function LoginModal({ onClose }: { onClose: () => void }) {
@@ -390,7 +390,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
       .then((d) => {
         if (cancelled) return
         // Only keep it if it applies to THIS product (global or this product's).
-        if (d?.found && (d.product_id === null || d.product_id === product.id)) {
+        if (d?.found && codeAppliesTo(d, product.id)) {
           setRefInfo({ code: d.code, type: d.type, value: d.value, min_amount: d.min_amount })
         } else {
           setRefInfo(null)

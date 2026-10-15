@@ -26,14 +26,14 @@ type Data = {
   }
   codes: {
     code: string; type: string; value: number; commission_pct: number | null
-    is_active: boolean; used_count: number; max_uses: number | null; product_name: string | null; product_slug: string | null
+    is_active: boolean; used_count: number; max_uses: number | null; product_name: string | null; product_slug: string | null; product_ids: string[]
   }[]
   earnings: {
     id: string; base_amount: number; commission_pct: number; commission_amount: number
     status: string; created_at: string; paid_at: string | null; product_name: string | null
   }[]
   payouts: { id: string; amount: number; method: string | null; status: string; reject_reason: string | null; requested_at: string | null; paid_at: string | null }[]
-  products: { slug: string; name_th: string; name_en: string }[]
+  products: { id: string; slug: string; name_th: string; name_en: string }[]
   api: { enabled: boolean; prefix: string | null; created_at: string | null }
 }
 
@@ -282,7 +282,7 @@ export default function AffiliateDashboard() {
                     const inList = d.products.find((p) => p.slug === scopedSlug)
                     return [{ slug: scopedSlug, name: inList ? (locale === "th" ? inList.name_th : inList.name_en) : (selectedCode.product_name ?? scopedSlug) }]
                   })()
-                : d.products.map((p) => ({ slug: p.slug, name: locale === "th" ? p.name_th : p.name_en }))
+                : d.products.filter(p => !selectedCode.product_ids?.length || selectedCode.product_ids.includes(p.id)).map((p) => ({ slug: p.slug, name: locale === "th" ? p.name_th : p.name_en }))
               const slugVal = scopedSlug ?? (linkSlug && productOptions.some((o) => o.slug === linkSlug) ? linkSlug : productOptions[0]?.slug ?? "")
               const link = `${origin}/products/${slugVal}?ref=${codeVal}`
               const copyLink = () => {

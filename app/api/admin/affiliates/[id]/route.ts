@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       orderBy: { created_at: "desc" },
       select: {
         id: true, code: true, type: true, value: true, commission_pct: true,
-        is_active: true, used_count: true, max_uses: true, product_id: true, per_user_limit: true,
+        is_active: true, used_count: true, max_uses: true, product_id: true, product_ids: true, per_user_limit: true,
         product: { select: { name_en: true } },
       },
     }),
@@ -51,7 +51,6 @@ export async function GET(_req: NextRequest, { params }: Params) {
     }),
     // Active products for the "which product does this code apply to?" picker.
     prisma.products.findMany({
-      where: { is_active: true },
       select: { id: true, name_en: true },
       orderBy: { name_en: "asc" },
     }),
@@ -76,7 +75,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       ...c,
       value: Number(c.value),
       commission_pct: c.commission_pct === null ? null : Number(c.commission_pct),
-      product_name: c.product?.name_en ?? null,
+      product_name: c.product_ids.length ? c.product_ids.map(id => products.find(p => p.id === id)?.name_en ?? id).join(", ") : c.product?.name_en ?? null,
     })),
     earnings: earnings.map((e) => ({
       id: e.id,

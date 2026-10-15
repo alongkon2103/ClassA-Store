@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     const c = await prisma.discount_codes.findUnique({
       where: { code: raw },
       select: {
-        code: true, type: true, value: true, min_amount: true, product_id: true,
+        code: true, type: true, value: true, min_amount: true, product_id: true, product_ids: true, partner_product_id: true, game_scope: true,
         is_active: true, starts_at: true, expires_at: true, max_uses: true, used_count: true,
       },
     })
@@ -41,7 +41,10 @@ export async function GET(req: NextRequest) {
       type: c.type, // "fixed" | "percent"
       value: Number(c.value),
       min_amount: c.min_amount ? Number(c.min_amount) : null,
-      product_id: c.product_id, // null = any product
+      product_id: c.product_id,
+      product_ids: c.product_ids,
+      partner_product_id: c.partner_product_id,
+      game_scope: c.game_scope,
     })
   } catch (err: unknown) {
     console.error("resolve code error:", err)

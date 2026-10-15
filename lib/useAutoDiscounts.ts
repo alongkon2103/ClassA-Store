@@ -22,13 +22,14 @@ type AutoPreviewCode = {
   value: number
   min_amount: number | null
   product_id: string | null
+  product_ids?: string[]
   partner_product_id: string | null
   game_scope?: string | null
   sold_out: boolean
   already_used: boolean
 }
 
-type RefInfo = { type: string; value: number; min_amount: number | null; product_id: string | null }
+type RefInfo = { type: string; value: number; min_amount: number | null; product_id: string | null; product_ids?: string[]; partner_product_id?: string | null; game_scope?: string }
 
 export function useAutoDiscounts() {
   const { data: session } = useSession()
@@ -66,7 +67,7 @@ export function useAutoDiscounts() {
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return
-        setRefInfo(d?.found ? { type: d.type, value: d.value, min_amount: d.min_amount, product_id: d.product_id } : null)
+        setRefInfo(d?.found ? { type: d.type, value: d.value, min_amount: d.min_amount, product_id: d.product_id, product_ids: d.product_ids, partner_product_id: d.partner_product_id, game_scope: d.game_scope } : null)
       })
       .catch(() => { if (!cancelled) setRefInfo(null) })
     return () => { cancelled = true }
@@ -77,7 +78,7 @@ export function useAutoDiscounts() {
   const bestDiscountedPrice = useCallback(
     (productId: string, price: number): number | null => {
       // 1) Affiliate ref code wins when it applies to this product + price.
-      if (refInfo && (refInfo.product_id === null || refInfo.product_id === productId)) {
+      if (refInfo && codeAppliesTo(refInfo, productId)) {
         const off = previewDiscountAmount(
           { type: refInfo.type, value: refInfo.value, minAmount: refInfo.min_amount },
           price,

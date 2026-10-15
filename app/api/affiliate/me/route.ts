@@ -39,6 +39,7 @@ export async function GET() {
       select: {
         code: true, type: true, value: true, commission_pct: true,
         is_active: true, used_count: true, max_uses: true,
+        product_ids: true,
         product: { select: { name_en: true, slug: true } },
       },
     }),
@@ -68,7 +69,7 @@ export async function GET() {
     prisma.products.findMany({
       where: { is_active: true },
       orderBy: [{ is_featured: "desc" }, { created_at: "desc" }],
-      select: { slug: true, name_th: true, name_en: true },
+      select: { id: true, slug: true, name_th: true, name_en: true },
     }),
     // First-ever earning — anchors the one-time withdrawal maturity gate. Its
     // own query (not derived from `earnings` above, which is capped at 200).
@@ -135,7 +136,8 @@ export async function GET() {
       is_active: c.is_active,
       used_count: c.used_count,
       max_uses: c.max_uses,
-      product_name: c.product?.name_en ?? null,
+      product_ids: c.product_ids,
+      product_name: c.product_ids.length ? c.product_ids.map(id => products.find(p => p.id === id)?.name_en ?? id).join(", ") : c.product?.name_en ?? null,
       product_slug: c.product?.slug ?? null,
     })),
     earnings: earnings.map((e) => ({
@@ -157,7 +159,7 @@ export async function GET() {
       requested_at: p.requested_at?.toISOString() ?? null,
       paid_at: p.paid_at?.toISOString() ?? null,
     })),
-    products: products.map((p) => ({ slug: p.slug, name_th: p.name_th, name_en: p.name_en })),
+    products: products.map((p) => ({ id: p.id, slug: p.slug, name_th: p.name_th, name_en: p.name_en })),
     api: {
       enabled: profile.api_enabled,
       prefix: profile.api_key_prefix,

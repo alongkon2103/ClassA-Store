@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
+import { parseDiscountProductIds } from "@/lib/discountCodes"
 import { checkPartnerScope } from "../scope"
 
 type Params = { params: Promise<{ id: string }> }
@@ -47,7 +48,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     // flipping is_public=true on an already-owned code would leak it.
     const existing = await prisma.discount_codes.findUnique({
       where: { id },
-      select: { owner_user_id: true, product_id: true, partner_product_id: true, game_scope: true },
+      select: { owner_user_id: true, product_id: true, product_ids: true, partner_product_id: true, game_scope: true },
     })
     const effectiveOwner =
       body.owner_user_id !== undefined ? (body.owner_user_id?.trim() || null) : existing?.owner_user_id ?? null
@@ -97,6 +98,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       data.min_amount = body.min_amount === null || body.min_amount === "" ? null : Number(body.min_amount)
     }
 
+    if (existing?.product_ids.length && body.product_ids === undefined && (body.product_id !== undefined || body.partner_product_id !== undefined || body.game_scope !== undefined)) {
+      return NextResponse.json({ error: "This code has multiple games. Reload and use the game selector to change its scope" }, { status: 400 })
+    }
+    let selectedIds = existing?.product_ids ?? []
+    if (body.product_ids !== undefined) {
+      try { selectedIds = parseDiscountProductIds(body.product_ids) }
+      catch (error) { return NextResponse.json({ error: (error as Error).message }, { status: 400 }) }
+      if (selectedIds.length && (body.product_id || body.partner_product_id)) return NextResponse.json({ error: "Choose a game list or a single game, not both" }, { status: 400 })
+      data.product_ids = selectedIds
+      data.product_id = null
+      data.partner_product_id = null
+    } else if (body.product_id !== undefined || body.partner_product_id !== undefined || body.game_scope !== undefined) {
+      selectedIds = []
+      data.product_ids = []
+    }
     if (body.product_id !== undefined) {
       data.product_id = body.product_id?.trim() || null
       if (data.product_id && body.partner_product_id === undefined) data.partner_product_id = null // เลือกเกมเรา → เลิกผูกเกม Maki
@@ -111,10 +127,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     // ขอบเขตกลุ่มมีผลเฉพาะตอนไม่ได้ผูกเกมเดียว — ผูกเกมเดียวเมื่อไหร่ล้างกลับเป็น all
     if (body.game_scope !== undefined || data.product_id !== undefined || data.partner_product_id !== undefined) {
       const wanted = body.game_scope !== undefined ? body.game_scope : existing?.game_scope
-      data.game_scope = effProduct || effPartner ? "all" : wanted === "ours" || wanted === "partner" ? wanted : "all"
+      data.game_scope = effProduct || effPartner || selectedIds.length ? "all" : wanted === "ours" || wanted === "partner" ? wanted : "all"
     }
     const effScope = (data.game_scope as string | undefined) ?? existing?.game_scope ?? "all"
-    const scopeError = await checkPartnerScope(effProduct, effPartner, effectiveOwner, effScope)
+    const scopeError = await checkPartnerScope(effProduct, effPartner, effectiveOwner, effScope, body.product_ids !== undefined ? selectedIds : [])
     if (scopeError) return NextResponse.json({ error: scopeError }, { status: 400 })
 
     if (body.starts_at !== undefined) {

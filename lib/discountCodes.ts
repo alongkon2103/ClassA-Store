@@ -57,17 +57,7 @@ export function evaluateDiscount(
   if (code.per_user_limit !== null && userUsedCount >= code.per_user_limit) {
     return { ok: false, errorCode: "ALREADY_USED" }
   }
-  // scope: product_id = เกมเราเกมเดียว · partner_product_id = เกม Maki เกมเดียว · ว่างทั้งคู่ = ทุกเกม
-  // เกมพาร์ทเนอร์ส่ง opts.partner + productId = partner_products.id
-  if (opts?.partner) {
-    if (code.product_id || (code.partner_product_id && code.partner_product_id !== productId)) {
-      return { ok: false, errorCode: "WRONG_PRODUCT" }
-    }
-  } else if (code.partner_product_id || (code.product_id && code.product_id !== productId)) {
-    return { ok: false, errorCode: "WRONG_PRODUCT" }
-  }
-  // game_scope (มีผลเมื่อไม่ได้ผูกเกมเดียว): ours = เฉพาะเกม A Class · partner = เฉพาะเกมพาร์ทเนอร์ (Maki) · all = ทุกเกม
-  if (!code.product_id && !code.partner_product_id && code.game_scope === (opts?.partner ? "ours" : "partner")) {
+  if (!codeAppliesTo(code, productId, opts?.partner)) {
     return { ok: false, errorCode: "WRONG_PRODUCT" }
   }
   const minAmount = code.min_amount ? Number(code.min_amount) : 0
@@ -186,8 +176,26 @@ export async function releasePartnerOrderDiscount(tx: Prisma.TransactionClient, 
  * โค้ด (ข้อมูลพรีวิว) ใช้กับเกมนี้ได้ไหม — id เป็น products.id หรือ partner_products.id (uuid คนละตาราง ไม่ชนกัน)
  * partner = true เมื่อ id เป็นเกมพาร์ทเนอร์ · กติกาเดียวกับ evaluateDiscount (game_scope: all / ours / partner)
  */
-export function codeAppliesTo(c: { product_id: string | null; partner_product_id?: string | null; game_scope?: string | null }, id: string, partner = false): boolean {
-  if (c.product_id || c.partner_product_id) return c.product_id === id || c.partner_product_id === id
+export type DiscountProductScope = {
+  product_id: string | null
+  product_ids?: string[]
+  partner_product_id?: string | null
+  game_scope?: string | null
+}
+
+export function codeAppliesTo(c: DiscountProductScope, id: string, partner = false): boolean {
+  if (c.product_ids?.length) return !partner && c.product_ids.includes(id)
+  if (c.product_id) return !partner && c.product_id === id
+  if (c.partner_product_id) return partner && c.partner_product_id === id
   const scope = c.game_scope ?? "all"
   return scope === "all" || scope === (partner ? "partner" : "ours")
+}
+
+// null explicitly means all products; an empty selection is rejected to avoid widening a code by mistake.
+export function parseDiscountProductIds(input: unknown): string[] {
+  if (input === null) return []
+  if (!Array.isArray(input) || input.length === 0 || input.length > 500 || !input.every(id => typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))) {
+    throw new Error("Select at least one valid game or choose all products")
+  }
+  return [...new Set(input.map(id => id.toLowerCase()))]
 }

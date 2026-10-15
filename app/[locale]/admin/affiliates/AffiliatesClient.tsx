@@ -1,5 +1,7 @@
 "use client"
 
+import ProductScopePicker from "@/components/admin/ProductScopePicker"
+
 import { useCallback, useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { motion, AnimatePresence } from "framer-motion"
@@ -28,7 +30,7 @@ type ListRow = {
 type CodeRow = {
   id: string; code: string; type: string; value: number
   commission_pct: number | null; is_active: boolean
-  used_count: number; max_uses: number | null; product_id: string | null; product_name: string | null
+  used_count: number; max_uses: number | null; product_id: string | null; product_ids: string[]; product_name: string | null
   per_user_limit: number | null
 }
 type ProductOpt = { id: string; name: string }
@@ -592,20 +594,21 @@ function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, on
   const [type, setType] = useState<"percent" | "fixed">(code.type === "fixed" ? "fixed" : "percent")
   const [value, setValue] = useState(String(code.value))
   const [comm, setComm] = useState(code.commission_pct === null ? "" : String(code.commission_pct))
-  const [productId, setProductId] = useState(code.product_id ?? "")
+  const [productIds, setProductIds] = useState<string[] | null>(code.product_ids?.length ? code.product_ids : code.product_id ? [code.product_id] : null)
   const [perUser, setPerUser] = useState<"1" | "unlimited">(code.per_user_limit == null ? "unlimited" : "1")
   const [active, setActive] = useState(code.is_active)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
   const save = async () => {
+    if (productIds?.length === 0) { setErr(t("select_products_required")); return }
     setErr(null); setSaving(true)
     const res = await fetch(`/api/admin/discount-codes/${code.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         code: c, type, value: Number(value),
         commission_pct: comm === "" ? null : Number(comm),
-        product_id: productId || null, is_active: active,
+        product_ids: productIds, is_active: active,
         per_user_limit: perUser === "unlimited" ? null : 1,
       }),
     })
@@ -637,13 +640,7 @@ function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, on
             <input type="number" value={comm} onChange={(e) => setComm(e.target.value)}
               placeholder={t("comm_default_ph", { pct: defaultPct })} className={fieldInput} />
           </div>
-          <div>
-            <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_product")}</label>
-            <select value={productId} onChange={(e) => setProductId(e.target.value)} className={fieldInput}>
-              <option value="">{t("all_products")}</option>
-              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
+          <ProductScopePicker products={products} value={productIds} onChange={setProductIds} />
           <div>
             <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_per_user")}</label>
             <select value={perUser} onChange={(e) => setPerUser(e.target.value as "1" | "unlimited")} className={fieldInput}>
@@ -676,7 +673,7 @@ function CodeItem({ code, products, defaultPct, link, busy, onCopy, onDelete, on
         <span className="font-mono font-semibold">{code.code}</span>
         <span className="text-text-muted">−{code.type === "fixed" ? `฿${code.value}` : `${code.value}%`}</span>
         <span className="text-amber-400/80">· {t("comm")} {code.commission_pct ?? defaultPct}%</span>
-        <span className="text-text-muted truncate max-w-[140px]">· {code.product_name ?? t("all_products")}</span>
+        <span title={code.product_name ?? t("all_products")} className="text-text-muted truncate max-w-[140px]">· {code.product_name ?? t("all_products")}</span>
         {code.per_user_limit == null && <span className="text-green-400/80 shrink-0">· {t("per_user_unlimited_badge")}</span>}
         {!code.is_active && <span className="text-text-muted">· {t("inactive")}</span>}
       </div>
@@ -700,24 +697,25 @@ function CreateCode({ userId, products, defaultPct, onDone, t }: { userId: strin
   const [value, setValue] = useState("10")
   const [type, setType] = useState<"percent" | "fixed">("percent")
   const [comm, setComm] = useState("")
-  const [productId, setProductId] = useState("")
+  const [productIds, setProductIds] = useState<string[] | null>(null)
   const [perUser, setPerUser] = useState<"1" | "unlimited">("1")
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
   const submit = async () => {
+    if (productIds?.length === 0) { setErr(t("select_products_required")); return }
     setErr(null); setBusy(true)
     const res = await fetch("/api/admin/discount-codes", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         code: code || undefined, type, value: Number(value),
         owner_user_id: userId, commission_pct: comm === "" ? null : Number(comm),
-        product_id: productId || null, per_user_limit: perUser === "unlimited" ? null : 1, max_uses: null,
+        product_ids: productIds, per_user_limit: perUser === "unlimited" ? null : 1, max_uses: null,
       }),
     })
     setBusy(false)
     if (!res.ok) { setErr((await res.json()).error || t("error_save")); return }
-    setCode(""); setComm(""); setValue("10"); setProductId(""); setPerUser("1"); onDone()
+    setCode(""); setComm(""); setValue("10"); setProductIds(null); setPerUser("1"); onDone()
   }
 
   return (
@@ -745,13 +743,7 @@ function CreateCode({ userId, products, defaultPct, onDone, t }: { userId: strin
           <input type="number" value={comm} onChange={(e) => setComm(e.target.value)}
             placeholder={t("comm_default_ph", { pct: defaultPct })} className={fieldInput} />
         </div>
-        <div>
-          <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_product")}</label>
-          <select value={productId} onChange={(e) => setProductId(e.target.value)} className={fieldInput}>
-            <option value="">{t("all_products")}</option>
-            {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </div>
+        <ProductScopePicker products={products} value={productIds} onChange={setProductIds} />
         <div>
           <label className="block text-[10px] text-text-muted mb-1 uppercase tracking-wider">{t("label_per_user")}</label>
           <select value={perUser} onChange={(e) => setPerUser(e.target.value as "1" | "unlimited")} className={fieldInput}>
