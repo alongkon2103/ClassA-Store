@@ -41,7 +41,34 @@ async function customerChecks() {
  assert.equal(JSON.stringify(data).includes("email"),false)
  const originalAccess=db.user_whitelist_access.findMany
  db.user_whitelist_access.findMany=(async()=>[access,access]) as typeof originalAccess
- await assert.rejects(()=>readTikkiesEntitlements(db,[{provider:"google",providerAccountId:"g1"}],now),e=>e instanceof TikkiesError&&e.code==="entitlement_source_conflict")
+ assert.equal((await readTikkiesEntitlements(db,[{provider:"google",providerAccountId:"g1"}],now)).entitlements[0].status,"active","Duplicate grants must not take the whole customer offline")
+ const later={...access,ign:"originalname",expires_at:new Date("2026-12-01Z")}
+ const expiredGrant={...access,expires_at:new Date("2026-10-01Z")}
+ for(const rows of [[expiredGrant,later],[later,expiredGrant]]) {
+  db.user_whitelist_access.findMany=(async()=>rows) as typeof originalAccess
+  const rights=(await readTikkiesEntitlements(db,[{provider:"google",providerAccountId:"g1"}],now)).entitlements[0]
+  assert.equal(rights.status,"active");assert.equal(rights.expiresAt,order.expires_at.toISOString(),"Whitelist renewal never extends this customer's own order")
+  assert.equal(rights.roblox.userId,order.roblox_user_id,"Stored Roblox ownership stays attached to its own order")
+ }
+ db.user_whitelist_access.findMany=(async()=>[expiredGrant,{...expiredGrant,ign:"ORIGINALNAME"}]) as typeof originalAccess
+ assert.equal((await readTikkiesEntitlements(db,[{provider:"google",providerAccountId:"g1"}],now)).entitlements[0].status,"expired")
+ db.user_whitelist_access.findMany=(async()=>[{...later,product_id:"another-game"},{...later,ign:"AnotherAccount"}]) as typeof originalAccess
+ assert.equal((await readTikkiesEntitlements(db,[{provider:"google",providerAccountId:"g1"}],now)).entitlements[0].status,"revoked","A different game or Roblox name cannot grant rights")
+ db.user_whitelist_access.findMany=(async()=>[access,later]) as typeof originalAccess
+ const originalOrders=db.orders.findMany
+ for(const status of ["refunded","revoked","pending"]) {
+  db.orders.findMany=(async()=>[{...order,status}]) as unknown as typeof originalOrders
+  assert.equal((await readTikkiesEntitlements(db,[{provider:"google",providerAccountId:"g1"}],now)).entitlements[0].status,status,"Duplicate grants cannot revive an inactive order")
+ }
+ db.orders.findMany=(async()=>[{...order,expires_at:new Date("2026-10-01Z")}]) as unknown as typeof originalOrders
+ assert.equal((await readTikkiesEntitlements(db,[{provider:"google",providerAccountId:"g1"}],now)).entitlements[0].status,"expired","A newer whitelist grant cannot revive an expired order")
+ db.orders.findMany=(async()=>[{...order,whitelist_status:"removed"}]) as unknown as typeof originalOrders
+ assert.equal((await readTikkiesEntitlements(db,[{provider:"google",providerAccountId:"g1"}],now)).entitlements[0].status,"revoked")
+ db.orders.findMany=(async()=>[{...order,expires_at:new Date("9999-12-31Z")}]) as unknown as typeof originalOrders
+ assert.equal((await readTikkiesEntitlements(db,[{provider:"google",providerAccountId:"g1"}],now)).entitlements[0].expiresAt,later.expires_at.toISOString(),"Permanent orders are still bounded by current whitelist grants")
+ db.user_whitelist_access.findMany=(async()=>[access,{...later,expires_at:new Date("9999-12-31Z")}]) as typeof originalAccess
+ assert.equal((await readTikkiesEntitlements(db,[{provider:"google",providerAccountId:"g1"}],now)).entitlements[0].expiresAt,null)
+ db.orders.findMany=originalOrders
  db.user_whitelist_access.findMany=originalAccess
  console.log("Tikkies customers: exact Google/Discord identities, no email fallback, conflict, no rights and separate game/account tuples OK")
 }

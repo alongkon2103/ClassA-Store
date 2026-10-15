@@ -83,17 +83,16 @@ export async function readTikkiesEntitlements(db: Prisma.TransactionClient, iden
     const d = new Date(result.expires_at), key = `${result.product_id}:${normalized(result.ign)}`
     if (Number.isFinite(d.getTime()) && (!rewardExpiry.has(key) || d > rewardExpiry.get(key)!)) rewardExpiry.set(key, d)
   }
-  const byGameName = new Map<string, Whitelist[]>()
+  const byGameName = new Map<string, Whitelist>()
   for (const row of access) {
     const key = `${row.product_id}:${normalized(row.ign)}`
-    byGameName.set(key, [...(byGameName.get(key) ?? []), row])
+    const previous = byGameName.get(key)
+    // Case variants are the same Roblox account; keep the current grant, still capped by this user's own order.
+    if (!previous || row.expires_at > previous.expires_at) byGameName.set(key, row)
   }
   const unmatched = identities.filter(i => !accounts.some(a => a.provider === i.provider && a.provider_account_id === i.providerAccountId)).map(i => i.provider)
   return { schemaVersion: 1, customerId, checkedAt: now.toISOString(), entitlements: orders.map(order => {
     const key = `${order.product_id}:${normalized(order.whitelisted_username)}`
-    const rows = byGameName.get(key) ?? []
-    // Case-variant duplicate whitelist entries are ambiguous, so never choose one arbitrarily.
-    if (rows.length > 1) throw new TikkiesError("entitlement_source_conflict", 503)
-    return evaluateTikkiesEntitlement(order, rows.length === 1 ? rows[0] : null, now, rewardExpiry.get(key))
+    return evaluateTikkiesEntitlement(order, byGameName.get(key) ?? null, now, rewardExpiry.get(key))
   }), ...(unmatched.length ? { warnings: [{ code: "identity_link_required", providers: [...new Set(unmatched)] }] } : {}) }
 }

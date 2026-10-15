@@ -98,9 +98,9 @@ A full response replaces the previous snapshot. Missing entries must be removed,
 | 404 | `customer_not_found`; `action: "use_original_provider_or_link_accounts"`. |
 | 409 | `identity_conflict`; do not merge or combine rights. |
 | 429 | `rate_limited`, with `Retry-After` seconds. |
-| 503 | `integration_unavailable`, `entitlements_unavailable`, `entitlement_capacity_exceeded`, `entitlement_source_conflict`. Dependency/configuration/ambiguous-data failures are **not** empty rights. |
+| 503 | `integration_unavailable`, `entitlements_unavailable`, `entitlement_capacity_exceeded`. Dependency/configuration/data failures are **not** empty rights. |
 
-The endpoint authenticates before customer lookup and reads all entitlement sources in one repeatable-read transaction. Queries are customer-scoped and batched: no global purchase scan or per-order Roblox call. Safety caps: 5,000 owned orders, 5,000 own game-day redemptions, 10,000 candidate whitelist rows; exceeding them returns 503 rather than truncating rights. Ambiguous case-variant whitelist duplicates also return 503 for admin reconciliation.
+The endpoint authenticates before customer lookup and reads all entitlement sources in one repeatable-read transaction. Queries are customer-scoped and batched: no global purchase scan or per-order Roblox call. Safety caps: 5,000 owned orders, 5,000 own game-day redemptions, 10,000 candidate whitelist rows; exceeding them returns 503 rather than truncating rights. Legacy whitelist rows that differ only by Roblox username case are combined per product and normalized username using the latest grant expiry. Each returned entitlement remains a separate customer-owned order, capped by that order's expiry and its own point extensions. Missing grants, expired/refunded/revoked orders, other Roblox names and other products never gain access through duplicate rows. No database rows or payment flows are changed by this read-time consolidation.
 
 ## Configuration and credential lifecycle
 
