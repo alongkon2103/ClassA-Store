@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { parseIdentities, readTikkiesEntitlements, TikkiesError } from "@/lib/integrations/tikkies"
 import { authenticateTikkies, limitTikkies, readTikkiesBody } from "@/lib/integrations/tikkiesSecurity"
+import { resolvePurchasedAccounts } from "@/lib/integrations/tikkiesAutoRoblox"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 export async function POST(req: NextRequest) {
@@ -17,7 +18,9 @@ export async function POST(req: NextRequest) {
       headers["Retry-After"] = String(retryAfter)
       throw new TikkiesError("rate_limited", 429)
     }
-    const data = await prisma.$transaction(tx => readTikkiesEntitlements(tx, identities, new Date()), { isolationLevel: "RepeatableRead", timeout: 10000 })
+    const read = () => prisma.$transaction(tx => readTikkiesEntitlements(tx, identities, new Date()), { isolationLevel: "RepeatableRead", timeout: 10000 })
+    let data = await read()
+    if (await resolvePurchasedAccounts(prisma, data)) data = await read()
     status = 200; outcome = "ok"
     return NextResponse.json(data, { headers })
   } catch (error) {

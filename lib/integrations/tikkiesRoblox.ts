@@ -27,6 +27,27 @@ export async function lookupTikkiesRoblox(value: string, byId = false): Promise<
   if (byId && identity?.userId !== value) return null
   return identity
 }
+// The official response identifies the requested name even when the account has been renamed.
+export async function lookupTikkiesRobloxBatch(names: string[]): Promise<Map<string, RobloxIdentity>> {
+  if (!names.length || names.length > 50 || names.some(name => !isPlausibleUsername(name))) throw new Error('invalid_roblox_names')
+  const requested = new Set(names.map(name => name.trim().toLowerCase()))
+  const response = await fetch('https://users.roblox.com/v1/usernames/users', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store', redirect: 'error',
+    body: JSON.stringify({ usernames: [...requested], excludeBannedUsers: false }), signal: AbortSignal.timeout(3000),
+  })
+  if (!response.ok) throw new Error('roblox_unavailable')
+  const body = await response.json(), identities = new Map<string, RobloxIdentity>()
+  if (!Array.isArray(body?.data) || body.data.length > 50) throw new Error('roblox_response_invalid')
+  for (const row of body.data) {
+    const name = typeof row?.requestedUsername === 'string' ? row.requestedUsername.trim().toLowerCase() : ''
+    const identity = parseIdentity(row)
+    if (!requested.has(name) || !identity) continue
+    if (identities.has(name) && identities.get(name)!.userId !== identity.userId) throw new Error('roblox_response_invalid')
+    identities.set(name, identity)
+  }
+  return identities
+}
+
 export async function resolveTikkiesBinding(ign: string | null, existing?: Partial<RobloxBinding>): Promise<Partial<RobloxBinding>> {
   const normalized = ign?.trim().toLowerCase() ?? ""
   if (existing?.roblox_user_id && existing.roblox_resolved_for === normalized) return {}

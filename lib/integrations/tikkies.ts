@@ -45,7 +45,7 @@ export function evaluateTikkiesEntitlement(order: TikkiesOrder, access: Whitelis
   else status = "active"
   const changedAt = expired && expiry! > order.tikkies_updated_at ? expiry! : order.tikkies_updated_at
   return {
-    entitlementId: order.id, gameKey: order.product_id, gameName: order.products.name_en,
+    entitlementId: order.id, purchasedUsername: order.whitelisted_username, gameKey: order.product_id, gameName: order.products.name_en,
     universeId: order.products.roblox_universe_id, placeIds: order.products.roblox_place_ids,
     status, expiresAt: expiry?.toISOString() ?? null, updatedAt: changedAt.toISOString(),
     revision: order.tikkies_revision * 2 - 1 + (expired ? 1 : 0),

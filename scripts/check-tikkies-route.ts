@@ -8,23 +8,25 @@ const token="tikkies_test_"+"a".repeat(48), previous="tikkies_old_"+"b".repeat(4
 process.env.TIKKIES_API_KEY_SHA256=createHash("sha256").update(token).digest("hex")
 process.env.TIKKIES_API_KEY_PREVIOUS_SHA256=createHash("sha256").update(previous).digest("hex")
 process.env.TIKKIES_API_ENABLED="true"
-let lookups=0, limited=false, broken=false, customer="c1", conflict=false
+let lookups=0, limited=false, broken=false, customer="c1", conflict=false, repairs=0, repair=false
 const db = {
  $queryRaw: async (_sql:unknown,global:string,subject:string)=>{if(broken)throw new Error("private-db-error");return [{key_hash:global,count:limited?9999999:1,reset_at:new Date(Date.now()+60000)},{key_hash:subject,count:1,reset_at:new Date(Date.now()+60000)}]}, $executeRaw:async()=>0,
  accounts:{findMany:async()=>{lookups++;if(broken)throw new Error("private-db-error");return customer?[{user_id:customer,provider:"google",provider_account_id:"g1"},...(conflict?[{user_id:"c2",provider:"discord",provider_account_id:"d2"}]:[])]:[]}},orders:{findMany:async()=>[]},point_redemptions:{findMany:async()=>[]},
  $transaction:async(fn:(db:unknown)=>unknown)=>fn(db),
 }
 const file=require.resolve("../lib/prisma");require.cache[file]={id:file,filename:file,loaded:true,exports:{prisma:db}} as NodeModule
+const autoFile=require.resolve("../lib/integrations/tikkiesAutoRoblox");require.cache[autoFile]={id:autoFile,filename:autoFile,loaded:true,exports:{resolvePurchasedAccounts:async()=>{repairs++;if(repair){repair=false;return true}return false}}} as NodeModule
 const { POST }=require("../app/api/integrations/tikkies/entitlements/route")
 const request=(auth=token,body:unknown={identities:[{provider:"google",providerAccountId:"g1"}]})=>new NextRequest("https://store.test/api/integrations/tikkies/entitlements",{method:"POST",headers:{"content-type":"application/json",...(auth?{authorization:`Bearer ${auth}`}:{})},body:JSON.stringify(body)})
 async function check(){
  const logs:string[]=[];const original=console.info;console.info=(x:unknown)=>{logs.push(String(x))}
  try{
   for(const key of ["","wrong_"+"x".repeat(40)])assert.equal((await POST(request(key))).status,401)
-  assert.equal(lookups,0,"Auth must precede customer lookup")
+  assert.equal(lookups,0,"Auth must precede customer lookup");assert.equal(repairs,0,"Unauthorized requests cannot resolve purchased accounts")
   assert.equal((await POST(request(token,{email:"customer@example.test"}))).status,400)
   assert.equal((await POST(request(token,{identities:[{provider:"google",providerAccountId:"x".repeat(9000)}]}))).status,400)
   const ok=await POST(request());assert.equal(ok.status,200);assert.equal(ok.headers.get("cache-control"),"no-store");assert.ok(ok.headers.get("x-request-id"));assert.deepEqual((await ok.json()).entitlements,[])
+  const beforeRepair=lookups;repair=true;assert.equal((await POST(request())).status,200);assert.equal(lookups,beforeRepair+2,"Re-read the authoritative snapshot after resolving an account")
   assert.equal((await POST(request(previous))).status,200,"Previous rotation credential remains valid")
   customer="";assert.equal((await POST(request())).status,404);customer="c1"
   conflict=true;assert.equal((await POST(request())).status,409);conflict=false
