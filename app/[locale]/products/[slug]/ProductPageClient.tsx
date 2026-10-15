@@ -1,4 +1,6 @@
 "use client"
+
+import HalloweenPage from "@/components/HalloweenPage"
 import { variantLabel } from "@/lib/i18n/locale"
 import { youtubeEmbed } from "@/lib/video"
 import { categoryName, type CategoryLabel } from "@/lib/gameCategories"
@@ -17,6 +19,7 @@ import { getImageUrl } from "@/lib/getImageUrl"
 import { useAutoDiscounts } from "@/lib/useAutoDiscounts"
 import { productDisplayPrice } from "@/lib/productPrice"
 import { REVIEWS_ENABLED } from "@/lib/reviewConfig"
+import HalloweenFrame, { HalloweenWeb } from "@/components/HalloweenFrame"
 
 // Same session key /r/<code> and useAutoDiscounts use for affiliate attribution.
 const AFF_REF_KEY = "aff_ref"
@@ -181,8 +184,8 @@ export default function ProductPageClient({
   const typeChip = categoryName(product.category, isTH) ?? null
 
   return (
-    <>
-      <Navbar />
+    <HalloweenPage>
+      <Navbar halloween />
 
       <main className="pb-28 lg:pb-0">
         {/* BREADCRUMB */}
@@ -207,7 +210,9 @@ export default function ProductPageClient({
             {/* ── GALLERY ── */}
             <div className="flex flex-col gap-3">
               {/* carousel ของรูปเกมทั้งหมด — ป้ายส่วนลดกับปุ่มไปดูวิดีโอวางทับมุม ไม่บังรูป */}
+              <HalloweenFrame featured>
               <ImageCarousel images={images.map((im) => getImageUrl(im.url))} alt={name} index={imgIdx} onChange={setImgIdx}>
+                <HalloweenWeb />
                 {headlineWas != null && (
                   <span className="absolute top-3.5 left-3.5 px-3.5 py-1 bg-hot text-white rounded-lg text-[0.7rem] font-bold z-10">
                     -{pct(headlineWas, headlineNow)}%
@@ -223,6 +228,7 @@ export default function ProductPageClient({
                   </button>
                 )}
               </ImageCarousel>
+              </HalloweenFrame>
 
               {images.length > 1 && (
                 <div className="grid grid-cols-6 gap-2">
@@ -351,7 +357,7 @@ export default function ProductPageClient({
                     </p>
                   )}
                   <button onClick={() => setBuyOpen(true)}
-                    className="w-full py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-2.5 hover:-translate-y-0.5 transition-all shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] mt-1 bg-gradient-to-r from-accent to-accent-light">
+                    className="pumpkin-button w-full py-4 rounded-xl text-white text-base font-bold flex items-center justify-center gap-2.5 hover:-translate-y-0.5 transition-all shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] mt-1 bg-gradient-to-r from-accent to-accent-light">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
                       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
@@ -474,7 +480,7 @@ export default function ProductPageClient({
         </div>
       </main>
 
-      <Footer />
+      <Footer halloween />
 
       {/* แถบซื้อติดล่างจอ (มือถือ) */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-bg-surface/95 backdrop-blur border-t border-border-soft px-4 py-3 flex items-center gap-3">
@@ -483,7 +489,7 @@ export default function ProductPageClient({
           <p className="text-[17px] font-bold text-accent-light leading-none">{priceLabel(headlineNow)}</p>
         </div>
         <button onClick={() => setBuyOpen(true)}
-          className="flex-1 py-3 rounded-xl text-white font-bold text-[15px] active:scale-[0.98] transition-all bg-gradient-to-r from-accent to-accent-light">
+          className="pumpkin-button flex-1 py-3 rounded-xl text-white font-bold text-[15px] active:scale-[0.98] transition-all bg-gradient-to-r from-accent to-accent-light">
           {tc("buy_now")}
         </button>
       </div>
@@ -502,6 +508,6 @@ export default function ProductPageClient({
           <ProductModal product={product} initialVariantId={pkgId ?? undefined} onClose={() => setBuyOpen(false)} />
         ))}
       </AnimatePresence>
-    </>
+    </HalloweenPage>
   )
 }

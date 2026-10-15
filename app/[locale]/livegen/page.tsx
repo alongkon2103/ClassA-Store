@@ -1,3 +1,4 @@
+import HalloweenPage from "@/components/HalloweenPage"
 import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
@@ -64,8 +65,8 @@ export default async function LiveGenPage({ params, searchParams }: {
   })
 
   return (
-    <div className="min-h-screen bg-bg-base flex flex-col">
-      <Navbar />
+    <HalloweenPage className="min-h-screen bg-bg-base flex flex-col">
+      <Navbar halloween />
       <LiveEditor
         isAuthenticated={!!session?.user?.id}
         isAdmin={session?.user?.role === "admin"}
@@ -86,6 +87,6 @@ export default async function LiveGenPage({ params, searchParams }: {
         initialTemplateId={sp.template ?? null}
         initialProjectId={sp.project ?? null}
       />
-    </div>
+    </HalloweenPage>
   )
 }

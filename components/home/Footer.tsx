@@ -1,5 +1,7 @@
 "use client"
 
+import { HalloweenFooterScene } from "@/components/HalloweenFrame"
+
 // Footer ตามดีไซน์ใหม่: 4 คอลัมน์ (แบรนด์ / ข้อมูล / ติดต่อ / รับข่าวสาร)
 // ลิงก์ทุกอันชี้ route ที่มีจริงในระบบ ไม่ใช้ # ลอย ๆ
 import { useState } from "react"
@@ -25,7 +27,7 @@ function Social({ href, label, path }: { href: string; label: string; path: Reac
   )
 }
 
-export default function Footer() {
+export default function Footer({ halloween = false }: { halloween?: boolean }) {
   const t = useTranslations("Footer")
   const locale = useLocale()
   const [email, setEmail] = useState("")
@@ -54,7 +56,8 @@ export default function Footer() {
   ]
 
   return (
-    <footer className="border-t border-border-soft pt-12" style={{ background: "var(--footer-bg)" }}>
+    <footer className="relative border-t border-border-soft pt-12" style={{ background: "var(--footer-bg)" }}>
+      {halloween && <HalloweenFooterScene />}
       <div className="w-full px-5 sm:px-7 lg:px-10 pb-11 grid gap-12 grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.3fr]">
         {/* แบรนด์ */}
         <div>
@@ -113,7 +116,7 @@ export default function Footer() {
               className="flex-1 min-w-0 px-3.5 py-[11px] rounded-lg bg-bg-card border border-border-soft text-text-base text-[0.8rem] outline-none focus:border-accent transition-colors placeholder:text-text-dim"
             />
             <button type="submit" disabled={state === "sending"}
-                    className="px-[22px] py-[11px] rounded-lg bg-accent hover:bg-accent-light text-white text-[0.8rem] font-semibold whitespace-nowrap transition-colors disabled:opacity-60">
+                    className="pumpkin-button px-[22px] py-[11px] rounded-lg bg-accent hover:bg-accent-light text-white text-[0.8rem] font-semibold whitespace-nowrap transition-colors disabled:opacity-60">
               {state === "sending" ? "..." : t("newsletter_button")}
             </button>
           </form>

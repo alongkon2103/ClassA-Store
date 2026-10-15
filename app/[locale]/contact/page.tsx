@@ -1,3 +1,4 @@
+import HalloweenPage from "@/components/HalloweenPage"
 import { setRequestLocale, getTranslations } from "next-intl/server"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
@@ -18,8 +19,8 @@ export default async function ContactPage({
   const t = await getTranslations("Contact")
 
   return (
-    <div className="min-h-screen bg-bg-base flex flex-col selection:bg-accent/30 selection:text-accent-light">
-      <Navbar />
+    <HalloweenPage decorated className="min-h-screen bg-bg-base flex flex-col selection:bg-accent/30 selection:text-accent-light">
+      <Navbar halloween />
 
       <main className="flex-1 relative">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -116,8 +117,8 @@ export default async function ContactPage({
         </div>
       </main>
 
-      <Footer />
-    </div>
+      <Footer halloween />
+    </HalloweenPage>
   )
 }
 

@@ -1,4 +1,6 @@
 "use client"
+
+import { HalloweenSurface } from "@/components/HalloweenPage"
 import { variantLabel } from "@/lib/i18n/locale"
 
 // Modal for a PARTNER game (external). Same look as ProductModal but read-only:
@@ -65,6 +67,7 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
   // เรนเดอร์ผ่าน portal ไปที่ body — กัน ancestor ที่มี transform/filter
   // ทำให้ position:fixed กลายเป็นอ้างอิงกล่องนั้นแทน viewport (modal จะหลุดจอ)
   return createPortal(
+    <HalloweenSurface>
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:p-5"
@@ -191,7 +194,7 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
             href={data.ref_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full text-center py-3.5 rounded-xl font-semibold text-[15px] bg-violet-500 text-white hover:opacity-90 active:scale-95 transition"
+            className="pumpkin-button block w-full text-center py-3.5 rounded-xl font-semibold text-[15px] bg-violet-500 text-white hover:opacity-90 active:scale-95 transition"
           >
             {t("buy_at_partner", { name: partnerName })}
           </a>
@@ -199,7 +202,7 @@ export default function PartnerModal({ product, onClose }: { product: any; onClo
         </div>
       </motion.div>
     </motion.div>
-    ,
+    </HalloweenSurface>,
     document.body,
   )
 }

@@ -1,3 +1,4 @@
+import HalloweenPage from "@/components/HalloweenPage"
 import { setRequestLocale } from "next-intl/server"
 import FaqClient from "./FaqClient"
 import Navbar from "@/components/Navbar"
@@ -8,12 +9,12 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
   setRequestLocale(locale)
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <HalloweenPage decorated className="min-h-screen flex flex-col">
+      <Navbar halloween />
       <main className="flex-1">
         <FaqClient />
       </main>
-      <Footer />
-    </div>
+      <Footer halloween />
+    </HalloweenPage>
   )
 }

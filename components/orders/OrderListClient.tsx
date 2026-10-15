@@ -11,6 +11,7 @@ import { useTranslations, useLocale } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
 import ReviewForm from "@/components/reviews/ReviewForm"
 import { REVIEWS_ENABLED } from "@/lib/reviewConfig"
+import { HalloweenSurface } from "@/components/HalloweenPage"
 
 type ProductGift = { id: string; url: string; filename: string | null }
 type ProductPreset = { id: string; url: string; filename: string | null }
@@ -281,6 +282,7 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
 
       {/* ── Order Detail Modal — portaled to body, see mounted state above ── */}
       {mounted && createPortal(
+        <HalloweenSurface>
         <AnimatePresence>
           {selectedOrder && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 md:p-4">
@@ -590,7 +592,8 @@ export default function OrderListClient({ orders, livegenEnabled = true }: Order
               </motion.div>
             </div>
           )}
-        </AnimatePresence>,
+        </AnimatePresence>
+        </HalloweenSurface>,
         document.body
       )}
     </>

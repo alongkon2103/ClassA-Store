@@ -1,4 +1,6 @@
 "use client"
+
+import { HalloweenSurface } from "@/components/HalloweenPage"
 import { variantLabel } from "@/lib/i18n/locale"
 
 import { useEffect, useState, useCallback, useRef } from "react"
@@ -743,7 +745,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
   // เรนเดอร์ผ่าน portal ไปที่ body — กัน ancestor ที่มี transform/filter
   // ทำให้ position:fixed กลายเป็นอ้างอิงกล่องนั้นแทน viewport (modal จะหลุดจอ)
   return createPortal(
-    <div className="relative">
+    <HalloweenSurface className="relative">
       <AnimatePresence>
         {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
         {showUsernameHelp && <UsernameHelpModal onClose={() => { setShowUsernameHelp(false); inputRef.current?.blur() }} images={usernameHelpImages} />}
@@ -1111,7 +1113,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
             </div>
 
             <button disabled={loading} onClick={handleBuyClick}
-              className={`w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2.5 shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 ${
+              className={`pumpkin-button w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2.5 shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 ${
                 loading ? "opacity-60 cursor-not-allowed bg-accent text-white" : "bg-gradient-to-r from-accent to-accent-light text-white"}`}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" />
@@ -1136,7 +1138,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
           </div>
         </motion.div>
       </motion.div>
-    </div>
+    </HalloweenSurface>
     ,
     document.body,
   )

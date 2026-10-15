@@ -1,0 +1,60 @@
+.frame { position: relative; display: flex; flex-direction: column; height: 100%; isolation: isolate; }
+.seasonal { padding-top: 26px; }
+.frame > :first-child { flex: 1; }
+.decorations { pointer-events: none; user-select: none; }
+.swarm { display: none; position: absolute; top: 26px; right: 30px; width: 0; height: 0; z-index: 6; pointer-events: none; user-select: none; }
+.swarmBat { position: absolute; width: 24px; left: -12px; top: -9px; opacity: 0; --flight-x: -36px; --flight-y: -62px; --flight-turn: -22deg; animation: card-bat-flight 760ms cubic-bezier(.2, .7, .3, 1) both; }
+.swarmBat:nth-child(2) { width: 20px; --flight-x: -2px; --flight-y: -86px; --flight-turn: 8deg; animation-delay: 100ms; }
+.swarmBat:nth-child(3) { width: 27px; --flight-x: 28px; --flight-y: -64px; --flight-turn: 24deg; animation-delay: 200ms; }
+.swarmBat img { width: 100%; height: auto; animation: bat-flutter 140ms ease-in-out infinite alternate; }
+@keyframes card-bat-flight {
+  0% { opacity: 0; transform: translate3d(0, 5px, 0) scale(.55); }
+  18% { opacity: 1; }
+  65% { opacity: .9; }
+  100% { opacity: 0; transform: translate3d(var(--flight-x), var(--flight-y), 0) scale(.85) rotate(var(--flight-turn)); }
+}
+@keyframes bat-flutter { from { transform: scaleX(.8); } to { transform: scaleX(1); } }
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) { .swarm { display: block; } .seasonal:hover .cardImage { scale: 1.035; } }
+.ghost, .pumpkin { position: absolute; z-index: 4; height: auto; }
+.ghost { width: 68px; top: -17px; right: 32%; filter: drop-shadow(0 2px 2px rgb(16 24 40 / 20%)); transform: rotate(4deg); transition: transform 400ms ease; }
+.web { position: absolute; z-index: 2; width: 58px; height: 58px; top: 0; left: 0; pointer-events: none; stroke: #e7dcc8; stroke-width: .8; opacity: .48; }
+.webRight { left: auto; right: 0; transform: scaleX(-1); }
+.pumpkin { width: 40px; top: -2px; left: 18px; transform: rotate(-7deg); filter: drop-shadow(0 2px 2px rgb(72 36 8 / 20%)); }
+.featured { height: auto; }
+.featured > :first-child { flex: initial; }
+.featured .ghost { width: 82px; top: -29px; right: 20%; }
+.featured .pumpkin { top: auto; bottom: -8px; left: auto; right: 18px; width: 46px; }
+.hero { border: 1px solid rgb(245 177 105 / 20%); }
+.heroScene { position: absolute; inset: 0; z-index: 3; pointer-events: none; user-select: none; }
+.heroScene .ghost { width: 84px; top: 18px; right: 85px; }
+.heroScene .pumpkin { width: 84px; top: auto; left: auto; bottom: 12px; right: 18px; }
+.heroScene .web { width: 68px; height: 68px; opacity: .28; }
+.moon { position: absolute; top: 19px; right: 430px; width: 90px; height: 90px; filter: drop-shadow(0 0 18px rgb(240 204 143 / 14%)); }
+.bat { position: absolute; width: 36px; height: auto; top: 31px; right: 245px; opacity: .7; animation: hero-flight 24s ease-in-out infinite; }
+@keyframes hero-flight { 0%, 100% { transform: translate3d(-50px, 0, 0) rotate(-5deg); } 50% { transform: translate3d(60px, -12px, 0) rotate(5deg); } }
+.footerScene { position: absolute; top: -33px; right: 7%; display: flex; align-items: end; pointer-events: none; user-select: none; filter: drop-shadow(0 2px 2px rgb(45 32 28 / 18%)); }
+.footerScene img { width: 44px; height: auto; }
+.footerScene img:nth-child(2) { width: 34px; margin: 0 -7px 11px; }
+.footerScene img:last-child { width: 31px; transform: rotate(10deg); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) { .frame:hover .ghost { transform: translateY(-5px) rotate(0deg); } }
+@media (max-width: 1199px) { .moon { right: 22px; top: 10px; width: 68px; height: 68px; } .heroScene .ghost { display: none; } }
+@media (max-width: 1023px) { .heroScene .pumpkin, .heroScene .web, .bat { display: none; } .moon { width: 60px; height: 60px; } }
+@media (max-width: 479px) {
+  .ghost { width: 58px; top: -10px; }
+  .web { width: 42px; height: 42px; }
+  .featured .ghost { width: 68px; top: -18px; }
+  .featured .pumpkin { width: 36px; }
+  .footerScene { right: 22px; }
+  .footerScene img { width: 34px; }
+  .footerScene img:nth-child(2) { width: 29px; }
+  .footerScene img:last-child { width: 25px; }
+}
+@media (prefers-reduced-motion: reduce) { .ghost { transition: none; } .bat { animation: none; } .seasonal:hover .cardImage { scale: 1; } }
+
+:global(html[data-seasonal-preference="off"]) .decorations,
+:global(html[data-seasonal-preference="off"]) .swarm,
+:global(html[data-seasonal-preference="off"]) .web,
+:global(html[data-seasonal-preference="off"]) .heroScene,
+:global(html[data-seasonal-preference="off"]) .footerScene { display: none; }
+:global(html[data-seasonal-preference="off"]) .seasonal { padding-top: 0; }
+:global(html[data-seasonal-preference="off"]) .hero { border: 0; }

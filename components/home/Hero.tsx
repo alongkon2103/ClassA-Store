@@ -6,10 +6,13 @@ import { variantLabel } from "@/lib/i18n/locale"
 // ไม่ได้ hardcode เหมือนไฟล์ต้นแบบ
 
 import { useCallback, useEffect, useState } from "react"
-import { AnimatePresence, motion } from "framer-motion"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { useLocale, useTranslations } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
 import type { Product } from "./BestSeller"
+import { HalloweenHeroScene } from "@/components/HalloweenFrame"
+import { useTheme } from "@/components/ThemeContext"
+import halloweenStyles from "@/components/HalloweenFrame.module.css"
 
 const ROTATE_MS = 7000
 
@@ -34,6 +37,8 @@ export default function Hero({
   products: Product[]
   onSelect?: (p: Product) => void
 }) {
+  const { halloweenEnabled } = useTheme()
+  const reducedMotion = useReducedMotion()
   const t = useTranslations("Home")
   const locale = useLocale()
   const isTH = locale === "th"
@@ -44,10 +49,10 @@ export default function Hero({
 
   // หมุนอัตโนมัติ — หยุดเมื่อมีสไลด์เดียว
   useEffect(() => {
-    if (slides.length < 2) return
+    if (slides.length < 2 || reducedMotion) return
     const id = setInterval(() => setIndex((i) => (i + 1) % slides.length), ROTATE_MS)
     return () => clearInterval(id)
-  }, [slides.length])
+  }, [slides.length, reducedMotion])
 
   if (slides.length === 0) return null
 
@@ -66,9 +71,10 @@ export default function Hero({
   return (
     <div className="page-container pt-6">
       <section
-        className="relative overflow-hidden rounded-2xl min-h-[420px] flex items-center"
+        className={`${halloweenEnabled ? halloweenStyles.hero : ""} relative overflow-hidden rounded-2xl min-h-[420px] flex items-center`}
         style={{ background: "var(--gradient-hero)" }}
       >
+        <HalloweenHeroScene />
         {/* แสงเรืองด้านหลัง */}
         <div
           aria-hidden
@@ -83,10 +89,10 @@ export default function Hero({
         <AnimatePresence mode="wait">
           <motion.div
             key={p.id}
-            initial={{ opacity: 0, y: 16 }}
+            initial={reducedMotion ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: reducedMotion ? 0 : 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="relative z-[2] w-full px-7 py-9 sm:px-14 sm:py-13 max-w-[560px]"
           >
             <span className="inline-flex items-center gap-1.5 px-4 py-[5px] mb-[22px] rounded-full text-[0.7rem] font-bold uppercase tracking-[0.06em] text-accent-lighter bg-accent/15 border border-accent/30">
@@ -112,7 +118,7 @@ export default function Hero({
               {cheapest && (
                 <button
                   onClick={() => onSelect?.(p)}
-                  className="px-[34px] py-3.5 rounded-[10px] text-[0.9rem] font-bold text-white text-on-accent transition-all hover:-translate-y-0.5 active:scale-95"
+                  className="pumpkin-button px-[34px] py-3.5 rounded-[10px] text-[0.9rem] font-bold text-white text-on-accent transition-all hover:-translate-y-0.5 active:scale-95"
                   style={{
                     background: "linear-gradient(135deg,var(--color-accent),var(--color-accent-light))",
                     boxShadow: "0 4px 24px var(--color-accent-glow)",
@@ -128,7 +134,7 @@ export default function Hero({
               {permanent && (
                 <button
                   onClick={() => onSelect?.(p)}
-                  className="px-[34px] py-3.5 rounded-[10px] text-[0.9rem] font-bold text-text-base bg-white/[0.06] hover:bg-white/10 border border-border-light transition-all hover:-translate-y-0.5 active:scale-95"
+                  className="pumpkin-button px-[34px] py-3.5 rounded-[10px] text-[0.9rem] font-bold text-text-base bg-white/[0.06] hover:bg-white/10 border border-border-light transition-all hover:-translate-y-0.5 active:scale-95"
                 >
                   {t("hero_buy")}
                   <span className="block text-[0.7rem] font-normal opacity-60 mt-1">{baht(permanent.price)} ∞</span>
@@ -145,10 +151,10 @@ export default function Hero({
               key={p.id}
               src={getImageUrl(p.product_images?.[0]?.url || "/placeholder.png")}
               alt={name}
-              initial={{ opacity: 0, scale: 1.04 }}
+              initial={reducedMotion ? false : { opacity: 0, scale: 1.04 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.45 }}
+              transition={{ duration: reducedMotion ? 0 : 0.45 }}
               className="w-full h-full object-cover"
             />
           </AnimatePresence>

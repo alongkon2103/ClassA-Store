@@ -67,6 +67,7 @@ export default function FavoritesClient({ items: initial, usdRate }: { items: Fa
             return (
               <div key={p.id} className="flex flex-col gap-2">
                 <GameCard
+                  halloweenIndex={-1}
                   name={isTH ? p.name_th : p.name_en}
                   description={plain(isTH ? p.description_th : p.description_en)}
                   image={p.image}

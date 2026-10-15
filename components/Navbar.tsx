@@ -41,11 +41,11 @@ function getCachedFeatureFlags(): Promise<Record<string, boolean>> {
   return flagsPromise
 }
 
-export default function Navbar() {
+export default function Navbar({ halloween = false }: { halloween?: boolean }) {
   const { data: session } = useSession()
   const pathname = usePathname()
   const t = useTranslations("Navbar")
-  const { theme, toggleTheme } = useTheme()
+  const { theme, toggleTheme, halloweenEnabled, toggleHalloween } = useTheme()
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>(cachedFlags ?? {})
@@ -101,10 +101,11 @@ export default function Navbar() {
         {/* LOGO */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 text-[1.1rem] font-extrabold tracking-[-0.02em] text-text-base no-underline whitespace-nowrap shrink-0"
+          className="relative flex items-center gap-2.5 text-[1.1rem] font-extrabold tracking-[-0.02em] text-text-base no-underline whitespace-nowrap shrink-0"
         >
           <img src="/AClassStoreLogo.png" alt="A Class Store" width={40} height={40} className="w-10 h-10 object-contain drop-shadow-[0_2px_10px_rgba(37,99,235,0.35)]" />
           A CLASS STORE
+          {halloween && halloweenEnabled && <img data-halloween-art aria-hidden="true" src="/seasonal/halloween/pumpkin.webp" alt="" width={160} height={160} className="pointer-events-none absolute left-7 bottom-1 h-5 w-5 object-contain max-[380px]:hidden" />}
         </Link>
 
         {/* NAV LINKS — desktop (lg+). Below lg (incl. iPad portrait 768px) the
@@ -145,10 +146,16 @@ export default function Navbar() {
           {/* LANGUAGE SWITCHER */}
           <LanguageSwitcher />
 
+          {halloween && <button type="button" role="switch" aria-checked={halloweenEnabled} aria-label={t("halloween_theme")}
+            title={t(halloweenEnabled ? "halloween_disable" : "halloween_enable")} onClick={toggleHalloween}
+            className={`w-[38px] h-[38px] shrink-0 flex items-center justify-center rounded-[10px] border transition-colors focus-visible:outline-2 focus-visible:outline-accent ${halloweenEnabled ? "border-amber-400/40 bg-amber-400/10" : "border-border-soft bg-transparent"}`}>
+            <img src="/seasonal/halloween/pumpkin.webp" alt="" width={160} height={160} className={`h-7 w-7 object-contain ${halloweenEnabled ? "" : "grayscale opacity-60"}`} />
+          </button>}
+
           {/* THEME TOGGLE */}
           <button
             onClick={toggleTheme}
-            className="w-[38px] h-[38px] flex items-center justify-center rounded-[10px] border border-border-soft text-text-muted hover:text-text-base hover:border-border-light hover:bg-white/[0.03] transition-all"
+            className={`${halloween ? "hidden sm:flex" : "flex"} w-[38px] h-[38px] items-center justify-center rounded-[10px] border border-border-soft text-text-muted hover:text-text-base hover:border-border-light hover:bg-white/[0.03] transition-all`}
             aria-label={t("toggle_theme")}
           >
             <AnimatePresence mode="wait" initial={false}>
@@ -191,7 +198,7 @@ export default function Navbar() {
             {!session ? (
               <Link
                 href={loginHref}
-                className="flex items-center gap-2 text-white text-on-accent text-[0.85rem] font-semibold px-[22px] py-2 rounded-lg no-underline transition-all hover:bg-accent-light hover:shadow-[0_4px_20px_rgba(37,99,235,0.4)] active:scale-95 shadow-[0_2px_12px_rgba(37,99,235,0.25)] bg-accent"
+                className="pumpkin-button flex items-center gap-2 text-white text-on-accent text-[0.85rem] font-semibold px-[22px] py-2 rounded-lg no-underline transition-all hover:bg-accent-light hover:shadow-[0_4px_20px_rgba(37,99,235,0.4)] active:scale-95 shadow-[0_2px_12px_rgba(37,99,235,0.25)] bg-accent"
               >
                 <LoginIcon />
                 {t("login")}
@@ -303,6 +310,8 @@ export default function Navbar() {
                   </Link>
                 ))}
               </nav>
+
+              {halloween && <button type="button" onClick={toggleTheme} className="sm:hidden mx-4 mb-4 rounded-xl border border-border-soft p-3 text-sm text-text-base">{t("toggle_theme")}</button>}
 
               {/* Auth section */}
               <div className="px-4 py-5 border-t" style={{ borderColor: "var(--color-border-soft)" }}>

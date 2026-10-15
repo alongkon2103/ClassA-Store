@@ -1,4 +1,5 @@
 "use client"
+import { HalloweenCorner } from "@/components/HalloweenPage"
 import { localeTag } from "@/lib/i18n/locale"
 
 // สร้างรูปไลฟ์ — editor แบบ Canva ตาม designer.html
@@ -798,6 +799,7 @@ export default function LiveEditor({ isAuthenticated, isAdmin = false, gifts, ga
 
         {/* ── พื้นที่ canvas ── */}
         <div className="flex-1 min-w-0 flex flex-col items-center justify-center bg-bg-base relative overflow-hidden p-5">
+          <HalloweenCorner />
           <div className="absolute top-3 flex items-center gap-2 bg-bg-card border border-border-soft rounded-[10px] px-2.5 py-1.5 z-10">
             <button onClick={() => void undo()} disabled={!canUndo} className={ctBtn} title={t("undo")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></svg>

@@ -1,0 +1,84 @@
+.page { position: relative; isolation: isolate; min-height: 100vh; }
+:global(html:not([data-seasonal-preference="off"])) .night {
+  --color-bg-base: #0c0b19;
+  --color-bg-surface: #141324;
+  --color-bg-card: #1b1a2b;
+  --color-bg-card-hover: #252337;
+  --color-bg-input: #111020;
+  --color-text-base: #f5eee8;
+  --color-text-muted: #b8afc4;
+  --color-text-dim: #9388a2;
+  --color-gold: #f5c66d;
+  --color-gold-text: #2a180c;
+  --color-success: #43bd91;
+  --color-stock-low: #efb56d;
+  --color-border-soft: #343045;
+  --color-border-light: #49415a;
+  --color-border-hover: #806148;
+  --color-accent: #f7a14a;
+  --color-accent-light: #ffc783;
+  --color-accent-lighter: #ffdaae;
+  --color-accent-glow: rgb(247 161 74 / 18%);
+  --color-accent-glow-strong: rgb(247 161 74 / 35%);
+  --color-overlay: rgb(7 5 17 / 75%);
+  --color-shadow: rgb(0 0 0 / 45%);
+  --color-navbar-bg: rgb(13 12 27 / 92%);
+  --color-surface-tint: rgb(255 255 255 / 5%);
+  --color-surface-tint-strong: rgb(255 255 255 / 10%);
+  --color-border-tint: rgb(255 255 255 / 10%);
+  --color-border-tint-soft: rgb(255 255 255 / 5%);
+  --gradient-hero: linear-gradient(125deg, rgb(28 25 46 / 92%), rgb(33 29 57 / 76%));
+  --gradient-thumb: linear-gradient(135deg, #24203b, #171426);
+  --gradient-panel: linear-gradient(135deg, #201b34, #29213e);
+  --gradient-section: linear-gradient(180deg, #171426, #211b34);
+  --gradient-marquee: linear-gradient(90deg, #151324, #211b35, #151324);
+  --footer-bg: linear-gradient(180deg, #151321, #0c0b19);
+  color: var(--color-text-base);
+  background: radial-gradient(ellipse 75% 550px at 76% 100px, #29213c, transparent), linear-gradient(#111024, #0c0b19 800px);
+}
+.sky { position: absolute; inset: 0 0 auto; height: 680px; overflow: hidden; z-index: -1; pointer-events: none; user-select: none; background-image: radial-gradient(circle at 12% 20%, #d6c7e8 0 1px, transparent 1.5px), radial-gradient(circle at 42% 11%, #bdaccd 0 1px, transparent 1.5px), radial-gradient(circle at 70% 26%, #c6b2db 0 1px, transparent 1.5px), radial-gradient(circle at 92% 8%, #d6c7e8 0 1px, transparent 1.5px); }
+.moon { position: absolute; width: 72px; height: 72px; right: 28px; top: 75px; filter: drop-shadow(0 0 22px rgb(248 226 184 / 12%)); opacity: .85; }
+.bat { position: absolute; top: 100px; left: 12%; width: 38px; fill: #afa1c1; opacity: .22; animation: sky-flight 32s ease-in-out infinite alternate; }
+.secondBat { top: 55px; left: 44%; width: 25px; animation-duration: 45s; animation-delay: -19s; opacity: .16; }
+@keyframes sky-flight { 0% { transform: translate3d(-60px, 0, 0) rotate(-5deg); } 50% { transform: translate3d(200px, -20px, 0) rotate(4deg); } 100% { transform: translate3d(440px, 0, 0) rotate(-5deg); } }
+:global(html:not([data-seasonal-preference="off"])) .night :global(.pumpkin-button) {
+  position: relative;
+  border-radius: 12px;
+  border: 1px solid #f2b26c;
+  background: linear-gradient(180deg, #ffc779, #f2a04c) !important;
+  color: #2a180c !important;
+  box-shadow: inset 0 1px 0 rgb(255 235 191 / 55%), 0 3px 15px rgb(243 147 61 / 12%) !important;
+  text-shadow: none;
+  transition: box-shadow 220ms ease, filter 220ms ease, transform 220ms ease;
+}
+:global(html:not([data-seasonal-preference="off"])) .night :global(.seasonal-accent-text),
+:global(html:not([data-seasonal-preference="off"])) .night :global(.bg-accent.text-white) { color: #2a180c !important; }
+:global(html:not([data-seasonal-preference="off"])) .night :global(.pumpkin-button):not(:disabled):hover { box-shadow: inset 0 1px 0 rgb(255 235 191 / 55%), 0 0 22px rgb(250 172 72 / 38%) !important; filter: brightness(1.06); }
+:global(html:not([data-seasonal-preference="off"])) .night :global(.pumpkin-button):focus-visible { outline: 2px solid #ffe0ac; outline-offset: 4px; }
+:global(html:not([data-seasonal-preference="off"])) .night :global(.pumpkin-button.pumpkin-card-button) {
+  min-height: 44px;
+  min-width: 74px;
+  padding: 8px 14px;
+  gap: 7px;
+  border-radius: 43% 43% 40% 40% / 48%;
+  border-color: transparent;
+  background: url("/seasonal/halloween/pumpkin-button.svg") center / 100% 100% no-repeat !important;
+  box-shadow: 0 3px 12px rgb(243 147 61 / 16%) !important;
+}
+:global(html:not([data-seasonal-preference="off"])) .night :global(.pumpkin-button.pumpkin-card-button):hover { box-shadow: 0 0 20px rgb(250 172 72 / 38%) !important; }
+:global(html:not([data-seasonal-preference="off"])) .night :global(.pumpkin-card-button)::before { content: ""; position: absolute; width: 9px; height: 10px; left: calc(50% - 4px); top: -7px; border: 1px solid #52603b; border-radius: 6px 3px 1px 1px; background: linear-gradient(90deg, #647847, #96a367); transform: rotate(16deg); pointer-events: none; }
+@media (max-width: 767px) { .secondBat { display: none; } .bat { width: 28px; animation-duration: 44s; } .moon { width: 60px; height: 60px; right: 20px; } }
+@media (max-width: 1023px) { .orders .moon { top: 150px; width: 48px; height: 48px; opacity: .6; } }
+@media (prefers-reduced-motion: reduce) {
+  .bat { animation: none; }
+  :global(html:not([data-seasonal-preference="off"])) .night *, :global(html:not([data-seasonal-preference="off"])) .night *::before, :global(html:not([data-seasonal-preference="off"])) .night *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  :global(html:not([data-seasonal-preference="off"])) .night :global(.group):hover { transform: none !important; }
+}
+
+:global(html[data-seasonal-preference="off"]) .sky, :global(html[data-seasonal-preference="off"]) :global([data-halloween-art]) { display: none; }
+
+.corner { position: absolute; inset: 0; pointer-events: none; user-select: none; overflow: hidden; }
+.cornerPumpkin { position: absolute; width: 48px; height: auto; bottom: 24px; left: 18px; transform: rotate(-9deg); filter: drop-shadow(0 4px 9px rgb(0 0 0 / 20%)); }
+.pageCorner { top: 64px; height: 560px; z-index: -1; }
+.pageCorner .cornerPumpkin { top: 215px; bottom: auto; left: 14px; width: 38px; opacity: .8; }
+@media (max-width: 767px) { .cornerPumpkin { display: none; } }

@@ -9,6 +9,8 @@ import { Link } from "@/i18n/routing"
 import { useTranslations } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { REVIEWS_ENABLED } from "@/lib/reviewConfig"
+import HalloweenFrame, { HalloweenWeb } from "@/components/HalloweenFrame"
+import halloweenStyles from "@/components/HalloweenFrame.module.css"
 
 export type CardBadge = { text: string; kind: "hot" | "new" | "best" | "partner" }
 
@@ -22,7 +24,7 @@ const BADGE_CLASS: Record<CardBadge["kind"], string> = {
 export default function GameCard({
   name, description, image, previewVideo, platform, badge,
   price, oldPrice, usdRate, buyLabel, onClick, href, layout = "grid",
-  rating, reviewCount,
+  rating, reviewCount, halloweenIndex,
 }: {
   name: string
   description?: string | null
@@ -42,6 +44,7 @@ export default function GameCard({
   /** คะแนนเฉลี่ยจากรีวิวจริง (null/0 รีวิว = โชว์ "ยังไม่มีรีวิว" แทน เพื่อให้การ์ดสูงเท่ากันทุกใบ) */
   rating?: number | null
   reviewCount?: number | null
+  halloweenIndex?: number
 }) {
   const tc = useTranslations("Common")
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -74,7 +77,7 @@ export default function GameCard({
   const Root = (href ? Link : "article") as React.ElementType
   const rootProps = href ? { href } : { onClick }
 
-  return (
+  const card = (
     <Root
       {...rootProps}
       onMouseEnter={enter}
@@ -87,10 +90,11 @@ export default function GameCard({
     >
       <div className={`relative overflow-hidden ${isList ? "w-full sm:w-[200px] aspect-[4/3] sm:aspect-auto sm:h-[130px] sm:self-stretch flex-shrink-0" : "aspect-[4/3]"}`}
            style={{ background: "var(--gradient-thumb)" }}>
+        {halloweenIndex === 3 && <HalloweenWeb right />}
         <img
           src={getImageUrl(image || "/placeholder.png")}
           alt={name}
-          className={`absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${videoOn ? "opacity-0" : "group-hover:scale-[1.08]"}`}
+          className={`${halloweenStyles.cardImage} absolute inset-0 w-full h-full object-cover transition-transform duration-500 ${videoOn ? "opacity-0" : "group-hover:scale-[1.08]"}`}
           onError={(e) => { e.currentTarget.style.visibility = "hidden" }}
         />
         {previewVideo && (
@@ -150,9 +154,9 @@ export default function GameCard({
           </span>
         </div>
         <span
-          className="shrink-0 px-4 py-2.5 rounded-[10px] bg-accent hover:bg-accent-light text-white text-[0.8rem] font-bold flex items-center justify-center gap-[7px] transition-all shadow-[0_2px_12px_rgba(37,99,235,0.2)] hover:shadow-[0_4px_20px_rgba(37,99,235,0.35)] active:scale-95 flex-shrink-0"
+          className="pumpkin-button pumpkin-card-button shrink-0 px-4 py-2.5 rounded-[10px] bg-accent hover:bg-accent-light text-white text-[0.8rem] font-bold flex items-center justify-center gap-[7px] transition-all shadow-[0_2px_12px_rgba(37,99,235,0.2)] hover:shadow-[0_4px_20px_rgba(37,99,235,0.35)] active:scale-95 flex-shrink-0"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
           </svg>
@@ -161,4 +165,5 @@ export default function GameCard({
       </div>
     </Root>
   )
+  return halloweenIndex === undefined ? card : <HalloweenFrame index={halloweenIndex}>{card}</HalloweenFrame>
 }

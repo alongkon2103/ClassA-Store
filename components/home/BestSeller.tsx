@@ -1,6 +1,6 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
 import { Link } from "@/i18n/routing"
 import GameCard from "@/components/GameCard"
 import { categoryName, type CategoryLabel } from "@/lib/gameCategories"
@@ -49,6 +49,7 @@ function plain(html: string | null | undefined, max = 90) {
 }
 
 export default function BestSeller({ products, onSelect, usdRate }: Props) {
+  const reducedMotion = useReducedMotion()
   const t = useTranslations("Home")
   const locale = useLocale()
   const isTH = locale === "th"
@@ -67,14 +68,14 @@ export default function BestSeller({ products, onSelect, usdRate }: Props) {
       </div>
 
       <motion.div
-        initial="hidden"
+        initial={reducedMotion ? false : "hidden"}
         whileInView="show"
         viewport={{ once: true }}
         variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
         className="grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4"
       >
         {products.length > 0 ? (
-          products.map((p) => {
+          products.map((p, index) => {
             // ราคาที่โชว์ = variant ถูกสุด ถ้ามีโค้ดลดอัตโนมัติก็โชว์ราคาเดิมขีดฆ่าไว้
             const cheapest = p.product_variants.length
               ? p.product_variants.reduce((a, b) => (a.price <= b.price ? a : b))
@@ -86,6 +87,7 @@ export default function BestSeller({ products, onSelect, usdRate }: Props) {
             return (
               <motion.div key={p.id} variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0 } }}>
                 <GameCard
+                  halloweenIndex={index === 2 ? 3 : -1}
                   name={isTH ? p.name_th : p.name_en}
                   description={plain(isTH ? p.description_th : p.description_en)}
                   image={p.product_images?.[0]?.url}

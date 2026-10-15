@@ -4,6 +4,7 @@
 // (หยุดตอนเอาเมาส์ชี้ หรือ 8 วิหลังผู้ใช้กดเอง) — thumbnail ข้างนอกคุม index ตัวเดียวกันผ่าน onChange
 import { useEffect, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
+import { useReducedMotion } from "framer-motion"
 
 export default function ImageCarousel({ images, alt, index, onChange, autoplayMs = 5000, children }: {
   images: string[]
@@ -15,6 +16,7 @@ export default function ImageCarousel({ images, alt, index, onChange, autoplayMs
   children?: React.ReactNode
 }) {
   const t = useTranslations("Common")
+  const reducedMotion = useReducedMotion()
   const n = images.length
   const [hover, setHover] = useState(false)
   const pausedUntil = useRef(0)
@@ -27,13 +29,13 @@ export default function ImageCarousel({ images, alt, index, onChange, autoplayMs
   }
 
   useEffect(() => {
-    if (n <= 1 || !autoplayMs) return
+    if (n <= 1 || !autoplayMs || reducedMotion) return
     const id = setInterval(() => {
       if (hover || Date.now() < pausedUntil.current) return
       onChange((index + 1) % n)
     }, autoplayMs)
     return () => clearInterval(id)
-  }, [n, index, hover, autoplayMs, onChange])
+  }, [n, index, hover, autoplayMs, onChange, reducedMotion])
 
   const arrow = "absolute top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/45 border border-white/20 text-white flex items-center justify-center backdrop-blur-sm transition hover:bg-black/65 hover:scale-105 opacity-0 group-hover:opacity-100 max-lg:opacity-100"
 

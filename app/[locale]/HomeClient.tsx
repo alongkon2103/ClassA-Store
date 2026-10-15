@@ -1,5 +1,7 @@
 "use client"
 
+import HalloweenPage from "@/components/HalloweenPage"
+
 import { useState } from "react"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
@@ -15,8 +17,8 @@ export default function HomeClient({ products, usdRate }: { products: Product[];
   const [selected, setSelected] = useState<Product | null>(null)
 
   return (
-    <div className="relative min-h-screen flex flex-col">
-      <Navbar />
+    <HalloweenPage home className="relative min-h-screen flex flex-col">
+      <Navbar halloween />
 
       <main className="flex-1 layer-base">
         <Hero products={products} onSelect={(p) => setSelected(p)} />
@@ -28,7 +30,7 @@ export default function HomeClient({ products, usdRate }: { products: Product[];
         <JoinDc />
       </main>
       
-      <Footer />
+      <Footer halloween />
 
       {/* MODAL LAYER */}
       <AnimatePresence>
@@ -39,6 +41,6 @@ export default function HomeClient({ products, usdRate }: { products: Product[];
           />
         )}
       </AnimatePresence>
-    </div>
+    </HalloweenPage>
   )
 }

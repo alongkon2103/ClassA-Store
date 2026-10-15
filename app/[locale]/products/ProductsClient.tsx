@@ -1,8 +1,11 @@
 "use client"
 
+import HalloweenPage from "@/components/HalloweenPage"
+
 // หน้า "สินค้าทั้งหมด" ตามดีไซน์ใหม่: หัวเรื่อง + แบนเนอร์เกมเด่น + ตัวกรองข้าง + แถบค้นหา/เรียง + กริด
 // ตัวกรอง "หมวดหมู่" = หมวดหมู่เกมที่แอดมินตั้งเอง (game_categories ใช้ร่วมทั้งเกมเราและเกมพาร์ทเนอร์) + "Partner"
 
+import { useTheme } from "@/components/ThemeContext"
 import { useEffect, useMemo, useState } from "react"
 import ProductModal from "@/components/products/ProductModal"
 import PartnerModal from "@/components/products/PartnerModal"
@@ -11,7 +14,7 @@ import { categoryName } from "@/lib/gameCategories"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import { Link } from "@/i18n/routing"
-import { AnimatePresence, motion } from "framer-motion"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { useLocale, useTranslations } from "next-intl"
 import { useSearchParams } from "next/navigation"
 import { useAutoDiscounts } from "@/lib/useAutoDiscounts"
@@ -49,6 +52,8 @@ function itemPrice(it: Item): number {
 }
 
 export default function ProductsClient({ initialProducts }: { initialProducts: Item[] }) {
+  const { halloweenEnabled } = useTheme()
+  const reducedMotion = useReducedMotion()
   const t = useTranslations("Shop")
   const tc = useTranslations("Home")
   const locale = useLocale()
@@ -107,8 +112,8 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
   const reset = () => { setCat("all"); setRange("all"); setSearch(""); setSort("latest") }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
+    <HalloweenPage className="min-h-screen flex flex-col">
+      <Navbar halloween />
 
       <main className="flex-1">
         <div className="page-container">
@@ -122,7 +127,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
                 </svg>
               </div>
               <div>
-                <h1 className="text-[1.4rem] sm:text-[1.8rem] font-black tracking-[-0.02em]">{t("title")}</h1>
+                <h1 className="flex items-center gap-2 text-[1.4rem] sm:text-[1.8rem] font-black tracking-[-0.02em]">{t("title")}{halloweenEnabled && <img data-halloween-art aria-hidden="true" src="/seasonal/halloween/ghost.webp" alt="" width={256} height={204} className="pointer-events-none h-auto w-8 object-contain" />}</h1>
                 <p className="text-[0.88rem] text-text-muted mt-0.5">{t("subtitle")}</p>
               </div>
             </div>
@@ -277,10 +282,10 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
 
               <p className="text-[0.78rem] text-text-dim mb-4">{t("result_count", { count: shown.length })}</p>
 
-              <motion.div initial="hidden" animate="show"
+              <motion.div initial={reducedMotion ? false : "hidden"} animate="show"
                           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }}
                           className={view === "grid" ? "grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
-                {shown.map((p) => {
+                {shown.map((p, index) => {
                   const vs: any[] = p.product_variants ?? []
                   const cheapest = vs.length ? vs.reduce((a, b) => (Number(a.price) <= Number(b.price) ? a : b)) : null
                   const base = cheapest ? Number(cheapest.price) : Number(p.price ?? 0)
@@ -296,6 +301,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
                   return (
                     <motion.div key={p.id} variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}>
                       <GameCard
+                        halloweenIndex={index}
                         name={isTH ? p.name_th : p.name_en}
                         description={plain(isTH ? p.description_th : p.description_en)}
                         image={p.product_images?.[0]?.url}
@@ -324,7 +330,7 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
         </div>
       </main>
 
-      <Footer />
+      <Footer halloween />
 
       <AnimatePresence>
         {selected && (
@@ -333,6 +339,6 @@ export default function ProductsClient({ initialProducts }: { initialProducts: I
             : <ProductModal product={selected} onClose={() => setSelected(null)} />
         )}
       </AnimatePresence>
-    </div>
+    </HalloweenPage>
   )
 }

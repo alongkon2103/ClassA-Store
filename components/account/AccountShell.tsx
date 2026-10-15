@@ -67,7 +67,7 @@ export default function AccountShell({ active, children, points }: {
           {session?.user?.image ? (
             <img src={session.user.image} alt="" className="w-16 h-16 rounded-full object-cover mx-auto mb-3" />
           ) : (
-            <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-[1.2rem] font-extrabold text-white text-on-accent"
+            <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-[1.2rem] font-extrabold text-white text-on-accent seasonal-accent-text"
                  style={{ background: "linear-gradient(135deg,var(--color-accent),var(--color-accent-lighter))" }}>{initial}</div>
           )}
           <h3 className="text-[0.95rem] font-bold mb-0.5 truncate">{name}</h3>

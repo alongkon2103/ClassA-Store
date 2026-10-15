@@ -3,6 +3,7 @@ import Providers from "@/components/home/Providers"
 import PageTracker from "@/components/PageTracker"
 import DailyLoginPopup from "@/components/points/DailyLoginPopup"
 import WebAnnouncementPopup from "@/components/announcements/WebAnnouncementPopup"
+import ThemeBootstrap from "@/components/ThemeBootstrap"
 import { Inter, Noto_Sans_Thai } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server"
@@ -79,6 +80,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body suppressHydrationWarning>
+        <ThemeBootstrap />
         <NextIntlClientProvider messages={messages}>
           <Providers>
             <DailyLoginPopup />

@@ -5,6 +5,8 @@ import { getFeatureFlags } from "@/lib/featureFlags"
 import { redirect } from "next/navigation"  // ✅ ใช้ next/navigation แทน i18n/routing
 import { Link } from "@/i18n/routing"        // ✅ Link ยังใช้ i18n ได้
 import Navbar from "@/components/Navbar"
+import HalloweenPage from "@/components/HalloweenPage"
+import halloweenStyles from "@/components/HalloweenPage.module.css"
 import Footer from "@/components/home/Footer"
 import OrdersDashboard from "@/components/orders/OrdersDashboard"
 import AccountShell from "@/components/account/AccountShell"
@@ -168,8 +170,8 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
     String(a.status).localeCompare(String(b.status)) || (new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()))
 
   return (
-    <div className="min-h-screen bg-bg-base flex flex-col selection:bg-accent/30 selection:text-accent-light">
-      <Navbar />
+    <HalloweenPage className={`${halloweenStyles.orders} flex flex-col selection:bg-accent/30 selection:text-accent-light`}>
+      <Navbar halloween />
 
       <main className="flex-1 relative">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -183,7 +185,7 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
         </div>
       </main>
 
-      <Footer />
-    </div>
+      <Footer halloween />
+    </HalloweenPage>
   )
 }

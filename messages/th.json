@@ -1,5 +1,8 @@
 {
   "Navbar": {
+    "halloween_theme": "ธีมฮัลโลวีน",
+    "halloween_enable": "เปิดธีมฮัลโลวีน",
+    "halloween_disable": "ปิดธีมฮัลโลวีน",
     "home": "หน้าแรก",
     "shop": "ร้านค้า",
     "orders": "ออเดอร์ของฉัน",

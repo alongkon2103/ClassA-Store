@@ -1,0 +1,22 @@
+{
+  "tool": "Built-in image_gen",
+  "transparent_background": true,
+  "assets": [
+    {
+      "file": "ghost.webp",
+      "prompt": "Use case: stylized-concept. Asset type: transparent PNG website card decoration. Create ONE adorable premium illustrated ivory-white Halloween ghost peeking over an invisible horizontal card edge. Front-facing head and upper body, round marshmallow silhouette, two tiny black oval eyes, small smiling curved mouth, subtle peach pink cheeks. Two small soft round white hands rest at the bottom, spaced left and right as if holding the top of a card. Head tilted very slightly, friendly and charming, soft matte 3D clay illustration with delicate warm gray outline and minimal soft shading, readable at 64px. Isolated ghost ONLY, compact silhouette fills canvas with small transparent padding; genuinely transparent background, no floor, no card, no spiderweb, no pumpkin, no extra objects, no text, no watermark. Keep bottom hand alignment horizontal so it can sit on a UI card border. Cute cozy Halloween, not frightening."
+    },
+    {
+      "file": "pumpkin.webp",
+      "prompt": "Use case: stylized-concept. Asset type: transparent PNG decorative Halloween website sticker. ONE small adorable orange jack-o-lantern, squat round pumpkin with softly sculpted lobes, tiny curved green-brown stem, friendly smiling face, rounded dark eyes, gentle warm amber glow inside. Premium soft matte 3D clay illustration, delicate shading, subtle outline. Match a friendly ivory white ghost with peach cheeks. Front view slightly from above, entire pumpkin visible and centered, tightly framed with small transparent padding. Genuine transparent background, isolated pumpkin only, no ground, no backdrop, no leaves, no other objects, no text, no watermark. Readable and cute at 36 pixels."
+    },
+    {
+      "file": "bat.webp",
+      "prompt": "Use case: stylized-concept. Asset type: transparent PNG Halloween website hover decoration. ONE adorable tiny bat with wings open mid-flight, a chubby soft dusty lilac-purple body, two little pointed ears, friendly black oval eyes with tiny highlights, small smile and pink cheeks. Broad compact rounded bat wings with darker plum membranes, soft scalloped silhouette, no scary fangs. Premium matte clay 3D illustration with delicate shading and clear outlines, matching an ivory marshmallow ghost and friendly orange pumpkin. Front view tilted slightly as if flying, whole bat and both wing tips visible, centered with minimal transparent padding. Genuine transparent background, isolated bat only. No scenery, no pumpkin, no moon, no text, no watermark. Must remain readable and cute at 36px width."
+    },
+    {
+      "file": "moon.webp",
+      "prompt": "Use case: stylized-concept. Asset type: transparent full moon artwork for a premium cozy Halloween website night sky. ONE perfect round FULL MOON, warm ivory and pale pearl cream, delicate natural lunar crater texture in muted warm gray, beautifully soft detailed surface, subtle luminous edge but NO large outer glow. Whole circular disc visible, front-on, centered and tightly framed with only small transparent padding. Gentle sophisticated storybook realism compatible with soft matte clay ghost and pumpkin illustrations. Genuine transparent background. Only the round moon; no crescent, no sky, no stars, no bats, no clouds, no landscape, no text, no watermark. Soft natural contrast, elegant and calm rather than cartoon face. Readable at 120px."
+    }
+  ]
+}

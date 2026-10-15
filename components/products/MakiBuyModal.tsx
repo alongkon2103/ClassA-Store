@@ -1,5 +1,7 @@
 "use client"
 
+import { HalloweenSurface } from "@/components/HalloweenPage"
+
 // popup ยืนยันการซื้อเกม Maki — หน้าตาเดียวกับ ProductModal ของเกมเรา แต่ขั้นตอนจ่ายเป็นของ Maki:
 // ไม่ต้องกรอกชื่อในเกม/เลือกช่องทางจ่าย (Stripe ของ Maki จัดการ) · สิทธิ์เข้าบัญชี Discord/Google ที่ล็อกอินอยู่ตรง ๆ
 // โค้ดส่วนลด: การ์ดโค้ดสาธารณะ + ใส่เอง + ใส่โค้ด auto ที่ลดมากสุดให้ — server ตัดไม่ให้ต่ำกว่าขั้นต่ำ Maki
@@ -102,6 +104,7 @@ export default function MakiBuyModal({ product, plan, pointsPerBaht, hasPreset, 
   const visible = showAll ? sorted : sorted.slice(0, 3)
 
   return createPortal(
+    <HalloweenSurface>
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:p-5"
       style={{ background: "var(--color-overlay)", backdropFilter: "blur(8px)" }} onClick={onClose}>
@@ -224,7 +227,7 @@ export default function MakiBuyModal({ product, plan, pointsPerBaht, hasPreset, 
           )}
 
           <button disabled={paying || status === "loading"} onClick={pay}
-            className={`w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2.5 shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 ${
+            className={`pumpkin-button w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2.5 shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 ${
               paying ? "opacity-60 cursor-not-allowed bg-accent text-white" : "bg-gradient-to-r from-accent to-accent-light text-white"}`}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></svg>
             {paying ? tp("partner_redirecting") : session ? `${t("confirm_pay")} · ${baht(final)}` : t("login_button")}
@@ -239,7 +242,8 @@ export default function MakiBuyModal({ product, plan, pointsPerBaht, hasPreset, 
           </div>
         </div>
       </motion.div>
-    </motion.div>,
+    </motion.div>
+    </HalloweenSurface>,
     document.body,
   )
 }

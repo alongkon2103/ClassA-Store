@@ -178,6 +178,9 @@
     "maki_price": "价格"
   },
   "Navbar": {
+    "halloween_theme": "万圣节主题",
+    "halloween_enable": "开启万圣节主题",
+    "halloween_disable": "关闭万圣节主题",
     "home": "首页",
     "shop": "商店",
     "orders": "我的订单",

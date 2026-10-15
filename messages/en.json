@@ -1,5 +1,8 @@
 {
   "Navbar": {
+    "halloween_theme": "Halloween theme",
+    "halloween_enable": "Turn on Halloween theme",
+    "halloween_disable": "Turn off Halloween theme",
     "home": "Home",
     "shop": "Shop",
     "orders": "My Orders",
