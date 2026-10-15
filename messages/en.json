@@ -357,6 +357,14 @@
     "legend_visitors": "Visitors"
   },
   "Admin": {
+    "refunded": "Refunded",
+    "revoked": "Revoked",
+    "disputed": "Disputed",
+    "suspended": "Suspended",
+    "record_refund": "Record completed refund",
+    "record_refund_confirm": "Confirm the payment provider has already refunded this order. This records the refund and revokes access; it does not send money.",
+    "refund_record_failed": "Could not record the refund.",
+
     "gt_cover": "Cover image (optional)",
     "gt_cover_hint": "Shown as the card in the maker's Templates tab; portrait 9:16 recommended · Empty = use the template's own preview",
     "gt_cover_change": "Change cover",
@@ -2642,5 +2650,16 @@
       "delete_failed": "Could not delete this announcement. Try again.",
       "not_found": "This announcement no longer exists. Reload the page."
     }
+  },
+  "TikkiesAdmin": {
+    "title": "Tikkies · Roblox game mapping",
+    "help": "Game Key is the permanent product ID. Enter the Universe ID and its Place IDs separately. Incomplete mapping never unlocks a game.",
+    "places_help": "One Place ID per line (up to 100). Do not use a Place ID as the Universe ID.",
+    "save": "Save mapping",
+    "saving": "Saving…",
+    "saved": "Mapping saved",
+    "error": "Could not save. Check the IDs and try again.",
+    "roblox_id_fix": "Correct Roblox User ID (optional)",
+    "roblox_id_help": "Admin only: verifies the account with Roblox, moves the matching whitelist/orders and records an audit entry. Leave blank to keep the existing binding."
   }
 }

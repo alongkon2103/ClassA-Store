@@ -1,3 +1,4 @@
+import { resolveTikkiesBinding } from "@/lib/integrations/tikkiesRoblox"
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
@@ -46,10 +47,13 @@ export async function POST(req: Request) {
         // Permanent → year-9999 sentinel; otherwise now + durationDays.
         const expiresAt = computeWhitelistExpiry(durationDays, !!isPermanent)
 
+        const robloxBinding = await resolveTikkiesBinding(ign)
         const result = await prisma.$transaction(async (tx) => {
+            await tx.$executeRaw`SELECT set_config('app.actor_id', ${adminCheck.session!.user.id}, true)`
             // 1. Create Order
             const order = await tx.orders.create({
                 data: {
+                    ...robloxBinding,
                     user_id: userId,
                     product_id: productId,
                     amount: 0,

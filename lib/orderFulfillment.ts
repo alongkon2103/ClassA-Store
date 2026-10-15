@@ -7,6 +7,7 @@
 //
 // Idempotent: if status is already "paid" we no-op so retries are safe.
 
+import { resolveTikkiesBinding } from "@/lib/integrations/tikkiesRoblox"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { awardPointsForOrder } from "@/lib/points"
@@ -36,7 +37,9 @@ export async function fulfillPaidOrder(orderId: string, opts?: { isPremium?: boo
   })
 
   if (!order) return "missing"
-  if (order.status === "paid") return "already_paid"
+  if (["paid", "refunded", "revoked", "cancelled", "disputed"].includes(order.status)) return "already_paid"
+
+  const robloxBinding = order.products.type === "roblox_whitelist" ? await resolveTikkiesBinding(order.whitelisted_username, order) : {}
 
   const isPremium = opts?.isPremium ?? !!order.is_premium_order
   const expiresAt = computeExpiresAt(order.product_variants)
@@ -75,8 +78,9 @@ export async function fulfillPaidOrder(orderId: string, opts?: { isPremium?: boo
 
   const ops: Prisma.PrismaPromise<unknown>[] = [
     prisma.orders.update({
-      where: { id: orderId },
+      where: { id: orderId, status: { notIn: ["paid", "refunded", "revoked", "cancelled", "disputed"] } },
       data: {
+        ...robloxBinding,
         status: "paid",
         paid_at: new Date(),
         expires_at: expiresAt,

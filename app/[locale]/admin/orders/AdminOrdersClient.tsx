@@ -19,7 +19,7 @@ type AdminOrder = {
   recorded_by_id: string | null
   created_at: string | null
   users: { username: string; avatar: string | null; email: string | null } | null
-  products: { name_en: string; name_th: string } | null
+  products: { name_en: string; name_th: string; type: string } | null
   product_variants: { label_en: string; label_th: string } | null
   recorded_by: { username: string; avatar: string | null } | null
 }
@@ -67,6 +67,16 @@ export default function AdminOrdersClient({ orders }: { orders: AdminOrder[] }) 
         )
       })
   }, [orders, search, productFilter, wlFilter, locale])
+
+  const recordRefund = async (id: string) => {
+    if (!confirm(t("record_refund_confirm"))) return
+    setUpdating(id)
+    try {
+      const response = await fetch(`/api/admin/orders/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "refunded" }) })
+      if (!response.ok) { alert(t("refund_record_failed")); return }
+      window.location.reload()
+    } catch { alert(t("refund_record_failed")) } finally { setUpdating(null) }
+  }
 
   const handleWhitelistStatus = async (id: string, whitelist_status: string) => {
     setUpdating(id)
@@ -305,6 +315,7 @@ export default function AdminOrdersClient({ orders }: { orders: AdminOrder[] }) 
                   <td className="px-4 py-4">
                     {o.status === "paid" && (
                       <div className="flex flex-col gap-1.5">
+                        {session?.user?.role === "admin" && o.products?.type === "roblox_whitelist" && <button onClick={() => void recordRefund(o.id)} disabled={updating === o.id} className="text-[11px] px-3 py-1.5 rounded-lg text-red-400 border border-red-400/20 disabled:opacity-40">{t("record_refund")}</button>}
                         {(!o.whitelist_status || o.whitelist_status === "pending") && session?.user?.role === "admin" && (
                           <button
                             onClick={() => handleWhitelistStatus(o.id, "whitelisted")}

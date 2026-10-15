@@ -190,7 +190,7 @@ export async function POST(
   // 8. Transaction update
   await prisma.$transaction([
     prisma.orders.update({
-      where: { id },
+      where: { id, status: "pending" },
       data: {
         status: "paid",
         paid_at: new Date(),

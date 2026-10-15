@@ -113,22 +113,24 @@ export async function awardPointsForOrder(orderId: string, opts?: { silent?: boo
   try {
     const cfg = await getPointsConfig()
     if (!pointsActive(cfg)) return null
-    const order = await prisma.orders.findUnique({ where: { id: orderId }, select: ORDER_SELECT })
-    if (!order) return null
-    const e = orderEligibility(order, cfg)
-    if (!e.ok) return null
-    try {
-      await prisma.point_ledger.create({
+    const award = await prisma.$transaction(async tx => {
+      // Use the same order lock as refund reversal, so a late award cannot survive a refund.
+      await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`
+      const order = await tx.orders.findUnique({ where: { id: orderId }, select: ORDER_SELECT })
+      if (!order) return null
+      const e = orderEligibility(order, cfg)
+      if (!e.ok) return null
+      const result = await tx.point_ledger.createMany({
         data: { user_id: order.user_id!, delta: e.points, type: "earn_purchase", order_id: order.id, base_amount: e.base },
+        skipDuplicates: true,
       })
-    } catch (err) {
-      if ((err as { code?: string })?.code === "P2002") return { points: e.points, created: false } // เคยให้แล้ว
-      throw err
+      return { userId: order.user_id!, points: e.points, created: result.count === 1 }
+    })
+    if (!award) return null
+    if (award.created && !opts?.silent) {
+      await notify({ userId: award.userId, type: "points_earned", data: { points: award.points, order_id: orderId }, link: "/account/coins" })
     }
-    if (!opts?.silent) {
-      await notify({ userId: order.user_id!, type: "points_earned", data: { points: e.points, order_id: order.id }, link: "/account/coins" })
-    }
-    return { points: e.points, created: true }
+    return { points: award.points, created: award.created }
   } catch (err) {
     console.error("awardPointsForOrder failed (non-fatal):", err)
     return null

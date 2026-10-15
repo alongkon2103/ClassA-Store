@@ -34,7 +34,9 @@ export async function PATCH(
     }
   }
 
-  const { consignments, partnership_shares, videos, ...rest } = await req.json()
+  const body = await req.json()
+  if (body.roblox_universe_id !== undefined || body.roblox_place_ids !== undefined) return NextResponse.json({ error: "Use the admin-only Tikkies mapping endpoint" }, { status: 400 })
+  const { consignments, partnership_shares, videos, ...rest } = body
 
   // Normalize the YouTube list (when provided) and keep youtube_url in sync with
   // the first video for the shop ProductModal.

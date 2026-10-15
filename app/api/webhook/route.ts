@@ -1,5 +1,7 @@
+import { recordTikkiesReversal } from "@/lib/integrations/tikkiesReversal"
 // app/api/webhook/route.ts
 
+import { resolveTikkiesBinding } from "@/lib/integrations/tikkiesRoblox"
 import Stripe from "stripe"
 import { headers } from "next/headers"
 import { Prisma } from "@prisma/client"
@@ -46,6 +48,29 @@ export async function POST(req: NextRequest) {
     return new Response(`Webhook Error: ${(err as Error).message}`, { status: 400 })
   }
 
+  if (event.type === "charge.refunded" || event.type === "charge.dispute.created") {
+    const object = event.data.object as Stripe.Charge | Stripe.Dispute
+    const intent = typeof object.payment_intent === "string" ? object.payment_intent : object.payment_intent?.id
+    if (event.type === "charge.refunded" && !(object as Stripe.Charge).amount_refunded) return new Response("ok")
+    if (intent) {
+      let order = await prisma.orders.findUnique({ where: { stripe_payment_intent: intent }, select: { id: true } })
+      if (!order) {
+        // Refund may arrive before checkout.session.completed; the verified gateway session links it to the stored order.
+        const sessions = await stripe.checkout.sessions.list({ payment_intent: intent, limit: 100 })
+        const onlyAddons = sessions.data.length > 0 && sessions.data.every(s => s.metadata?.isUpgrade === "true" || s.metadata?.paymentType === "premium_addon")
+        if (onlyAddons) return new Response("ok")
+        for (const session of sessions.data) {
+          if (session.metadata?.isUpgrade === "true" || session.metadata?.paymentType === "premium_addon") continue
+          order = await prisma.orders.findUnique({ where: { stripe_session_id: session.id }, select: { id: true } })
+          if (order) break
+        }
+      }
+      if (!order) return new Response("Order association pending", { status: 503 })
+      await recordTikkiesReversal(order.id, event.type === "charge.refunded" ? "refunded" : "disputed")
+    }
+    return new Response("ok")
+  }
+
   // ─────────────────────────────────────────────
   // PAYMENT SUCCESS
   // ─────────────────────────────────────────────
@@ -69,6 +94,8 @@ export async function POST(req: NextRequest) {
     })
 
     if (!order) return new Response("ok")
+    if (["refunded", "revoked", "cancelled", "disputed"].includes(order.status)) return new Response("ok")
+    const robloxBinding = order?.products.type === "roblox_whitelist" ? await resolveTikkiesBinding(order.whitelisted_username, order) : {}
     // Stripe webhook always operates on real customer orders — user_id is always
     // set (manual admin-recorded orders never enter Stripe). Narrow the type so
     // downstream code can treat order.user_id and order.users as non-null.
@@ -102,8 +129,8 @@ export async function POST(req: NextRequest) {
       await prisma.$transaction([
         // 1. mark order เป็น premium
         prisma.orders.update({
-          where: { id: orderId },
-          data:  { is_premium_order: true },
+          where: { id: orderId, status: { notIn: ["refunded", "revoked", "cancelled", "disputed"] } },
+          data:  { ...robloxBinding, is_premium_order: true },
         }),
 
         // 2. upsert access record
@@ -145,7 +172,7 @@ export async function POST(req: NextRequest) {
     // ─────────────────────────────────────────────
     // NORMAL FLOW
     // ─────────────────────────────────────────────
-    if (order.status === "paid") return new Response("ok")
+    if (["paid", "refunded", "revoked", "cancelled", "disputed"].includes(order.status)) return new Response("ok")
 
     // Permanent variants → year 9999; otherwise paid_at + duration_days.
     const expiresAt = computeExpiresAt(order.product_variants)
@@ -193,8 +220,10 @@ export async function POST(req: NextRequest) {
     const ops: Prisma.PrismaPromise<unknown>[] = [
       // 1. update order
       prisma.orders.update({
-        where: { id: orderId },
+        where: { id: orderId, status: { notIn: ["paid", "refunded", "revoked", "cancelled", "disputed"] } },
         data: {
+          stripe_payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : null,
+          ...robloxBinding,
           status:           "paid",
           paid_at:          new Date(),
           card_country:     cardCountry,
@@ -302,7 +331,7 @@ export async function POST(req: NextRequest) {
             await releaseOrderDiscount(tx, orderId)
           }
           await tx.orders.update({
-            where: { id: orderId },
+            where: { id: orderId, status: "pending" },
             data: { status: "expired" },
           })
         })

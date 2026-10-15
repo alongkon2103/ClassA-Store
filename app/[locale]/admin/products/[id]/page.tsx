@@ -1,3 +1,4 @@
+import TikkiesMapping from "@/components/admin/products/TikkiesMapping"
 // app/admin/products/[id]/page.tsx
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
@@ -60,5 +61,7 @@ export default async function EditProductPage({
     })),
   }
 
-  return <ProductForm mode="edit" product={safe} allGifts={gifts} allPartners={allPartners} />
+  return <><ProductForm mode="edit" product={safe} allGifts={gifts} allPartners={allPartners} />
+    {session.user.role === "admin" && product.type === "roblox_whitelist" && <TikkiesMapping productId={product.id} universeId={product.roblox_universe_id} placeIds={product.roblox_place_ids} />}
+  </>
 }

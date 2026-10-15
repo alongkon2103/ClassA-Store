@@ -1,3 +1,4 @@
+import { resolveTikkiesBinding } from "@/lib/integrations/tikkiesRoblox"
 
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
@@ -102,9 +103,11 @@ export async function POST(req: Request) {
     // 3. Create Trial Order
     const expiresAt = new Date(Date.now() + trialDurationMs)
 
+    const robloxBinding = product.type === "roblox_whitelist" ? await resolveTikkiesBinding(whitelistUsername.trim()) : {}
     const order = await prisma.$transaction(async (tx) => {
         const newOrder = await tx.orders.create({
             data: {
+                ...robloxBinding,
                 user_id: session.user.id,
                 product_id: product.id,
                 amount: 0,

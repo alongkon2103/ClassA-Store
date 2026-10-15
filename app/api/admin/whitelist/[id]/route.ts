@@ -1,3 +1,4 @@
+import { lookupTikkiesRoblox, resolveTikkiesBinding } from "@/lib/integrations/tikkiesRoblox"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
@@ -29,7 +30,7 @@ export async function PATCH(
         }
 
         // Resolve final values (fall back to existing when a field wasn't sent).
-        const newIgn = typeof ign === "string" && ign.trim() ? ign.trim() : existing.ign
+        let newIgn = typeof ign === "string" && ign.trim() ? ign.trim() : existing.ign
         const newProductId = typeof productId === "string" && productId ? productId : existing.product_id
         const newPremium = typeof isPremium === "boolean" ? isPremium : existing.is_premium
         const changeExpiry = isPermanent === true || durationDays !== undefined
@@ -37,7 +38,19 @@ export async function PATCH(
             ? computeWhitelistExpiry(Number(durationDays), !!isPermanent)
             : existing.expires_at
 
+        let robloxBinding = {}
+        if (body.robloxUserId !== undefined) {
+            if (typeof body.robloxUserId !== "string" || !/^[1-9][0-9]{0,31}$/.test(body.robloxUserId)) return NextResponse.json({ error: "Invalid Roblox User ID" }, { status: 400 })
+            const identity = await lookupTikkiesRoblox(body.robloxUserId, true).catch(() => undefined)
+            if (identity === undefined) return NextResponse.json({ error: "Roblox lookup unavailable; try again" }, { status: 503 })
+            if (!identity) return NextResponse.json({ error: "Roblox account not found" }, { status: 400 })
+            newIgn = identity.username
+            robloxBinding = { roblox_user_id: identity.userId, roblox_username: identity.username, roblox_display_name: identity.displayName, roblox_resolved_for: newIgn.toLowerCase() }
+        } else if (newIgn.toLowerCase() !== existing.ign.toLowerCase()) {
+            robloxBinding = await resolveTikkiesBinding(newIgn)
+        }
         const result = await prisma.$transaction(async (tx) => {
+            await tx.$executeRaw`SELECT set_config('app.actor_id', ${adminCheck.session!.user.id}, true)`
             // 1. The whitelist row (source of truth for the desktop check).
             const updated = await tx.user_whitelist_access.update({
                 where: { id },
@@ -58,6 +71,7 @@ export async function PATCH(
                     product_id: existing.product_id,
                 },
                 data: {
+                    ...robloxBinding,
                     whitelisted_username: newIgn,
                     product_id: newProductId,
                     is_premium_order: newPremium,

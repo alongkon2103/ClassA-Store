@@ -14,7 +14,7 @@ export default async function AdminOrdersPage() {
     orderBy: { created_at: "desc" },
     include: {
       users:            { select: { username: true, avatar: true, email: true } },
-      products:         { select: { name_en: true, name_th: true } },
+      products:         { select: { name_en: true, name_th: true, type: true } },
       product_variants: { select: { label_en: true, label_th: true } },
       recorded_by:      { select: { username: true, avatar: true } },
     },

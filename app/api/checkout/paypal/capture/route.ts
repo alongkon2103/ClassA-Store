@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
 
   // If we already fulfilled (webhook + redirect race, or user refreshing),
   // skip straight to the order page.
-  if (order.status === "paid") {
+  if (["paid", "refunded", "revoked", "cancelled", "disputed"].includes(order.status)) {
     return NextResponse.redirect(`${baseUrl}/${locale}/orders/${orderId}`)
   }
 

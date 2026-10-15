@@ -56,6 +56,8 @@ export default function WhitelistClient({
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     // null = add mode; a string id = editing that row.
+    const [robloxUserId, setRobloxUserId] = useState("")
+    const tTikkies = useTranslations("TikkiesAdmin")
     const [editingId, setEditingId] = useState<string | null>(null)
 
     // User Search State
@@ -106,6 +108,7 @@ export default function WhitelistClient({
     }, [whitelist, search])
 
     const resetForm = () => {
+        setRobloxUserId("")
         setFormData({ userId: "", ign: "", productId: "", isPremium: false, durationDays: 30, isPermanent: false })
         setUserSearch("")
         setEditingId(null)
@@ -117,6 +120,7 @@ export default function WhitelistClient({
     }
 
     const openEdit = (item: WhitelistItem) => {
+        setRobloxUserId("")
         const permanent = isPermanentExpiry(item.expires_at)
         setFormData({
             userId: "",
@@ -167,7 +171,7 @@ export default function WhitelistClient({
             const res = await fetch(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ ...formData, ...(editingId && robloxUserId.trim() ? { robloxUserId: robloxUserId.trim() } : {}) }),
             })
 
             if (res.ok) {
@@ -402,6 +406,12 @@ export default function WhitelistClient({
                                         className="w-full bg-white/[0.03] border border-accent/15 rounded-xl px-4 py-3 text-[13px] outline-none focus:border-accent/40 transition-all"
                                     />
                                 </div>
+
+                                {editingId && <label className="block text-[12px] text-text-muted">
+                                    {tTikkies("roblox_id_fix")}
+                                    <input value={robloxUserId} onChange={e => setRobloxUserId(e.target.value)} inputMode="numeric" className="mt-1 w-full bg-bg-input border border-border-soft rounded-xl px-4 py-3 text-text-base" />
+                                    <span className="block mt-1 text-[11px]">{tTikkies("roblox_id_help")}</span>
+                                </label>}
 
                                 {/* Product Selection */}
                                 <div>

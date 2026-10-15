@@ -1,3 +1,4 @@
+import { recordTikkiesReversal } from "@/lib/integrations/tikkiesReversal"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
@@ -10,8 +11,8 @@ const RELEASE_DISCOUNT_STATUSES = new Set(["expired", "cancelled"])
 // Closed sets — everything downstream (revenue pages, whitelist checks,
 // fulfillment) branches on exact string values, so a typo or ad-hoc status
 // would silently fall through every report.
-const ALLOWED_STATUSES = new Set(["pending", "paid", "expired", "cancelled", "Admin Buy"])
-const ALLOWED_WHITELIST_STATUSES = new Set(["pending", "whitelisted", "expired"])
+const ALLOWED_STATUSES = new Set(["pending", "paid", "expired", "cancelled", "refunded", "revoked", "disputed", "Admin Buy"])
+const ALLOWED_WHITELIST_STATUSES = new Set(["pending", "whitelisted", "expired", "removed", "revoked", "suspended"])
 
 export async function PATCH(
   req: NextRequest,
@@ -37,6 +38,13 @@ export async function PATCH(
   })
   
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 })
+
+  if (["refunded", "revoked", "disputed"].includes(body.status)) {
+    if (order.products.type !== "roblox_whitelist") return NextResponse.json({ error: "Tikkies reversals apply to Roblox game orders only" }, { status: 400 })
+    await recordTikkiesReversal(id, body.status, admin.session!.user.id)
+    return NextResponse.json({ ok: true })
+  }
+  if (["refunded", "revoked", "disputed"].includes(order.status) && body.status && body.status !== order.status) return NextResponse.json({ error: "Reversed orders cannot be reopened; grant a new order after review" }, { status: 409 })
 
   const becomingPaid = body.status === "paid" && order.status !== "paid"
   const shouldIncrementDiscount = becomingPaid && !!(
@@ -64,6 +72,7 @@ export async function PATCH(
     !RELEASE_DISCOUNT_STATUSES.has(order.status)
 
   const result = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM orders WHERE id = ${id}::uuid FOR UPDATE`
     if (shouldReleaseCode) {
       await releaseOrderDiscount(tx, id)
     }
@@ -74,7 +83,7 @@ export async function PATCH(
     }
 
     const updatedOrder = await tx.orders.update({
-      where: { id },
+      where: { id, ...(body.status ? { status: { notIn: ["refunded", "revoked", "disputed"] } } : {}) },
       data: {
         ...(body.whitelist_status && { whitelist_status: body.whitelist_status }),
         ...(body.status           && { status: body.status }),
