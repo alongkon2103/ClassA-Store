@@ -12,7 +12,7 @@ import { useParams } from "next/navigation"
 import { useRouter } from "@/i18n/routing"
 import { useTranslations } from "next-intl"
 
-export const AFF_REF_KEY = "aff_ref"
+const AFF_REF_KEY = "aff_ref"
 
 export default function AffiliateRefLanding() {
   const params = useParams()

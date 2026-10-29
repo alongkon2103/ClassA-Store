@@ -6,6 +6,7 @@ import { useState } from "react"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/home/Footer"
 import Hero from "@/components/home/Hero"
+import HalloweenDrawPreview from "@/components/seasonal/HalloweenDrawPreview"
 import JoinDc from "@/components/home/JoinDc"
 import TrustBar from "@/components/home/TrustBar"
 import PromoMarquee from "@/components/home/PromoMarquee"
@@ -22,6 +23,7 @@ export default function HomeClient({ products, usdRate }: { products: Product[];
 
       <main className="flex-1 layer-base">
         <Hero products={products} onSelect={(p) => setSelected(p)} />
+        <HalloweenDrawPreview embedded live />
         <TrustBar />
         <PromoMarquee />
         <div className="layer-content">

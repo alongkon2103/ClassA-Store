@@ -814,6 +814,7 @@
     "tutorial_video_title": "教程视频"
   },
   "Account": {
+    "coins_type_earn_event": "活动奖励",
     "redeem_details": "查看详情",
     "redeem_images": "{n} 张图片",
     "redeem_image": "{title} — 图片 {n}",
@@ -853,6 +854,8 @@
     "redeem_ign_check": "检查",
     "redeem_ign_ok": "已找到：{name}",
     "redeem_ign_bad": "Roblox 中没有此用户名",
+    "redeem_ign_checking": "正在检查 Roblox 账号…",
+    "redeem_ign_unavailable": "暂时无法检查 Roblox，请重试。",
     "redeem_success_title": "兑换成功",
     "redeem_success_code": "你的兑换码",
     "redeem_copy": "点击复制",
@@ -1227,6 +1230,7 @@
     }
   },
   "AdminPoints": {
+    "type_event": "活动奖励",
     "rw_images_hint": "最多20张图片，支持PNG / JPG / WebP，每张不超过5 MB。第一张为封面。",
     "rw_images_limit": "最多可添加20张图片。",
     "rw_images_invalid": "请选择不超过5 MB的PNG、JPG或WebP图片。",

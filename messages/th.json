@@ -2125,6 +2125,8 @@
     "redeem_ign_check": "ตรวจชื่อ",
     "redeem_ign_ok": "พบผู้ใช้: {name}",
     "redeem_ign_bad": "ไม่พบชื่อนี้ใน Roblox",
+    "redeem_ign_checking": "กำลังตรวจสอบบัญชี Roblox…",
+    "redeem_ign_unavailable": "ตรวจสอบ Roblox ไม่ได้ชั่วคราว กรุณาลองตรวจอีกครั้ง",
     "redeem_success_title": "แลกสำเร็จ",
     "redeem_success_code": "โค้ดของคุณ",
     "redeem_copy": "แตะเพื่อคัดลอก",
@@ -2241,7 +2243,8 @@
     "daily_next": "รับได้อีกครั้งใน {time}",
     "daily_done": "ได้รับ +{points} AC Points แล้ว",
     "daily_error": "รับแต้มไม่สำเร็จ กรุณาลองใหม่",
-    "coins_type_earn_daily": "แต้มรายวัน"
+    "coins_type_earn_daily": "แต้มรายวัน",
+    "coins_type_earn_event": "แต้มจากกิจกรรม"
   },
   "Editor": {
     "tab_functions": "ฟังก์ชัน",
@@ -2596,6 +2599,7 @@
     "type_reverse_review": "หักคืน (ลบรีวิว)",
     "rate_example_review": "รีวิวเกมที่ซื้อ (ต่อเกม)",
     "type_daily": "แต้มรายวัน",
+    "type_event": "แต้มกิจกรรม",
     "rate_example_daily": "กดรับรายวัน (ต่อวัน)"
   },
   "WebAnnouncements": {

@@ -201,6 +201,7 @@ function LedgerTab({ refreshKey, onOpenUser }: { refreshKey: number; onOpenUser:
           <option value="earn_review">{t("type_review")}</option>
           <option value="reverse_review">{t("type_reverse_review")}</option>
           <option value="earn_daily">{t("type_daily")}</option>
+          <option value="earn_event">{t("type_event")}</option>
           <option value="redeem">{t("type_redeem")}</option>
           <option value="adjust_admin">{t("type_adjust")}</option>
         </select>
@@ -381,7 +382,7 @@ function UserDrawer({ userId, onClose, onChanged }: { userId: string; onClose: (
 /* ── ชิ้นส่วนร่วม ── */
 function TypeBadge({ entry }: { entry: Entry }) {
   const t = useTranslations("AdminPoints")
-  const label = entry.reverses_id ? t("void_of") : ({ earn_purchase: t("type_earn"), reverse_purchase: t("type_reverse"), earn_review: t("type_review"), reverse_review: t("type_reverse_review"), earn_daily: t("type_daily"), redeem: t("type_redeem"), adjust_admin: t("type_adjust") } as Record<string, string>)[entry.type] ?? entry.type
+  const label = entry.reverses_id ? t("void_of") : ({ earn_purchase: t("type_earn"), reverse_purchase: t("type_reverse"), earn_review: t("type_review"), reverse_review: t("type_reverse_review"), earn_daily: t("type_daily"), earn_event: t("type_event"), redeem: t("type_redeem"), adjust_admin: t("type_adjust") } as Record<string, string>)[entry.type] ?? entry.type
   const tone = entry.reverses_id ? "bg-white/5 text-text-muted"
     : entry.type === "earn_purchase" ? "bg-green-500/10 text-green-400"
     : entry.type === "earn_review" ? "bg-sky-500/10 text-sky-400"

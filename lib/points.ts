@@ -33,7 +33,7 @@ export const POINTS_DEFAULT_PER_REVIEW = 100
 export const POINTS_DEFAULT_PER_DAILY = 100
 
 export type PointsConfig = { enabled: boolean; perBaht: number; startAt: Date | null; perReview: number; perDaily: number }
-export type LedgerType = "earn_purchase" | "reverse_purchase" | "adjust_admin" | "earn_review" | "reverse_review" | "earn_daily" | "redeem"
+export type LedgerType = "earn_purchase" | "reverse_purchase" | "adjust_admin" | "earn_review" | "reverse_review" | "earn_daily" | "earn_event" | "redeem"
 
 type Db = Prisma.TransactionClient | typeof prisma
 

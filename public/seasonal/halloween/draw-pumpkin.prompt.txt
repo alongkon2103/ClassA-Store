@@ -1,0 +1,7 @@
+Asset: draw-pumpkin.webp
+Generator: built-in ImageGen, transparent-background edit.
+Reference: public/seasonal/halloween/pumpkin.webp
+Final output resized/encoded to 820x820 WebP (alpha preserved).
+
+Prompt:
+Edit this image into a beautiful large high-resolution hero asset for the same website. Preserve this EXACT cute friendly character design: round chubby orange pumpkin, rounded oval glowing eyes with happy expressions, softly blushing cheeks, small rounded smile and one little square tooth, curly green-brown stem. Refine to exceptionally smooth high-quality cinematic soft 3D rendering with believable rounded lobes, delicate natural pumpkin texture, glowing golden interior and soft apricot studio lighting with very subtle lavender rim lighting. Cuteness and softness are essential, same adorable personality as reference, not scary. No pointed/triangular eyes, no sharp jagged mouth, no menacing grin, no polygon geometry, no faceted forms, no hard toy plastic. Front-facing, entire pumpkin including stem visible with 10% empty margin around it, pumpkin fills most of canvas. One isolated character only, genuine transparent background. No words, no scenery, no floor, no border, no extra pumpkins.

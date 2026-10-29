@@ -22,6 +22,7 @@ export default function CoinsClient({ summary }: { summary: PointsSummary }) {
       case "earn_review": return { title: t("coins_type_earn_review"), sub: product || null }
       case "reverse_review": return { title: t("coins_type_reverse_review"), sub: product || null }
       case "earn_daily": return { title: t("coins_type_earn_daily"), sub: null }
+      case "earn_event": return { title: t("coins_type_earn_event"), sub: e.note }
       case "redeem": return { title: t("coins_type_redeem"), sub: e.note }
       case "adjust_admin": return { title: t("coins_type_adjust_admin"), sub: e.note }
       default: return { title: e.type, sub: e.note }

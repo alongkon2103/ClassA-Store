@@ -1,7 +1,8 @@
 "use client"
 
 // หน้าแลกของรางวัล: การ์ดของรางวัล → กดแลก → หน้าต่างยืนยัน (เกม Roblox กรอก IGN + ตรวจชื่อ) → หน้าต่างผลลัพธ์ (โค้ด/วันหมดอายุ) + ประวัติ
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { UserRound } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "@/i18n/routing"
 import { localeTag } from "@/lib/i18n/locale"
@@ -10,7 +11,7 @@ import type { RedemptionView, RewardView } from "@/lib/pointsRedeem"
 import RewardDetailsDialog from "@/components/points/RewardDetailsDialog"
 
 type Props = { active: boolean; balance: number; rewards: RewardView[]; history: RedemptionView[]; ignHints: Record<string, string | null> }
-type IgnCheck = { state: "idle" | "checking" | "ok" | "bad"; name?: string }
+type IgnCheck = { state: "idle" | "checking" | "ok" | "bad" | "unavailable"; username?: string; name?: string; avatarUrl?: string | null }
 
 const btn = "px-4 py-2 rounded-xl text-[0.82rem] font-bold transition disabled:opacity-50"
 const gold = `${btn} text-[#1a1200] bg-gold hover:brightness-110 active:scale-[0.98]`
@@ -25,6 +26,7 @@ export default function RedeemClient({ active, balance, rewards, history, ignHin
   const [details, setDetails] = useState<RewardView | null>(null)
   const [ign, setIgn] = useState("")
   const [check, setCheck] = useState<IgnCheck>({ state: "idle" })
+  const [retry, setRetry] = useState(0)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [done, setDone] = useState<RedemptionView | null>(null)
@@ -51,17 +53,30 @@ export default function RedeemClient({ active, balance, rewards, history, ignHin
   }
 
   const open = (r: RewardView) => {
-    setSel(r); setErr(null); setCheck({ state: "idle" })
-    setIgn(needIgn(r) ? ignHints[r.product!.id] ?? "" : "")
+    const username = needIgn(r) ? ignHints[r.product!.id] ?? "" : ""
+    setSel(r); setErr(null); setIgn(username)
+    setCheck({ state: username.trim() ? "checking" : "idle" })
   }
-  const verifyIgn = async () => {
-    if (!ign.trim()) return
-    setCheck({ state: "checking" })
-    try {
-      const d = await fetch(`/api/roblox/verify?username=${encodeURIComponent(ign.trim())}`).then((r) => r.json())
-      setCheck(d.ok ? { state: "ok", name: d.user?.displayName || d.user?.username } : { state: "bad" })
-    } catch { setCheck({ state: "idle" }) }
-  }
+  const checkingGame = !!sel && needIgn(sel)
+  useEffect(() => {
+    const username = ign.trim()
+    if (!checkingGame || !username) return
+    const controller = new AbortController()
+    let current = true
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/roblox/verify?username=${encodeURIComponent(username)}`, { signal: controller.signal })
+        const data = await response.json()
+        if (!current) return
+        if (response.ok && data.ok && data.user) {
+          setCheck({ state: "ok", username: data.user.username, name: data.user.displayName || data.user.username, avatarUrl: data.user.avatarUrl ?? null })
+        } else setCheck({ state: !response.ok || data.reason === "network" ? "unavailable" : "bad" })
+      } catch {
+        if (current) setCheck({ state: "unavailable" })
+      }
+    }, 500)
+    return () => { current = false; controller.abort(); clearTimeout(timer) }
+  }, [ign, checkingGame, sel?.id, retry])
   const redeem = async () => {
     if (!sel || busy) return
     setBusy(true); setErr(null)
@@ -163,15 +178,22 @@ export default function RedeemClient({ active, balance, rewards, history, ignHin
             <p className="text-[0.75rem] text-hot mt-1">{t("redeem_confirm_note")}</p>
             {needIgn(sel) && (
               <div className="mt-4">
-                <label className="text-[0.75rem] font-semibold text-text-muted">{t("redeem_ign_label")}</label>
-                <div className="flex gap-2 mt-1">
-                  <input value={ign} onChange={(e) => { setIgn(e.target.value); setCheck({ state: "idle" }) }} maxLength={20} spellCheck={false}
-                         className="flex-1 min-w-0 bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[0.9rem] outline-none focus:border-accent/50" />
-                  <button onClick={verifyIgn} disabled={!ign.trim() || check.state === "checking"} className={ghost}>{check.state === "checking" ? "..." : t("redeem_ign_check")}</button>
+                <label htmlFor="redeem-roblox-username" className="text-[0.75rem] font-semibold text-text-muted">{t("redeem_ign_label")}</label>
+                <input id="redeem-roblox-username" value={ign} onChange={(e) => { setIgn(e.target.value); setCheck({ state: e.target.value.trim() ? "checking" : "idle" }) }} maxLength={20} spellCheck={false} autoComplete="off"
+                       aria-describedby="redeem-roblox-status" disabled={busy}
+                       className="mt-1 w-full min-w-0 bg-bg-base border border-border-soft rounded-xl px-4 py-2.5 text-[0.9rem] outline-none focus:border-accent/50 disabled:opacity-50" />
+                <div id="redeem-roblox-status" role="status" aria-live="polite" className="mt-2">
+                  {check.state === "ok" ? (
+                    <div className="flex items-center gap-3 rounded-xl border border-success/25 bg-success/5 p-3">
+                      {check.avatarUrl ? <img src={check.avatarUrl} alt="" width={48} height={48} onError={() => setCheck(prev => ({ ...prev, avatarUrl: null }))} className="h-12 w-12 shrink-0 rounded-full bg-bg-base object-cover" />
+                        : <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-bg-base text-text-muted"><UserRound size={24} aria-hidden="true" /></span>}
+                      <div className="min-w-0"><p className="text-[0.8rem] font-semibold text-success break-words">{t("redeem_ign_ok", { name: check.name ?? ign })}</p><p className="text-[0.75rem] text-text-muted break-all">@{check.username}</p></div>
+                    </div>
+                  ) : <p className={`text-[0.72rem] ${check.state === "bad" ? "text-hot" : "text-text-dim"}`}>
+                    {check.state === "checking" ? t("redeem_ign_checking") : check.state === "bad" ? t("redeem_ign_bad") : check.state === "unavailable" ? t("redeem_ign_unavailable") : t("redeem_ign_hint")}
+                  </p>}
                 </div>
-                <p className={`text-[0.72rem] mt-1 ${check.state === "ok" ? "text-success" : check.state === "bad" ? "text-hot" : "text-text-dim"}`}>
-                  {check.state === "ok" ? t("redeem_ign_ok", { name: check.name ?? ign }) : check.state === "bad" ? t("redeem_ign_bad") : t("redeem_ign_hint")}
-                </p>
+                {check.state === "unavailable" && <button type="button" onClick={() => { setCheck({ state: "checking" }); setRetry(value => value + 1) }} disabled={busy} className={`${ghost} mt-2 !text-[0.72rem]`}>{t("redeem_ign_check")}</button>}
               </div>
             )}
             {err && <p className="mt-3 text-[0.8rem] text-hot">{err}</p>}

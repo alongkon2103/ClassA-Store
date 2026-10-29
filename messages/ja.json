@@ -814,6 +814,7 @@
     "tutorial_video_title": "チュートリアル動画"
   },
   "Account": {
+    "coins_type_earn_event": "イベント報酬",
     "redeem_details": "詳細を見る",
     "redeem_images": "画像 {n} 枚",
     "redeem_image": "{title} — 画像 {n}",
@@ -853,6 +854,8 @@
     "redeem_ign_check": "確認",
     "redeem_ign_ok": "見つかりました: {name}",
     "redeem_ign_bad": "この名前の Roblox ユーザーは見つかりません",
+    "redeem_ign_checking": "Robloxアカウントを確認中…",
+    "redeem_ign_unavailable": "Robloxを一時的に確認できません。もう一度お試しください。",
     "redeem_success_title": "交換完了",
     "redeem_success_code": "あなたのコード",
     "redeem_copy": "タップしてコピー",
@@ -1227,6 +1230,7 @@
     }
   },
   "AdminPoints": {
+    "type_event": "イベント報酬",
     "rw_images_hint": "最大20枚、PNG / JPG / WebP、1枚5 MBまで。最初の画像が表紙になります。",
     "rw_images_limit": "画像は最大20枚まで追加できます。",
     "rw_images_invalid": "5 MB以下のPNG、JPG、WebP画像を選択してください。",

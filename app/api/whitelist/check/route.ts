@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
         ign: { equals: username, mode: "insensitive" },
         product_id: product_id,
       },
+      orderBy: { expires_at: "desc" },
     })
 
     if (!access) {

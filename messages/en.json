@@ -2122,6 +2122,8 @@
     "redeem_ign_check": "Check",
     "redeem_ign_ok": "Found: {name}",
     "redeem_ign_bad": "No Roblox user with this name",
+    "redeem_ign_checking": "Checking Roblox account…",
+    "redeem_ign_unavailable": "Roblox is temporarily unavailable. Please try checking again.",
     "redeem_success_title": "Redeemed",
     "redeem_success_code": "Your code",
     "redeem_copy": "Tap to copy",
@@ -2238,7 +2240,8 @@
     "daily_next": "Next claim in {time}",
     "daily_done": "You got +{points} AC Points",
     "daily_error": "Couldn't claim, please try again",
-    "coins_type_earn_daily": "Daily check-in"
+    "coins_type_earn_daily": "Daily check-in",
+    "coins_type_earn_event": "Event rewards"
   },
   "Editor": {
     "tab_functions": "Functions",
@@ -2593,6 +2596,7 @@
     "type_reverse_review": "Review taken back",
     "rate_example_review": "Review a bought game (per game)",
     "type_daily": "Daily check-in",
+    "type_event": "Event rewards",
     "rate_example_daily": "Daily check-in (per day)"
   },
   "WebAnnouncements": {

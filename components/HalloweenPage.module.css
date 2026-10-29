@@ -75,7 +75,7 @@
   :global(html:not([data-seasonal-preference="off"])) .night :global(.group):hover { transform: none !important; }
 }
 
-:global(html[data-seasonal-preference="off"]) .sky, :global(html[data-seasonal-preference="off"]) :global([data-halloween-art]) { display: none; }
+:global(html[data-seasonal-preference="off"]) .sky { display: none; }
 
 .corner { position: absolute; inset: 0; pointer-events: none; user-select: none; overflow: hidden; }
 .cornerPumpkin { position: absolute; width: 48px; height: auto; bottom: 24px; left: 18px; transform: rotate(-9deg); filter: drop-shadow(0 4px 9px rgb(0 0 0 / 20%)); }
