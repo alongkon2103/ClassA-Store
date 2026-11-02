@@ -4,6 +4,8 @@ import AccountFrame from "@/components/account/AccountFrame"
 import { getPointsBalance, getPointsConfig, pointsActive } from "@/lib/points"
 import { latestIgn, listRedemptions, listRewards } from "@/lib/pointsRedeem"
 import RedeemClient from "./RedeemClient"
+import { getHalloweenState } from "@/lib/halloweenDraw"
+import PendingEventReward from "@/components/points/PendingEventReward"
 
 export const dynamic = "force-dynamic"
 
@@ -12,12 +14,13 @@ export default async function RedeemPage({ params }: { params: Promise<{ locale:
   const { locale } = await params
   setRequestLocale(locale)
   const { userId } = await requireUser(locale)
-  const [cfg, balance, rewards, history] = await Promise.all([getPointsConfig(), getPointsBalance(userId), listRewards(userId), listRedemptions(userId, 50)])
+  const [cfg, balance, rewards, history, event] = await Promise.all([getPointsConfig(), getPointsBalance(userId), listRewards(userId), listRedemptions(userId, 50), getHalloweenState(userId)])
   const robloxGames = [...new Set(rewards.filter((r) => r.kind === "game_days" && r.product && r.product.type !== "desktop_program").map((r) => r.product!.id))]
   const ignHints = Object.fromEntries(await Promise.all(robloxGames.map(async (id) => [id, await latestIgn(userId, id)] as const)))
 
   return (
     <AccountFrame active="redeem">
+      {event.draw?.prize.kind === "game" && !event.draw.claimedAt && <PendingEventReward reward={event.draw} />}
       <RedeemClient active={pointsActive(cfg)} balance={balance} rewards={rewards} history={history} ignHints={ignHints} />
     </AccountFrame>
   )

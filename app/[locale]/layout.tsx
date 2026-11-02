@@ -76,6 +76,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
+      data-seasonal-preference="off"
       className={`${inter.variable} ${notoThai.variable}`}
       suppressHydrationWarning
     >

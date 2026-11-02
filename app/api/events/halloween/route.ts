@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { drawHalloween, getHalloweenState } from "@/lib/halloweenDraw"
-import { halloweenBody, halloweenFailure, halloweenHeaders } from "@/lib/halloweenHttp"
+import { getHalloweenState } from "@/lib/halloweenDraw"
+import { halloweenFailure, halloweenHeaders } from "@/lib/halloweenHttp"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -14,12 +14,6 @@ export async function GET() {
   } catch (error) { return halloweenFailure(error) }
 }
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: halloweenHeaders })
-  try {
-    const body = await halloweenBody(req)
-    if (Object.keys(body).length) throw new Error("invalid_input")
-    return NextResponse.json({ draw: await drawHalloween(session.user.id) }, { headers: halloweenHeaders })
-  } catch (error) { return halloweenFailure(error) }
+export async function POST() {
+  return NextResponse.json({ error: "ended" }, { status: 410, headers: halloweenHeaders })
 }

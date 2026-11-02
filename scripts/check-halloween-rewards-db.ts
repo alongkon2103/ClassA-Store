@@ -7,13 +7,11 @@ import { readFile } from "node:fs/promises"
 import pg from "pg"
 import { PrismaClient } from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
-import { HALLOWEEN_EVENT, HALLOWEEN_GAME_SLUGS } from "../lib/halloweenEvent"
+import { HALLOWEEN_EVENT, HALLOWEEN_GAME_SLUGS, pickHalloweenPrize } from "../lib/halloweenEvent"
 
 const require = createRequire(import.meta.url)
 const stub = (path: string, exports: unknown) => { const file = require.resolve(path); require.cache[file] = { id: file, filename: file, loaded: true, exports } as NodeModule }
 let ticket = 0, lookupCalls = 0, lookupOk = true
-const crypto = require("node:crypto")
-crypto.randomInt = () => ticket
 const schema = "halloween_test_" + randomUUID().replaceAll("-", "")
 const admin = new pg.Client({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 5000 })
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, options: `-c search_path=${schema},pg_catalog`, application_name: schema, max: 6, connectionTimeoutMillis: 5000 })
@@ -44,16 +42,25 @@ async function check() {
     }
     const user = async () => (await db.users.create({ data: { username: "Event fixture " + randomUUID() } })).id
     const one = await user(), two = await user()
-    await assert.rejects(api.drawHalloween(one, before), { code: "upcoming" })
-    await assert.rejects(api.drawHalloween(one, new Date(HALLOWEEN_EVENT.endsAt)), { code: "ended" })
-    const results = await Promise.all(Array.from({ length: 6 }, () => api.drawHalloween(one, now)))
-    assert.ok(results.every(r => r.id === results[0].id), "Concurrent draws return one stored result")
-    assert.equal(await db.halloween_draws.count({ where: { user_id: one } }), 1)
-    assert.equal(await db.point_ledger.count({ where: { user_id: one } }), 1)
+    // Seed already-earned records: the retired service must never create a new draw.
+    const seedDraw = async (userId: string) => {
+      const products = await db.products.findMany({ include: { product_images: true } })
+      const catalog = products.map(({ product_images, ...product }) => ({ ...product, imageUrl: product_images[0]?.url ?? null }))
+      const prize = pickHalloweenPrize(catalog, ticket)
+      const ledger = prize.kind === "points" ? await db.point_ledger.create({ data: { user_id: userId, delta: prize.amount, type: "earn_event" } }) : null
+      await db.halloween_draws.create({ data: { event_key: HALLOWEEN_EVENT.id, user_id: userId, prize, ledger_id: ledger?.id ?? null, claimed_at: ledger ? now : null } })
+      return (await api.getHalloweenState(userId, after)).draw
+    }
+    for (const date of [before, now, after]) await assert.rejects(api.drawHalloween(one, date), { code: "ended" })
+    assert.equal(await db.halloween_draws.count(), 0)
+    assert.equal(await db.point_ledger.count(), 0)
+    const historical = await seedDraw(one)
+    const state = await api.getHalloweenState(one, now)
+    assert.equal(state.phase, "ended"); assert.equal(state.available, false); assert.deepEqual(state.games, [])
+    assert.equal(state.draw.id, historical.id)
     assert.equal((await db.point_ledger.aggregate({ where: { user_id: one }, _sum: { delta: true } }))._sum.delta, 2000)
-    assert.equal((await api.drawHalloween(one, after)).id, results[0].id, "A lost draw response can be recovered after close")
     ticket = 960 // Universe, three days.
-    const game = await api.drawHalloween(two, now)
+    const game = await seedDraw(two)
     assert.equal(game.prize.kind, "game"); assert.equal(game.claimedAt, null)
     assert.ok(game.prize.product.imageUrl?.endsWith("game0.webp"))
     assert.equal(await db.orders.count(), 0, "Drawing a Roblox reward does not grant an unverified account")
@@ -72,7 +79,7 @@ async function check() {
     assert.equal(await db.orders.count({ where: { user_id: two } }), 1)
     const third = await user(), later = new Date(after.getTime() + 10 * 86400000)
     await db.user_whitelist_access.update({ where: { ign_product_id: { ign: "CanonicalPlayer", product_id: game.prize.product.id } }, data: { expires_at: later, is_premium: true } })
-    const thirdDraw = await api.drawHalloween(third, now)
+    const thirdDraw = await seedDraw(third)
     const extended = await api.claimHalloween(third, thirdDraw.id, "CanonicalPlayer", after)
     assert.equal(new Date(extended.result.expiresAt).getTime(), later.getTime() + 3 * 86400000)
     assert.equal((await db.user_whitelist_access.findFirstOrThrow()).is_premium, true)
@@ -86,14 +93,14 @@ async function check() {
     const checked = await checkWhitelist(new Request("http://localhost/api/whitelist/check", { method: "POST", headers: { "x-api-key": "isolated-fixture-key", "content-type": "application/json" }, body: JSON.stringify({ username: "CasePlayer", product_id: caseGame.id }) }))
     assert.equal((await checked.json()).allowed, true, "Legacy game checks must use the latest grant across Roblox name case variants")
     ticket = 1260 // Pig Panic, one day.
-    const desktopUser = await user(), desktop = await api.drawHalloween(desktopUser, now)
+    const desktopUser = await user(), desktop = await seedDraw(desktopUser)
     const previousLookup = lookupCalls
     const desktopClaim = await api.claimHalloween(desktopUser, desktop.id, null, now)
     assert.equal(lookupCalls, previousLookup, "Desktop prizes are bound to the store account")
     assert.equal((await db.user_program_access.findFirstOrThrow()).user_id, desktopUser)
     assert.equal(desktopClaim.claimedAt != null, true)
     // Hold the access row while a real paid grant commits ahead of the event write.
-    const raceUser = await user(), raceDraw = await api.drawHalloween(raceUser, now)
+    const raceUser = await user(), raceDraw = await seedDraw(raceUser)
     await db.user_program_access.create({ data: { user_id: raceUser, product_id: raceDraw.prize.product.id, expires_at: new Date("2026-01-01Z") } })
     const paid = await pool.connect()
     let raced: Promise<unknown> | null = null
@@ -112,21 +119,23 @@ async function check() {
       const granted = await raced as { result: { permanent: boolean } }
       assert.equal(granted.result.permanent, true, "The event must preserve a permanent payment committed after its initial read")
     } finally { await paid.query("ROLLBACK").catch(() => {}); paid.release(); await raced?.catch(() => {}) }
-    const failureUser = await user(), failureDraw = await api.drawHalloween(failureUser, now)
+    const failureUser = await user(), failureDraw = await seedDraw(failureUser)
     await pool.query(`CREATE FUNCTION fail_event_order() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'fixture insert failed'; END$$; CREATE TRIGGER fail_event_order BEFORE INSERT ON orders FOR EACH ROW EXECUTE FUNCTION fail_event_order()`)
     await assert.rejects(api.claimHalloween(failureUser, failureDraw.id, null, now))
     assert.equal(await db.user_program_access.count({ where: { user_id: failureUser } }), 0, "Failed order rolls back its access grant")
     assert.equal((await db.halloween_draws.findUniqueOrThrow({ where: { id: failureDraw.id } })).claimed_at, null)
     await pool.query("DROP TRIGGER fail_event_order ON orders; DROP FUNCTION fail_event_order()")
-    const permanentUser = await user(), permanentDraw = await api.drawHalloween(permanentUser, now)
+    const permanentUser = await user(), permanentDraw = await seedDraw(permanentUser)
     await db.user_program_access.create({ data: { user_id: permanentUser, product_id: permanentDraw.prize.product.id, expires_at: new Date("9999-12-31T00:00:00Z") } })
     assert.equal((await api.claimHalloween(permanentUser, permanentDraw.id, null, now)).result.permanent, true)
     const blocked = await user()
+    const blockedDraw = await seedDraw(blocked)
     await db.users.update({ where: { id: blocked }, data: { nativeStatus: "KICKED" } })
-    await assert.rejects(api.drawHalloween(blocked, now), { code: "account_unavailable" })
-    await db.products.update({ where: { slug: "ac-slash" }, data: { is_active: false } })
-    await assert.rejects(api.drawHalloween(await user(), now), { code: "unavailable" })
-    console.log("Halloween PostgreSQL: unique concurrent draws, atomic points, durable results, ownership, canonical Roblox/Tikkies binding, desktop grants, extension, permanent access and rollback OK")
+    await assert.rejects(api.claimHalloween(blocked, blockedDraw.id, null, now), { code: "account_unavailable" })
+    const disabledDraw = await seedDraw(await user())
+    await db.products.update({ where: { id: disabledDraw.prize.product.id }, data: { is_active: false } })
+    await assert.rejects(api.claimHalloween((await db.halloween_draws.findUniqueOrThrow({where:{id:disabledDraw.id}})).user_id, disabledDraw.id, null, now), { code: "unavailable" })
+    console.log("Retired Halloween PostgreSQL: no new draws or points; historical balances/results and duplicate-safe game claims, bindings, extension, permanent access and rollback preserved")
   } finally {
     await db.$disconnect(); await pool.end()
     await admin.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`)

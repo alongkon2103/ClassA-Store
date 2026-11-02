@@ -3,7 +3,7 @@ import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
 const stub = (path: string, exports: unknown) => { const file = require.resolve(path); require.cache[file] = { id: file, filename: file, loaded: true, exports } as NodeModule }
 let userId: string | null = null, draws = 0, claims = 0, failure = false
-const { HalloweenError } = require("../lib/halloweenDraw")
+const { HalloweenError, drawHalloween: retiredDraw } = require("../lib/halloweenDraw")
 stub("next-auth", { getServerSession: async () => userId ? { user: { id: userId } } : null })
 stub("../lib/auth", { authOptions: {} })
 stub("../lib/halloweenDraw", {
@@ -19,22 +19,24 @@ const req = (body: unknown, origin = "http://localhost:3000") => new Request("ht
   method: "POST", headers: { "content-type": "application/json", origin }, body: JSON.stringify(body),
 })
 async function check() {
+  await assert.rejects(retiredDraw("fixture", new Date("2026-10-30T12:00:00+07:00")), { code: "ended" }, "Service retirement cannot be bypassed by an older caller or date")
   const state = await api.GET()
   assert.ok(state.headers.get("cache-control")?.includes("no-store"))
-  assert.equal((await api.POST(req({}))).status, 401)
+  assert.equal((await api.POST(req({}))).status, 410, "Retired draw endpoint is gone, including for old clients")
   userId = "fixture"
-  assert.equal((await api.POST(req({}, "https://evil.example"))).status, 403)
-  assert.equal((await api.POST(req({ amount: 5000000, kind: "points" }))).status, 400)
-  assert.equal((await api.POST(req({ x: "x".repeat(3000) }))).status, 400)
+  assert.equal((await api.POST(req({}, "https://evil.example"))).status, 410)
+  assert.equal((await api.POST(req({ amount: 5000000, kind: "points" }))).status, 410)
+  assert.equal((await api.POST(req({ x: "x".repeat(3000) }))).status, 410)
   assert.equal(draws, 0, "Forged or unauthorized calls must not reach the reward service")
   const result = await api.POST(req({}))
-  assert.equal(result.status, 200); assert.equal((await result.json()).draw.id, "stored-server-prize")
+  assert.equal(result.status, 410); assert.equal((await result.json()).error, "ended")
   failure = true
-  assert.equal((await api.POST(req({}))).status, 409)
+  assert.equal((await api.POST(req({}))).status, 410)
+  assert.equal(draws, 0, "No retired request can enter the draw/award service")
   assert.equal((await claim.POST(req({ draw_id: "not-uuid", ign: "Name" }))).status, 400)
   assert.equal((await claim.POST(req({ draw_id: "11111111-1111-4111-8111-111111111111", ign: "Name", product_id: "forged" }))).status, 400)
   assert.equal(claims, 0)
   assert.equal((await claim.POST(req({ draw_id: "11111111-1111-4111-8111-111111111111", ign: "Name" }))).status, 200)
-  console.log("Halloween API: session, same-origin, bounded JSON, forged reward rejection, private status and service errors OK")
+  console.log("Retired draw API: always 410 without awarding; existing claims retain validation and authentication")
 }
 check().catch(error => { console.error(error); process.exitCode = 1 })

@@ -1,8 +1,7 @@
-import { randomInt } from "node:crypto"
 import type { Prisma, halloween_draws } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { isPlausibleUsername, lookupRobloxUser } from "@/lib/roblox"
-import { HALLOWEEN_EVENT, HALLOWEEN_GAME_SLUGS, halloweenPhase, pickHalloweenPrize, type HalloweenDraw, type HalloweenGame, type HalloweenPrize, type HalloweenState } from "@/lib/halloweenEvent"
+import { HALLOWEEN_EVENT, type HalloweenDraw, type HalloweenPrize, type HalloweenState } from "@/lib/halloweenEvent"
 
 export class HalloweenError extends Error {
   constructor(public code: "upcoming" | "ended" | "unavailable" | "not_found" | "account_unavailable" | "ign_required" | "ign_invalid" | "ign_not_found" | "roblox_unavailable") { super(code) }
@@ -14,48 +13,23 @@ const view = (row: halloween_draws): HalloweenDraw => ({
   result: row.result as HalloweenDraw["result"], orderId: row.order_id,
 })
 
-async function games(db: Db): Promise<HalloweenGame[]> {
-  const rows = await db.products.findMany({
-    where: { slug: { in: [...HALLOWEEN_GAME_SLUGS] }, is_active: true, type: { in: ["roblox_whitelist", "desktop_program"] } },
-    select: { id: true, slug: true, name_th: true, name_en: true, type: true, product_images: { orderBy: [{ sort_order: "asc" }, { id: "asc" }], take: 1, select: { url: true } } },
-  })
-  return rows.map(({ product_images, ...row }) => ({ ...row, imageUrl: product_images[0]?.url ?? null }))
-}
 async function assertAccount(db: Db, userId: string) {
   const user = await db.users.findUnique({ where: { id: userId }, select: { nativeStatus: true } })
   if (!user || user.nativeStatus === "KICKED") throw new HalloweenError("account_unavailable")
 }
 
 export async function getHalloweenState(userId: string | null, now = new Date()): Promise<HalloweenState> {
-  const [catalog, draw] = await Promise.all([games(prisma), userId ? prisma.halloween_draws.findUnique({ where: key(userId) }) : null])
+  const draw = userId ? await prisma.halloween_draws.findUnique({ where: key(userId) }) : null
   return {
-    phase: halloweenPhase(now), signedIn: !!userId, available: catalog.length === 5,
+    phase: "ended", signedIn: !!userId, available: false,
     startsAt: HALLOWEEN_EVENT.startsAt, endsAt: HALLOWEEN_EVENT.endsAt, serverNow: now.toISOString(),
-    games: catalog, draw: draw ? view(draw) : null,
+    games: [], draw: draw ? view(draw) : null,
   }
 }
 
-export async function drawHalloween(userId: string, now = new Date()): Promise<HalloweenDraw> {
-  return prisma.$transaction(async tx => {
-    // Same account lock as point redemption; database uniqueness is the final duplicate guard.
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}))`
-    await assertAccount(tx, userId)
-    const existing = await tx.halloween_draws.findUnique({ where: key(userId) })
-    if (existing) return view(existing)
-    const phase = halloweenPhase(now)
-    if (phase !== "active") throw new HalloweenError(phase)
-    const catalog = await games(tx)
-    if (catalog.length !== 5) throw new HalloweenError("unavailable")
-    const prize = pickHalloweenPrize(catalog, randomInt(1500))
-    const ledger = prize.kind === "points" ? await tx.point_ledger.create({
-      data: { user_id: userId, delta: prize.amount, type: "earn_event", note: "Halloween 2026 · ฟักทองแจกโชค" },
-    }) : null
-    const draw = await tx.halloween_draws.create({ data: {
-      event_key: HALLOWEEN_EVENT.id, user_id: userId, prize: prize as Prisma.InputJsonValue,
-      ledger_id: ledger?.id ?? null, claimed_at: ledger ? now : null,
-    } })
-    return view(draw)
-  }, { maxWait: 10000, timeout: 10000 })
+// Retired: keep the guard at the service boundary as well as the public endpoint.
+export async function drawHalloween(_userId?: string, _now?: Date): Promise<HalloweenDraw> {
+  throw new HalloweenError("ended")
 }
 
 export async function claimHalloween(userId: string, drawId: string, rawIgn: string | null, now = new Date()): Promise<HalloweenDraw> {
