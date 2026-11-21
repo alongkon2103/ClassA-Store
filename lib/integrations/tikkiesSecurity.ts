@@ -49,10 +49,13 @@ function quota(value: string | undefined, fallback: number) {
   return Number(value)
 }
 export async function limitTikkies(db: Prisma.TransactionClient, identities: Identity[], secret: string, env = process.env) {
+  return limitTikkiesSubject(db, JSON.stringify([...identities].sort((a, b) => `${a.provider}:${a.providerAccountId}`.localeCompare(`${b.provider}:${b.providerAccountId}`))), secret, env)
+}
+export async function limitTikkiesSubject(db: Prisma.TransactionClient, identity: string, secret: string, env = process.env) {
   const globalMax = quota(env.TIKKIES_RATE_LIMIT_PER_MINUTE, 6000)
   const subjectMax = quota(env.TIKKIES_CUSTOMER_RATE_LIMIT_PER_MINUTE, 60)
   const global = createHash("sha256").update("tikkies:global").digest("hex")
-  const subject = createHmac("sha256", secret).update(JSON.stringify([...identities].sort((a, b) => `${a.provider}:${a.providerAccountId}`.localeCompare(`${b.provider}:${b.providerAccountId}`)))).digest("hex")
+  const subject = createHmac("sha256", secret).update(identity).digest("hex")
   const rows = await db.$queryRaw<{ key_hash: string; count: number; reset_at: Date }[]>`
     INSERT INTO tikkies_rate_limits (key_hash, count, reset_at)
     VALUES (${global}, 1, clock_timestamp() + interval '60 seconds'), (${subject}, 1, clock_timestamp() + interval '60 seconds')

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
+import { validateProductLink } from "@/lib/integrations/tikkiesLibrary"
 
 type ConsignmentInput = {
   owner_name: string
@@ -35,6 +36,9 @@ export async function PATCH(
   }
 
   const body = await req.json()
+  if (Object.prototype.hasOwnProperty.call(body, "info_page_url")) {
+    try { body.info_page_url = validateProductLink(body.info_page_url) } catch { return NextResponse.json({ error: "Invalid game link: use an HTTPS URL" }, { status: 400 }) }
+  }
   if (body.roblox_universe_id !== undefined || body.roblox_place_ids !== undefined) return NextResponse.json({ error: "Use the admin-only Tikkies mapping endpoint" }, { status: 400 })
   const { consignments, partnership_shares, videos, ...rest } = body
 

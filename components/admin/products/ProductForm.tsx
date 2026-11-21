@@ -8,6 +8,7 @@ import ImageManager from "./ImageManager"
 import KeysPanel from "./KeysPanel"
 import GiftManager from "./GiftManager"
 import PresetManager from "./PresetManager"
+import GameDefaultsManager from "./GameDefaultsManager"
 import FunctionManager from "./FunctionManager"
 import FeatureManager from "./FeatureManager"
 import ConsignmentManager from "./ConsignmentManager"
@@ -29,7 +30,9 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
     const locale = useLocale()
     const router = useRouter()
     const [saving, setSaving] = useState(false)
-    const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys" | "consignment" | "functions" | "features" | "partnership"> ("info")
+    const [activeTab, setActiveTab] = useState<"info" | "variants" | "images" | "gifts" | "presets" | "keys" | "consignment" | "functions" | "defaults" | "features" | "partnership"> ("info")
+    const [defaultsOpened, setDefaultsOpened] = useState(false)
+    const supportsGameDefaults = product?.type === "roblox_whitelist" || (product?.type === "desktop_program" && product?.program_key === "ac_pig_panic")
     const [videoUploading, setVideoUploading] = useState(false)
     const [videoError, setVideoError] = useState<string | null>(null)
 
@@ -180,7 +183,8 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
         // { key: "keys", label: t("tab_keys"), hidden: mode === "create" }, // Hiding Game Keys UI
         { key: "consignment", label: t("tab_consignment"), hidden: mode === "create" || !form.is_consignment },
         { key: "partnership", label: t("tab_partnership"), hidden: mode === "create" || form.is_consignment },
-        { key: "functions", label: "Functions", hidden: mode === "create" },
+        { key: "defaults", label: locale === "th" ? "Actions ค่าเริ่มต้น" : "Actions defaults", hidden: mode === "create" || !supportsGameDefaults },
+        { key: "functions", label: "Functions", hidden: mode === "create" || supportsGameDefaults },
         { key: "features", label: "Feature", hidden: mode === "create" },
     ] as const
 
@@ -197,16 +201,16 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
                         {mode === "create" ? t("new") : t("edit", { name: locale === "th" ? product.name_th : product.name_en })}
                     </h1>
                 </div>
-                <button onClick={handleSave} disabled={saving}
+                {activeTab !== "defaults" && <button onClick={handleSave} disabled={saving}
                     className="bg-accent hover:opacity-90 text-white text-[13px] font-semibold px-5 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50">
                     {saving ? t("saving") : mode === "create" ? t("create") : t("save_changes")}
-                </button>
+                </button>}
             </div>
 
             {/* Tabs */}
             <div className="flex gap-1 bg-bg-card border border-accent/10 rounded-xl p-1 w-fit flex-wrap">
                 {tabs.filter((t) => !t.hidden).map((t) => (
-                    <button key={t.key} onClick={() => setActiveTab(t.key)}
+                    <button key={t.key} onClick={() => { if (t.key === "defaults") setDefaultsOpened(true); setActiveTab(t.key) }}
                         className={`px-4 py-2 rounded-lg text-[13px] font-medium transition ${activeTab === t.key
                             ? "bg-accent/20 text-accent-light"
                             : "text-text-muted hover:text-text-base"
@@ -529,9 +533,10 @@ export default function ProductForm({ product, mode, allGifts, allPartners }: Pr
                 <FeatureManager productId={product.id} features={product.product_features ?? []} />
             )}
 
-            {activeTab === "functions" && (
-                <FunctionManager productId={product.id} functions={product.product_functions ?? []} allGifts={allGifts ?? []} />
-            )}
+            {defaultsOpened && supportsGameDefaults && <div hidden={activeTab !== "defaults"}>
+                <GameDefaultsManager productId={product.id} allGifts={allGifts ?? []} />
+            </div>}
+            {activeTab === "functions" && !supportsGameDefaults && <FunctionManager productId={product.id} functions={product.product_functions ?? []} allGifts={allGifts ?? []} />}
             
         </div>
     )

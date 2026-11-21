@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
+import { validateProductLink } from "@/lib/integrations/tikkiesLibrary"
 
 export async function GET() {
   const admin = await validateAdmin()
@@ -40,6 +41,8 @@ export async function POST(req: NextRequest) {
   if (!admin.isValid) return admin.response
 
   const body = await req.json()
+  let infoPageUrl: string | null
+  try { infoPageUrl = validateProductLink(body.info_page_url) } catch { return NextResponse.json({ error: "Invalid game link: use an HTTPS URL" }, { status: 400 }) }
   const { name_en, name_th, slug, description_en, description_th, price, is_active, is_featured, isLower, youtube_url, videos, tutorial_video_url, preview_video_url, type, program_key, download_url } = body
 
   if (!name_en || !name_th || !slug || !price) {
@@ -70,6 +73,7 @@ export async function POST(req: NextRequest) {
   const product = await prisma.products.create({
     data: {
       name_en, name_th, slug,
+      info_page_url: infoPageUrl,
       description_en: description_en ?? null,
       description_th: description_th ?? null,
       price,
