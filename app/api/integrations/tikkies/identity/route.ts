@@ -4,6 +4,7 @@ import {authenticateTikkies,readTikkiesBody} from '@/lib/integrations/tikkiesSec
 import {TikkiesError} from '@/lib/integrations/tikkies'
 import {ensureNativeStoreCustomer,privateHeaders} from '@/lib/tikkiesBrowserCheckout'
 import {claimNativeEmailWhitelist} from '@/lib/nativeEmailWhitelist'
+import {retryAbortedTransaction} from '@/lib/transactionRetry'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export async function POST(req:NextRequest){
@@ -23,7 +24,7 @@ export async function POST(req:NextRequest){
     if(attempt>=2||!['P2002','P2034'].includes(String(code)))throw error
    }
   }
-  await prisma.$transaction(tx=>claimNativeEmailWhitelist(tx,customerId,body.identity,body.identities),{isolationLevel:'ReadCommitted'})
+  await retryAbortedTransaction(()=>prisma.$transaction(tx=>claimNativeEmailWhitelist(tx,customerId,body.identity,body.identities),{isolationLevel:'ReadCommitted',maxWait:10000,timeout:60000}))
   return NextResponse.json({ok:true},{headers:privateHeaders})
  }catch(e){return NextResponse.json({error:e instanceof TikkiesError?e.code:'identity_unavailable'},{status:e instanceof TikkiesError?e.status:503,headers:privateHeaders})}
 }

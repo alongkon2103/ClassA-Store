@@ -36,7 +36,10 @@ export default async function AdminWhitelistPage({
                 id: true,
                 name_th: true,
                 name_en: true,
-                slug: true
+                slug: true,
+                type: true,
+                bundle_all_ac_games: true,
+                bundle_includes_tikkies: true
             },
             orderBy: {
                 name_en: 'asc'

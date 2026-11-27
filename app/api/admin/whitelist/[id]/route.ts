@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 import { computeWhitelistExpiry } from "@/lib/formatExpiresAt"
+import { BundleError, parseBundleSnapshot } from "@/lib/bundles"
+import { BUNDLE_BLOCKED_WHITELIST } from "@/lib/bundleFulfillment"
+import { retryAbortedTransaction } from "@/lib/transactionRetry"
+import { grantManualBundle, retireManualBundles, MANUAL_BUNDLE_NOTE } from "@/lib/manualBundleGrant"
 import { EMAIL_WHITELIST_NOTE, RETIRED_EMAIL_WHITELIST_NOTE, literalInsensitive } from "@/lib/manualWhitelistEmail"
 
 // Edit a whitelist row: in-game name (ign), game (product_id), premium flag, and
@@ -50,6 +54,54 @@ export async function PATCH(
         } else if (newIgn.toLowerCase() !== existing.ign.toLowerCase()) {
             robloxBinding = await resolveTikkiesBinding(newIgn)
         }
+        const [oldProduct, newProduct] = await Promise.all([
+            prisma.products.findUnique({ where: { id: existing.product_id }, select: { type: true } }),
+            prisma.products.findUnique({ where: { id: newProductId }, select: { type: true } }),
+        ])
+        if (oldProduct?.type === 'bundle' || newProduct?.type === 'bundle') {
+            if (newProductId !== existing.product_id) return NextResponse.json({ error: 'Create a separate membership grant to change product' }, { status: 400 })
+            const result = await retryAbortedTransaction(() => prisma.$transaction(async tx => {
+                await tx.$executeRaw`SELECT set_config('app.actor_id', ${adminCheck.session!.user.id}, true)`
+                // Email claim and admin edit use the same recipient lock first.
+                const candidate = await tx.orders.findFirst({ where: { product_id: existing.product_id, whitelisted_username: literalInsensitive(existing.ign), payment_method: 'admin_manual', order_type: 'BUNDLE', status: 'paid', manual_note: { in: [EMAIL_WHITELIST_NOTE, MANUAL_BUNDLE_NOTE] } }, orderBy: { created_at: 'desc' } })
+                if (!candidate) throw new BundleError('No active manual membership. Create a new membership grant.', 409)
+                if (candidate.buyer_label) await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${EMAIL_WHITELIST_NOTE + ':' + candidate.buyer_label}, 0))`
+                for (const key of [...new Set([existing.ign.toLowerCase(), newIgn.toLowerCase()])].sort()) await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${existing.product_id + ':' + key}, 0))`
+                const destination = await tx.user_whitelist_access.findFirst({ where: { product_id: existing.product_id, ign: literalInsensitive(newIgn), id: { not: existing.id } }, select: { id: true } })
+                if (destination) throw new BundleError('A whitelist entry with this name already exists for that membership', 409)
+                // Re-read after lock: a claim must never be replaced by stale ownership.
+                const parent = await tx.orders.findUniqueOrThrow({ where: { id: candidate.id } })
+                if (parent.status !== 'paid') throw new BundleError('Membership changed. Refresh and try again.', 409)
+                const terms = parseBundleSnapshot(parent.bundle_snapshot)
+                if (changeExpiry && (isPermanent !== undefined && typeof isPermanent !== 'boolean' || !isPermanent && (!Number.isSafeInteger(durationDays) || durationDays <= 0))) throw new BundleError('Invalid membership duration')
+                const children = await tx.orders.findMany({ where: { bundle_parent_id: parent.id }, include: { products: { select: { type: true } } } })
+                const excludedProductIds: string[] = []
+                for (const child of children) {
+                    let removed = child.status !== 'paid' || BUNDLE_BLOCKED_WHITELIST.includes(child.whitelist_status ?? '')
+                    if (child.products.type === 'roblox_whitelist' && child.whitelisted_username) {
+                        const access = await tx.user_whitelist_access.findUnique({ where: { ign_product_id: { ign: child.whitelisted_username, product_id: child.product_id } } })
+                        removed ||= !access
+                    } else if (child.products.type === 'desktop_program' && child.user_id) {
+                        const access = await tx.user_program_access.findUnique({ where: { user_id_product_id: { user_id: child.user_id, product_id: child.product_id } } })
+                        removed ||= !access || access.status === 'REVOKED'
+                    }
+                    if (removed) excludedProductIds.push(child.product_id)
+                }
+                await retireManualBundles(tx, existing.product_id, existing.ign)
+                const granted = await grantManualBundle(tx, {
+                    productId: existing.product_id, userId: parent.user_id, email: parent.buyer_label, ign: newIgn,
+                    actorId: adminCheck.session!.user.id, isPermanent: changeExpiry ? isPermanent === true : terms.durationType === 'permanent',
+                    durationDays: changeExpiry ? durationDays : terms.durationDays ?? 0,
+                    now: changeExpiry ? undefined : parent.fulfilled_at!,
+                    snapshot: { ...terms, ...(changeExpiry ? { durationType: isPermanent ? 'permanent' as const : 'days' as const, durationDays: isPermanent ? null : durationDays } : {}) },
+                    excludedProductIds,
+                    robloxBinding: { roblox_user_id: parent.roblox_user_id, roblox_username: parent.roblox_username, roblox_display_name: parent.roblox_display_name, roblox_resolved_for: parent.roblox_resolved_for, ...robloxBinding },
+                })
+                if (newIgn !== existing.ign) await tx.user_whitelist_access.delete({ where: { id: existing.id } })
+                return granted.whitelist
+            }, { isolationLevel: 'ReadCommitted', maxWait: 10000, timeout: 60000 }))
+            return NextResponse.json(result)
+        }
         const result = await prisma.$transaction(async (tx) => {
             await tx.$executeRaw`SELECT set_config('app.actor_id', ${adminCheck.session!.user.id}, true)`
             // 1. The whitelist row (source of truth for the desktop check).
@@ -88,6 +140,7 @@ export async function PATCH(
 
         return NextResponse.json({ ...result.updated, syncedOrders: result.syncedOrders })
     } catch (error: unknown) {
+        if (error instanceof BundleError) return NextResponse.json({ error: error.code }, { status: error.status })
         // Unique [ign, product_id] collision — renamed onto an existing row.
         if ((error as { code?: string })?.code === "P2002") {
             return NextResponse.json(
@@ -113,9 +166,10 @@ export async function DELETE(
 
         const existing = await prisma.user_whitelist_access.findUnique({ where: { id } })
         if (!existing) return NextResponse.json({ error: "Record not found" }, { status: 404 })
-        await prisma.$transaction(async tx => {
+        await retryAbortedTransaction(() => prisma.$transaction(async tx => {
             await tx.$executeRaw`SELECT set_config('app.actor_id', ${adminCheck.session!.user.id}, true)`
             await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${existing.product_id + ':' + existing.ign.toLowerCase()}, 0))`
+            await retireManualBundles(tx, existing.product_id, existing.ign)
             // Retiring the reservation marker is durable even if another
             // purchase or trial later recreates this player/game whitelist.
             await tx.orders.updateMany({
@@ -123,7 +177,7 @@ export async function DELETE(
                 data: { whitelist_status: "revoked", manual_note: RETIRED_EMAIL_WHITELIST_NOTE },
             })
             await tx.user_whitelist_access.delete({ where: { id } })
-        })
+        }, { maxWait: 10000, timeout: 60000 }))
 
         return NextResponse.json({ message: "Whitelist record deleted successfully" })
     } catch (error) {

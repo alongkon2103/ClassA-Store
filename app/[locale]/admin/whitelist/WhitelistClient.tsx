@@ -25,7 +25,7 @@ type WhitelistItem = {
     products: { id: string; name_th: string; name_en: string }
 }
 
-type ProductOption = { id: string; name_th: string; name_en: string }
+type ProductOption = { id: string; name_th: string; name_en: string; type: string; bundle_all_ac_games?: boolean; bundle_includes_tikkies?: boolean }
 
 type UserOption = {
     id: string
@@ -104,6 +104,8 @@ export default function WhitelistClient({
     const selectedUser = useMemo(() =>
         users.find(u => u.id === formData.userId),
     [users, formData.userId])
+    const selectedProduct = products.find(product => product.id === formData.productId)
+    const isBundle = selectedProduct?.type === 'bundle'
 
     const filtered = useMemo(() => {
         return whitelist.filter((item) =>
@@ -524,6 +526,11 @@ export default function WhitelistClient({
                                             </option>
                                         ))}
                                     </select>
+                                    {isBundle && <p className="mt-2 rounded-xl border border-accent/20 bg-accent/5 p-3 text-[12px] leading-relaxed text-text-muted">
+                                        {isThai
+                                            ? `${selectedProduct?.bundle_all_ac_games ? 'ให้สิทธิ์ทุกเกม A Class รวมเกมใหม่ที่เพิ่มระหว่างสมาชิกยังไม่หมดอายุ' : 'ให้สิทธิ์ทุกเกมในแพ็กเกจ'}${selectedProduct?.bundle_includes_tikkies ? ' พร้อม Tikkies ครบทุกฟังก์ชัน' : ''} ตามระยะเวลาที่ตั้งด้านล่าง`
+                                            : `${selectedProduct?.bundle_all_ac_games ? 'All A Class games, including new releases while membership is active' : 'Every game in this package'}${selectedProduct?.bundle_includes_tikkies ? ', plus full Tikkies features' : ''}, for the duration selected below.`}
+                                    </p>}
                                 </div>
 
                                 {/* Permanent toggle */}
@@ -548,7 +555,7 @@ export default function WhitelistClient({
                                 </div>
 
                                 {/* Options Row */}
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className={`grid ${isBundle ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
                                     <div>
                                         <label htmlFor="whitelist-duration" className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">
                                             {t("duration")}
@@ -565,7 +572,7 @@ export default function WhitelistClient({
                                             placeholder={formData.isPermanent ? "∞" : "30"}
                                         />
                                     </div>
-                                    <div className="flex flex-col">
+                                    {!isBundle && <div className="flex flex-col">
                                         <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("is_premium")}</label>
                                         <button
                                             type="button"
@@ -580,7 +587,7 @@ export default function WhitelistClient({
                                         >
                                             {formData.isPremium ? "★ PREMIUM" : "NORMAL"}
                                         </button>
-                                    </div>
+                                    </div>}
                                 </div>
 
                                 {/* Footer */}

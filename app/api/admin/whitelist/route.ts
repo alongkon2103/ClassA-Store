@@ -3,6 +3,9 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 import { computeWhitelistExpiry } from "@/lib/formatExpiresAt"
+import { BundleError } from "@/lib/bundles"
+import { grantManualBundle } from "@/lib/manualBundleGrant"
+import { retryAbortedTransaction } from "@/lib/transactionRetry"
 import { EMAIL_WHITELIST_NOTE, RETIRED_EMAIL_WHITELIST_NOTE, literalInsensitive, parseWhitelistGrant, resolveEmailWhitelistRecipient, WhitelistGrantInputError, withPendingWhitelistEmails } from "@/lib/manualWhitelistEmail"
 
 export async function GET() {
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
         const expiresAt = computeWhitelistExpiry(durationDays, !!isPermanent)
 
         const robloxBinding = await resolveTikkiesBinding(ign)
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await retryAbortedTransaction(() => prisma.$transaction(async (tx) => {
             await tx.$executeRaw`SELECT set_config('app.actor_id', ${adminCheck.session!.user.id}, true)`
             const recipientId = userId ?? (email ? await resolveEmailWhitelistRecipient(tx, email) : null)
             // Serialize updates of the same player/game, including concurrent
@@ -53,6 +56,12 @@ export async function POST(req: Request) {
             await tx.orders.updateMany({
                 where: { user_id: null, product_id: productId, whitelisted_username: literalInsensitive(ign), manual_note: EMAIL_WHITELIST_NOTE, payment_method: "admin_manual", order_type: "TRIAL" },
                 data: { whitelist_status: "revoked", manual_note: RETIRED_EMAIL_WHITELIST_NOTE },
+            })
+            const product = await tx.products.findUnique({ where: { id: productId }, select: { type: true } })
+            if (!product) throw new WhitelistGrantInputError('Selected product does not exist')
+            if (product.type === 'bundle') return grantManualBundle(tx, {
+                productId, userId: recipientId, email, ign, durationDays, isPermanent,
+                actorId: adminCheck.session!.user.id, robloxBinding,
             })
             // 1. Create Order
             const order = await tx.orders.create({
@@ -96,10 +105,11 @@ export async function POST(req: Request) {
             })
 
             return { order, whitelist }
-        }, { isolationLevel: 'ReadCommitted' })
+        }, { isolationLevel: 'ReadCommitted', maxWait: 10000, timeout: 60000 }))
 
         return NextResponse.json({ ...result.whitelist, pendingEmail: result.order.user_id ? null : email })
     } catch (error) {
+        if (error instanceof BundleError) return NextResponse.json({ error: error.code }, { status: error.status })
         if (error instanceof WhitelistGrantInputError) return NextResponse.json({ error: error.message }, { status: 400 })
         if ((error as { code?: string })?.code === "P2003") return NextResponse.json({ error: "Selected user or product does not exist" }, { status: 400 })
         console.error("[WHITELIST_POST]", { code: (error as { code?: string })?.code ?? "unknown" })

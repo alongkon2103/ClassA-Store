@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma"
 import { findAccountUserId, findExistingUserId } from "@/lib/authIdentity"
 import { normalizeEmail, verifiedProviderEmail } from "@/lib/verifiedEmail"
 import { claimEmailWhitelistOrders } from "@/lib/manualWhitelistEmail"
+import { retryAbortedTransaction } from "@/lib/transactionRetry"
 
 function reportAuthFailure(context: string, error: unknown) {
     const code = (error as { code?: unknown })?.code
@@ -149,7 +150,7 @@ export const authOptions: AuthOptions = {
                 // independent operations must not make provider login fail.
                 if (email && account.provider !== "dev-admin") {
                     try {
-                        await claimEmailWhitelistOrders(prisma, dbUser.id, email)
+                        await retryAbortedTransaction(() => prisma.$transaction(tx => claimEmailWhitelistOrders(tx, dbUser.id, email), { isolationLevel: 'ReadCommitted', maxWait: 10000, timeout: 60000 }))
                     } catch (error) {
                         // An optional entitlement operation must not reject a
                         // successfully authenticated provider account.

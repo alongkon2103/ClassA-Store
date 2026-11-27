@@ -54,15 +54,17 @@ export async function materializeBundleGamesInTransaction(
   tx: Prisma.TransactionClient,
   parent: GrantParent,
   items: BundleSnapshot['items'],
-  opts: { expiresAt: Date; paidAt: Date; now: Date; robloxBinding?: Partial<RobloxBinding> },
+  opts: { expiresAt: Date; paidAt: Date; now: Date; robloxBinding?: Partial<RobloxBinding>; allowUnclaimedEmail?: boolean },
 ): Promise<number> {
-  if (!parent.user_id) throw new BundleError('bundle_buyer_required')
+  if (!parent.user_id && !opts.allowUnclaimedEmail) throw new BundleError('bundle_buyer_required')
   if (items.some(item => item.productId === parent.product_id)) throw new BundleError('bundle_invalid_snapshot')
   const ign = parent.whitelisted_username?.trim()
   if (items.some(item => item.type === 'roblox_whitelist') && (!ign || !/^[A-Za-z0-9_]{3,20}$/.test(ign))) throw new BundleError('bundle_roblox_username_required')
   const existing = await tx.orders.findMany({ where: { bundle_parent_id: parent.id }, select: { product_id: true } })
   const existingIds = new Set(existing.map(child => child.product_id))
-  const missing = items.filter(item => !existingIds.has(item.productId)).sort((a, b) => a.productId.localeCompare(b.productId))
+  // Roblox is bound to IGN immediately. Account-bound desktop rights are
+  // materialized after the reserved mailbox has a verified account owner.
+  const missing = items.filter(item => !existingIds.has(item.productId) && (parent.user_id || item.type !== 'desktop_program')).sort((a, b) => a.productId.localeCompare(b.productId))
   const { expiresAt, now } = opts
   // Every grant and reversal uses the same product ordering, before row locks.
   for (const item of missing) {
@@ -71,6 +73,7 @@ export async function materializeBundleGamesInTransaction(
   for (const item of missing) {
     let metadata: BundleGrantMetadata | BundleRobloxGrantMetadata
     if (item.type === 'desktop_program') {
+      if (!parent.user_id) throw new BundleError('bundle_buyer_required')
       await tx.$queryRaw`SELECT id FROM user_program_access WHERE user_id = ${parent.user_id}::uuid AND product_id = ${item.productId}::uuid FOR UPDATE`
       const current = await tx.user_program_access.findUnique({ where: { user_id_product_id: { user_id: parent.user_id, product_id: item.productId } } })
       const priorOrders = await tx.orders.findMany({ where: { user_id: parent.user_id, product_id: item.productId }, select: { status: true, whitelist_status: true, expires_at: true, manual_note: true } })
@@ -137,7 +140,7 @@ export async function lockBundleEntitlement(tx: Prisma.TransactionClient, key: s
 export async function fulfillBundleInTransaction(
   tx: Prisma.TransactionClient,
   parentId: string,
-  opts: { robloxBinding?: Partial<RobloxBinding>; now?: Date } = {},
+  opts: { robloxBinding?: Partial<RobloxBinding>; now?: Date; allowUnclaimedEmail?: boolean } = {},
 ): Promise<'ok' | 'already_paid' | 'missing'> {
   await tx.$queryRaw`SELECT id FROM orders WHERE id = ${parentId}::uuid FOR UPDATE`
   const parent = await tx.orders.findUnique({ where: { id: parentId } })
@@ -149,7 +152,8 @@ export async function fulfillBundleInTransaction(
   const now = opts.now ?? new Date()
   const expiresAt = snapshot.durationType === 'permanent' ? PERMANENT : new Date(now.getTime() + snapshot.durationDays! * 86400000)
   if (!Number.isFinite(expiresAt.getTime()) || expiresAt > PERMANENT) throw new BundleError('bundle_invalid_duration')
-  await materializeBundleGamesInTransaction(tx, parent, items, { expiresAt, paidAt: now, now, robloxBinding: opts.robloxBinding })
+  const allowUnclaimedEmail = opts.allowUnclaimedEmail === true && parent.payment_method === 'admin_manual' && parent.order_type === 'BUNDLE' && parent.manual_note === 'aclass:whitelist-email:v1' && !!parent.buyer_label
+  await materializeBundleGamesInTransaction(tx, parent, items, { expiresAt, paidAt: now, now, robloxBinding: opts.robloxBinding, allowUnclaimedEmail })
   await tx.orders.update({ where: { id: parentId }, data: {
     status: 'paid', paid_at: now, fulfilled_at: now, expires_at: expiresAt, whitelist_status: 'whitelisted', is_premium_order: false,
     ...opts.robloxBinding,

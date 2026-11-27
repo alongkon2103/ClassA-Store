@@ -1,5 +1,6 @@
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma, PrismaClient } from '@prisma/client'
 import { normalizeEmail } from './verifiedEmail'
+import { syncBundleMembershipInTransaction } from './bundleMembershipSync'
 
 export const EMAIL_WHITELIST_NOTE = 'aclass:whitelist-email:v1'
 export const RETIRED_EMAIL_WHITELIST_NOTE = 'aclass:whitelist-email:v1:retired'
@@ -38,11 +39,13 @@ export function parseWhitelistGrant(input: unknown) {
   return { userId: userId as string | null, email, productId: body.productId, ign: body.ign.trim(), isPremium: body.isPremium === true, isPermanent, durationDays: durationDays as number }
 }
 
-/** A single conditional UPDATE makes claims idempotent and never transfers assigned orders. */
-export async function claimEmailWhitelistOrders(db: Pick<PrismaClient,'$executeRaw'>, userId: string, address: string): Promise<number> {
+/** Call in a READ COMMITTED transaction after verified OAuth. Conditional updates
+ * never transfer assigned orders; desktop materialization commits with ownership. */
+export async function claimEmailWhitelistOrders(db: Prisma.TransactionClient, userId: string, address: string): Promise<number> {
   const email = normalizeEmail(address)
   if (!email || !uuid.test(userId)) throw new WhitelistGrantInputError('Invalid claim identity')
-  return db.$executeRaw`
+  await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${whitelistEmailLockKey(email)}, 0))`
+  const trials = await db.$executeRaw`
     UPDATE orders AS o SET user_id = ${userId}::uuid
     WHERE o.user_id IS NULL
       AND lower(btrim(o.buyer_label)) = ${email}
@@ -55,12 +58,31 @@ export async function claimEmailWhitelistOrders(db: Pick<PrismaClient,'$executeR
         WHERE w.product_id = o.product_id AND lower(w.ign) = lower(o.whitelisted_username)
           AND w.expires_at > CURRENT_TIMESTAMP
       )`
+  // Only the verified mailbox owner can claim an unassigned, unexpired admin
+  // reservation. Parent and game ownership commit with desktop materialization.
+  const parents = await db.$queryRaw<{ id: string }[]>`
+    UPDATE orders AS o SET user_id = ${userId}::uuid
+    WHERE o.user_id IS NULL AND lower(btrim(o.buyer_label)) = ${email}
+      AND o.manual_note = ${EMAIL_WHITELIST_NOTE}
+      AND o.payment_method = 'admin_manual' AND o.order_type = 'BUNDLE'
+      AND o.bundle_parent_id IS NULL AND o.fulfilled_at IS NOT NULL
+      AND o.status = 'paid' AND o.whitelist_status = 'whitelisted'
+      AND o.expires_at > CURRENT_TIMESTAMP
+      AND EXISTS (SELECT 1 FROM user_whitelist_access AS w
+        WHERE w.product_id = o.product_id AND lower(w.ign) = lower(o.whitelisted_username)
+          AND w.expires_at > CURRENT_TIMESTAMP)
+    RETURNING o.id`
+  for (const parent of parents) {
+    await db.orders.updateMany({ where: { bundle_parent_id: parent.id, user_id: null }, data: { user_id: userId } })
+    await syncBundleMembershipInTransaction(db, parent.id, { includeFixed: true })
+  }
+  return trials + parents.length
 }
 
 export async function withPendingWhitelistEmails<T extends { ign: string; product_id: string }>(db: Pick<PrismaClient,'orders'>, rows: T[]): Promise<(T & { pendingEmail: string | null })[]> {
   if (!rows.length) return []
   const pending = await db.orders.findMany({
-    where: { user_id: null, manual_note: EMAIL_WHITELIST_NOTE, payment_method: 'admin_manual', order_type: 'TRIAL', status: 'paid', whitelist_status: 'whitelisted', expires_at: { gt: new Date() } },
+    where: { user_id: null, manual_note: EMAIL_WHITELIST_NOTE, payment_method: 'admin_manual', order_type: { in: ['TRIAL', 'BUNDLE'] }, status: 'paid', whitelist_status: 'whitelisted', expires_at: { gt: new Date() } },
     select: { buyer_label: true, product_id: true, whitelisted_username: true },
     orderBy: { created_at: 'desc' },
   })

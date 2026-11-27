@@ -7,7 +7,7 @@ import {resolveTikkiesCustomer} from './integrations/tikkiesCustomer'
 import {browserBuyer} from './tikkiesBrowserCheckout'
 
 /** Run after canonical customer linking commits, in a separate READ COMMITTED transaction. */
-export async function claimNativeEmailWhitelist(db:Pick<Prisma.TransactionClient,'$queryRaw'|'$executeRaw'|'users'|'accounts'|'products'>,customerId:string,identityValue:unknown,identityValues:unknown):Promise<number>{
+export async function claimNativeEmailWhitelist(db:Prisma.TransactionClient,customerId:string,identityValue:unknown,identityValues:unknown):Promise<number>{
  const identity=browserIdentity(identityValue),email=identity.verifiedEmail??null
  try{assertFreshMailbox(identity,email)}catch(error){
   if(error instanceof TikkiesError&&error.code==='identity_verification_required')return 0
