@@ -425,7 +425,9 @@ export default function WhitelistClient({
                                         <input id="whitelist-email" required type="email" autoComplete="email" maxLength={254} value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} aria-describedby="whitelist-email-help" className="w-full bg-white/[0.03] border border-accent/15 rounded-xl px-4 py-3 text-[13px] outline-none focus:border-accent/40 transition-all" />
                                         <p id="whitelist-email-help" className="mt-1.5 text-[11px] text-text-muted">{isThai ? "มีบัญชีแล้วจะได้รับสิทธิ์ทันที หากยังไม่มี ให้เข้าสู่ระบบ Tikkies ด้วย Google หรือ Discord ที่ยืนยันอีเมลนี้ ไม่ต้องล็อกอินเว็บร้านก่อน" : "Existing accounts receive access immediately. New users can claim it in Tikkies with Google or Discord using this verified email. No store website login is required."}</p>
                                     </div>}
-                                    <p className="text-[11px] text-text-muted">{isThai ? "ระยะเวลาสิทธิ์เริ่มทันทีที่แอดมินบันทึก ไม่ได้เริ่มเมื่อผู้รับเข้าสู่ระบบ" : "The access duration starts immediately when the admin saves the grant, before the recipient signs in."}</p>
+                                    <p className="text-[11px] text-text-muted">{isBundle
+                                        ? isThai ? "สมาชิกเดิมที่ยังไม่หมดอายุจะบวกวันต่อจากวันหมดอายุเดิม สมาชิกใหม่หรือหมดอายุแล้วเริ่มนับเมื่อบันทึก ไม่รอเข้าสู่ระบบครั้งแรก" : "Active membership adds days from its existing expiry. New or expired membership starts when saved, before the recipient signs in."
+                                        : isThai ? "ระยะเวลาสิทธิ์เริ่มทันทีที่แอดมินบันทึก ไม่ได้เริ่มเมื่อผู้รับเข้าสู่ระบบ" : "The access duration starts immediately when the admin saves the grant, before the recipient signs in."}</p>
                                 </>}
                                 {/* Select User — add mode only (whitelist rows have no user_id) */}
                                 {!editingId && recipientMode === "existing" && (
@@ -558,7 +560,7 @@ export default function WhitelistClient({
                                 <div className={`grid ${isBundle ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
                                     <div>
                                         <label htmlFor="whitelist-duration" className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">
-                                            {t("duration")}
+                                            {isBundle && !editingId ? isThai ? "จำนวนวันที่เพิ่ม" : "Days to add" : t("duration")}
                                         </label>
                                         <input
                                             id="whitelist-duration"

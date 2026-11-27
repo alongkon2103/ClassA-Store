@@ -1,8 +1,7 @@
 import type { Prisma } from '@prisma/client'
-import { BundleError, parseBundleSnapshot, readEligibleAcGames, type BundleSnapshot } from './bundles'
+import { BundleError, bundleTermExpiry, parseBundleSnapshot, readEligibleAcGames, type BundleSnapshot } from './bundles'
 import type { RobloxBinding } from './integrations/tikkiesRoblox'
 
-const PERMANENT = new Date('9999-12-31T00:00:00Z')
 const TERMINAL = ['paid', 'refunded', 'revoked', 'cancelled', 'disputed', 'expired', 'blocked', 'banned']
 export const BUNDLE_BLOCKED_WHITELIST = ['removed', 'revoked', 'suspended', 'blocked', 'banned', 'rejected', 'expired']
 export type BundleGrantMetadata = {
@@ -150,8 +149,7 @@ export async function fulfillBundleInTransaction(
   const snapshot = parseBundleSnapshot(parent.bundle_snapshot)
   const items = snapshot.allAcGames ? [...new Map([...snapshot.items, ...await readEligibleAcGames(tx)].map(item => [item.productId, item])).values()] : snapshot.items
   const now = opts.now ?? new Date()
-  const expiresAt = snapshot.durationType === 'permanent' ? PERMANENT : new Date(now.getTime() + snapshot.durationDays! * 86400000)
-  if (!Number.isFinite(expiresAt.getTime()) || expiresAt > PERMANENT) throw new BundleError('bundle_invalid_duration')
+  const expiresAt = bundleTermExpiry(snapshot, now)
   const allowUnclaimedEmail = opts.allowUnclaimedEmail === true && parent.payment_method === 'admin_manual' && parent.order_type === 'BUNDLE' && parent.manual_note === 'aclass:whitelist-email:v1' && !!parent.buyer_label
   await materializeBundleGamesInTransaction(tx, parent, items, { expiresAt, paidAt: now, now, robloxBinding: opts.robloxBinding, allowUnclaimedEmail })
   await tx.orders.update({ where: { id: parentId }, data: {

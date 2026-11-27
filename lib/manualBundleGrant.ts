@@ -1,9 +1,10 @@
 import type { Prisma } from '@prisma/client'
-import { BundleError, freezeBundle, parseBundleSnapshot, type BundleSnapshot } from './bundles'
+import { BundleError, bundleTermExpiry, freezeBundle, parseBundleSnapshot, type BundleSnapshot } from './bundles'
 import { fulfillBundleInTransaction } from './bundleFulfillment'
 import { reverseBundleInTransaction } from './bundleReversal'
 import { EMAIL_WHITELIST_NOTE, RETIRED_EMAIL_WHITELIST_NOTE, literalInsensitive } from './manualWhitelistEmail'
 import type { RobloxBinding } from './integrations/tikkiesRoblox'
+import { normalizeEmail } from './verifiedEmail'
 
 export const MANUAL_BUNDLE_NOTE = 'aclass:whitelist-membership:v1'
 
@@ -30,14 +31,44 @@ export async function grantManualBundle(tx: Prisma.TransactionClient, input: {
   const product = await tx.products.findUnique({ where: { id: input.productId } })
   if (!product) throw new BundleError('bundle_invalid')
   if (product.type !== 'bundle' || product.is_consignment) throw new BundleError('bundle_invalid')
-  const snapshot = input.snapshot ? parseBundleSnapshot(input.snapshot) : await freezeBundle(tx, product, {
+  let snapshot = input.snapshot ? parseBundleSnapshot(input.snapshot) : await freezeBundle(tx, product, {
     id: 'admin-selected-term', product_id: product.id, is_active: true, variant_type: 'normal',
     duration_type: input.isPermanent ? 'permanent' : 'days', duration_days: input.isPermanent ? null : input.durationDays,
   })
   if (!input.userId && !input.email) throw new BundleError('bundle_buyer_required')
+  const now = input.now ?? new Date()
+  let recipientEmail = input.email
   if (input.userId) {
-    const buyer = await tx.users.findUnique({ where: { id: input.userId }, select: { nativeStatus: true } })
+    const buyer = await tx.users.findUnique({ where: { id: input.userId }, select: { nativeStatus: true, email: true } })
     if (!buyer || ['KICKED', 'BLOCKED', 'BANNED', 'SUSPENDED'].includes(buyer.nativeStatus.toUpperCase())) throw new BundleError('bundle_account_not_allowed')
+    recipientEmail ??= buyer.email
+  }
+  // A new POST adds time; PATCH supplies explicit frozen terms instead. Read
+  // only this recipient's valid parent terms, never aggregate game expiries.
+  if (!input.snapshot && snapshot.durationType === 'days') {
+    const owners: Prisma.ordersWhereInput[] = []
+    if (input.userId) owners.push({ user_id: input.userId })
+    const email = normalizeEmail(recipientEmail)
+    if (email) owners.push({ user_id: null, buyer_label: literalInsensitive(email), payment_method: 'admin_manual', manual_note: EMAIL_WHITELIST_NOTE })
+    const previous = await tx.orders.findMany({ where: {
+      product_id: product.id, whitelisted_username: literalInsensitive(input.ign),
+      order_type: 'BUNDLE', bundle_parent_id: null, status: 'paid', whitelist_status: 'whitelisted',
+      paid_at: { not: null, lte: now }, fulfilled_at: { not: null, lte: now }, expires_at: { gt: now },
+      OR: owners,
+    }, take: 1001 })
+    if (previous.length > 1000) throw new BundleError('bundle_membership_capacity_exceeded', 503)
+    let base = now.getTime()
+    for (const parent of previous) {
+      try {
+        const terms = parseBundleSnapshot(parent.bundle_snapshot)
+        base = Math.max(base, Math.min(parent.expires_at!.getTime(), bundleTermExpiry(terms, parent.fulfilled_at!).getTime()))
+      } catch { /* Invalid historical terms cannot manufacture remaining time. */ }
+    }
+    if (base === Date.parse('9999-12-31T00:00:00Z')) {
+      snapshot = { ...snapshot, durationType: 'permanent', durationDays: null }
+    } else if (base > now.getTime()) {
+      snapshot = parseBundleSnapshot({ ...snapshot, renewalBaseExpiresAt: new Date(base).toISOString() })
+    }
   }
   await retireManualBundles(tx, product.id, input.ign)
   const parent = await tx.orders.create({ data: {
@@ -56,7 +87,7 @@ export async function grantManualBundle(tx: Prisma.TransactionClient, input: {
       status: 'revoked', whitelist_status: 'revoked',
     } })
   }
-  await fulfillBundleInTransaction(tx, parent.id, { robloxBinding: input.robloxBinding, now: input.now, allowUnclaimedEmail: !input.userId })
+  await fulfillBundleInTransaction(tx, parent.id, { robloxBinding: input.robloxBinding, now, allowUnclaimedEmail: !input.userId })
   const order = await tx.orders.findUniqueOrThrow({ where: { id: parent.id } })
   const whitelist = await tx.user_whitelist_access.upsert({
     where: { ign_product_id: { ign: input.ign, product_id: product.id } },

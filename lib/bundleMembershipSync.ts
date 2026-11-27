@@ -1,5 +1,5 @@
 import type { Prisma } from '@prisma/client'
-import { parseBundleSnapshot, readEligibleAcGames } from './bundles'
+import { bundleTermExpiry, parseBundleSnapshot, readEligibleAcGames } from './bundles'
 import { BUNDLE_BLOCKED_WHITELIST, materializeBundleGamesInTransaction } from './bundleFulfillment'
 
 /** Add newly published AC games within the original purchased term. The caller
@@ -23,7 +23,7 @@ export async function syncBundleMembershipInTransaction(
     if (!buyer || ['KICKED', 'BLOCKED', 'BANNED', 'SUSPENDED'].includes((buyer.nativeStatus ?? '').toUpperCase())) return 0
   }
   // A mutable aggregate expiry can never lengthen the original snapshot term.
-  const originalExpiry = snapshot.durationType === 'permanent' ? new Date('9999-12-31T00:00:00Z') : new Date(parent.paid_at.getTime() + snapshot.durationDays! * 86400000)
+  const originalExpiry = bundleTermExpiry(snapshot, parent.fulfilled_at)
   const expiresAt = new Date(Math.min(parent.expires_at.getTime(), originalExpiry.getTime()))
   if (!Number.isFinite(expiresAt.getTime()) || expiresAt <= now) return 0
   const items = snapshot.allAcGames ? [...new Map([...snapshot.items, ...await readEligibleAcGames(tx)].map(item => [item.productId, item])).values()] : snapshot.items

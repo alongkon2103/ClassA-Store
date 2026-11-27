@@ -1,7 +1,7 @@
 import {resolveTikkiesCustomer} from './tikkiesCustomer'
 import type { Prisma } from '@prisma/client'
 import {createHash} from 'node:crypto'
-import { parseBundleSnapshot } from '../bundles'
+import { bundleTermExpiry, parseBundleSnapshot } from '../bundles'
 import { TikkiesError,parseIdentities,type Identity } from './tikkies'
 
 const PERMANENT = Date.parse('9999-12-31T00:00:00Z')
@@ -33,7 +33,7 @@ export async function readTikkiesMembership(db: Prisma.TransactionClient, value:
     try{
       const terms=parseBundleSnapshot(order.bundle_snapshot)
       if(terms.tikkiesMembership!==true)continue
-      const purchased=terms.durationType==='permanent'?PERMANENT:fulfilled+terms.durationDays!*86400000
+      const purchased=bundleTermExpiry(terms,order.fulfilled_at).getTime()
       const end=Math.min(recorded,purchased,PERMANENT)
       if(Number.isFinite(end) && end>now.getTime())expires=Math.max(expires,end)
     }catch{ /* Corrupt or legacy terms cannot manufacture a full-app grant. */ }

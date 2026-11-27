@@ -11,6 +11,8 @@ export type BundleSnapshot = {
   version: 1
   durationType: 'permanent' | 'days'
   durationDays: number | null
+  /** Server-frozen prior expiry when an admin adds days to active membership. */
+  renewalBaseExpiresAt?: string
   tikkiesMembership?: true
   allAcGames?: true
   items: { productId: string; nameTh: string; nameEn: string; type: 'roblox_whitelist' | 'desktop_program' }[]
@@ -82,6 +84,14 @@ function validateDuration(type: unknown, days: unknown) {
   if (type !== 'days' || typeof days !== 'number' || !Number.isInteger(days) || days < 1 || days > 2147483647 || Date.now() + days * DAY >= PERMANENT) throw new BundleError('bundle_invalid_duration')
 }
 
+/** One immutable term boundary for game fulfillment, future games and Tikkies. */
+export function bundleTermExpiry(snapshot: BundleSnapshot, fulfilledAt: Date): Date {
+  const base = snapshot.renewalBaseExpiresAt ? Date.parse(snapshot.renewalBaseExpiresAt) : fulfilledAt.getTime()
+  const end = snapshot.durationType === 'permanent' ? PERMANENT : Math.max(fulfilledAt.getTime(), base) + snapshot.durationDays! * DAY
+  if (!Number.isFinite(end) || end > PERMANENT) throw new BundleError('bundle_invalid_duration')
+  return new Date(end)
+}
+
 /** Validate immutable checkout terms; subsequent catalog edits cannot alter a purchase. */
 export async function freezeBundle(db: CatalogDb, product: BundleProductInput, variant: BundleVariantInput | null | undefined): Promise<BundleSnapshot> {
   if (product.type !== 'bundle' || product.is_consignment) throw new BundleError('bundle_invalid')
@@ -100,11 +110,15 @@ export function parseBundleSnapshot(value: unknown): BundleSnapshot {
   if (source.tikkiesMembership !== undefined && typeof source.tikkiesMembership !== 'boolean') throw new BundleError('bundle_invalid_snapshot')
   if (source.allAcGames !== undefined && typeof source.allAcGames !== 'boolean') throw new BundleError('bundle_invalid_snapshot')
   validateDuration(source.durationType, source.durationDays)
+  if (source.renewalBaseExpiresAt !== undefined) {
+    const base = typeof source.renewalBaseExpiresAt === 'string' ? Date.parse(source.renewalBaseExpiresAt) : NaN
+    if (source.durationType !== 'days' || !Number.isFinite(base) || new Date(base).toISOString() !== source.renewalBaseExpiresAt || base + (source.durationDays as number) * DAY >= PERMANENT) throw new BundleError('bundle_invalid_snapshot')
+  }
   const ids = validateBundleProductIds(source.items.map(item => item && typeof item === 'object' ? (item as Record<string, unknown>).productId : null), undefined, source.allAcGames === true ? 500 : 50)
   const items = source.items.map((item, index) => {
     const row = item as Record<string, unknown>
     if (typeof row.nameTh !== 'string' || typeof row.nameEn !== 'string' || !['roblox_whitelist', 'desktop_program'].includes(row.type as string)) throw new BundleError('bundle_invalid_snapshot')
     return { productId: ids[index], nameTh: row.nameTh, nameEn: row.nameEn, type: row.type as BundleSnapshot['items'][number]['type'] }
   })
-  return { version: 1, durationType: source.durationType as BundleSnapshot['durationType'], durationDays: source.durationDays as number | null, ...(source.tikkiesMembership === true ? { tikkiesMembership: true as const } : {}), ...(source.allAcGames === true ? { allAcGames: true as const } : {}), items }
+  return { version: 1, durationType: source.durationType as BundleSnapshot['durationType'], durationDays: source.durationDays as number | null, ...(source.renewalBaseExpiresAt !== undefined ? { renewalBaseExpiresAt: source.renewalBaseExpiresAt as string } : {}), ...(source.tikkiesMembership === true ? { tikkiesMembership: true as const } : {}), ...(source.allAcGames === true ? { allAcGames: true as const } : {}), items }
 }

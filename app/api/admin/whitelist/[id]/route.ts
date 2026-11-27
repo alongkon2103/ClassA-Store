@@ -93,7 +93,7 @@ export async function PATCH(
                     actorId: adminCheck.session!.user.id, isPermanent: changeExpiry ? isPermanent === true : terms.durationType === 'permanent',
                     durationDays: changeExpiry ? durationDays : terms.durationDays ?? 0,
                     now: changeExpiry ? undefined : parent.fulfilled_at!,
-                    snapshot: { ...terms, ...(changeExpiry ? { durationType: isPermanent ? 'permanent' as const : 'days' as const, durationDays: isPermanent ? null : durationDays } : {}) },
+                    snapshot: { ...terms, ...(changeExpiry ? { durationType: isPermanent ? 'permanent' as const : 'days' as const, durationDays: isPermanent ? null : durationDays, renewalBaseExpiresAt: undefined } : {}) },
                     excludedProductIds,
                     robloxBinding: { roblox_user_id: parent.roblox_user_id, roblox_username: parent.roblox_username, roblox_display_name: parent.roblox_display_name, roblox_resolved_for: parent.roblox_resolved_for, ...robloxBinding },
                 })
