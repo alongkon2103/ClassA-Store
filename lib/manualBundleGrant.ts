@@ -1,10 +1,10 @@
 import type { Prisma } from '@prisma/client'
-import { BundleError, bundleTermExpiry, freezeBundle, parseBundleSnapshot, type BundleSnapshot } from './bundles'
+import { BundleError, freezeBundle, parseBundleSnapshot, type BundleSnapshot } from './bundles'
 import { fulfillBundleInTransaction } from './bundleFulfillment'
 import { reverseBundleInTransaction } from './bundleReversal'
 import { EMAIL_WHITELIST_NOTE, RETIRED_EMAIL_WHITELIST_NOTE, literalInsensitive } from './manualWhitelistEmail'
 import type { RobloxBinding } from './integrations/tikkiesRoblox'
-import { normalizeEmail } from './verifiedEmail'
+import { renewBundleSnapshot } from './bundleRenewal'
 
 export const MANUAL_BUNDLE_NOTE = 'aclass:whitelist-membership:v1'
 
@@ -45,31 +45,7 @@ export async function grantManualBundle(tx: Prisma.TransactionClient, input: {
   }
   // A new POST adds time; PATCH supplies explicit frozen terms instead. Read
   // only this recipient's valid parent terms, never aggregate game expiries.
-  if (!input.snapshot && snapshot.durationType === 'days') {
-    const owners: Prisma.ordersWhereInput[] = []
-    if (input.userId) owners.push({ user_id: input.userId })
-    const email = normalizeEmail(recipientEmail)
-    if (email) owners.push({ user_id: null, buyer_label: literalInsensitive(email), payment_method: 'admin_manual', manual_note: EMAIL_WHITELIST_NOTE })
-    const previous = await tx.orders.findMany({ where: {
-      product_id: product.id, whitelisted_username: literalInsensitive(input.ign),
-      order_type: 'BUNDLE', bundle_parent_id: null, status: 'paid', whitelist_status: 'whitelisted',
-      paid_at: { not: null, lte: now }, fulfilled_at: { not: null, lte: now }, expires_at: { gt: now },
-      OR: owners,
-    }, take: 1001 })
-    if (previous.length > 1000) throw new BundleError('bundle_membership_capacity_exceeded', 503)
-    let base = now.getTime()
-    for (const parent of previous) {
-      try {
-        const terms = parseBundleSnapshot(parent.bundle_snapshot)
-        base = Math.max(base, Math.min(parent.expires_at!.getTime(), bundleTermExpiry(terms, parent.fulfilled_at!).getTime()))
-      } catch { /* Invalid historical terms cannot manufacture remaining time. */ }
-    }
-    if (base === Date.parse('9999-12-31T00:00:00Z')) {
-      snapshot = { ...snapshot, durationType: 'permanent', durationDays: null }
-    } else if (base > now.getTime()) {
-      snapshot = parseBundleSnapshot({ ...snapshot, renewalBaseExpiresAt: new Date(base).toISOString() })
-    }
-  }
+  if (!input.snapshot) snapshot = await renewBundleSnapshot(tx, snapshot, { productId: product.id, userId: input.userId, email: recipientEmail, ign: input.ign, now })
   await retireManualBundles(tx, product.id, input.ign)
   const parent = await tx.orders.create({ data: {
     product_id: product.id, user_id: input.userId, recorded_by_id: input.actorId,

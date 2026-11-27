@@ -25,7 +25,7 @@ export async function fulfillPaidBundleOrder(orderId: string): Promise<"ok" | "a
     }
     if (earning) await tx.affiliate_earnings.create({ data: earning })
     return outcome
-  }, { maxWait: 10000, timeout: 60000 }))
+  }, { isolationLevel: 'ReadCommitted', maxWait: 10000, timeout: 60000 }))
   if (result === "ok") {
     await awardPointsForOrder(orderId)
     if (earning) await notify({ userId: earning.affiliate_user_id, type: "commission_earned", data: { amount: Number(earning.commission_amount) }, link: "/affiliate" })

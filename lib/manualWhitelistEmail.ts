@@ -1,9 +1,9 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { normalizeEmail } from './verifiedEmail'
 import { syncBundleMembershipInTransaction } from './bundleMembershipSync'
+import { EMAIL_WHITELIST_NOTE } from './whitelistGrantIdentity'
+export { EMAIL_WHITELIST_NOTE, RETIRED_EMAIL_WHITELIST_NOTE, literalInsensitive } from './whitelistGrantIdentity'
 
-export const EMAIL_WHITELIST_NOTE = 'aclass:whitelist-email:v1'
-export const RETIRED_EMAIL_WHITELIST_NOTE = 'aclass:whitelist-email:v1:retired'
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 export class WhitelistGrantInputError extends Error {}
 export function whitelistEmailLockKey(email: string) { return EMAIL_WHITELIST_NOTE + ':' + email }
@@ -17,11 +17,6 @@ export async function resolveEmailWhitelistRecipient(db: Pick<PrismaClient,'$exe
   if (matches.length > 1) throw new WhitelistGrantInputError('This email matches multiple accounts. Select the intended existing account instead.')
   return matches[0]?.id ?? null
 }
-/** Prisma PostgreSQL insensitive equals is ILIKE, so escape its pattern syntax. */
-export function literalInsensitive(value: string) {
-  return { equals: value.replace(/[\\%_]/g, character => '\\' + character), mode: 'insensitive' as const }
-}
-
 export function parseWhitelistGrant(input: unknown) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new WhitelistGrantInputError('Invalid request')
   const body = input as Record<string, unknown>

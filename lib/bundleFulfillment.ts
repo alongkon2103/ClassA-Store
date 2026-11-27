@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { BundleError, bundleTermExpiry, parseBundleSnapshot, readEligibleAcGames, type BundleSnapshot } from './bundles'
 import type { RobloxBinding } from './integrations/tikkiesRoblox'
+import { renewBundleSnapshot } from './bundleRenewal'
 
 const TERMINAL = ['paid', 'refunded', 'revoked', 'cancelled', 'disputed', 'expired', 'blocked', 'banned']
 export const BUNDLE_BLOCKED_WHITELIST = ['removed', 'revoked', 'suspended', 'blocked', 'banned', 'rejected', 'expired']
@@ -146,9 +147,20 @@ export async function fulfillBundleInTransaction(
   if (!parent) return 'missing'
   // Children are never a payment entry point, even if someone makes one pending.
   if (parent.bundle_parent_id || parent.order_type === 'BUNDLE_GAME' || TERMINAL.includes(parent.status) || BUNDLE_BLOCKED_WHITELIST.includes(parent.whitelist_status ?? '')) return 'already_paid'
-  const snapshot = parseBundleSnapshot(parent.bundle_snapshot)
-  const items = snapshot.allAcGames ? [...new Map([...snapshot.items, ...await readEligibleAcGames(tx)].map(item => [item.productId, item])).values()] : snapshot.items
+  let snapshot = parseBundleSnapshot(parent.bundle_snapshot)
+  const renew = parent.order_type === 'BUNDLE' && parent.payment_method !== 'admin_manual'
+  if (renew) {
+    if (!parent.user_id) throw new BundleError('bundle_buyer_required')
+    // Same key as admin grants. Separate purchases must observe each other's
+    // committed term; duplicate callbacks have already hit the paid guard above.
+    await lockBundleEntitlement(tx, `${parent.product_id}:${parent.whitelisted_username?.trim().toLowerCase() ?? ''}`)
+  }
   const now = opts.now ?? new Date()
+  if (renew) {
+    snapshot = await renewBundleSnapshot(tx, snapshot, { productId: parent.product_id, userId: parent.user_id, ign: parent.whitelisted_username?.trim() ?? '', now })
+    await tx.orders.update({ where: { id: parentId }, data: { bundle_snapshot: snapshot } })
+  }
+  const items = snapshot.allAcGames ? [...new Map([...snapshot.items, ...await readEligibleAcGames(tx)].map(item => [item.productId, item])).values()] : snapshot.items
   const expiresAt = bundleTermExpiry(snapshot, now)
   const allowUnclaimedEmail = opts.allowUnclaimedEmail === true && parent.payment_method === 'admin_manual' && parent.order_type === 'BUNDLE' && parent.manual_note === 'aclass:whitelist-email:v1' && !!parent.buyer_label
   await materializeBundleGamesInTransaction(tx, parent, items, { expiresAt, paidAt: now, now, robloxBinding: opts.robloxBinding, allowUnclaimedEmail })

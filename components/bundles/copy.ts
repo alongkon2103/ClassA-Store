@@ -20,7 +20,7 @@ export function bundleCopy(locale: string) {
     step2: "สมัครสมาชิกรายเดือน", step2Body: "รับสิทธิ์เล่นเกม 30 วัน พร้อมระบุชื่อ Roblox สำหรับเกม Roblox ในแพ็กเกจ",
     step3: "เลือกเกม แล้วเริ่มไลฟ์", step3Body: "หลังชำระเงิน สิทธิ์เกมจะผูกกับบัญชีที่สมัคร เปิดเกมของฉันเพื่อเลือกเกมที่ต้องการเล่น",
     faqTitle: "คำถามเกี่ยวกับสมาชิก", faq1: "สมัครสมาชิกแล้วได้รับอะไรบ้าง?", faq1Body: "คุณจะได้รับสิทธิ์ทุกเกมที่แสดงในแพ็กเกจสมาชิกเป็นเวลา 30 วัน และใช้เกมเหล่านี้ร่วมกับ Tikkies ได้ผ่านบัญชีเดียวกับที่สมัคร",
-    faq2: "มีการตัดเงินต่ออายุอัตโนมัติไหม?", faq2Body: "ไม่มีการตัดเงินอัตโนมัติ สมาชิกใช้งานได้ 30 วันหลังชำระเงินสำเร็จ และสมัครรอบใหม่ได้เมื่อพร้อม หากมีสิทธิ์เกมเดิมที่ยาวกว่าอยู่แล้ว สิทธิ์เดิมจะไม่ถูกลดลง",
+    faq2: "มีการตัดเงินต่ออายุอัตโนมัติไหม?", faq2Body: "ไม่มีการตัดเงินอัตโนมัติ ต่ออายุเองเมื่อพร้อม หากซื้อสมาชิกเดิมซ้ำสำหรับบัญชีและชื่อผู้เล่นเดิมก่อนหมดอายุ จะบวกวันต่อจากวันหมดอายุเดิม หากหมดอายุแล้วจะเริ่มนับเมื่อชำระเงินสำเร็จ สิทธิ์เกมและ Tikkies ในแพ็กเกจหมดอายุพร้อมกัน ส่วนสิทธิ์เกมที่ซื้อแยกและยาวกว่าจะไม่ถูกลดลง",
     faq3: "ดาวน์โหลดโปรแกรมฟรีแล้วได้เล่นทุกเกมเลยไหม?", faq3Body: "การดาวน์โหลดโปรแกรมไม่รวมสิทธิ์เกมในแพ็กเกจ สมาชิกจะได้รับสิทธิ์ทุกเกมที่แสดง ส่วนเกมที่คุณมีสิทธิ์อยู่แล้วใช้งานได้ตามสิทธิ์เดิม",
     checkoutTitle: "ยืนยันการสมัครสมาชิก", confirmMembership: "ยืนยันสมัครสมาชิก", previewMembership: "ทดลองสมัครบน localhost — ไม่เก็บเงินจริง",
   } : {
@@ -44,7 +44,7 @@ export function bundleCopy(locale: string) {
     step2: "Join the monthly membership", step2Body: "Get 30 days of access. Enter your Roblox username for the Roblox games in the package.",
     step3: "Choose a game and go live", step3Body: "After payment, game access belongs to your membership account. Open My games and choose what to play.",
     faqTitle: "Membership questions", faq1: "What does membership include?", faq1Body: "You receive every game listed in the membership package for 30 days, including access through Tikkies using your membership account.",
-    faq2: "Will I be charged automatically?", faq2Body: "No automatic renewal. Membership lasts 30 days after successful payment. Join again when you are ready. Existing longer game access you own will not be shortened.",
+    faq2: "Will I be charged automatically?", faq2Body: "No automatic charge. Renew when you are ready. Buying the same membership for the same account and player before expiry adds days from the existing expiry. Expired membership starts when payment succeeds. Package game access and full Tikkies share the same expiry. Longer game access purchased separately is preserved.",
     faq3: "Does the free app download include all games?", faq3Body: "The app download does not include membership game access. Members receive every listed game. Games you already own remain available under their existing access terms.",
     checkoutTitle: "Confirm membership", confirmMembership: "Confirm membership", previewMembership: "Test membership on localhost — no real charge",
   }
