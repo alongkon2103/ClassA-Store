@@ -701,6 +701,7 @@
     "points_per_daily_hint": "Khách nhận một lần mỗi ngày, đặt lại lúc nửa đêm giờ Thái Lan. 0 = tắt.",
     "points_per_daily_invalid": "Điểm hàng ngày phải bằng 0 hoặc số nguyên dương",
     "web_announcements": "Thông báo website",
+    "discord_studio": "Thông báo Discord",
     "navigation": {
       "open_menu": "Mở menu quản trị",
       "close_menu": "Đóng menu quản trị",

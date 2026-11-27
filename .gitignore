@@ -45,6 +45,7 @@ node_modules
 .env
 .env.local
 .next
+/.deploy/
 
 public/gifts/
 public/presets/

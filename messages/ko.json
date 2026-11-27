@@ -699,6 +699,7 @@
     "points_per_daily_hint": "하루 한 번 받을 수 있으며 태국 시간 자정에 초기화됩니다. 0 = 사용 안 함.",
     "points_per_daily_invalid": "일일 포인트는 0 이상의 정수여야 합니다",
     "web_announcements": "웹사이트 공지사항",
+    "discord_studio": "Discord 공지",
     "navigation": {
       "open_menu": "관리자 메뉴 열기",
       "close_menu": "관리자 메뉴 닫기",

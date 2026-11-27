@@ -1,6 +1,4 @@
-git fetch origin
-git reset --hard origin/main
-npm install
-npx prisma db push
-npx prisma generate
-npm run build && pm2 restart AClassStore && pm2 restart paypal-mail-worker
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "$0")"
+exec python3 scripts/deploy-verified-release.py "$@"

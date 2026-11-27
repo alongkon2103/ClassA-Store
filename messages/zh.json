@@ -1219,6 +1219,7 @@
   },
   "Admin": {
     "web_announcements": "网站公告",
+    "discord_studio": "Discord 公告",
     "navigation": {
       "open_menu": "打开管理菜单",
       "close_menu": "关闭管理菜单",

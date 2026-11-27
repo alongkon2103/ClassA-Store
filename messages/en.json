@@ -702,6 +702,7 @@
     "points_per_daily_hint": "Customers can claim once per day, resetting at midnight Thai time. 0 = off.",
     "points_per_daily_invalid": "Daily points must be 0 or a positive whole number",
     "web_announcements": "Website announcements",
+    "discord_studio": "Discord announcements",
     "navigation": {
       "open_menu": "Open admin menu",
       "close_menu": "Close admin menu",

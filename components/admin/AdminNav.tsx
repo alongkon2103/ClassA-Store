@@ -15,6 +15,7 @@ const originalGroups = [
       { href: "/admin/visitors", key: "visitors", roles: ["admin"] },
       { href: "/admin/settings", key: "settings", roles: ["admin"] },
       { href: "/admin/announcements", key: "web_announcements", roles: ["admin"] },
+      { href: "/admin/discord-studio", key: "discord_studio", roles: ["admin"] },
     ]
   },
   {
@@ -80,7 +81,7 @@ const groups = [
     { href: "/admin/bundles", key: "membership_packages", roles: ["admin"] },
     ...destinations(["/admin/game-categories", "/admin/storefront-order", "/admin/game-templates", "/admin/gifts", "/admin/partner-store"]),
   ] },
-  { title: "promotions", items: destinations(["/admin/announcements", "/admin/discount-codes", "/admin/points"]) },
+  { title: "promotions", items: destinations(["/admin/announcements", "/admin/discord-studio", "/admin/discount-codes", "/admin/points"]) },
   { title: "revenue_sharing", items: originalGroups.find(group => group.title === "revenue_sharing")!.items },
   { title: "desktop_program", items: originalGroups.find(group => group.title === "desktop_program")!.items },
   { title: "tools", items: destinations(["/admin/settings", "/admin/tiktok-simulator"]) },

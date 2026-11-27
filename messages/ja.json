@@ -1219,6 +1219,7 @@
   },
   "Admin": {
     "web_announcements": "ウェブサイトのお知らせ",
+    "discord_studio": "Discordのお知らせ",
     "navigation": {
       "open_menu": "管理メニューを開く",
       "close_menu": "管理メニューを閉じる",

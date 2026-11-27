@@ -705,6 +705,7 @@
     "points_per_daily_hint": "ลูกค้ากดรับได้วันละครั้ง รีเซ็ตเที่ยงคืนเวลาไทย · 0 = ปิด",
     "points_per_daily_invalid": "แต้มรายวันต้องเป็นจำนวนเต็ม 0 ขึ้นไป",
     "web_announcements": "ประกาศหน้าเว็บ",
+    "discord_studio": "ประกาศ Discord",
     "navigation": {
       "open_menu": "เปิดเมนูแอดมิน",
       "close_menu": "ปิดเมนูแอดมิน",
