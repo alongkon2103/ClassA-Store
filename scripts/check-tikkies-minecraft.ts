@@ -27,9 +27,10 @@ async function main() {
       user_program_access: { findUnique: async () => ({ status, expires_at: expiry }) },
       users: {
         updateMany: async ({ where, data }: { where: { id: string; hwid: null }; data: { hwid: string } }) => { assert.equal(where.id, storeId); assert.equal(where.hwid, null); if (machineTaken) throw Object.assign(new Error("unique HWID"), { code: "P2002" }); if (raced) { hwid = "racing-machine"; return { count: 0 } }; if (hwid !== null) return { count: 0 }; hwid = data.hwid; binds++; return { count: 1 } },
-        findUnique: async () => ({ hwid }),
+        findUnique: async () => ({ id:storeId,email:"current-store@example.test",nativeStatus,hwid }),
       },
     }
+    const identityDb={...db,accounts:{findMany:async()=>[{user_id:storeId}]}}
     const input = { email: " Buyer@Example.com ", productId: gameId, machineId: "machine-12345678" }
     assert.deepEqual(parseMinecraftRequest(input), { ...input, email: "buyer@example.com" })
     for (const bad of [{ ...input, email: null }, { ...input, machineId: "x" }, { ...input, machineId: "bad\nidentity" }, { ...input, productId: "../escape" }, { ...input, url: "https://evil.test" }]) assert.throws(() => parseMinecraftRequest(bad), /invalid_input/)
@@ -47,6 +48,7 @@ async function main() {
     assert.equal(manifest.plugin.sha256, crypto.createHash("sha256").update(cached).digest("hex")); assert.equal(manifest.plugin.size, cached.length)
     assert.ok(cached.includes(Buffer.from(`account=${storeId}\nprogram=ac_pig_panic\n`)))
     assert.equal(binds, 1); await issue(); assert.equal(binds, 1, "same machine must not rebind")
+    for(const provider of ['google','discord'] as const){const bound=await issueTikkiesMinecraft(identityDb as never,{...parseMinecraftRequest(input),email:'historical@example.test',identities:[{provider,providerAccountId:'owned-subject'}]},now,'https://aclassstore.com');assert.equal(bound.licence.account,storeId,'Minecraft license/HWID uses the durable owner for both providers')}
     hwid = "different-machine"; await assert.rejects(issue, /minecraft_device_mismatch/); assert.equal(hwid, "different-machine")
     hwid = null; raced = true; await assert.rejects(issue, /minecraft_device_mismatch/); assert.equal(hwid, "racing-machine"); raced = false
     hwid = null; machineTaken = true; await assert.rejects(issue, /minecraft_device_in_use/); assert.equal(hwid, null); machineTaken = false

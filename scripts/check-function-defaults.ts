@@ -12,7 +12,6 @@ const db = {
   products: { findMany: async () => [{ id: productId, slug: "future-game", name_th: "เกม", name_en: "Future game", description_th: "", description_en: "", type: "desktop_program", info_page_url: "", roblox_place_ids: [], product_images: [] }] },
   orders: { findMany: async () => [] }, point_redemptions: { findMany: async () => [] },
   user_program_access: { findMany: async () => owned ? [{ product_id: productId, status: "ACTIVE", expires_at: new Date("2027-01-01Z") }] : [] },
-  product_gifts: { findMany: async () => [] },
   product_functions: { findMany: async (query: { where: { product_id: string }; take: number }) => { functionReads++; assert.equal(query.where.product_id, productId); assert.ok(query.take <= 100); return rows } },
 } as unknown as Prisma.TransactionClient
 async function read(product?: string) {

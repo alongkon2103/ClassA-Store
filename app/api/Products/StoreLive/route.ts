@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
     const products = await prisma.products.findMany({
       where: {
         is_active: true,
+        type: { not: "bundle" },
       },
 
       orderBy: {

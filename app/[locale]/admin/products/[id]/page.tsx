@@ -7,12 +7,14 @@ import { setRequestLocale } from "next-intl/server"
 import { requireAdminPage } from "@/lib/adminAuth"
 
 export default async function EditProductPage({
-  params
+  params, searchParams
 }: {
   params: Promise<{ id: string, locale: string }>
+  searchParams: Promise<{ tab?: string }>
 }) {
   const session = await requireAdminPage(["admin", "partnership"])
   const { id, locale } = await params
+  const { tab } = await searchParams
   setRequestLocale(locale)
 
   const product = await prisma.products.findUnique({
@@ -22,7 +24,7 @@ export default async function EditProductPage({
       product_images: { orderBy: { sort_order: "asc" } },
       product_videos: { orderBy: { sort_order: "asc" } },
       product_gifts: { orderBy: { sort_order: "asc" } },
-      product_presets: { orderBy: { sort_order: "asc" } },
+      product_presets: { orderBy: [{ sort_order: { sort: "asc", nulls: "last" } }, { created_at: { sort: "asc", nulls: "last" } }, { id: "asc" }] },
       product_functions: { orderBy: { sort_order: "asc" } },
       product_features: { orderBy: { sort_order: "asc" } },
       product_consignments: { orderBy: { created_at: "asc" } },
@@ -30,6 +32,7 @@ export default async function EditProductPage({
     },
   })
   if (!product) notFound()
+  if (product.type === "bundle" && session.user.role !== "admin") notFound()
   // Partnership edits only their own products (same rule as /api/admin/products/[id])
   if (session.user.role === "partnership" && product.created_by_id !== session.user.id) notFound()
 
@@ -61,7 +64,6 @@ export default async function EditProductPage({
     })),
   }
 
-  return <><ProductForm mode="edit" product={safe} allGifts={gifts} allPartners={allPartners} />
-    {session.user.role === "admin" && product.type === "roblox_whitelist" && <TikkiesMapping productId={product.id} universeId={product.roblox_universe_id} placeIds={product.roblox_place_ids} />}
-  </>
+  return <ProductForm mode="edit" product={safe} allGifts={gifts} allPartners={allPartners} initialTab={tab}
+    integrationPanel={session.user.role === "admin" && product.type === "roblox_whitelist" ? <TikkiesMapping productId={product.id} universeId={product.roblox_universe_id} placeIds={product.roblox_place_ids} /> : undefined} />
 }

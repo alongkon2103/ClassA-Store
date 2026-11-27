@@ -1,7 +1,7 @@
 import {getRequestConfig} from 'next-intl/server';
 import {routing} from './routing';
 
-// ภาษาที่แปลครบแล้ว ส่วน ja/zh ยังแปลไม่ครบ — เลยเอา en เป็นฐานแล้ว merge
+// ใช้ en เป็นฐานของทุกภาษา เพื่อรองรับคีย์ใหม่ที่ยังไม่ได้แปล
 // คำแปลของภาษานั้นทับลงไป คีย์ไหนยังไม่แปลจะตกมาเป็นอังกฤษแทนที่จะพัง
 type Messages = Record<string, unknown>;
 

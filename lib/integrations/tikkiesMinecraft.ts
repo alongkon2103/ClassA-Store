@@ -1,3 +1,5 @@
+import {resolveTikkiesCustomer} from './tikkiesCustomer'
+import {parseIdentities,type Identity} from './tikkies'
 import type { Prisma } from "@prisma/client"
 import { TikkiesError } from "./tikkies"
 import { getBasePlugin, buildWatermarkedJar, signDownload } from "../desktopPlugin"
@@ -5,16 +7,16 @@ import { signLicence } from "../desktopLicence"
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const supported = { ac_pig_panic: { minecraftVersion: "1.21.4", javaMajor: 21, pluginFilename: "ACPigPanic.jar", pluginFolder: "ACPigPanic" } } as const
-export type MinecraftRequest = { email: string; productId: string; machineId: string }
+export type MinecraftRequest = { email: string; productId: string; machineId: string;identities?:Identity[] }
 
 export function parseMinecraftRequest(body: unknown): MinecraftRequest {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw new TikkiesError("invalid_input", 400)
   const row = body as Record<string, unknown>
-  if (Object.keys(row).some(key => !["email", "productId", "machineId"].includes(key)) ||
+  if (Object.keys(row).some(key => !["email", "productId", "machineId","identities"].includes(key)) ||
       typeof row.email !== "string" || row.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email.trim()) ||
       typeof row.productId !== "string" || !UUID.test(row.productId) ||
       typeof row.machineId !== "string" || !/^[A-Za-z0-9._:-]{8,256}$/.test(row.machineId)) throw new TikkiesError("invalid_input", 400)
-  return { email: row.email.trim().toLowerCase(), productId: row.productId, machineId: row.machineId }
+  return { email: row.email.trim().toLowerCase(), productId: row.productId, machineId: row.machineId,...(row.identities===undefined?{}:{identities:parseIdentities({identities:row.identities})}) }
 }
 
 /** Called within a DB transaction. A failed entitlement/signing/build rolls back a new HWID binding. */
@@ -24,10 +26,7 @@ export async function issueTikkiesMinecraft(db: Prisma.TransactionClient, input:
     store = new URL(origin)
     if (store.protocol !== "https:" || store.pathname !== "/" || store.username || store.password || store.port || store.search || store.hash || !process.env.NEXTAUTH_SECRET) throw new Error()
   } catch { throw new TikkiesError("minecraft_not_configured", 503) }
-  const customers = await db.$queryRaw<{ id: string; email: string | null; nativeStatus: string | null; hwid: string | null }[]>`
-    SELECT id, email, "nativeStatus", hwid FROM users WHERE lower(btrim(email)) = ${input.email} LIMIT 2`
-  if (customers.length > 1) throw new TikkiesError("identity_conflict", 409)
-  const customer = customers[0]
+  const customer=await resolveTikkiesCustomer(db,input.email,input.identities)
   if (!customer) throw new TikkiesError("game_not_owned", 403)
   if (customer.nativeStatus === "KICKED") throw new TikkiesError("account_blocked", 403)
   const product = await db.products.findFirst({ where: { id: input.productId, type: "desktop_program", is_active: true }, select: { id: true, program_key: true, name_en: true, name_th: true } })

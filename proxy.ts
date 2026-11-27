@@ -9,7 +9,7 @@ export const config = {
     // Match หน้าแรก
     '/',
     // Match ทุกหน้าที่มี /en หรือ /th
-    '/(th|en)/:path*',
+    '/(th|en|ja|zh|ko|vi)/:path*',
     // Match หน้าอื่นๆ ที่ไม่ใช่ไฟล์ static หรือ api
     '/((?!api|_next|_vercel|.*\\..*).*)'
   ]

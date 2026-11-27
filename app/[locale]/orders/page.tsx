@@ -64,6 +64,7 @@ export default async function MyOrdersPage({ params }: { params: Promise<{ local
   const rawOrders = await prisma.orders.findMany({
     where: {
       user_id: session.user.id,
+      bundle_parent_id: null,
       OR: [
         { order_type: { not: "TRIAL" } },
         {

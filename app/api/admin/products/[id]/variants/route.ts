@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { validateAdminBundleVariant } from "@/lib/adminBundleVariant"
 import { validateProductEditor } from "@/lib/adminAuth"
 
 export async function POST(
@@ -11,6 +12,14 @@ export async function POST(
   if (!admin.isValid) return admin.response
 
   const body = await req.json()
+  const product = await prisma.products.findUnique({ where: { id }, select: { type: true } })
+  if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 })
+  if (product.type === "bundle") {
+    if (admin.session?.user.role !== "admin") return NextResponse.json({ error: "Only full admins can manage bundles" }, { status: 403 })
+    try { validateAdminBundleVariant(body) } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid bundle package" }, { status: 400 })
+    }
+  }
   
   // ดึงฟิลด์ใหม่เพิ่ม: variant_type และ premium_addon_price
   const { 

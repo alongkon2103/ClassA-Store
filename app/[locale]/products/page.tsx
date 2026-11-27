@@ -19,7 +19,7 @@ export default async function Page({
     setRequestLocale(locale);
 
     const products = await prisma.products.findMany({
-        where: { is_active: true },
+        where: { is_active: true, type: { not: "bundle" } },
         include: {
             category: categorySelect,
             product_images: true,

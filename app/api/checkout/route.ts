@@ -1,3 +1,4 @@
+import {currentBundleBuyerRole,assertBundleQuote} from "@/lib/bundleBuyer"
 // // app/api/checkout/route.ts
 
 // import { NextResponse } from "next/server"
@@ -177,6 +178,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { evaluateDiscount, countUserRedemptions, releaseOrderDiscount } from "@/lib/discountCodes"
+import { prepareBundleCheckout, bundleCheckoutError } from "@/lib/bundleCheckout"
 import { resolveReferralCodeId } from "@/lib/affiliateEarnings"
 import { getPaymentConfig, computeFeeAmount } from "@/lib/paymentConfig"
 import type { discount_codes } from "@prisma/client"
@@ -192,14 +194,12 @@ export async function POST(req: Request) {
     }
 
     // 1. รับค่า isPremium เพิ่มเข้ามา
-    const { productId, variantId, paymentMethod, locale = "en", whitelistUsername, isPremium, discountCode, refCode } = await req.json()
+    const { productId, variantId, paymentMethod, locale = "en", whitelistUsername: requestedUsername, isPremium, discountCode, refCode } = await req.json()
 
-    if (!whitelistUsername?.trim()) {
-      return NextResponse.json({ error: "In-game username is required" }, { status: 400 })
-    }
+    const whitelistUsername = typeof requestedUsername === "string" ? requestedUsername.trim() : ""
 
     const product = await prisma.products.findUnique({
-      where: { id: productId },
+      where: { id: productId, is_active: true },
       include: { product_variants: true },
     })
 
@@ -209,6 +209,8 @@ export async function POST(req: Request) {
 
     // 2. ค้นหา Variant หลักที่เลือก
     const variant = product.product_variants.find(v => v.id === variantId)
+    if (!whitelistUsername && product.type !== "bundle") return NextResponse.json({ error: "In-game username is required" }, { status: 400 })
+    const bundleSnapshot = await prepareBundleCheckout(prisma, product, variant, { username: whitelistUsername, premium: isPremium, buyerRole: product.type === "bundle" ? await currentBundleBuyerRole(prisma,session.user) : session.user.role })
     let basePrice = variant ? Number(variant.price) : Number(product.price)
 
     // --- Discount Logic (Robust Check) ---
@@ -239,6 +241,8 @@ export async function POST(req: Request) {
       const discountPct = Number(variant.discount_pct)
       basePrice = basePrice - basePrice * (discountPct / 100)
     }
+
+    assertBundleQuote(session.user,product.id,variant?.id || "",variant?.duration_type === "permanent" ? null : variant?.duration_days ?? null,basePrice,product.type)
 
     let title = variant ? `${product.name_en} (${variant.label_en})` : product.name_en
 
@@ -309,7 +313,7 @@ export async function POST(req: Request) {
     try {
       order = await prisma.$transaction(
         async (tx) => {
-        const existing = await tx.orders.findFirst({
+        const existing = product.type === "bundle" ? null : await tx.orders.findFirst({
           where: {
             user_id: session.user.id,
             product_id: product.id,
@@ -344,6 +348,7 @@ export async function POST(req: Request) {
         }
 
         const orderData = {
+          ...(bundleSnapshot ? { bundle_snapshot: bundleSnapshot, order_type: "BUNDLE" } : {}),
           amount: totalPrice,
           goods_amount: currentSubtotal, // ราคาสินค้าหลังส่วนลด ไม่รวมค่าธรรมเนียม (ใช้คิด AC Points)
           payment_method: paymentMethod,
@@ -451,6 +456,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: stripeSession.url })
   } catch (err: unknown) {
+    const bundleError = bundleCheckoutError(err)
+    if (bundleError) return bundleError
     const e = err as { message?: string; type?: string; raw?: unknown; stack?: string }
     console.error("Checkout Error Detail:", {
       message: e.message,

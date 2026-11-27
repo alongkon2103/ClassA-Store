@@ -178,7 +178,7 @@ export async function getThbToUsdRate(): Promise<number> {
     return cachedRate.rate
   }
   try {
-    const res = await fetch("https://open.er-api.com/v6/latest/THB", { cache: "no-store" })
+    const res = await fetch("https://open.er-api.com/v6/latest/THB", { cache: "no-store", signal:AbortSignal.timeout(4000) })
     if (res.ok) {
       const data = (await res.json()) as { rates?: { USD?: number } }
       const rate = data?.rates?.USD

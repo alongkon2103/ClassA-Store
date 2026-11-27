@@ -5,6 +5,8 @@ import { validateAdmin } from "@/lib/adminAuth"
 import { releaseOrderDiscount } from "@/lib/discountCodes"
 import { reverseAffiliateEarning } from "@/lib/affiliateEarnings"
 import { awardPointsForOrder, reversePointsForOrder } from "@/lib/points"
+import { fulfillPaidOrder } from "@/lib/orderFulfillment"
+import { reverseBundleInTransaction } from "@/lib/bundleReversal"
 
 const RELEASE_DISCOUNT_STATUSES = new Set(["expired", "cancelled"])
 
@@ -38,15 +40,26 @@ export async function PATCH(
   })
   
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 })
+  if (order.bundle_parent_id) return NextResponse.json({ error: "Manage this game through its bundle purchase" }, { status: 409 })
 
   if (["refunded", "revoked", "disputed"].includes(body.status)) {
-    if (order.products.type !== "roblox_whitelist") return NextResponse.json({ error: "Tikkies reversals apply to Roblox game orders only" }, { status: 400 })
+    if (!["roblox_whitelist", "bundle"].includes(order.products.type)) return NextResponse.json({ error: "Reversal requires a game or bundle order" }, { status: 400 })
     await recordTikkiesReversal(id, body.status, admin.session!.user.id)
     return NextResponse.json({ ok: true })
   }
   if (["refunded", "revoked", "disputed"].includes(order.status) && body.status && body.status !== order.status) return NextResponse.json({ error: "Reversed orders cannot be reopened; grant a new order after review" }, { status: 409 })
 
   const becomingPaid = body.status === "paid" && order.status !== "paid"
+  if (order.products.type === "bundle") {
+    if (body.status === "paid") {
+      if (["refunded", "revoked", "disputed", "cancelled", "expired"].includes(order.status)) return NextResponse.json({ error: "Reversed orders cannot be reopened" }, { status: 409 })
+      await fulfillPaidOrder(id)
+      return NextResponse.json({ ok: true })
+    }
+    if (body.whitelist_status && !body.status) return NextResponse.json({ error: "Bundle rights follow the purchase status" }, { status: 400 })
+    if (body.status && !["cancelled", "expired", "pending"].includes(body.status)) return NextResponse.json({ error: "Unsupported bundle status" }, { status: 400 })
+    if (order.status === "paid" && body.status === "pending") return NextResponse.json({ error: "A paid bundle cannot be made pending" }, { status: 409 })
+  }
   const shouldIncrementDiscount = becomingPaid && !!(
     order.variant_id &&
     order.products.has_limited_discount &&
@@ -73,10 +86,16 @@ export async function PATCH(
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM orders WHERE id = ${id}::uuid FOR UPDATE`
+    if (order.products.type === "bundle") {
+      const locked = await tx.orders.findUnique({ where: { id }, select: { status: true } })
+      // Payment/refund may have completed while this operator request waited.
+      if (!locked || locked.status !== order.status) return null
+    }
     if (shouldReleaseCode) {
       await releaseOrderDiscount(tx, id)
     }
     if (shouldReverseEarning) {
+      if (order.products.type === "bundle") await reverseBundleInTransaction(tx, id, "revoked")
       await reverseAffiliateEarning(tx, id)
       // ยกเลิก/หมดอายุหลังจ่ายแล้ว → หัก AC Points ที่เคยให้คืน (no-op ถ้าไม่เคยได้)
       await reversePointsForOrder(id, tx)
@@ -107,6 +126,7 @@ export async function PATCH(
   })
 
   // แอดมินเปลี่ยนเป็น paid เอง → ให้ AC Points เหมือนจ่ายผ่านระบบ (best-effort)
+  if (!result) return NextResponse.json({ error: "Order changed while updating; refresh before retrying" }, { status: 409 })
   if (becomingPaid) await awardPointsForOrder(id)
 
   return NextResponse.json({ ...result, amount: Number(result.amount) })

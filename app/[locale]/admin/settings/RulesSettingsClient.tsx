@@ -9,6 +9,8 @@ type Props = {
   initialRulesEn?: string
   initialRulesJa?: string
   initialRulesZh?: string
+  initialRulesKo?: string
+  initialRulesVi?: string
 }
 
 export default function RulesSettingsClient({
@@ -16,12 +18,16 @@ export default function RulesSettingsClient({
   initialRulesEn = "",
   initialRulesJa = "",
   initialRulesZh = "",
+  initialRulesKo = "",
+  initialRulesVi = "",
 }: Props) {
   const t = useTranslations("Admin")
   const [rulesTh, setRulesTh] = useState(initialRulesTh)
   const [rulesEn, setRulesEn] = useState(initialRulesEn)
   const [rulesJa, setRulesJa] = useState(initialRulesJa)
   const [rulesZh, setRulesZh] = useState(initialRulesZh)
+  const [rulesKo, setRulesKo] = useState(initialRulesKo)
+  const [rulesVi, setRulesVi] = useState(initialRulesVi)
   const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
@@ -36,6 +42,8 @@ export default function RulesSettingsClient({
             rules_en: rulesEn,
             rules_ja: rulesJa,
             rules_zh: rulesZh,
+            rules_ko: rulesKo,
+            rules_vi: rulesVi,
           },
         }),
       })
@@ -111,6 +119,30 @@ export default function RulesSettingsClient({
             </span>
           </div>
           <TiptapEditor content={rulesZh} onChange={setRulesZh} />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-[13px] text-text-muted font-medium">
+              {t("rules_ko_label")}
+            </label>
+            <span className="text-[11px] text-accent-light bg-accent/5 px-2 py-0.5 rounded-md border border-accent/10">
+              KO
+            </span>
+          </div>
+          <TiptapEditor content={rulesKo} onChange={setRulesKo} />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-[13px] text-text-muted font-medium">
+              {t("rules_vi_label")}
+            </label>
+            <span className="text-[11px] text-accent-light bg-accent/5 px-2 py-0.5 rounded-md border border-accent/10">
+              VI
+            </span>
+          </div>
+          <TiptapEditor content={rulesVi} onChange={setRulesVi} />
         </div>
 
         <p className="text-[11px] text-text-muted italic">

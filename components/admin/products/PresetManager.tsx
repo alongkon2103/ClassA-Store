@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react"
 import type { product_presets } from "@prisma/client"
+import { useLocale } from "next-intl"
 
 function formatBytes(bytes: number) {
   if (bytes < 1024)        return `${bytes} B`
@@ -10,6 +11,7 @@ function formatBytes(bytes: number) {
 }
 
 export default function PresetManager({ productId, presets }: { productId: string; presets: product_presets[] }) {
+  const locale = useLocale()
   const [list, setList]       = useState(presets)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver]   = useState(false)
@@ -39,7 +41,7 @@ export default function PresetManager({ productId, presets }: { productId: strin
     const res = await fetch(`/api/admin/products/${productId}/presets`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url, filename: pendingFile.name, filesize: pendingFile.size, sort_order: list.length }),
+      body: JSON.stringify({ url, filename: pendingFile.name, filesize: pendingFile.size }),
     })
     const data = await res.json()
     setUploading(false)
@@ -59,6 +61,9 @@ export default function PresetManager({ productId, presets }: { productId: strin
     <div className="space-y-5">
       <p className="text-[13px] text-text-muted">
         Preset files available after purchase — Supports ZIP, JSON, and other formats (Max 100MB).
+      </p>
+      <p className="text-[12px] text-text-muted">
+        {locale === "th" ? "ตั้งค่า Tikkies ในแท็บ Actions ค่าเริ่มต้น ไฟล์ในหน้านี้ยังดาวน์โหลดได้หลังซื้อ" : "Configure Tikkies in Actions defaults. Files here remain available to download after purchase."}
       </p>
 
       {/* List */}

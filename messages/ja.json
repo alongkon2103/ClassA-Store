@@ -178,6 +178,7 @@
     "maki_price": "価格"
   },
   "Navbar": {
+    "membership": "メンバーシップ",
     "halloween_theme": "ハロウィンテーマ",
     "halloween_enable": "ハロウィンテーマをオンにする",
     "halloween_disable": "ハロウィンテーマをオフにする",

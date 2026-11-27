@@ -6,7 +6,7 @@ import { announcementStatus, type WebAnnouncement } from "@/lib/webAnnouncements
 import AnnouncementDialog from "./AnnouncementDialog"
 
 const storageKey = (a: WebAnnouncement) => `web-announcement:${a.id}:${a.revision}`
-const EXCLUDED = ["/admin", "/checkout", "/livegen"]
+const EXCLUDED = ["/admin", "/checkout", "/livegen", "/bundles/confirm", "/bundles/checkout"]
 
 export default function WebAnnouncementPopup() {
   const pathname = usePathname()

@@ -56,7 +56,7 @@ model game_keys {
 
 model gifts {
   id                    Int                   @id @default(autoincrement())
-  name                  String                @unique
+  name                  String
   image_url             String?
   diamonds              Int                   @default(0)
   is_active             Boolean               @default(true)
@@ -64,6 +64,8 @@ model gifts {
   trigger_type          String?               @db.VarChar
   default_for_functions product_functions[]   @relation("DefaultGift")
   user_function_gifts   user_function_gifts[]
+
+  @@index([name], map: "idx_gifts_name")
 }
 
 model key_access_logs {
@@ -126,6 +128,10 @@ model orders {
   expected_amount       Decimal?              @db.Decimal(10, 2)
   expected_currency     String?               @default("USD") @db.VarChar
   goods_amount          Decimal?              @db.Decimal(10, 2) // ราคาสินค้าหลังส่วนลด ไม่รวมค่าธรรมเนียม (ใช้คิด AC Points)
+  bundle_snapshot       Json?
+  bundle_parent_id      String?               @db.Uuid
+  bundle_parent         orders?               @relation("BundleChildren", fields: [bundle_parent_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  bundle_children       orders[]              @relation("BundleChildren")
   game_keys             game_keys?
   products              products              @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                 users?                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -143,6 +149,8 @@ model orders {
   roblox_binding_audit  roblox_binding_audit[]
   halloween_draw        halloween_draws?
 
+  @@index([bundle_parent_id], map: "idx_orders_bundle_parent")
+  @@unique([bundle_parent_id, product_id], map: "uq_orders_bundle_child_product")
   @@index([user_id], map: "idx_orders_user")
   @@index([user_id, product_id], map: "idx_orders_tikkies_customer_game")
   @@index([recorded_by_id], map: "idx_orders_recorded_by")
@@ -383,6 +391,7 @@ model product_presets {
   @@index([product_id], map: "idx_product_presets_product")
 }
 
+// Product-scoped transport identity; credentials derive from a server-only host secret.
 model product_tikkies_integrations {
   product_id String   @id @db.Uuid
   config     Json     @db.JsonB
@@ -391,6 +400,7 @@ model product_tikkies_integrations {
   products   products @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
+// Canonical Tikkies event catalog + trigger bindings, independent of storefront Functions.
 model product_tikkies_defaults {
   product_id        String   @id @db.Uuid
   config            Json     @db.JsonB
@@ -448,6 +458,11 @@ model products {
   // to the buyer and delivers a plugin jar + licence. program_key identifies the
   // Electron program for desktop_program products (e.g. "ac_pig_panic").
   type           String   @default("roblox_whitelist") @db.VarChar
+  // Curated own-game product IDs; validated and frozen at checkout.
+  bundle_product_ids String[] @default([]) @db.Uuid
+  // Explicit full-app membership; frozen into each paid bundle's terms.
+  bundle_includes_tikkies Boolean @default(false)
+  bundle_all_ac_games Boolean @default(false)
   roblox_universe_id String? @db.VarChar(32)
   roblox_place_ids String[] @default([])
   program_key    String?  @unique @db.VarChar
@@ -668,6 +683,7 @@ model users {
   affiliate_payouts    affiliate_payouts[]
   notifications        notifications[]
   desktop_auth_codes   desktop_auth_codes[]
+  tikkies_checkout_codes tikkies_checkout_codes[]
   desktop_tokens       desktop_tokens[]
   user_program_access  user_program_access[]
   product_reviews       product_reviews[]
@@ -702,6 +718,16 @@ model desktop_whitelist_grants {
 
 // One-time authorization code, redeemed once at /api/desktop/token. Short TTL,
 // PKCE-protected. Only the SHA-256 hash of the code is stored.
+model tikkies_checkout_codes {
+  code_hash String @id @db.Char(64)
+  user_id String @db.Uuid
+  challenge String @db.VarChar(43)
+  offer Json?
+  expires_at DateTime @db.Timestamptz(6)
+  users users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  @@index([expires_at], map: "tikkies_checkout_codes_expiry")
+}
+
 model desktop_auth_codes {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   code_hash      String   @unique @db.VarChar // sha256(code)

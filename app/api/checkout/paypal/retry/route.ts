@@ -1,3 +1,5 @@
+import {currentBundleBuyerRole} from '@/lib/bundleBuyer'
+import {BundleError} from '@/lib/bundles'
 // Re-create a PayPal approval session for an existing pending PayPal order.
 // Use case: user cancelled or had insufficient funds in PayPal, lands back
 // on the order page with ?paypal=cancelled|failed, and clicks "Pay again".
@@ -32,13 +34,15 @@ export async function POST(req: Request) {
     }
 
     const order = await prisma.orders.findUnique({
-      where: { id: orderId },
+      where: { id: orderId, products: { is_active: true } },
       include: { products: true, product_variants: true },
     })
     if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 })
     if (order.user_id !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
+    if (order.bundle_parent_id) return NextResponse.json({ error: "Pay through the membership order" }, { status: 400 })
+    if (order.products.type === "bundle") await currentBundleBuyerRole(prisma,session.user)
     if (order.payment_method !== "paypal") {
       return NextResponse.json({ error: "Not a PayPal order" }, { status: 400 })
     }
@@ -81,12 +85,14 @@ export async function POST(req: Request) {
       where: { id: order.id },
       data: {
         paypal_order_id: paypal.id,
+        ...(order.products.type === "bundle" ? { expected_amount: usdAmount, expected_currency: currency } : {}),
         expires_at: new Date(Date.now() + 60 * 60 * 1000),
       },
     })
 
     return NextResponse.json({ url: paypal.approveUrl })
   } catch (err: unknown) {
+    if(err instanceof BundleError)return NextResponse.json({error:err.code},{status:err.status})
     console.error("PayPal Retry Error:", (err as Error)?.message || err)
     return NextResponse.json({ error: "Retry failed", details: (err as Error)?.message }, { status: 500 })
   }

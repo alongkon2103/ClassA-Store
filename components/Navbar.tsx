@@ -11,9 +11,13 @@ import NavSearch from "./NavSearch"
 import NotificationBell from "./NotificationBell"
 import DailyClaim from "./points/DailyClaim"
 
+// Keep the membership page available by URL while hiding its menu entry.
+const membershipTabVisible = false
+
 const navItems = [
   { href: "/", labelKey: "home", auth: false, flag: null },
   { href: "/products", labelKey: "shop", auth: false, flag: null },
+  { href: "/bundles", labelKey: "membership", auth: false, flag: null },
   { href: "/livegen", labelKey: "livegen", auth: false, flag: "livegen_enabled" as const },
   { href: "/orders", labelKey: "orders", auth: true, flag: null },
   { href: "/contact", labelKey: "contact", auth: false, flag: null },
@@ -70,6 +74,7 @@ export default function Navbar({ halloween = false }: { halloween?: boolean }) {
   }, [])
 
   const visibleItems = navItems.filter((item) => {
+    if (item.href === "/bundles" && !membershipTabVisible) return false
     if (item.auth === true && !session) return false
     if (item.auth === "admin_or_partnership" &&
       session?.user?.role !== "admin" &&
@@ -83,6 +88,10 @@ export default function Navbar({ halloween = false }: { halloween?: boolean }) {
   })
 
   const provider = session?.user?.provider
+  const accountName = session?.user?.name || t("logged_in")
+  const providerDescription = provider === "google" ? t("signed_in_google")
+    : provider === "discord" ? t("signed_in_discord")
+    : t("logged_in")
 
   return (
     <>
@@ -204,7 +213,7 @@ export default function Navbar({ halloween = false }: { halloween?: boolean }) {
                 style={{ background: providerColor(provider) }}
               >
                 <span className="shrink-0"><ProviderIcon provider={provider} /></span>
-                <span className="truncate">{session.user?.name || t("logged_in")}</span>
+                <span className="truncate">{accountName}</span>
               </button>
             )}
           </div>
@@ -332,10 +341,10 @@ export default function Navbar({ halloween = false }: { halloween?: boolean }) {
                       </div>
                       <div className="min-w-0">
                         <p className="text-[13px] font-medium truncate" style={{ color: "var(--color-text-base)" }}>
-                          {session.user?.name || t("logged_in")}
+                          {accountName}
                         </p>
                         <p className="text-[11px] truncate" style={{ color: "var(--color-text-muted)" }}>
-                          {provider === "google" ? t("signed_in_google") : t("signed_in_discord")}
+                          {providerDescription}
                         </p>
                       </div>
                     </div>
@@ -394,7 +403,7 @@ export default function Navbar({ halloween = false }: { halloween?: boolean }) {
                 <div>
                   <p className="font-semibold text-[15px] leading-tight" style={{ color: "var(--color-text-base)" }}>{t("logout")}?</p>
                   <p className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
-                    {provider === "google" ? t("signed_in_google") : t("signed_in_discord")}
+                    {providerDescription}
                   </p>
                 </div>
               </div>
@@ -428,19 +437,22 @@ export default function Navbar({ halloween = false }: { halloween?: boolean }) {
 
 function providerColor(provider?: string) {
   if (provider === "google") return "#4285f4"
-  return "var(--color-discord)" // discord default
+  if (provider === "discord") return "var(--color-discord)"
+  return "var(--color-accent)"
 }
 
 function providerBg(provider?: string) {
   if (provider === "google") return "rgba(66,133,244,.10)"
-  return "rgba(88,101,242,.10)"
+  if (provider === "discord") return "rgba(88,101,242,.10)"
+  return "rgba(37,99,235,.10)"
 }
 
 // ── icons ─────────────────────────────────────────────────────────
 
 function ProviderIcon({ provider, size = 15 }: { provider?: string; size?: number }) {
   if (provider === "google") return <GoogleIcon size={size} />
-  return <DiscordIcon size={size} />
+  if (provider === "discord") return <DiscordIcon size={size} />
+  return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
 }
 
 function GoogleIcon({ size = 15 }: { size?: number }) {

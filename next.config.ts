@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
 
   experimental: {
     externalDir: true,
+    cpus: 2,
   },
   
   images: {

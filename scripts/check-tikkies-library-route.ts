@@ -10,7 +10,7 @@ let blocked = false, captured: Record<string, unknown> = {}
 const db = {
   $queryRaw: async (parts: TemplateStringsArray, ...values: unknown[]) => parts.join().includes("INSERT") ? [values[0], values[1]].map(key_hash => ({ key_hash, count: blocked ? 999999 : 1, reset_at: new Date(Date.now() + 60000) })) : [],
   $executeRaw: async () => 0,
-  products: { findMany: async () => [], findUnique: async () => null, findFirst: async () => null,
+  products: { findMany: async () => [], findUnique: async ({where}:any) => where.id?({id:"p",type:"roblox_whitelist",is_active:true,product_variants:[]}):null, findFirst: async () => null,
     create: async ({ data }: { data: Record<string, unknown> }) => { captured = data; return { id: "p", ...data } },
     update: async ({ data }: { data: Record<string, unknown> }) => { captured = data; return { id: "p", price: 1, ...data } } },
   $transaction: async (fn: (tx: unknown) => unknown) => fn(db),

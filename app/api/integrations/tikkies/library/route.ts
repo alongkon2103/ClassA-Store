@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const retry = await limitTikkiesSubject(prisma, "library:" + (input.email || "anonymous"), credential)
     if (retry) { headers["Retry-After"] = String(retry); throw new TikkiesError("rate_limited", 429) }
     const origin = new URL(process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || req.url).origin
-    const result = await prisma.$transaction(tx => readTikkiesLibrary(tx, input.email, new Date(), origin, input.productId), { isolationLevel: "RepeatableRead", timeout: 10000 })
+    const result = await prisma.$transaction(tx => readTikkiesLibrary(tx, input.email, new Date(), origin, input.productId,input.identities), { isolationLevel: "RepeatableRead", timeout: 10000 })
     return NextResponse.json(result, { headers })
   } catch (error) {
     return NextResponse.json({ error: error instanceof TikkiesError ? error.code : "library_unavailable", requestId: headers["X-Request-Id"] }, { status: error instanceof TikkiesError ? error.status : 503, headers })

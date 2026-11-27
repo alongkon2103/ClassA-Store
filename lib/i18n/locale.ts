@@ -1,17 +1,17 @@
 // ตัวช่วยเรื่อง locale ที่ใช้ร่วมกันทุกหน้า (ลูกค้า): แท็ก Intl, locale ของ date-fns,
 // และป้ายชื่อแพ็กเกจ (variant) สำหรับภาษาที่ไม่มีคอลัมน์ในฐานข้อมูล (ja/zh)
-import { th, enUS, ja, zhCN } from "date-fns/locale"
+import { th, enUS, ja, zhCN, ko, vi } from "date-fns/locale"
 import type { Locale as DateFnsLocale } from "date-fns"
 
-export const LOCALE_TAGS: Record<string, string> = { th: "th-TH", en: "en-US", ja: "ja-JP", zh: "zh-CN" }
-export const OG_LOCALES: Record<string, string> = { th: "th_TH", en: "en_US", ja: "ja_JP", zh: "zh_CN" }
+export const LOCALE_TAGS: Record<string, string> = { th: "th-TH", en: "en-US", ja: "ja-JP", zh: "zh-CN", ko: "ko-KR", vi: "vi-VN" }
+export const OG_LOCALES: Record<string, string> = { th: "th_TH", en: "en_US", ja: "ja_JP", zh: "zh_CN", ko: "ko_KR", vi: "vi_VN" }
 
 /** แท็กสำหรับ Intl / toLocaleDateString ตาม locale ของ next-intl */
 export function localeTag(locale: string): string {
   return LOCALE_TAGS[locale] ?? "en-US"
 }
 
-const DATE_FNS_LOCALES: Record<string, DateFnsLocale> = { th, en: enUS, ja, zh: zhCN }
+const DATE_FNS_LOCALES: Record<string, DateFnsLocale> = { th, en: enUS, ja, zh: zhCN, ko, vi }
 
 /** locale ของ date-fns (format / formatDistanceToNow) */
 export function dateFnsLocale(locale: string): DateFnsLocale {
@@ -76,9 +76,21 @@ export function variantLabel(v: VariantLabelSource | null | undefined, locale: s
   const labelTh = (v.label_th ?? "").trim()
   const labelEn = (v.label_en ?? "").trim()
   if (locale === "th") return labelTh || labelEn
-  if (locale !== "ja" && locale !== "zh") return labelEn || labelTh
+  if (!["ja", "zh", "ko", "vi"].includes(locale)) return labelEn || labelTh
   const d = readDuration(v)
   if (!d) return labelEn || labelTh
+  if (locale === "ko") {
+    if (d.kind === "lifetime") return "평생"
+    if (d.kind === "years") return `${d.years}년`
+    if (d.kind === "months") return `${d.months}개월`
+    return `${d.days}일`
+  }
+  if (locale === "vi") {
+    if (d.kind === "lifetime") return "Vĩnh viễn"
+    if (d.kind === "years") return `${d.years} năm`
+    if (d.kind === "months") return `${d.months} tháng`
+    return `${d.days} ngày`
+  }
   if (locale === "ja") {
     if (d.kind === "lifetime") return "永久"
     if (d.kind === "years") return `${d.years}年`

@@ -12,6 +12,8 @@ import OrderStatusPoller from "@/components/orders/OrderStatusPoller"
 import AssetThumbnailCard from "@/components/orders/AssetThumbnailCard"
 import PayPalRetryBanner from "@/components/orders/PayPalRetryBanner"
 import { getImageUrl } from "@/lib/getImageUrl"
+import { requireUser } from "@/lib/requireUser"
+import { parseBundleSnapshot } from "@/lib/bundles"
 
 // Skip the static cache — admin feature toggles must reflect immediately.
 export const dynamic = "force-dynamic"
@@ -28,6 +30,7 @@ export default async function OrderPage({
     searchParams: Promise<{ paypal?: string; status?: string }>
 }) {
     const { id, locale } = await params
+    const { userId } = await requireUser(locale)
     const { paypal: paypalStatus } = await searchParams
     setRequestLocale(locale)
     const t = await getTranslations("Orders")
@@ -37,8 +40,9 @@ export default async function OrderPage({
     const discord = await getStoreDiscordInvite(STORE_DISCORD_CODE)
 
     const order = await prisma.orders.findUnique({
-        where: { id },
+        where: { id, user_id: userId },
         include: {
+            bundle_children: { select: { id: true, product_id: true, status: true } },
             game_keys: true,
             product_variants: true,
             products: {
@@ -72,6 +76,7 @@ export default async function OrderPage({
 
     const mainImage = order.products.product_images[0]?.url || "/next.svg"
     const isDesktopProduct = order.products.type === "desktop_program"
+    const bundle = order.products.type === "bundle" && order.bundle_snapshot ? parseBundleSnapshot(order.bundle_snapshot) : null
     // AC Points ที่ออเดอร์นี้ได้รับ (ถ้ามี) — โชว์ในการ์ดสรุปด้านขวา
     const pointsRow = order.user_id
         ? await prisma.point_ledger.findFirst({ where: { order_id: order.id, type: "earn_purchase" }, select: { delta: true } })
@@ -116,6 +121,21 @@ export default async function OrderPage({
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
                     {/* Main Content (Left) */}
                     <div className="lg:col-span-8 space-y-6 md:space-y-8">
+                        {bundle && (
+                            <section className="rounded-2xl border border-accent/20 bg-bg-card p-5 md:p-6">
+                                <h2 className="text-xl font-bold mb-2">{locale === "th" ? "เกมทั้งหมดในชุดของคุณ" : "Your collection of games"}</h2>
+                                <p className="text-sm text-text-muted mb-5">{locale === "th" ? "ชำระครั้งเดียว รับสิทธิ์ทุกเกมตามแพ็กเกจที่เลือก เปิดใช้งานผ่านบัญชีเดียวกันใน Tikkies" : "One purchase unlocks every included game for your chosen package. Use the same account in Tikkies."}</p>
+                                <div className="space-y-2">
+                                    {bundle.items.map(game => {
+                                        const child = order.bundle_children.find(row => row.product_id === game.productId)
+                                        return <div key={game.productId} className="flex items-center justify-between gap-3 rounded-xl bg-bg-base p-3">
+                                            <span className="font-medium text-sm">{locale === "th" ? game.nameTh : game.nameEn}</span>
+                                            {child && child.status === "paid" ? <Link href={`/orders/${child.id}`} className="text-sm text-accent-light">{locale === "th" ? "เปิดเกม →" : "Open game →"}</Link> : <span className="text-xs text-text-muted">{locale === "th" ? "รอยืนยันสิทธิ์" : "Awaiting access"}</span>}
+                                        </div>
+                                    })}
+                                </div>
+                            </section>
+                        )}
                         <div className="relative group">
                             <div className="absolute -inset-0.5 bg-gradient-to-r from-accent to-accent-light opacity-10 rounded-2xl md:rounded-3xl blur transition duration-1000"></div>
 
@@ -143,11 +163,11 @@ export default async function OrderPage({
                                     <div className="space-y-5">
                                         <div className="bg-bg-base/50 border border-accent/10 rounded-xl md:rounded-2xl p-5 md:p-6">
                                             <p className="text-[16px] md:text-[18px] font-semibold text-text-base mb-2">
-                                                {isDesktopProduct ? t("purchase_completed") : t("whitelist_purchase_completed")}
+                                                {bundle || isDesktopProduct ? t("purchase_completed") : t("whitelist_purchase_completed")}
                                             </p>
 
                                             <p className="text-[13px] text-text-muted leading-relaxed">
-                                                {isDesktopProduct ? t("desktop_access_desc") : t("whitelist_access_desc")}
+                                                {bundle ? (locale === "th" ? "สิทธิ์ของเกมในชุดแสดงอยู่ด้านบน" : "Your included game access is listed above.") : isDesktopProduct ? t("desktop_access_desc") : t("whitelist_access_desc")}
                                             </p>
                                         </div>
 

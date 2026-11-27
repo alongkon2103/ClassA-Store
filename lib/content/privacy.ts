@@ -1,5 +1,7 @@
 // เนื้อหานโยบายความเป็นส่วนตัว (ไทย/อังกฤษ/ญี่ปุ่น/จีน) — แก้ข้อความที่นี่ที่เดียว
 // ถ้าแอดมินใส่ system_configs key `privacy_<locale>` (HTML) ไว้ หน้า /privacy จะใช้ของนั้นแทน
+import { PRIVACY_KO } from "./privacy-ko"
+import { PRIVACY_VI } from "./privacy-vi"
 export type PrivacySection = { id: string; title: string; paragraphs?: string[]; bullets?: string[] }
 
 export const PRIVACY_UPDATED = "2026-09-07"
@@ -353,4 +355,4 @@ export const PRIVACY_ZH: PrivacySection[] = [
 ]
 
 /** เลือกชุดเนื้อหาตาม locale — ภาษาที่ไม่มีใช้อังกฤษ */
-export const PRIVACY_BY_LOCALE: Record<string, PrivacySection[]> = { th: PRIVACY_TH, en: PRIVACY_EN, ja: PRIVACY_JA, zh: PRIVACY_ZH }
+export const PRIVACY_BY_LOCALE: Record<string, PrivacySection[]> = { th: PRIVACY_TH, en: PRIVACY_EN, ja: PRIVACY_JA, zh: PRIVACY_ZH, ko: PRIVACY_KO, vi: PRIVACY_VI }

@@ -43,13 +43,13 @@ function toPlainText(html: string | null | undefined, max = 155): string {
 // Pre-render every active product at build; new/unknown slugs still render
 // on-demand (dynamicParams defaults to true) and get cached by ISR.
 export async function generateStaticParams() {
-  const products = await prisma.products.findMany({ where: { is_active: true }, select: { slug: true } })
+  const products = await prisma.products.findMany({ where: { is_active: true, type: { not: "bundle" } }, select: { slug: true } })
   return products.map((p) => ({ slug: p.slug }))
 }
 
 async function getProduct(slug: string) {
   return prisma.products.findFirst({
-    where: { slug, is_active: true },
+    where: { slug, is_active: true, type: { not: "bundle" } },
     include: {
       category: categorySelect,
       product_images: { orderBy: { sort_order: "asc" } },
@@ -131,7 +131,7 @@ export default async function Page({ params }: Params) {
     if (!pp) notFound()
     const [relatedRaw, pointsCfgMaki, ratingAgg] = await Promise.all([
       prisma.products.findMany({
-        where: { is_active: true },
+        where: { is_active: true, type: { not: "bundle" } },
         orderBy: [{ is_featured: "desc" }, { created_at: "desc" }],
         take: 4,
         include: {
@@ -183,7 +183,7 @@ export default async function Page({ params }: Params) {
 
   // Related: other active products, featured first then newest, take 4.
   const relatedRaw = await prisma.products.findMany({
-    where: { is_active: true, NOT: { id: product.id } },
+    where: { is_active: true, type: { not: "bundle" }, NOT: { id: product.id } },
     orderBy: [{ is_featured: "desc" }, { created_at: "desc" }],
     take: 4,
     include: {

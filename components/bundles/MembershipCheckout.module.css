@@ -1,0 +1,77 @@
+.page { min-height:100vh; background:var(--color-bg-base); color:var(--color-text-base); }
+.main { width:min(100% - 64px,1280px); margin:0 auto; padding:32px 0 64px; }
+.breadcrumb { display:flex; align-items:center; gap:8px; margin-bottom:24px; font-size:13px; color:var(--color-text-muted); }
+.breadcrumb a:hover { color:var(--color-accent-light); }
+.heading { margin-bottom:32px; }
+.heading h1 { margin:0; font-size:clamp(26px,2.6vw,36px); line-height:1.35; font-weight:600; }
+.heading p { margin:12px 0 0; font-size:15px; line-height:1.6; color:var(--color-text-muted); }
+.layout { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); grid-template-areas:"plan form" "games form"; grid-template-rows:auto 1fr; align-items:start; gap:32px; }
+.overview,.formColumn { min-width:0; }
+.overview { grid-area:plan; }
+.formColumn { grid-area:form; }
+.plan { padding:28px; background:var(--color-bg-card); border:1px solid var(--color-border-soft); border-radius:16px; }
+.planTop { display:flex; align-items:center; gap:16px; }
+.planCover { width:72px; height:72px; border-radius:12px; object-fit:cover; flex-shrink:0; }
+.eyebrow { margin:0 0 4px; font-size:13px; color:var(--color-text-muted); }
+.plan h2 { margin:0; font-size:20px; line-height:1.5; font-weight:600; }
+.period { margin:4px 0 0; font-size:14px; color:var(--color-text-muted); }
+.price { display:flex; flex-wrap:wrap; gap:8px; align-items:baseline; margin-top:24px; }
+.price strong { font-size:36px; line-height:1.2; font-weight:600; font-variant-numeric:tabular-nums; }
+.price span { color:var(--color-text-muted); font-size:14px; }
+.feature { display:flex; align-items:center; gap:12px; margin-top:24px; padding-top:20px; border-top:1px solid var(--color-border-soft); font-size:14px; line-height:1.6; }
+.feature svg { flex-shrink:0; color:var(--color-accent-light); }
+.games { grid-area:games; min-width:0; }
+.sectionHeading { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.sectionHeading h2 { margin:0; font-size:17px; font-weight:600; }
+.sectionHeading span { color:var(--color-text-muted); font-size:13px; }
+.gameGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:0; padding:0; list-style:none; }
+.game { min-width:0; overflow:hidden; border:1px solid var(--color-border-soft); border-radius:12px; background:var(--color-bg-card); }
+.game img { display:block; width:100%; aspect-ratio:16/10; object-fit:cover; background:var(--color-bg-surface); }
+.game strong { display:block; padding:12px; font-size:12px; line-height:1.5; font-weight:500; overflow-wrap:anywhere; }
+.accessNote { margin:20px 0 0; font-size:13px; line-height:1.7; color:var(--color-text-muted); }
+.formColumn { border:1px solid var(--color-border-soft); border-radius:16px; background:var(--color-bg-card); }
+.formHeader { padding:24px 28px 20px; border-bottom:1px solid var(--color-border-soft); }
+.formHeader h2 { margin:0; font-size:18px; font-weight:600; }
+.account { display:flex; align-items:center; gap:12px; margin-top:16px; }
+.account img,.accountIcon { width:40px; height:40px; border-radius:50%; flex-shrink:0; }
+.accountIcon { display:flex; align-items:center; justify-content:center; background:var(--color-bg-base); color:var(--color-text-muted); }
+.accountText { min-width:0; }
+.accountText strong { display:block; font-size:14px; line-height:1.5; font-weight:500; overflow-wrap:anywhere; }
+.accountText span { display:block; margin-top:2px; color:var(--color-text-muted); font-size:12px; overflow-wrap:anywhere; }
+.inlineRoot,.formSurface { width:100%; min-width:0; }
+.formBody { display:flex; flex-direction:column; gap:24px; padding:24px 28px 28px; }
+.formBody label { font-size:14px; font-weight:500; }
+.formBody input { min-width:0; font-size:14px; }
+.paymentList { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.paymentMethod:last-child:nth-child(odd) { grid-column:1/-1; }
+.paymentMethod { position:relative; display:flex; align-items:center; gap:12px; width:100%; min-height:64px; padding:12px 16px; border:1px solid var(--color-border-soft); border-radius:12px; background:var(--color-bg-base); color:var(--color-text-base); text-align:left; transition:background-color .15s,border-color .15s; cursor:pointer; }
+.paymentMethod:hover { border-color:var(--color-border-light); }
+.paymentMethod[aria-pressed=true] { border-color:var(--color-accent); background:color-mix(in srgb,var(--color-accent) 7%,var(--color-bg-base)); }
+.paymentIcon { display:flex; align-items:center; justify-content:center; flex-shrink:0; width:32px; height:32px; color:var(--color-text-muted); }
+.paymentText { flex:1; min-width:0; }
+.paymentText strong { display:block; font-size:14px; line-height:1.5; font-weight:500; }
+.paymentText small { display:block; margin-top:2px; color:var(--color-text-muted); font-size:12px; line-height:1.5; }
+.paymentText em { font-style:normal; }
+.radio { display:flex; align-items:center; justify-content:center; width:18px; height:18px; border:1px solid var(--color-border-light); border-radius:50%; flex-shrink:0; }
+[aria-pressed=true]>.radio { border-color:var(--color-accent); background:var(--color-accent); color:white; }
+.summary { padding-top:20px; border-top:1px solid var(--color-border-soft); }
+.summary dl { display:grid; gap:12px; margin:0; }
+.summary dl>div { display:flex; align-items:baseline; justify-content:space-between; gap:16px; font-size:13px; line-height:1.6; }
+.summary dt { color:var(--color-text-muted); }
+.summary dd { margin:0; font-variant-numeric:tabular-nums; }
+.summary .total { margin-top:4px; padding-top:16px; border-top:1px solid var(--color-border-soft); font-size:16px; font-weight:600; }
+.summary .total dt { color:var(--color-text-base); }
+.summary .total dd { font-size:24px; }
+.pay { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:48px; padding:12px 20px; border:0; border-radius:10px; background:var(--color-accent); color:var(--color-on-accent,#fff); font-size:15px; font-weight:600; cursor:pointer; transition:background-color .15s; }
+.pay:hover { background:var(--color-accent-light); }
+.pay:disabled { opacity:.6; cursor:wait; }
+.error { border:1px solid color-mix(in srgb,var(--color-hot,#ef4444) 35%,transparent); border-radius:10px; background:color-mix(in srgb,var(--color-hot,#ef4444) 6%,transparent); padding:12px 16px; color:var(--color-hot,#ef4444); font-size:13px; line-height:1.6; }
+.footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; width:min(100% - 64px,1280px); margin:auto; padding:24px 0; border-top:1px solid var(--color-border-soft); color:var(--color-text-muted); font-size:12px; }
+.footer nav { display:flex; flex-wrap:wrap; gap:20px; }
+.footer a:hover { color:var(--color-text-base); }
+.unavailable { max-width:640px; padding:40px 0 80px; }
+.unavailable a { display:inline-flex; align-items:center; gap:8px; margin-top:24px; color:var(--color-accent-light); }
+.formBody button:focus-visible,.page a:focus-visible { outline:2px solid var(--color-accent-light); outline-offset:3px; }
+@media(max-width:1100px) { .layout { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; } .gameGrid { grid-template-columns:repeat(3,minmax(0,1fr)); } .plan,.formHeader,.formBody { padding:24px; } }
+@media(max-width:800px) { .main { width:calc(100% - 40px); padding-top:24px; padding-bottom:40px; } .layout { grid-template-columns:minmax(0,1fr); grid-template-areas:"plan" "form" "games"; grid-template-rows:auto; gap:32px; } .gameGrid { grid-template-columns:repeat(4,minmax(0,1fr)); } .heading { margin-bottom:24px; } .footer { width:calc(100% - 40px); } }
+@media(max-width:480px) { .breadcrumb { font-size:12px; gap:8px; margin-bottom:20px; } .plan,.formHeader,.formBody { padding:20px; } .plan h2 { font-size:18px; } .planCover { width:56px; height:56px; } .price strong { font-size:32px; } .gameGrid { grid-template-columns:repeat(2,minmax(0,1fr)); } .game strong { font-size:13px; } .heading p { font-size:14px; } .paymentMethod { padding:12px; } .paymentList { grid-template-columns:minmax(0,1fr); } }

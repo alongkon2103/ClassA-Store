@@ -1,3 +1,4 @@
+import { matchesBundleStripePayment } from "@/lib/bundlePayment"
 import { recordTikkiesReversal } from "@/lib/integrations/tikkiesReversal"
 // app/api/webhook/route.ts
 
@@ -11,6 +12,7 @@ import { prepareAffiliateEarning, reverseAffiliateEarning } from "@/lib/affiliat
 import { awardPointsForOrder } from "@/lib/points"
 import { fetchStripeCardCountry } from "@/lib/stripeCardCountry"
 import { notify } from "@/lib/notifications"
+import { fulfillPaidOrder } from "@/lib/orderFulfillment"
 import { NextRequest } from "next/server"
 
 export const runtime = "nodejs"
@@ -94,6 +96,17 @@ export async function POST(req: NextRequest) {
     })
 
     if (!order) return new Response("ok")
+    if (order.bundle_parent_id) return new Response("ok")
+    if (order.products.type === "bundle") {
+      if (!matchesBundleStripePayment(order, session)) return new Response("Invalid membership payment", { status: 400 })
+      if (session.metadata?.isUpgrade === "true") return new Response("Invalid bundle upgrade", { status: 400 })
+      await prisma.orders.updateMany({
+        where: { id: order.id, status: { notIn: ["refunded", "revoked", "cancelled", "disputed", "expired"] } },
+        data: { stripe_payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : null },
+      })
+      await fulfillPaidOrder(order.id)
+      return new Response("ok")
+    }
     if (["refunded", "revoked", "cancelled", "disputed"].includes(order.status)) return new Response("ok")
     const robloxBinding = order?.products.type === "roblox_whitelist" ? await resolveTikkiesBinding(order.whitelisted_username, order) : {}
     // Stripe webhook always operates on real customer orders — user_id is always

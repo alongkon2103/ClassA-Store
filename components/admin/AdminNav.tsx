@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Link, usePathname } from "@/i18n/routing"
 import { useSession } from "next-auth/react"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { ChevronDown, Search, X } from "lucide-react"
 
-const groups = [
+const originalGroups = [
   {
     title: "overview",
     items: [
@@ -69,10 +69,37 @@ const groups = [
   }
 ]
 
+// Follow the operator's workflow; retain each destination's existing permission.
+const allItems = originalGroups.flatMap(group => group.items)
+const destinations = (paths: string[]) => paths.map(path => allItems.find(item => item.href === path)!)
+const groups = [
+  { title: "overview", items: destinations(["/admin", "/admin/analytics", "/admin/visitors"]) },
+  { title: "operations", items: destinations(["/admin/orders", "/admin/maki-orders", "/admin/whitelist", "/admin/users", "/admin/upgrade-premium"]) },
+  { title: "catalog", items: [
+    ...destinations(["/admin/products"]),
+    { href: "/admin/bundles", key: "membership_packages", roles: ["admin"] },
+    ...destinations(["/admin/game-categories", "/admin/storefront-order", "/admin/game-templates", "/admin/gifts", "/admin/partner-store"]),
+  ] },
+  { title: "promotions", items: destinations(["/admin/announcements", "/admin/discount-codes", "/admin/points"]) },
+  { title: "revenue_sharing", items: originalGroups.find(group => group.title === "revenue_sharing")!.items },
+  { title: "desktop_program", items: originalGroups.find(group => group.title === "desktop_program")!.items },
+  { title: "tools", items: destinations(["/admin/settings", "/admin/tiktok-simulator"]) },
+]
+
 export default function AdminNav() {
   const pathname = usePathname()
+  const locale = useLocale()
   const t = useTranslations("Admin")
   const n = useTranslations("Admin.navigation")
+  const label = (key: string) => {
+    const labels: Record<string, [string, string]> = {
+      overview: ["ภาพรวม", "Overview"], operations: ["คำสั่งซื้อและลูกค้า", "Orders & customers"],
+      catalog: ["สินค้าและหน้าร้าน", "Catalog & storefront"], promotions: ["การตลาด", "Marketing"],
+      revenue_sharing: ["การเงินและหุ้นส่วน", "Finance & partners"], desktop_program: ["โปรแกรมและสิทธิ์", "Programs & access"],
+      tools: ["ตั้งค่าและเครื่องมือ", "Settings & tools"], membership_packages: ["แพ็กเกจสมาชิก", "Membership packages"],
+    }
+    return labels[key]?.[locale === "th" ? 0 : 1] ?? t(key)
+  }
   const { data: session } = useSession()
   const userRole = session?.user?.role || "user"
   const [open, setOpen] = useState(false)
@@ -130,8 +157,8 @@ export default function AdminNav() {
   const normalize = (value: string) => value.normalize("NFKC").toLowerCase()
   const term = normalize(query.trim())
   const filteredGroups = roleGroups.map(group => {
-    const groupMatch = normalize(t(group.title)).includes(term)
-    return { ...group, items: group.items.filter(item => !term || groupMatch || normalize(t(item.key)).includes(term)) }
+    const groupMatch = normalize(label(group.title)).includes(term)
+    return { ...group, items: group.items.filter(item => !term || groupMatch || normalize(label(item.key)).includes(term)) }
   }).filter(group => group.items.length > 0)
   const clearSearch = () => { setQuery(""); searchRef.current?.focus() }
 
@@ -158,7 +185,7 @@ export default function AdminNav() {
           <p className="text-[9px] tracking-widest text-text-muted uppercase leading-none">
             {t("admin_panel")}
           </p>
-          <p className="font-bold text-[14px] leading-tight">Game Store</p>
+          <p className="font-semibold text-[14px] leading-tight">A Class Store</p>
         </div>
         {/* Spacer to balance the menu button so the title centres */}
         <span className="w-10" aria-hidden="true" />
@@ -183,7 +210,7 @@ export default function AdminNav() {
         <div className="px-5 py-6 border-b border-accent/10 flex items-start justify-between">
           <div>
             <p className="text-xs font-medium text-text-muted mb-1">{t("admin_panel")}</p>
-            <p className="font-bold text-[16px]">Game Store</p>
+            <p className="font-semibold text-[16px]">A Class Store</p>
           </div>
           <button
             type="button"
@@ -213,7 +240,8 @@ export default function AdminNav() {
           {term && filteredGroups.length > 0 && <p role="status" className="px-3 pb-1 text-xs text-text-muted">{n("result_count", { count: filteredGroups.reduce((count, group) => count + group.items.length, 0) })}</p>}
           {term && filteredGroups.length === 0 && <div className="px-3 py-5 text-sm text-text-muted"><p role="status" className="break-words">{n("no_results", { query: query.trim() })}</p><button type="button" onClick={clearSearch} className="mt-3 font-semibold text-accent-light underline underline-offset-4">{n("clear_search")}</button></div>}
           {filteredGroups.map(group => {
-            const isExpanded = !!term || (expanded[group.title]?.path === pathname ? expanded[group.title].open : group.items.some(item => item.href === activeHref))
+            const preference = expanded[group.title]
+            const isExpanded = !!term || preference?.open === true || (preference?.path !== pathname && group.items.some(item => item.href === activeHref)) || (!preference && ["operations", "catalog"].includes(group.title))
             const pendingCount = group.items.reduce((sum, item) => {
               const badgeKey = (item as { badge?: string }).badge
               return sum + (badgeKey ? (badges[badgeKey] || 0) : 0)
@@ -222,7 +250,7 @@ export default function AdminNav() {
               <button type="button" aria-expanded={isExpanded} aria-controls={`admin-group-${group.title}`} disabled={!!term}
                 onClick={() => setExpanded(current => ({ ...current, [group.title]: { path: pathname, open: !isExpanded } }))}
                 className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold leading-5 text-text-base enabled:hover:bg-bg-base focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-default">
-                <span className="min-w-0 flex-1">{t(group.title)}</span>
+                <span className="min-w-0 flex-1">{label(group.title)}</span>
                 {!isExpanded && pendingCount > 0 && <span aria-label={n("pending_count", { count: pendingCount })} className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-hot px-1 text-[10px] font-bold leading-none text-on-accent">{pendingCount > 9 ? "9+" : pendingCount}</span>}
                 <ChevronDown size={16} aria-hidden="true" className={`shrink-0 text-text-muted transition-transform motion-reduce:transition-none ${isExpanded ? "" : "-rotate-90"}`} />
               </button>
@@ -242,7 +270,7 @@ export default function AdminNav() {
                       : "text-text-muted hover:bg-bg-base hover:text-text-base"
                       }`}
                   >
-                    <span className="min-w-0 flex-1 break-words">{t(key)}</span>
+                    <span className="min-w-0 flex-1 break-words">{label(key)}</span>
                     {count > 0 && (
                       <span className="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-hot text-on-accent text-[10px] font-bold flex items-center justify-center leading-none">
                         {count > 9 ? "9+" : count}

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { validateAdmin } from "@/lib/adminAuth"
 import { computeWhitelistExpiry } from "@/lib/formatExpiresAt"
+import { EMAIL_WHITELIST_NOTE, RETIRED_EMAIL_WHITELIST_NOTE, literalInsensitive } from "@/lib/manualWhitelistEmail"
 
 // Edit a whitelist row: in-game name (ign), game (product_id), premium flag, and
 // duration/permanent. user_whitelist_access has no user_id, so there's no user to
@@ -67,8 +68,9 @@ export async function PATCH(
             //    OLD product, case-insensitive like the check route).
             const synced = await tx.orders.updateMany({
                 where: {
-                    whitelisted_username: { equals: existing.ign, mode: "insensitive" },
+                    whitelisted_username: literalInsensitive(existing.ign),
                     product_id: existing.product_id,
+                    OR: [{ manual_note: null }, { manual_note: { not: RETIRED_EMAIL_WHITELIST_NOTE } }],
                 },
                 data: {
                     ...robloxBinding,
@@ -109,8 +111,18 @@ export async function DELETE(
         // This is perfect, now TypeScript knows it's a Promise and can be awaited properly
         const { id } = await params
 
-        await prisma.user_whitelist_access.delete({
-            where: { id }
+        const existing = await prisma.user_whitelist_access.findUnique({ where: { id } })
+        if (!existing) return NextResponse.json({ error: "Record not found" }, { status: 404 })
+        await prisma.$transaction(async tx => {
+            await tx.$executeRaw`SELECT set_config('app.actor_id', ${adminCheck.session!.user.id}, true)`
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${existing.product_id + ':' + existing.ign.toLowerCase()}, 0))`
+            // Retiring the reservation marker is durable even if another
+            // purchase or trial later recreates this player/game whitelist.
+            await tx.orders.updateMany({
+                where: { product_id: existing.product_id, whitelisted_username: literalInsensitive(existing.ign), manual_note: EMAIL_WHITELIST_NOTE, payment_method: "admin_manual", order_type: "TRIAL" },
+                data: { whitelist_status: "revoked", manual_note: RETIRED_EMAIL_WHITELIST_NOTE },
+            })
+            await tx.user_whitelist_access.delete({ where: { id } })
         })
 
         return NextResponse.json({ message: "Whitelist record deleted successfully" })

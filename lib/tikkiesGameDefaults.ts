@@ -1,5 +1,8 @@
 // Product-scoped Tikkies defaults. Legacy storefront Functions stay independent.
 export type GameDefaultsPlatform = "roblox" | "minecraft"
+export const GAME_COMMAND_INPUTS = ["robloxUsername", "chatText"] as const
+export type GameCommandInput = typeof GAME_COMMAND_INPUTS[number]
+export const isGameCommandInput = (value: unknown): value is GameCommandInput => GAME_COMMAND_INPUTS.some(input => input === value)
 export type GameEffect = {
   id: string
   key: string
@@ -45,13 +48,8 @@ export const MINECRAFT_COMMANDS = [
 ].map(([key, name]) => ({ key, name }))
 
 export const AC_MAGNET_PRODUCT_ID = "ce4eb329-7ae9-43d4-bf6a-cfde0fe3cee7"
-export const ROBLOX_INTERACTIVE_EVENTS = [
-  ["Rose", "+10 Blocks"], ["Roses", "+100 Blocks"], ["Bear", "+1500 Blocks"], ["Friendship", "Freeze +5s"],
-  ["Donut", "Expand arena +10%"], ["HeartMe", "Mixed gacha"], ["GoatBusker", "Prank gacha"], ["HelpGacha", "Help gacha"],
-  ["Follow", "Follow reward · +10 Blocks"], ["Likes", "Like reward · +10 Blocks"], ["Remove", "Remove 10 Blocks"],
-  ["Speed", "Speed +5s"], ["Range", "Magnet range +5s"], ["Storm", "Gather blocks"], ["Shrink", "Shrink arena −10%"],
-  ["WinAdd", "+1 Win"], ["WinRemove", "−1 Win"],
-].map(([key, name]) => ({ key, name }))
+// Compatibility export; generic API validation/editing uses published command keys.
+export { MAGNET_GAME_EVENTS as ROBLOX_INTERACTIVE_EVENTS } from "./magnetGameEvents"
 
 export class GameDefaultsError extends Error {
   constructor(public code: string, public status = 400, public field?: string) { super(code) }
@@ -141,8 +139,8 @@ export function validateGameResponses(value: unknown, platform: GameDefaultsPlat
       return { type: "gameEffect", event: row.event }
     }
     if (row.type === "robloxEvent") {
-      if (Object.keys(row).some(key => !["type", "event"].includes(key)) || typeof row.event !== "string" || !/^[A-Za-z][A-Za-z0-9_.:-]{0,79}$/.test(row.event)) return unsupported()
-      return { type: "robloxEvent", event: row.event }
+      if (Object.keys(row).some(key => !["type", "event", "input"].includes(key)) || typeof row.event !== "string" || !/^[A-Za-z][A-Za-z0-9_.:-]{0,79}$/.test(row.event) || Object.hasOwn(row, "input") && !isGameCommandInput(row.input)) return unsupported()
+      return { type: "robloxEvent", event: row.event, ...(isGameCommandInput(row.input) ? { input: row.input } : {}) }
     }
     if (row.type === "keypress") {
       if (Object.keys(row).some(key => !["type", "key", "modifiers", "holdMs"].includes(key)) || !text(row.key, 24)) return unsupported()
@@ -181,13 +179,18 @@ export function validateGameDefaults(value: unknown, options: { allowOverlapping
   if (!safe(value) || !defaultsRecord(value) || new TextEncoder().encode(JSON.stringify(value)).byteLength > 2 * 1024 * 1024) return invalid()
   only(value, ["schemaVersion", "platform", "effects", "actions"])
   if (value.schemaVersion !== 1 || typeof value.platform !== "string" || !["roblox", "minecraft"].includes(value.platform) || !Array.isArray(value.effects) || value.effects.length > 200 || !Array.isArray(value.actions) || value.actions.length > 200) return invalid()
-  const platform = value.platform as GameDefaultsPlatform, ids = new Set<string>(), effectIdentities = new Set<string>()
+  const platform = value.platform as GameDefaultsPlatform, ids = new Set<string>(), effectIdentities = new Set<string>(), commandInputs = new Map<string, unknown>()
   const effects: GameEffect[] = value.effects.map(row => {
     if (!defaultsRecord(row)) return invalid("effects")
     only(row, ["id", "key", "name", "imageUrl", "category", "responses"])
     if (!text(row.id, 36) || !uuid.test(row.id) || ids.has(row.id.toLowerCase()) || !text(row.key, 120) || !text(row.name, 200) || typeof row.category !== "string" || !["help", "troll", "neutral"].includes(row.category)) return invalid("effects")
     ids.add(row.id.toLowerCase())
     const effect = { id: row.id.toLowerCase(), key: row.key, name: row.name, imageUrl: image(row.imageUrl), category: row.category as GameEffect["category"], responses: validateGameResponses(row.responses, platform) }
+    for (const response of effect.responses) if (response.type === "robloxEvent") {
+      const command = response.event as string
+      if (commandInputs.has(command) && commandInputs.get(command) !== response.input) throw new GameDefaultsError("conflicting_command_input", 400, command)
+      commandInputs.set(command, response.input)
+    }
     const identity = gameEffectIdentity(effect)
     if (effectIdentities.has(identity)) throw new GameDefaultsError("duplicate_effect", 400, row.id)
     effectIdentities.add(identity)

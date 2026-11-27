@@ -9,6 +9,8 @@ export type PayoutFieldDef = {
   label_en: string
   label_ja?: string
   label_zh?: string
+  label_ko?: string
+  label_vi?: string
   required?: boolean
   placeholder?: string
 }
@@ -19,6 +21,8 @@ export type PayoutChannel = {
   label_en: string
   label_ja?: string
   label_zh?: string
+  label_ko?: string
+  label_vi?: string
   fields: PayoutFieldDef[]
 }
 
@@ -29,9 +33,11 @@ export const PAYOUT_CHANNELS: PayoutChannel[] = [
     label_en: "PromptPay",
     label_ja: "PromptPay",
     label_zh: "PromptPay",
+    label_ko: "PromptPay",
+    label_vi: "PromptPay",
     fields: [
-      { key: "account", label_th: "เบอร์/เลขบัตรพร้อมเพย์", label_en: "PromptPay phone/ID", label_ja: "PromptPayの電話番号/ID", label_zh: "PromptPay 手机号/ID", required: true },
-      { key: "name", label_th: "ชื่อบัญชี", label_en: "Account name", label_ja: "口座名義", label_zh: "账户名", required: true },
+      { key: "account", label_th: "เบอร์/เลขบัตรพร้อมเพย์", label_en: "PromptPay phone/ID", label_ja: "PromptPayの電話番号/ID", label_zh: "PromptPay 手机号/ID", label_ko: "PromptPay 전화번호/신분증 번호", label_vi: "Số điện thoại/ID PromptPay", required: true },
+      { key: "name", label_th: "ชื่อบัญชี", label_en: "Account name", label_ja: "口座名義", label_zh: "账户名", label_ko: "예금주명", label_vi: "Tên chủ tài khoản", required: true },
     ],
   },
   {
@@ -40,10 +46,12 @@ export const PAYOUT_CHANNELS: PayoutChannel[] = [
     label_en: "Thai bank",
     label_ja: "タイの銀行",
     label_zh: "泰国银行",
+    label_ko: "태국 은행",
+    label_vi: "Ngân hàng Thái Lan",
     fields: [
-      { key: "bank", label_th: "ธนาคาร", label_en: "Bank", label_ja: "銀行", label_zh: "银行", required: true },
-      { key: "account", label_th: "เลขบัญชี", label_en: "Account number", label_ja: "口座番号", label_zh: "账号", required: true },
-      { key: "name", label_th: "ชื่อบัญชี", label_en: "Account name", label_ja: "口座名義", label_zh: "账户名", required: true },
+      { key: "bank", label_th: "ธนาคาร", label_en: "Bank", label_ja: "銀行", label_zh: "银行", label_ko: "은행", label_vi: "Ngân hàng", required: true },
+      { key: "account", label_th: "เลขบัญชี", label_en: "Account number", label_ja: "口座番号", label_zh: "账号", label_ko: "계좌번호", label_vi: "Số tài khoản", required: true },
+      { key: "name", label_th: "ชื่อบัญชี", label_en: "Account name", label_ja: "口座名義", label_zh: "账户名", label_ko: "예금주명", label_vi: "Tên chủ tài khoản", required: true },
     ],
   },
   {
@@ -52,9 +60,11 @@ export const PAYOUT_CHANNELS: PayoutChannel[] = [
     label_en: "PayPal",
     label_ja: "PayPal",
     label_zh: "PayPal",
+    label_ko: "PayPal",
+    label_vi: "PayPal",
     fields: [
-      { key: "email", label_th: "อีเมล PayPal", label_en: "PayPal email", label_ja: "PayPalのメールアドレス", label_zh: "PayPal 邮箱", required: true },
-      { key: "name", label_th: "ชื่อผู้รับ", label_en: "Recipient name", label_ja: "受取人名", label_zh: "收款人姓名", required: true },
+      { key: "email", label_th: "อีเมล PayPal", label_en: "PayPal email", label_ja: "PayPalのメールアドレス", label_zh: "PayPal 邮箱", label_ko: "PayPal 이메일", label_vi: "Email PayPal", required: true },
+      { key: "name", label_th: "ชื่อผู้รับ", label_en: "Recipient name", label_ja: "受取人名", label_zh: "收款人姓名", label_ko: "수취인 이름", label_vi: "Tên người nhận", required: true },
     ],
   },
 ]
@@ -63,11 +73,13 @@ export function getChannel(value: string | null | undefined): PayoutChannel | nu
   return PAYOUT_CHANNELS.find((c) => c.value === value) ?? null
 }
 
-/** ป้ายชื่อช่องทาง/ฟิลด์ตามภาษา — ja/zh ที่ไม่มีป้ายใช้อังกฤษ */
-export function payoutLabel(x: { label_th: string; label_en: string; label_ja?: string; label_zh?: string }, locale: string): string {
+/** Localized channel/field labels fall back to English when unavailable. */
+export function payoutLabel(x: { label_th: string; label_en: string; label_ja?: string; label_zh?: string; label_ko?: string; label_vi?: string }, locale: string): string {
   if (locale === "th") return x.label_th
   if (locale === "ja") return x.label_ja ?? x.label_en
   if (locale === "zh") return x.label_zh ?? x.label_en
+  if (locale === "ko") return x.label_ko ?? x.label_en
+  if (locale === "vi") return x.label_vi ?? x.label_en
   return x.label_en
 }
 

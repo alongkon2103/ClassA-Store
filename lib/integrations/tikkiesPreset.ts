@@ -1,3 +1,4 @@
+import type {Identity} from './tikkies'
 import { createHash } from "node:crypto"
 import { constants } from "node:fs"
 import { lstat, open, realpath } from "node:fs/promises"
@@ -20,10 +21,10 @@ function safeJson(value: unknown, depth = 0): boolean {
   if (Array.isArray(value)) return value.length <= 1000 && value.every(item => safeJson(item, depth + 1))
   return record(value) && Object.keys(value).length <= 100 && Object.entries(value).every(([key, item]) => !["__proto__", "constructor", "prototype"].includes(key) && safeJson(item, depth + 1))
 }
-export function parsePresetRequest(body: unknown): { email: string; productId: string } {
+export function parsePresetRequest(body: unknown): { email: string; productId: string;identities?:Identity[] } {
   const input = parseLibraryRequest(body)
   if (!input.email || !input.productId) throw new TikkiesError("invalid_input", 400)
-  return { email: input.email, productId: input.productId }
+  return { email: input.email, productId: input.productId,...(input.identities?{identities:input.identities}:{}) }
 }
 function ordered(rows: Preset[]): Preset[] {
   return [...rows].sort((a, b) => (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER)
@@ -125,9 +126,9 @@ function envelope(preset: Preset, file: { actions: unknown[]; contentRevision: s
   return { schemaVersion: 1 as const, gameId, validUntil, revision, preset: identity, actions: file.actions, functions, ...(bindings ? { bindings } : {}) }
 }
 
-export async function readTikkiesPreset(db: PrismaClient, input: { email: string; productId: string }, origin: string, options: Options = {}) {
+export async function readTikkiesPreset(db: PrismaClient, input: { email: string; productId: string;identities?:Identity[] }, origin: string, options: Options = {}) {
   async function owned() {
-    const library = await db.$transaction(tx => readTikkiesLibrary(tx, input.email, new Date(), origin, input.productId), { isolationLevel: "RepeatableRead", timeout: 10000 })
+    const library = await db.$transaction(tx => readTikkiesLibrary(tx, input.email, new Date(), origin, input.productId,input.identities), { isolationLevel: "RepeatableRead", timeout: 10000 })
     const game = library.games.find(row => row.id === input.productId)
     if (!game) throw new TikkiesError("game_not_found", 404)
     if (game.access !== "owned") throw new TikkiesError(game.access === "expired" ? "game_access_expired" : "game_not_owned", 403)

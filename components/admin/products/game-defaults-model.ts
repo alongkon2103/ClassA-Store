@@ -1,5 +1,5 @@
-import type { GameDefaultAction, GameEffect } from "@/lib/tikkiesGameDefaults"
-import { MINECRAFT_COMMANDS } from "@/lib/tikkiesGameDefaults"
+import type { GameCommandInput, GameDefaultAction, GameEffect } from "@/lib/tikkiesGameDefaults"
+import { isGameCommandInput, MINECRAFT_COMMANDS } from "@/lib/tikkiesGameDefaults"
 
 export const buttonClass = "inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-accent/20 px-3 py-2 text-[13px] font-medium transition hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-40"
 export const primaryClass = `${buttonClass} border-accent bg-accent text-white hover:bg-accent/90`
@@ -23,13 +23,17 @@ export function triggerSummary(action: GameDefaultAction, th: boolean) {
   if (type === "chat") return `${names.chat} · ${String(trigger.keyword || (th ? "ข้อความใดก็ได้" : "any message"))}`
   return `${names[type] || type}${trigger.accelerator ? ` · ${trigger.accelerator}` : trigger.prize ? ` · ${trigger.prize}` : ""}`
 }
+export const gameCommandInputLabel = (input: GameCommandInput, th: boolean) => input === "robloxUsername"
+  ? th ? "ชื่อผู้ใช้ Roblox จากแชท" : "Roblox username from chat"
+  : th ? "ข้อความแชท" : "Chat text"
+
 export function responseSummary(effect: GameEffect, th: boolean) {
   return effect.responses.map(step => {
     if (step.type === "keypress") return [...(Array.isArray(step.modifiers) ? step.modifiers : []), String(step.key || "?").toUpperCase()].join(" + ") + (Number(step.holdMs) ? ` (${step.holdMs} ms)` : "")
     if (step.type === "delay") return `${th ? "รอ" : "Wait"} ${step.ms} ms`
     if (step.type === "winCounter") return `${th ? "นับชนะ" : "Wins"} ${step.wcCmd || "add"} ${step.wcAmount || 0}`
     if (step.type === "gameEffect") return MINECRAFT_COMMANDS.find(command => command.key === step.event)?.name || String(step.event)
-    if (step.type === "robloxEvent") return String(step.event)
+    if (step.type === "robloxEvent") return String(step.event) + (isGameCommandInput(step.input) ? ` · ${gameCommandInputLabel(step.input, th)}` : "")
     return String(step.type)
   }).join(" → ")
 }

@@ -1,0 +1,43 @@
+/* Shared-store tokens own the palette, typography and surfaces. */
+.hero { position: relative; display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: 36px; min-height: 420px; padding: 48px 56px; overflow: hidden; border-radius: 16px; background: var(--gradient-hero); }
+.heroCopy { position: relative; z-index: 1; min-width: 0; }
+.heroBackdrop { position: absolute; inset: -120px -80px -120px 12%; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; transform: rotate(-12deg); opacity: .12; filter: saturate(.7); mask-image: linear-gradient(90deg,transparent 4%,#000 80%); pointer-events: none; }
+.heroBackdrop > div { aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px; }
+.heroBackdrop img { width: 100%; height: 100%; object-fit: cover; }
+.heroScene { position: relative; z-index: 1; width: 100%; min-width: 0; height: 416px; isolation: isolate; }
+.previewFrame { position: absolute; top: 0; left: 35%; width: 62%; max-width: 264px; padding: 8px; border: 1px solid var(--color-border-light); border-radius: 24px; background: var(--color-bg-card); box-shadow: 0 20px 36px rgba(5,8,16,.28); transform: rotate(5deg); }
+.previewTopbar { display: flex; height: 32px; align-items: center; justify-content: center; gap: 8px; padding: 0 4px 8px; color: var(--color-text-base); font-size: .72rem; line-height: 20px; font-weight: 600; }
+.previewTopbar > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.previewMedia { position: relative; aspect-ratio: 9 / 13; overflow: hidden; border-radius: 16px; background: var(--color-bg-base); }
+.previewMedia > img,.previewMedia > video { width: 100%; height: 100%; object-fit: cover; }
+.previewCaption { position: absolute; inset: auto 0 0; padding: 32px 12px 12px; color: #fff; background: linear-gradient(transparent,rgba(5,8,16,.8)); font-size: .65rem; line-height: 16px; text-align: center; pointer-events: none; }
+.previewPlay { position: absolute; top: 50%; left: 50%; display: flex; width: 56px; height: 56px; align-items: center; justify-content: center; padding-left: 4px; border: 1px solid rgba(255,255,255,.6); border-radius: 50%; background: rgba(8,14,28,.72); color: #fff; transform: translate(-50%,-50%); cursor: pointer; }
+.previewPlay:hover { background: var(--color-accent); }
+.previewClose { position: absolute; top: 8px; right: 8px; display: flex; width: 32px; height: 32px; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,.4); border-radius: 8px; background: rgba(5,8,16,.8); color: #fff; cursor: pointer; }
+.sceneCoverLeft,.sceneCoverRight { position: absolute; z-index: -1; overflow: hidden; width: 34%; aspect-ratio: 3 / 4; border: 4px solid var(--color-bg-card); border-radius: 16px; box-shadow: 0 12px 24px rgba(5,8,16,.18); }
+.sceneCoverLeft { top: 32px; left: 9%; transform: rotate(-12deg); }
+.sceneCoverRight { right: -4%; bottom: 36px; transform: rotate(14deg); }
+.sceneCoverLeft > img,.sceneCoverRight > img { width: 100%; height: 100%; object-fit: cover; }
+.sceneNoteTop,.sceneNoteBottom { position: absolute; display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--color-border-light); border-radius: 12px; background: var(--color-bg-card); color: var(--color-text-base); box-shadow: 0 12px 24px rgba(5,8,16,.2); }
+.sceneNoteTop { top: 96px; left: 0; }
+.sceneNoteBottom { bottom: 84px; left: 6%; }
+.scenePlaying .sceneNoteTop,.scenePlaying .sceneNoteBottom { opacity: 0; pointer-events: none; }
+.scenePlaying .previewFrame { transform: none; }
+.sceneNoteIcon { display: flex; width: 36px; height: 36px; flex-shrink: 0; align-items: center; justify-content: center; border: 1px solid var(--color-border-soft); border-radius: 10px; background: var(--color-bg-surface); color: var(--color-accent-light); }
+.sceneNoteTop strong,.sceneNoteBottom strong { display: block; font-size: .8rem; line-height: 20px; font-weight: 600; }
+.sceneNoteTop div > span,.sceneNoteBottom div > span { display: block; margin-top: 4px; color: var(--color-text-muted); font-size: .65rem; line-height: 16px; }
+.previewPlay:focus-visible,.previewClose:focus-visible { outline: 2px solid var(--color-accent-light); outline-offset: 4px; }
+.section { margin-top: 40px; scroll-margin-top: 88px; }
+.coverFallback { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: var(--gradient-thumb); color: var(--color-text-dim); }
+.gameArtwork { aspect-ratio: 4 / 3; overflow: hidden; background: var(--gradient-thumb); }
+.gameArtwork > img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s; }
+.gameArtwork:hover > img { transform: scale(1.05); }
+.faqItem + .faqItem { border-top: 1px solid var(--color-border-soft); }
+.faqItem summary { list-style: none; }
+.faqItem summary::-webkit-details-marker { display: none; }
+.faqItem[open] summary svg { transform: rotate(180deg); }
+@media (max-width: 1023px) { .hero { gap: 24px; padding: 36px 28px; min-height: 380px; } .heroScene { height: 360px; } .previewFrame { left: 32%; width: 66%; } .sceneNoteTop,.sceneNoteBottom { gap: 8px; padding: 12px; } .sceneNoteTop { top: 72px; left: -4%; } .sceneNoteBottom { bottom: 64px; left: 0; } .sceneNoteIcon { width: 32px; height: 32px; } .sceneCoverRight { right: -4%; bottom: 44px; } }
+@media (max-width: 760px) { .hero { grid-template-columns: 1fr; padding: 28px; gap: 32px; } .heroScene { max-width: 440px; height: 420px; margin-inline: auto; } .previewFrame { left: 34%; width: 62%; max-width: 252px; } .sceneNoteTop { top: 88px; left: 0; } .sceneNoteBottom { bottom: 88px; left: 4%; } .heroBackdrop { inset: 0 -200px 0 -200px; opacity: .08; mask-image: linear-gradient(180deg,transparent 15%,#000 80%); } .section { margin-top: 32px; } }
+@media (max-width: 479px) { .heroScene { height: 360px; } .previewFrame { left: 29%; width: 70%; padding: 6px; border-radius: 20px; transform: rotate(4deg); } .previewMedia { border-radius: 12px; } .previewTopbar { height: 28px; font-size: .65rem; } .sceneCoverLeft { top: 28px; left: 2%; width: 38%; } .sceneCoverRight { right: -4%; bottom: 48px; width: 36%; } .sceneNoteTop { top: 72px; left: -4px; } .sceneNoteBottom { bottom: 64px; left: 0; } .sceneNoteTop,.sceneNoteBottom { gap: 8px; padding: 8px 12px; } .sceneNoteTop strong,.sceneNoteBottom strong { font-size: .72rem; } .sceneNoteIcon { width: 28px; height: 28px; } .sceneNoteIcon > svg { width: 16px; height: 16px; } }
+@media (max-width: 389px) { .hero { padding: 24px; } .heroScene { height: 340px; } .sceneNoteBottom { bottom: 56px; } }
+@media (prefers-reduced-motion: reduce) { .gameArtwork > img { transition: none; } }

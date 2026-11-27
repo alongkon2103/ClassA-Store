@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma"
 import { awardPointsForOrder } from "@/lib/points"
 import { prepareAffiliateEarning } from "@/lib/affiliateEarnings"
 import { notify } from "@/lib/notifications"
+import { fulfillPaidBundleOrder } from "@/lib/paidBundleOrder"
 
 const PERMANENT_EXPIRES_AT = new Date("9999-12-31T00:00:00.000Z")
 
@@ -37,6 +38,9 @@ export async function fulfillPaidOrder(orderId: string, opts?: { isPremium?: boo
   })
 
   if (!order) return "missing"
+  // Bundle children are granted only by their parent's atomic transaction.
+  if (order.bundle_parent_id) return "already_paid"
+  if (order.products.type === "bundle") return fulfillPaidBundleOrder(orderId)
   if (["paid", "refunded", "revoked", "cancelled", "disputed"].includes(order.status)) return "already_paid"
 
   const robloxBinding = order.products.type === "roblox_whitelist" ? await resolveTikkiesBinding(order.whitelisted_username, order) : {}

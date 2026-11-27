@@ -1,702 +1,163 @@
 "use client"
 
-import { useState } from "react"
-import { useTranslations } from "next-intl"
+import { useEffect, useId, useRef, useState } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import Image from "next/image"
-import { getImageUrl } from "@/lib/getImageUrl"
-import { motion, AnimatePresence } from "framer-motion"
-import Select, { components, type SingleValue, type StylesConfig, type OptionProps, type SingleValueProps } from "react-select"
+import { ArrowDown, ArrowUp, Check, ImagePlus, Images, Loader2, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react"
 import type { gifts as Gift } from "@prisma/client"
+import { getImageUrl } from "@/lib/getImageUrl"
+import FunctionGiftPicker, { GiftDetails } from "./FunctionGiftPicker"
+import { BULK_LIMIT, IMAGE_ACCEPT, LIKE_THRESHOLDS, categoryOf, functionPayload, inferFunction, moveWithinCategory, validateFunction, validateImage, type FunctionCategory, type FunctionDraft, type FunctionSection } from "./function-manager-model"
 
 type Translate = ReturnType<typeof useTranslations<"AdminFunctions">>
-
-type ProductFunction = {
-  id: string
-  product_id: string
-  name: string
-  label_th: string | null
-  label_en: string | null
-  image_url: string | null
-  sort_order: number
-  default_gift_id: number | null
-  default_trigger_threshold: number | null
-  created_at: string | null
-}
-
-type Props = {
-  productId: string
-  functions: ProductFunction[]
-  allGifts: Gift[]
-}
-
-type GiftOption = {
-  value: number | null
-  label: string
-  gift: Gift | null
-}
+type ProductFunction = { id: string; product_id: string; name: string; label_th: string | null; label_en: string | null; image_url: string | null; category?: string | null; sort_order: number; default_gift_id: number | null; default_trigger_threshold: number | null; created_at: string | null }
+type Props = { productId: string; functions: ProductFunction[]; allGifts: Gift[] }
+type Staged = FunctionDraft & { id: string; file: File; preview: string; progress: number; state: "ready" | "uploading" | "uploaded" | "error"; error?: string }
+const inputClass = "w-full min-w-0 rounded-lg border border-accent/15 bg-bg-base px-3 py-2 text-[13px] outline-none transition focus:border-accent disabled:opacity-50"
+const buttonClass = "inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-accent/15 px-3 py-2 text-[12px] font-medium transition hover:bg-accent/10 focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
+const primaryClass = `${buttonClass} border-transparent bg-accent text-white hover:opacity-90`
+const categories: FunctionCategory[] = ["help", "troll", "neutral"]
+const blank = (category: FunctionCategory = "neutral"): FunctionDraft => ({ name: "", label_th: "", label_en: "", image_url: "", category, default_gift_id: null, default_trigger_threshold: "" })
 
 export default function FunctionManager({ productId, functions: initial, allGifts }: Props) {
-  const t = useTranslations("AdminFunctions")
-
-  const [functions, setFunctions] = useState<ProductFunction[]>(
-    [...initial].sort((a, b) => a.sort_order - b.sort_order)
-  )
-  const [loading, setLoading] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [uploading, setUploading] = useState<"add" | "edit" | null>(null)
-  const [adding, setAdding] = useState(false)
-  const [showAdd, setShowAdd] = useState(false)
-
-  const blankForm = { name: "", label_th: "", label_en: "", image_url: "", default_gift_id: null as number | null, default_trigger_threshold: "" as string }
-  const [newForm, setNewForm] = useState(blankForm)
-  const [editForm, setEditForm] = useState(blankForm)
-
-  // ── Upload ──────────────────────────────────────────────────
-  const handleUpload = async (file: File, target: "add" | "edit") => {
-    setUploading(target)
+  const t = useTranslations("AdminFunctions"), locale = useLocale(), prefix = useId()
+  const [functions, setFunctions] = useState(() => [...initial].sort((a, b) => a.sort_order - b.sort_order))
+  const [form, setForm] = useState<FunctionDraft>(blank()), [editor, setEditor] = useState<"new" | string | null>(null)
+  const [busy, setBusy] = useState(false), [uploading, setUploading] = useState(false)
+  const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null)
+  const [bulkCategory, setBulkCategory] = useState<FunctionCategory | null>(null), [staged, setStaged] = useState<Staged[]>([]), [bulkBusy, setBulkBusy] = useState(false)
+  const uploads = useRef(new Set<XMLHttpRequest>()), previews = useRef(new Set<string>()), mounted = useRef(true), stageSerial = useRef(0)
+  const locked = busy || uploading || bulkBusy
+  useEffect(() => {
+    mounted.current = true
+    const requests = uploads.current, urls = previews.current
+    return () => { mounted.current = false; requests.forEach(request => request.abort()); urls.forEach(url => URL.revokeObjectURL(url)) }
+  }, [])
+  const report = (text: string, error = true) => setNotice({ text, error })
+  const giftFor = (id: number | null) => allGifts.find(gift => gift.id === id) || null
+  const errorText = (data: { error?: string; field?: string }) => data.error === "gift_not_found" ? t("giftMissing") : data.field ? t("fieldError", { field: data.field }) : t("error")
+  const upload = (file: File, progress: (value: number) => void): Promise<string> => new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest(), body = new FormData()
+    body.append("file", file); body.append("type", "image")
+    uploads.current.add(request); request.open("POST", "/api/admin/upload"); request.responseType = "json"; request.timeout = 60000
+    request.upload.onprogress = event => { if (event.lengthComputable && mounted.current) progress(Math.round(event.loaded / event.total * 100)) }
+    request.onload = () => { uploads.current.delete(request); if (request.status >= 200 && request.status < 300 && typeof request.response?.url === "string") resolve(request.response.url); else reject(new Error(t("uploadFailed"))) }
+    request.onerror = request.onabort = request.ontimeout = () => { uploads.current.delete(request); reject(new Error(t("uploadFailed"))) }
+    request.send(body)
+  })
+  const openAdd = (category: FunctionCategory) => { setForm(blank(category)); setEditor("new"); setNotice(null) }
+  const openEdit = (item: ProductFunction) => {
+    setForm({ name: item.name, label_th: item.label_th || "", label_en: item.label_en || "", image_url: item.image_url || "", category: categoryOf(item) === "unclassified" ? "" : item.category as FunctionCategory, default_gift_id: item.default_gift_id, default_trigger_threshold: item.default_trigger_threshold?.toString() || "" }); setEditor(item.id); setNotice(null)
+  }
+  const save = async () => {
+    const invalid = validateFunction(form, allGifts)
+    if (invalid) { report(t(invalid)); return }
+    setBusy(true); setNotice(null)
     try {
-      const fd = new FormData()
-      fd.append("file", file)
-      fd.append("type", "image")
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      if (target === "add") setNewForm(p => ({ ...p, image_url: data.url }))
-      if (target === "edit") setEditForm(p => ({ ...p, image_url: data.url }))
-    } catch { alert("Upload failed") }
-    finally { setUploading(null) }
+      const adding = editor === "new"
+      const response = await fetch(`/api/admin/products/${productId}/functions${adding ? "" : `/${editor}`}`, { method: adding ? "POST" : "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...functionPayload(form), ...(adding ? { sort_order: Math.max(-1, ...functions.map(item => item.sort_order)) + 1 } : {}) }) })
+      const data = await response.json()
+      if (!response.ok) { report(errorText(data)); return }
+      setFunctions(current => (adding ? [...current, data] : current.map(item => item.id === editor ? data : item)).sort((a, b) => a.sort_order - b.sort_order)); setEditor(null); report(t("saved"), false)
+    } catch { report(t("error")) } finally { setBusy(false) }
   }
-
-  // ── Add ─────────────────────────────────────────────────────
-  const handleAdd = async () => {
-    if (!newForm.name.trim()) return
-    setAdding(true)
+  const remove = async (item: ProductFunction) => {
+    if (!window.confirm(t("deleteConfirm"))) return
+    setBusy(true)
+    try { const response = await fetch(`/api/admin/products/${productId}/functions/${item.id}`, { method: "DELETE" }); if (!response.ok) { report(t("error")); return }; setFunctions(current => current.filter(row => row.id !== item.id)); report(t("deleted"), false) } catch { report(t("error")) } finally { setBusy(false) }
+  }
+  const move = async (id: string, direction: -1 | 1) => {
+    const previous = functions, next = moveWithinCategory(functions, id, direction)
+    if (next === previous) return
+    setBusy(true); setFunctions(next)
+    try { const response = await fetch(`/api/admin/products/${productId}/functions/reorder`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next.map(({ id, sort_order }) => ({ id, sort_order }))) }); if (!response.ok) throw new Error(); report(t("saved"), false) } catch { setFunctions(previous); report(t("reorderFailed")) } finally { setBusy(false) }
+  }
+  const uploadSingle = async (file: File) => {
+    const invalid = validateImage(file); if (invalid) { report(t(invalid)); return }
+    setUploading(true)
+    try { const url = await upload(file, () => {}); if (mounted.current) setForm(current => ({ ...current, image_url: url })) } catch { if (mounted.current) report(t("uploadFailed")) } finally { if (mounted.current) setUploading(false) }
+  }
+  const clearStaging = () => { staged.forEach(row => { URL.revokeObjectURL(row.preview); previews.current.delete(row.preview) }); setStaged([]); setBulkCategory(null) }
+  const openBulk = (category: FunctionCategory) => { setBulkCategory(category); setEditor(null); setNotice(null) }
+  const stageFiles = (files: FileList | null) => {
+    if (!files) return
+    if (staged.length + files.length > BULK_LIMIT) { report(t("bulkLimit", { count: BULK_LIMIT })); return }
+    const rows = Array.from(files).map(file => { const preview = URL.createObjectURL(file); previews.current.add(preview); const invalid = validateImage(file); return { ...blank(bulkCategory || "neutral"), ...inferFunction(file.name), id: `staged-${++stageSerial.current}`, file, preview, progress: 0, state: invalid ? "error" : "ready", error: invalid ? t(invalid) : undefined } as Staged })
+    setStaged(current => [...current, ...rows])
+  }
+  const stage = (id: string, patch: Partial<Staged>) => setStaged(current => current.map(row => row.id === id ? { ...row, ...patch } : row))
+  const submitBulk = async () => {
+    if (!staged.length || locked) return
+    let invalid = false
+    for (const row of staged) {
+      const problem = validateImage(row.file) || validateFunction(row, allGifts)
+      stage(row.id, { error: problem ? t(problem) : undefined }); if (problem) invalid = true
+    }
+    if (invalid) { report(t("bulkCheck")); return }
+    setBulkBusy(true); setNotice(null)
+    const working = staged.map(row => ({ ...row })); let failed = false
     try {
-      const res = await fetch(`/api/admin/products/${productId}/functions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newForm.name.trim().toLowerCase(),
-          label_th: newForm.label_th.trim() || null,
-          label_en: newForm.label_en.trim() || null,
-          image_url: newForm.image_url || null,
-          sort_order: functions.length,
-          default_gift_id: newForm.default_gift_id,
-          default_trigger_threshold: newForm.default_trigger_threshold !== "" ? parseInt(newForm.default_trigger_threshold, 10) : null,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) { alert(data.error || t("error")); return }
-      setFunctions(p => [...p, data].sort((a, b) => a.sort_order - b.sort_order))
-      setNewForm(blankForm)
-      setShowAdd(false)
-    } catch { alert(t("error")) }
-    finally { setAdding(false) }
+      for (const row of working) {
+        if (!mounted.current) return
+        if (row.image_url) continue
+        stage(row.id, { state: "uploading", progress: 0, error: undefined })
+        try { row.image_url = await upload(row.file, progress => stage(row.id, { progress })); if (!mounted.current) return; stage(row.id, { image_url: row.image_url, state: "uploaded", progress: 100 }) }
+        catch { failed = true; if (mounted.current) stage(row.id, { state: "error", error: t("uploadFailed") }) }
+      }
+      if (!mounted.current) return
+      if (failed) { report(t("bulkUploadFailed")); return }
+      const response = await fetch(`/api/admin/products/${productId}/functions/bulk`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items: working.map(functionPayload) }) })
+      const data = await response.json()
+      if (!response.ok) { if (Number.isInteger(data.index) && working[data.index]) stage(working[data.index].id, { error: errorText(data) }); report(errorText(data)); return }
+      setFunctions(current => [...current, ...data.functions].sort((a, b) => a.sort_order - b.sort_order)); clearStaging(); report(t("bulkSaved", { count: data.functions.length }), false)
+    } catch { if (mounted.current) report(t("error")) } finally { if (mounted.current) setBulkBusy(false) }
   }
-
-  // ── Edit ────────────────────────────────────────────────────
-  const startEdit = (fn: ProductFunction) => {
-    setEditingId(fn.id)
-    setEditForm({
-      name: fn.name,
-      label_th: fn.label_th ?? "",
-      label_en: fn.label_en ?? "",
-      image_url: fn.image_url ?? "",
-      default_gift_id: fn.default_gift_id,
-      default_trigger_threshold: fn.default_trigger_threshold?.toString() ?? "",
-    })
+  const section = (category: FunctionSection) => {
+    const rows = functions.filter(item => categoryOf(item) === category)
+    if ((category === "neutral" || category === "unclassified") && !rows.length) return null
+    return <section key={category} className="min-w-0 rounded-xl border border-accent/15 bg-bg-card" aria-labelledby={`${prefix}-${category}`}>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-accent/10 p-4">
+        <div><h3 id={`${prefix}-${category}`} className="text-[15px] font-semibold">{t(category)} <span className="ml-1 text-[12px] font-normal text-text-muted">{rows.length}</span></h3>{category === "unclassified" && <p className="mt-1 text-[12px] text-text-muted">{t("unclassifiedHint")}</p>}</div>
+        <div className="flex gap-1"><button type="button" disabled={locked} className={buttonClass} onClick={() => openAdd(category === "unclassified" ? "neutral" : category)}><Plus size={14} aria-hidden="true" />{t("addFunction")}</button><button type="button" disabled={locked} className={buttonClass} aria-label={t("bulkIn", { category: t(category) })} title={t("bulkAdd")} onClick={() => openBulk(category === "unclassified" ? "neutral" : category)}><Images size={15} aria-hidden="true" /></button></div>
+      </header>
+      {!rows.length && <p className="p-6 text-center text-[12px] text-text-muted">{t("sectionEmpty")}</p>}
+      <div className="divide-y divide-accent/10">{rows.map((item, index) => {
+        const gift = giftFor(item.default_gift_id), label = (locale === "th" ? item.label_th : item.label_en) || item.label_th || item.label_en || item.name
+        return <article key={item.id} data-function-id={item.id} className="flex min-w-0 items-center gap-3 p-3">
+          <div className="flex shrink-0 flex-col"><button type="button" className="rounded p-1 text-text-muted hover:text-accent-light disabled:opacity-25" disabled={locked || index === 0} aria-label={t("moveUp", { name: label })} onClick={() => move(item.id, -1)}><ArrowUp size={14} aria-hidden="true" /></button><button type="button" className="rounded p-1 text-text-muted hover:text-accent-light disabled:opacity-25" disabled={locked || index === rows.length - 1} aria-label={t("moveDown", { name: label })} onClick={() => move(item.id, 1)}><ArrowDown size={14} aria-hidden="true" /></button></div>
+          {item.image_url ? <Image src={getImageUrl(item.image_url)} width={40} height={40} alt="" className="h-10 w-10 shrink-0 rounded-lg object-contain" unoptimized /> : <ImagePlus className="h-8 w-8 shrink-0 text-text-muted" aria-hidden="true" />}
+          <div className="min-w-0 flex-1"><p className="truncate text-[13px] font-medium">{label}</p><p className="truncate text-[11px] text-text-muted">{item.name}</p>{item.default_gift_id !== null && <div className="mt-2"><GiftDetails gift={gift} unavailable={t("giftUnavailable", { id: item.default_gift_id })} />{item.default_trigger_threshold !== null && <p className="mt-0.5 text-[11px] text-text-muted">{t("thresholdValue", { count: item.default_trigger_threshold })}</p>}</div>}</div>
+          <div className="flex shrink-0 gap-1"><button type="button" disabled={locked} className={`${buttonClass} px-2`} aria-label={t("editNamed", { name: label })} onClick={() => openEdit(item)}><Pencil size={14} aria-hidden="true" /></button><button type="button" disabled={locked} className={`${buttonClass} px-2 text-text-muted hover:text-red-400`} aria-label={t("deleteNamed", { name: label })} onClick={() => remove(item)}><Trash2 size={14} aria-hidden="true" /></button></div>
+        </article>
+      })}</div>
+    </section>
   }
-
-  const handleEdit = async (id: string) => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/admin/products/${productId}/functions/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editForm.name.trim().toLowerCase(),
-          label_th: editForm.label_th.trim() || null,
-          label_en: editForm.label_en.trim() || null,
-          image_url: editForm.image_url || null,
-          default_gift_id: editForm.default_gift_id,
-          default_trigger_threshold: editForm.default_trigger_threshold !== "" ? parseInt(editForm.default_trigger_threshold, 10) : null,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) { alert(data.error || t("error")); return }
-      setFunctions(p => p.map(f => f.id === id ? data : f))
-      setEditingId(null)
-    } catch { alert(t("error")) }
-    finally { setLoading(false) }
-  }
-
-  // ── Delete ──────────────────────────────────────────────────
-  const handleDelete = async (id: string) => {
-    if (!confirm(t("deleteConfirm"))) return
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/admin/products/${productId}/functions/${id}`, { method: "DELETE" })
-      if (!res.ok) { alert(t("error")); return }
-      setFunctions(p => p.filter(f => f.id !== id))
-    } catch { alert(t("error")) }
-    finally { setLoading(false) }
-  }
-
-  // ── Reorder ─────────────────────────────────────────────────
-  const move = async (index: number, dir: -1 | 1) => {
-    const next = [...functions]
-    const swap = index + dir
-    if (swap < 0 || swap >= next.length) return
-      ;[next[index], next[swap]] = [next[swap], next[index]]
-    const updated = next.map((f, i) => ({ ...f, sort_order: i }))
-    setFunctions(updated)
-    try {
-      await fetch(`/api/admin/products/${productId}/functions/reorder`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated.map(f => ({ id: f.id, sort_order: f.sort_order }))),
-      })
-    } catch { alert(t("error")) }
-  }
-
-  const getGift = (id: number | null) => allGifts.find(x => x.id === id) ?? null
-
-  return (
-    <div className="space-y-5">
-
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-[18px] font-bold">{t("title")}</h2>
-          <p className="text-[13px] text-text-muted mt-0.5">{t("subtitle")}</p>
-        </div>
-        <button
-          onClick={() => { setShowAdd(p => !p); setNewForm(blankForm) }}
-          className="flex items-center gap-2 bg-accent hover:opacity-90 text-white text-[13px] font-semibold px-4 py-2.5 rounded-xl transition active:scale-95"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          {t("addFunction")}
-        </button>
-      </div>
-
-      {/* ── Add Form ── */}
-      <AnimatePresence>
-        {showAdd && (
-          <motion.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.2 }}
-            className="bg-bg-card border border-accent/25 rounded-2xl overflow-visible"
-          >
-            <div className="h-0.5 bg-gradient-to-r from-accent via-accent-light to-transparent rounded-t-2xl" />
-            <div className="p-5 space-y-4">
-              <p className="text-[11px] tracking-widest text-accent-light uppercase font-medium">
-                {t("newFunction")}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-
-                {/* Icon + Name */}
-                <div className="space-y-3">
-                  <FieldLabel>{t("icon")}</FieldLabel>
-                  <ImageUploadBox
-                    url={newForm.image_url}
-                    uploading={uploading === "add"}
-                    onUpload={f => handleUpload(f, "add")}
-                    onClear={() => setNewForm(p => ({ ...p, image_url: "" }))}
-                    t={t}
-                  />
-                  <div>
-                    <FieldLabel required>{t("nameKey")}</FieldLabel>
-                    <input
-                      value={newForm.name}
-                      onChange={e => setNewForm(p => ({ ...p, name: e.target.value }))}
-                      placeholder="kill, speed, jump..."
-                      className={inp}
-                    />
-                  </div>
-                </div>
-
-                {/* Label TH */}
-                <div>
-                  <FieldLabel>{t("labelTh")}</FieldLabel>
-                  <input
-                    value={newForm.label_th}
-                    onChange={e => setNewForm(p => ({ ...p, label_th: e.target.value }))}
-                    placeholder="ภาษาไทย"
-                    className={inp}
-                  />
-                </div>
-
-                {/* Label EN */}
-                <div>
-                  <FieldLabel>{t("labelEn")}</FieldLabel>
-                  <input
-                    value={newForm.label_en}
-                    onChange={e => setNewForm(p => ({ ...p, label_en: e.target.value }))}
-                    placeholder="English"
-                    className={inp}
-                  />
-                </div>
-
-                {/* Default Gift */}
-                <div>
-                  <FieldLabel>{t("defaultGift")}</FieldLabel>
-                  <GiftPicker
-                    gifts={allGifts}
-                    value={newForm.default_gift_id}
-                    onChange={id => setNewForm(p => ({ ...p, default_gift_id: id, default_trigger_threshold: "" }))}
-                    placeholder={t("noDefault")}
-                  />
-                </div>
-
-                {/* Default Threshold */}
-                {getGift(newForm.default_gift_id)?.trigger_type === 'like' && (
-                  <div>
-                    <FieldLabel>{t("defaultThreshold")}</FieldLabel>
-                    <input
-                      type="number"
-                      min="1"
-                      value={newForm.default_trigger_threshold}
-                      onChange={e => setNewForm(p => ({ ...p, default_trigger_threshold: e.target.value }))}
-                      placeholder="เช่น 50, 100, 200"
-                      className={inp}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-1">
-                <button
-                  onClick={() => { setShowAdd(false); setNewForm(blankForm) }}
-                  className="px-4 py-2 rounded-xl border border-white/10 text-text-muted text-[13px] hover:text-text-base transition"
-                >
-                  {t("cancel")}
-                </button>
-                <button
-                  onClick={handleAdd}
-                  disabled={adding || !newForm.name.trim()}
-                  className="px-5 py-2 rounded-xl bg-accent text-white text-[13px] font-semibold hover:opacity-90 transition disabled:opacity-40 flex items-center gap-2"
-                >
-                  {adding && <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                  {adding ? t("saving") : t("save")}
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Empty State ── */}
-      {functions.length === 0 && !showAdd && (
-        <div className="text-center py-16 bg-bg-card border border-dashed border-accent/15 rounded-2xl">
-          <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-accent/10 flex items-center justify-center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-accent-light">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <p className="text-[13px] text-text-muted">{t("empty")}</p>
-        </div>
-      )}
-
-      {/* ── Function List ── */}
-      <div className="space-y-2">
-        {functions.map((fn, i) => {
-          const isEditing = editingId === fn.id
-          const gift = getGift(fn.default_gift_id)
-
-          return (
-            <div
-              key={fn.id}
-              className={`group bg-bg-card border rounded-2xl transition-all duration-200 ${isEditing
-                  ? "border-accent/40 shadow-lg shadow-accent/5"
-                  : "border-accent/10 hover:border-accent/25"
-                }`}
-            >
-              {isEditing ? (
-                <div className="p-4 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
-
-                    {/* Icon */}
-                    <div className="space-y-1.5">
-                      <FieldLabel small>{t("icon")}</FieldLabel>
-                      <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-bg-base border border-accent/10 flex items-center justify-center overflow-hidden flex-shrink-0">
-                          {editForm.image_url ? (
-                            <Image src={getImageUrl(editForm.image_url)} alt="" width={40} height={40} className="w-full h-full object-cover" unoptimized />
-                          ) : (
-                            <span className="text-[9px] text-text-muted font-bold uppercase">{t("noIcon")}</span>
-                          )}
-                        </div>
-                        <label className="flex-1 cursor-pointer">
-                          <div className="text-center text-[11px] font-medium py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition text-text-muted">
-                            {uploading === "edit" ? "..." : t("upload")}
-                          </div>
-                          <input type="file" className="hidden" accept="image/*"
-                            onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0], "edit")} />
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Name */}
-                    <div className="space-y-1.5">
-                      <FieldLabel small required>{t("nameKey")}</FieldLabel>
-                      <input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className={inpSm} />
-                    </div>
-
-                    {/* Label TH */}
-                    <div className="space-y-1.5">
-                      <FieldLabel small>{t("labelTh")}</FieldLabel>
-                      <input value={editForm.label_th} onChange={e => setEditForm(p => ({ ...p, label_th: e.target.value }))} className={inpSm} />
-                    </div>
-
-                    {/* Label EN */}
-                    <div className="space-y-1.5">
-                      <FieldLabel small>{t("labelEn")}</FieldLabel>
-                      <input value={editForm.label_en} onChange={e => setEditForm(p => ({ ...p, label_en: e.target.value }))} className={inpSm} />
-                    </div>
-
-                    {/* Default Gift */}
-                    <div className="space-y-1.5">
-                      <FieldLabel small>{t("defaultGift")}</FieldLabel>
-                      <GiftPicker
-                        gifts={allGifts}
-                        value={editForm.default_gift_id}
-                        onChange={id => setEditForm(p => ({ ...p, default_gift_id: id, default_trigger_threshold: "" }))}
-                        placeholder={t("noDefault")}
-                      />
-                    </div>
-
-                    {/* Default Threshold */}
-                    {getGift(editForm.default_gift_id)?.trigger_type === 'like' && (
-                      <div className="space-y-1.5">
-                        <FieldLabel small>{t("defaultThreshold")}</FieldLabel>
-                        <input
-                          type="number"
-                          min="1"
-                          value={editForm.default_trigger_threshold}
-                          onChange={e => setEditForm(p => ({ ...p, default_trigger_threshold: e.target.value }))}
-                          placeholder="เช่น 50, 100"
-                          className={inpSm}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end gap-2">
-                    <button onClick={() => setEditingId(null)}
-                      className="px-4 py-2 rounded-xl border border-white/10 text-text-muted text-[12px] hover:text-text-base transition">
-                      {t("cancel")}
-                    </button>
-                    <button onClick={() => handleEdit(fn.id)} disabled={loading}
-                      className="px-5 py-2 rounded-xl bg-accent text-white text-[12px] font-semibold hover:opacity-90 transition disabled:opacity-40 flex items-center gap-1.5">
-                      {loading && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                      {t("save")}
-                    </button>
-                  </div>
-                </div>
-
-              ) : (
-                <div className="flex items-center gap-3 px-4 py-3">
-
-                  {/* Reorder */}
-                  <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    <button onClick={() => move(i, -1)} disabled={i === 0 || loading}
-                      className="p-1 rounded hover:bg-white/5 disabled:opacity-20 transition">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                        <polyline points="18 15 12 9 6 15" />
-                      </svg>
-                    </button>
-                    <span className="text-[9px] font-mono text-text-muted">{i + 1}</span>
-                    <button onClick={() => move(i, 1)} disabled={i === functions.length - 1 || loading}
-                      className="p-1 rounded hover:bg-white/5 disabled:opacity-20 transition">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  {/* Icon */}
-                  <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/5 bg-bg-base flex-shrink-0">
-                    {fn.image_url ? (
-                      <Image src={getImageUrl(fn.image_url)} alt="" width={40} height={40} className="w-full h-full object-cover" unoptimized />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[8px] text-text-muted font-bold uppercase bg-white/5">
-                        {t("noIcon")}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-[11px] text-accent-light bg-accent/10 px-2 py-0.5 rounded-md">
-                        {fn.name}
-                      </span>
-                      <span className="text-[13px] font-medium text-text-base truncate">
-                        {fn.label_th || fn.label_en || "—"}
-                      </span>
-                      {fn.label_en && fn.label_th && (
-                        <span className="text-[12px] text-text-muted truncate hidden sm:block">/ {fn.label_en}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Default Gift pill */}
-                  <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-base border border-white/5 flex-shrink-0">
-                    <span className="text-[10px] text-text-muted uppercase tracking-wide">{t("defaultGift")}:</span>
-                    {gift ? (
-                      <div className="flex items-center gap-1.5">
-                        {gift.image_url && (
-                          <Image src={getImageUrl(gift.image_url)} alt="" width={16} height={16} className="rounded" unoptimized />
-                        )}
-                        <span className="text-[12px] font-semibold text-accent-light">{gift.name}</span>
-                        <span className="text-[10px] text-text-muted">💎{gift.diamonds}</span>
-                        {fn.default_trigger_threshold !== null && (
-                          <span className="text-[10px] text-text-muted ml-1">
-                            (Threshold: {fn.default_trigger_threshold})
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-[12px] text-text-muted/40">—</span>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    <button onClick={() => startEdit(fn)}
-                      className="p-2 rounded-lg text-text-muted hover:text-text-base hover:bg-white/5 transition">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                    </button>
-                    <button onClick={() => handleDelete(fn.id)} disabled={loading}
-                      className="p-2 rounded-lg text-text-muted hover:text-red-400 hover:bg-red-500/10 transition disabled:opacity-40">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
+  return <div className="space-y-5" data-function-manager>
+    <header className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-[18px] font-semibold">{t("title")}</h2><p className="mt-1 text-[13px] text-text-muted">{t("subtitle")}</p></div><div className="flex gap-2"><button type="button" disabled={locked} className={buttonClass} onClick={() => openBulk("neutral")}><Images size={15} aria-hidden="true" />{t("bulkAdd")}</button><button type="button" disabled={locked} className={primaryClass} onClick={() => openAdd("neutral")}><Plus size={15} aria-hidden="true" />{t("addFunction")}</button></div></header>
+    {notice && <p role={notice.error ? "alert" : "status"} className={`rounded-lg border px-4 py-3 text-[13px] ${notice.error ? "border-red-400/25 bg-red-500/5 text-red-400" : "border-emerald-400/25 bg-emerald-500/5 text-emerald-500"}`}>{notice.text}</p>}
+    {editor !== null && <section className="rounded-xl border border-accent/30 bg-bg-card p-4" aria-label={editor === "new" ? t("newFunction") : t("editFunction")}><h3 className="mb-4 text-[15px] font-semibold">{editor === "new" ? t("newFunction") : t("editFunction")}</h3><FunctionFields id={`${prefix}-editor`} form={form} onChange={setForm} gifts={allGifts} t={t} disabled={locked} allowUnclassified={editor !== "new" && categoryOf(functions.find(item => item.id === editor) || {}) === "unclassified"} />
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><label className={buttonClass}><ImagePlus size={15} aria-hidden="true" />{uploading ? t("uploading") : t("upload")}<input aria-label={t("upload")} className="sr-only" type="file" accept={IMAGE_ACCEPT} disabled={locked} onChange={event => { const file = event.target.files?.[0]; if (file) void uploadSingle(file); event.target.value = "" }} /></label><div className="flex gap-2"><button type="button" disabled={locked} className={buttonClass} onClick={() => setEditor(null)}>{t("cancel")}</button><button type="button" disabled={locked} className={primaryClass} onClick={save}>{busy ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Check size={14} aria-hidden="true" />}{busy ? t("saving") : t("save")}</button></div></div>
+    </section>}
+    {bulkCategory !== null && <section className="rounded-xl border border-accent/30 bg-bg-card p-4" aria-labelledby={`${prefix}-bulk`}><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 id={`${prefix}-bulk`} className="text-[15px] font-semibold">{t("bulkAdd")}</h3><p className="mt-1 text-[12px] text-text-muted">{t("bulkHint", { count: BULK_LIMIT })}</p></div><button type="button" disabled={locked} className={buttonClass} onClick={clearStaging} aria-label={t("cancel")}><X size={16} aria-hidden="true" /></button></div>
+      <label className={`${buttonClass} my-4 cursor-pointer`}><Images size={16} aria-hidden="true" />{t("chooseImages")}<input aria-label={t("chooseImages")} className="sr-only" type="file" multiple accept={IMAGE_ACCEPT} disabled={locked} onChange={event => { stageFiles(event.target.files); event.target.value = "" }} /></label>
+      <div className="space-y-4">{staged.map((row, index) => <div key={row.id} data-staged-id={row.id} className="rounded-lg border border-accent/15 p-3"><div className="mb-3 flex items-center gap-3"><Image src={row.preview} alt="" width={42} height={42} className="h-10 w-10 rounded object-contain" unoptimized /><div className="min-w-0 flex-1"><p className="truncate text-[12px] font-medium">{row.file.name}</p><p role="status" className="text-[11px] text-text-muted">{row.state === "uploading" ? t("uploadProgress", { percent: row.progress }) : row.state === "uploaded" ? t("uploaded") : t("ready")}</p></div><button type="button" disabled={locked} className={buttonClass} aria-label={t("removeStaged", { name: row.file.name })} onClick={() => { URL.revokeObjectURL(row.preview); previews.current.delete(row.preview); setStaged(current => current.filter(item => item.id !== row.id)) }}><Trash2 size={14} aria-hidden="true" /></button></div>
+        <FunctionFields id={`${prefix}-bulk-${index}`} form={row} onChange={next => stage(row.id, next)} gifts={allGifts} t={t} disabled={locked} />{row.error && <p role="alert" className="mt-2 text-[12px] text-red-400">{row.error}</p>}
+      </div>)}</div>
+      {staged.length > 0 && <div className="mt-4 flex justify-end"><button type="button" disabled={locked} className={primaryClass} onClick={submitBulk}>{bulkBusy ? <Loader2 size={15} className="animate-spin" aria-hidden="true" /> : staged.some(row => row.state === "error") ? <RotateCcw size={15} aria-hidden="true" /> : <Plus size={15} aria-hidden="true" />}{bulkBusy ? t("bulkWorking") : t("bulkSubmit", { count: staged.length })}</button></div>}
+    </section>}
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">{section("help")}{section("troll")}</div>
+    {section("neutral")}{section("unclassified")}
+  </div>
 }
 
-// ── Gift Picker — react-select ───────────────────────────────
-// install: npm i react-select
-// - menuPortalTarget={document.body} + menuPosition="fixed" แก้บัค clip ทุกกรณี
-// - scroll ใน dropdown ไม่ปิด dropdown เพราะ react-select จัดการ event เอง
-function GiftPicker({ gifts, value, onChange, placeholder }: {
-  gifts: Gift[]
-  value: number | null
-  onChange: (id: number | null) => void
-  placeholder: string
-}) {
-  const options: GiftOption[] = [
-    { value: null, label: placeholder, gift: null },
-    ...gifts.map(g => ({ value: g.id as number, label: g.name, gift: g })),
-  ]
-
-  const selected = options.find(o => o.value === value) ?? options[0]
-
-  const selectStyles: StylesConfig<GiftOption, false> = {
-    control: (base, state) => ({
-      ...base,
-      background: "var(--color-bg-base, #0f0f1a)",
-      border: `1px solid ${state.isFocused
-        ? "rgba(120,80,255,0.4)"
-        : "rgba(120,80,255,0.15)"}`,
-      borderRadius: "0.75rem",
-      boxShadow: "none",
-      minHeight: "38px",
-      cursor: "pointer",
-      transition: "border-color 0.15s",
-      "&:hover": { borderColor: "rgba(120,80,255,0.4)" },
-    }),
-    valueContainer: base => ({ ...base, padding: "0 10px", gap: "6px", flexWrap: "nowrap" }),
-    input: base => ({ ...base, color: "var(--color-text-base, #e2e2e2)", fontSize: "12px", margin: 0, padding: 0 }),
-    placeholder: base => ({ ...base, color: "var(--color-text-muted, #666)", fontSize: "12px" }),
-    singleValue: base => ({ ...base, color: "var(--color-text-base, #e2e2e2)", fontSize: "12px", overflow: "visible" }),
-    indicatorSeparator: () => ({ display: "none" }),
-    dropdownIndicator: base => ({ ...base, padding: "0 8px", color: "var(--color-text-muted, #666)" }),
-    menu: base => ({
-      ...base,
-      background: "var(--color-bg-card, #16213e)",
-      border: "1px solid rgba(120,80,255,0.2)",
-      borderRadius: "1rem",
-      boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
-      overflow: "hidden",
-      zIndex: 9999,
-      marginTop: "4px",
-    }),
-    menuList: base => ({ ...base, padding: "6px", maxHeight: "240px" }),
-    option: (base, state) => ({
-      ...base,
-      background: state.isSelected
-        ? "rgba(120,80,255,0.2)"
-        : state.isFocused
-          ? "rgba(255,255,255,0.05)"
-          : "transparent",
-      color: state.isSelected
-        ? "var(--color-accent-light, #a899ff)"
-        : "var(--color-text-base, #e2e2e2)",
-      borderRadius: "0.5rem",
-      padding: "8px 10px",
-      cursor: "pointer",
-      fontSize: "12px",
-    }),
-    noOptionsMessage: base => ({
-      ...base,
-      color: "var(--color-text-muted, #666)",
-      fontSize: "11px",
-      padding: "2rem 1rem",
-      textAlign: "center",
-    }),
-  }
-
-  // Option row — รูป + ชื่อ + diamonds
-  const CustomOption = (props: OptionProps<GiftOption, false>) => {
-    const g = props.data.gift
-    return (
-      <components.Option {...props}>
-        <div className="flex items-center gap-2.5">
-          {g ? (
-            g.image_url ? (
-              <Image src={getImageUrl(g.image_url)} alt="" width={20} height={20} className="rounded flex-shrink-0" unoptimized />
-            ) : (
-              <div className="w-5 h-5 rounded bg-white/5 flex items-center justify-center text-[10px] flex-shrink-0">🎁</div>
-            )
-          ) : (
-            <div className="w-5 h-5 rounded bg-white/5 flex items-center justify-center flex-shrink-0 text-text-muted">
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="font-medium truncate leading-tight">{props.data.label}</p>
-            {g && <p className="text-[10px] text-text-muted mt-0.5">ID:{g.id} · 💎{g.diamonds}</p>}
-          </div>
-        </div>
-      </components.Option>
-    )
-  }
-
-  // Selected value display
-  const CustomSingleValue = (props: SingleValueProps<GiftOption, false>) => {
-    const g = props.data.gift
-    return (
-      <components.SingleValue {...props}>
-        <div className="flex items-center gap-2">
-          {g ? (
-            <>
-              {g.image_url && (
-                <Image src={getImageUrl(g.image_url)} alt="" width={16} height={16} className="rounded flex-shrink-0" unoptimized />
-              )}
-              <span className="font-semibold text-accent-light truncate">{g.name}</span>
-              <span className="text-[10px] text-text-muted flex-shrink-0">💎{g.diamonds}</span>
-            </>
-          ) : (
-            <span className="text-text-muted">{placeholder}</span>
-          )}
-        </div>
-      </components.SingleValue>
-    )
-  }
-
-  return (
-    <Select<GiftOption, false>
-      options={options}
-      value={selected}
-      onChange={(opt: SingleValue<GiftOption>) => onChange(opt?.value ?? null)}
-      styles={selectStyles}
-      placeholder={placeholder}
-      noOptionsMessage={() => "ไม่พบของขวัญ"}
-      filterOption={(opt, input) => {
-        if (!input) return true
-        const q = input.toLowerCase()
-        const g = opt.data.gift
-        if (!g) return true
-        return g.name.toLowerCase().includes(q) || String(g.id).includes(q)
-      }}
-      components={{ Option: CustomOption, SingleValue: CustomSingleValue }}
-      // key props ที่แก้บัค — render dropdown ที่ body ไม่โดน clip
-      menuPortalTarget={typeof document !== "undefined" ? document.body : null}
-      menuPosition="fixed"
-      isSearchable
-    />
-  )
+function FunctionFields({ id, form, onChange, gifts, t, disabled, allowUnclassified }: { id: string; form: FunctionDraft; onChange: (next: FunctionDraft) => void; gifts: Gift[]; t: Translate; disabled: boolean; allowUnclassified?: boolean }) {
+  const gift = gifts.find(item => item.id === form.default_gift_id), like = gift?.trigger_type?.toLowerCase() === "like"
+  const field = (key: "name" | "label_th" | "label_en" | "image_url", label: string, maxLength: number) => <div><label className="mb-1.5 block text-[12px] text-text-muted" htmlFor={`${id}-${key}`}>{label}</label><input id={`${id}-${key}`} value={form[key]} maxLength={maxLength} className={inputClass} disabled={disabled} aria-describedby={key === "name" ? `${id}-key-hint` : undefined} onChange={event => onChange({ ...form, [key]: event.target.value })} />{key === "name" && <p id={`${id}-key-hint`} className="mt-1 text-[11px] text-text-muted">{t("keyHint")}</p>}</div>
+  return <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+    {field("name", t("nameKey"), 120)}<div><label htmlFor={`${id}-category`} className="mb-1.5 block text-[12px] text-text-muted">{t("category")}</label><select id={`${id}-category`} className={inputClass} disabled={disabled} value={form.category} onChange={event => onChange({ ...form, category: event.target.value as FunctionCategory })}>{allowUnclassified && <option value="">{t("unclassified")}</option>}{categories.map(category => <option key={category} value={category}>{t(category)}</option>)}</select></div>
+    {field("label_th", t("labelTh"), 200)}{field("label_en", t("labelEn"), 200)}
+    <div><label className="mb-1.5 block text-[12px] text-text-muted" htmlFor={`${id}-gift`}>{t("defaultGift")}</label><FunctionGiftPicker id={`${id}-gift`} label={t("defaultGift")} gifts={gifts} value={form.default_gift_id} disabled={disabled} onChange={value => onChange({ ...form, default_gift_id: value, default_trigger_threshold: "" })} placeholder={t("noDefault")} noOptions={t("noGiftsFound")} unavailable={t("giftUnavailable", { id: form.default_gift_id || "" })} /></div>
+    {form.default_gift_id !== null && <div><label className="mb-1.5 block text-[12px] text-text-muted" htmlFor={`${id}-threshold`}>{t("defaultThreshold")}</label>{like ? <select id={`${id}-threshold`} value={form.default_trigger_threshold} className={inputClass} disabled={disabled} onChange={event => onChange({ ...form, default_trigger_threshold: event.target.value })}><option value="">{t("noDefault")}</option>{LIKE_THRESHOLDS.map(value => <option key={value} value={value}>{value}</option>)}</select> : <input id={`${id}-threshold`} type="number" min="1" max="10000" step="1" value={form.default_trigger_threshold} className={inputClass} disabled={disabled} placeholder={t("optional")} onChange={event => onChange({ ...form, default_trigger_threshold: event.target.value })} />}</div>}
+    <div className="sm:col-span-2">{field("image_url", t("imageUrl"), 2048)}</div>
+  </div>
 }
-
-// ── Image Upload Box ─────────────────────────────────────────
-function ImageUploadBox({ url, uploading, onUpload, onClear, t }: {
-  url: string
-  uploading: boolean
-  onUpload: (f: File) => void
-  onClear: () => void
-  t: Translate
-}) {
-  return (
-    <div className="relative group/img w-16 h-16">
-      <div className="w-16 h-16 rounded-xl overflow-hidden border border-accent/15 bg-bg-base flex items-center justify-center">
-        {url ? (
-          <>
-            <Image src={getImageUrl(url)} alt="" width={64} height={64} className="w-full h-full object-cover" unoptimized />
-            <button onClick={onClear}
-              className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition flex items-center justify-center rounded-xl">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </>
-        ) : (
-          <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition rounded-xl gap-1">
-            {uploading ? (
-              <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
-            ) : (
-              <>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-text-muted">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                <span className="text-[9px] text-text-muted uppercase font-bold">{t("upload")}</span>
-              </>
-            )}
-            <input type="file" className="hidden" accept="image/*"
-              onChange={e => e.target.files?.[0] && onUpload(e.target.files[0])} />
-          </label>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ── Field Label ──────────────────────────────────────────────
-function FieldLabel({ children, required, small }: {
-  children: React.ReactNode
-  required?: boolean
-  small?: boolean
-}) {
-  return (
-    <label className={`block font-medium text-text-muted uppercase tracking-wide mb-1.5 ${small ? "text-[10px]" : "text-[11px]"}`}>
-      {children}
-      {required && <span className="text-red-400 ml-1">*</span>}
-    </label>
-  )
-}
-
-// ── Styles ───────────────────────────────────────────────────
-const inp = "w-full bg-bg-base border border-accent/15 rounded-xl px-4 py-2.5 text-[13px] placeholder:text-text-muted outline-none focus:border-accent/40 transition"
-const inpSm = "w-full bg-bg-base border border-accent/15 rounded-xl px-3 py-2 text-[12px] placeholder:text-text-muted outline-none focus:border-accent/40 transition"

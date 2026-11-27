@@ -14,6 +14,9 @@ export async function POST(req: NextRequest) {
 
   const variant = await prisma.product_variants.findUnique({ where: { id: variant_id } })
   if (!variant) return NextResponse.json({ error: "Variant not found" }, { status: 404 })
+  const product = await prisma.products.findUnique({ where: { id: product_id, is_active: true }, select: { type: true } })
+  if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 })
+  if (product.type === "bundle" || variant.product_id !== product_id) return NextResponse.json({ error: "Use the bundle checkout with a selected package" }, { status: 400 })
 
   // Check stock
   const stock = await prisma.game_keys.count({

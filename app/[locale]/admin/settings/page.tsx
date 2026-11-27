@@ -1,10 +1,6 @@
 import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
-import BankSettingsClient from "./BankSettingsClient"
-import GlobalSettingsClient from "./GlobalSettingsClient"
-import PaymentSettingsClient from "./PaymentSettingsClient"
-import FeaturesSettingsClient from "./FeaturesSettingsClient"
-import RulesSettingsClient from "./RulesSettingsClient"
+import SettingsWorkspace from "./SettingsWorkspace"
 import { setRequestLocale } from "next-intl/server"
 
 export default async function SettingsPage({
@@ -20,16 +16,6 @@ export default async function SettingsPage({
     const configMap = Object.fromEntries(configs.map(c => [c.key, c.value]))
 
     return (
-        <div className="space-y-10 pb-20">
-            <GlobalSettingsClient initialConfigs={configMap} />
-            <PaymentSettingsClient initialConfigs={configMap} />
-            <FeaturesSettingsClient initialConfigs={configMap} />
-            <RulesSettingsClient
-                initialRulesTh={configMap.rules_th ?? ""}
-                initialRulesEn={configMap.rules_en ?? ""}
-                initialRulesJa={configMap.rules_ja ?? ""}
-                initialRulesZh={configMap.rules_zh ?? ""}
-            />
-        </div>
+        <SettingsWorkspace initialConfigs={configMap} />
     )
 }

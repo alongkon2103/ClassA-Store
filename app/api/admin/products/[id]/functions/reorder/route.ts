@@ -1,18 +1,17 @@
-// app/api/admin/products/[id]/functions/reorder/route.ts
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { validateAdmin } from "@/lib/adminAuth"
+import { prisma } from "@/lib/prisma"
+import { reorderFunctions, functionError } from "@/lib/productFunctions"
 
+export const runtime = "nodejs"
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-    const session = await getServerSession(authOptions)
-    if (session?.user?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-
-    const items: { id: string; sort_order: number }[] = await req.json()
-    await prisma.$transaction(
-        items.map(({ id, sort_order }) =>
-            prisma.product_functions.update({ where: { id }, data: { sort_order } })
-        )
-    )
-    return NextResponse.json({ ok: true })
+  const admin = await validateAdmin(["admin"])
+  if (!admin.isValid) return admin.response
+  try {
+    const { id } = await params
+    return NextResponse.json(await reorderFunctions(prisma, id, await req.json()))
+  } catch (error) {
+    const result = functionError(error)
+    return NextResponse.json(result.body, { status: result.status })
+  }
 }

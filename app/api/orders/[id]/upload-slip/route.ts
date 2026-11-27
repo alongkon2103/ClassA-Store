@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { awardPointsForOrder } from "@/lib/points"
+import { fulfillPaidOrder } from "@/lib/orderFulfillment"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { writeFile, mkdir } from "fs/promises"
@@ -28,6 +29,7 @@ export async function POST(
 
   if (order.user_id !== session.user.id)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  if (order.bundle_parent_id || order.products.type === "bundle") return NextResponse.json({ error: "Use the membership checkout payment provider" }, { status: 400 })
 
   if (order.status !== "pending")
     return NextResponse.json({ error: "Order already processed" }, { status: 400 })
@@ -173,6 +175,12 @@ export async function POST(
 
   // ─────────────────────────────
   // 7. Assign key
+  if (order.products.type === "bundle") {
+    // Persist verified provider evidence before fulfillment, as PayPal capture does.
+    await prisma.orders.update({ where: { id, status: "pending" }, data: { slip_image_url: slipUrl, slip_verified: true, trans_ref: transRef || null } })
+    await fulfillPaidOrder(id)
+    return NextResponse.json({ ok: true, orderId: id })
+  }
   const key = await prisma.game_keys.findFirst({
     where: {
       variant_id: order.variant_id!,

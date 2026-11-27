@@ -76,12 +76,13 @@ export async function POST(req: Request) {
     }
 
     const product = await prisma.products.findUnique({
-      where: { id: productId },
+      where: { id: productId, is_active: true },
     })
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
+    if (product.type === "bundle") return NextResponse.json({ error: "Bundles do not offer free trials" }, { status: 400 })
 
     // 1. Check Daily Quota
     const todayStart = startOfDay(new Date())

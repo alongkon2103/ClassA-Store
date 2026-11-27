@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
     prisma.products.findMany({
       where: {
         is_active: true,
+        type: { not: "bundle" },
         OR: [
           { name_th: { contains: q, mode: "insensitive" } },
           { name_en: { contains: q, mode: "insensitive" } },

@@ -1,13 +1,14 @@
 import { prisma } from "@/lib/prisma"
 import { reverseAffiliateEarning } from "@/lib/affiliateEarnings"
 import { reversePointsForOrder } from "@/lib/points"
+import { reverseBundleInTransaction } from "@/lib/bundleReversal"
 
 // Called only after gateway verification or an authenticated admin decision; never from a shopper's payload.
 export async function recordTikkiesReversal(orderId: string, status: "refunded" | "revoked" | "disputed", actorId?: string) {
   return prisma.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`
     const order = await tx.orders.findUnique({ where: { id: orderId }, include: { products: { select: { type: true } } } })
-    if (!order || order.products.type !== "roblox_whitelist") return false
+    if (!order || !["roblox_whitelist", "bundle"].includes(order.products.type) || order.bundle_parent_id) return false
     if (actorId) await tx.$executeRaw`SELECT set_config('app.actor_id', ${actorId}, true)`
     if (order.status !== "refunded" && order.status !== status) {
       await tx.orders.update({ where: { id: orderId }, data: {
@@ -17,6 +18,7 @@ export async function recordTikkiesReversal(orderId: string, status: "refunded" 
     }
     await reverseAffiliateEarning(tx, orderId)
     await reversePointsForOrder(orderId, tx)
+    if (order.products.type === "bundle") await reverseBundleInTransaction(tx, orderId, status)
     // Shared IGN/game access also contains independent points/manual grants; only this owned order is reversed.
     return true
   }, { timeout: 10000 })

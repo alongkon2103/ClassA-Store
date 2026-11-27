@@ -1,9 +1,10 @@
 "use client"
+import {formatDisplayMoney,validUsdRate} from "@/lib/displayCurrency"
 
 import { HalloweenSurface } from "@/components/HalloweenPage"
 import { variantLabel } from "@/lib/i18n/locale"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback, useRef, useId } from "react"
 import { createPortal } from "react-dom"
 import { useSession } from "next-auth/react"
 import { Link, useRouter } from "@/i18n/routing"
@@ -11,6 +12,9 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useTranslations, useLocale } from "next-intl"
 import { getImageUrl } from "@/lib/getImageUrl"
 import { codeAppliesTo, previewDiscountAmount, pickBestAutoCode, type AutoCodeCandidate } from "@/lib/discountCodes"
+import bundleStyles from "@/components/bundles/BundleCheckout.module.css"
+import { bundleCopy } from "@/components/bundles/copy"
+import pageStyles from "@/components/bundles/MembershipCheckout.module.css"
 
 // --- ส่วน LoginModal ---
 function LoginModal({ onClose }: { onClose: () => void }) {
@@ -261,12 +265,19 @@ interface ProductImage {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function ProductModal({ product, onClose, initialVariantId }: any) {
+export default function ProductModal({ product, onClose, initialVariantId, presentation, initialUsdRate }: any) {
   const { data: session } = useSession()
   const router = useRouter()
   const t = useTranslations("ProductModal")
   const locale = useLocale()
   const isTH = locale === "th"
+  const isBundle = product?.type === "bundle"
+  const isPage = isBundle && presentation === "membership-page"
+  const isMembership = isBundle && (presentation === "membership" || isPage)
+  const usernameId = useId()
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
+  const reportPurchaseError = (message: string) => { if (isPage) setCheckoutError(message); else alert(message) }
+  const membershipCopy = bundleCopy(locale)
 
   const [index, setIndex] = useState(0)
   const [showLoginModal, setShowLoginModal] = useState(false)
@@ -279,8 +290,8 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
   const [robloxVerify, setRobloxVerify] = useState<"idle" | "loading" | "valid" | "invalid">("idle")
   const [robloxAvatarUrl, setRobloxAvatarUrl] = useState<string | null>(null)
   const [robloxDisplayName, setRobloxDisplayName] = useState<string | null>(null)
-  const [usdRate, setUsdRate] = useState<number | null>(null)
-  const [isPremiumSelected, setIsPremiumSelected] = useState(true)
+  const [usdRate, setUsdRate] = useState<number | null>(validUsdRate(initialUsdRate)?initialUsdRate:null)
+  const [isPremiumSelected, setIsPremiumSelected] = useState(!isBundle)
   const [, setHasUsedTrial] = useState(false)
   const [, setLoadingTrial] = useState(false)
   const [, setTrialDuration] = useState<number | null>(null)
@@ -416,7 +427,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
     // cached 6h) instead of a fresh open.er-api call, so the displayed price matches
     // the amount charged — see /api/public/exchange-rate.
     fetch("/api/public/exchange-rate")
-      .then(r => r.json()).then(data => { if (data?.rate) setUsdRate(data.rate) }).catch(() => { })
+      .then(r => r.json()).then(data => { if (validUsdRate(data?.rate)) setUsdRate(data.rate) }).catch(() => { })
   }, [])
 
   useEffect(() => {
@@ -464,7 +475,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
     .sort((a: ProductVariant, b: ProductVariant) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
 
   const premiumVar = (product.product_variants ?? []).find((v: ProductVariant) => v.variant_type === "premium")
-  const premiumAddonPrice = Number(premiumVar?.premium_addon_price ?? 0)
+  const premiumAddonPrice = isBundle ? 0 : Number(premiumVar?.premium_addon_price ?? 0)
 
   useEffect(() => {
     if (premiumAddonPrice <= 0) setIsPremiumSelected(false)
@@ -472,7 +483,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
 
   // แพ็กเกจเริ่มต้น = ตัวที่ผู้ใช้เลือกไว้ในหน้าสินค้า (ถ้าไม่ส่งมาใช้ตัวแรก)
   const [selectedVariant, setSelectedVariant] = useState(
-    sortedVariants.find((v: any) => v.id === initialVariantId) ?? sortedVariants[0] ?? null,
+    sortedVariants.find((v: ProductVariant) => v.id === initialVariantId) ?? sortedVariants[0] ?? null,
   )
 
   const applyDiscountCode = async (codeRaw: string, source: DiscountSource = "typed") => {
@@ -527,6 +538,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
     try {
       if (errorCode === "BELOW_MIN_AMOUNT") {
         const minThb = Number(params?.minAmount ?? 0)
+        if (isPage) return isTH ? `ใช้โค้ดนี้ได้เมื่อค่าสมาชิกอย่างน้อย ${fmtMoney(minThb)}` : `Minimum membership amount: ${fmtMoney(minThb)}`
         // Show in user's currency (THB for Thai users, USD otherwise)
         const minDisplay = isTH
           ? `฿${minThb.toLocaleString()}`
@@ -562,7 +574,8 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
   const currentSubtotal = currentBasePrice + (isPremiumSelected ? premiumAddonPrice : 0)
   const discountAmount = appliedDiscount?.amountOff ?? 0
   const subtotalAfterDiscount = Math.max(0, currentSubtotal - discountAmount)
-  const activeFeePct = paymentConfig[paymentMethod]?.fee_pct ?? 0
+  const bundlePaymentUnavailable = isBundle && !paymentConfig[paymentMethod]?.enabled
+  const activeFeePct = bundlePaymentUnavailable ? 0 : paymentConfig[paymentMethod]?.fee_pct ?? 0
   const cardFee = subtotalAfterDiscount * (activeFeePct / 100)
   const totalPrice = subtotalAfterDiscount + cardFee
 
@@ -622,7 +635,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
   // Money label in the viewer's currency (THB for th locale, USD otherwise) —
   // same convention as the total price display.
   const fmtMoney = (thb: number) =>
-    isTH ? `฿${thb.toLocaleString()}` : `$${toUSD(thb) ?? thb.toFixed(2)}`
+    isMembership ? formatDisplayMoney(thb,locale,usdRate) : isTH ? `฿${thb.toLocaleString()}` : `$${toUSD(thb) ?? thb.toFixed(2)}`
 
   const getYoutubeEmbedUrl = (url: string) => {
     if (!url) return null
@@ -643,18 +656,19 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { if (showLoginModal || showUsernameHelp) { setShowLoginModal(false); setShowUsernameHelp(false) } else onClose() }
-      if (e.key === "ArrowLeft") prev()
-      if (e.key === "ArrowRight") next()
+      if (e.key === "Escape") { if (showLoginModal || showUsernameHelp) { setShowLoginModal(false); setShowUsernameHelp(false) } else if (!isPage) onClose() }
+      if (!isPage && e.key === "ArrowLeft") prev()
+      if (!isPage && e.key === "ArrowRight") next()
     }
     window.addEventListener("keydown", handleKey)
     return () => window.removeEventListener("keydown", handleKey)
-  }, [onClose, prev, next, showLoginModal, showUsernameHelp])
+  }, [onClose, prev, next, showLoginModal, showUsernameHelp, isPage])
 
   useEffect(() => {
+    if (isPage) return
     document.body.style.overflow = "hidden"
     return () => { document.body.style.overflow = "" }
-  }, [])
+  }, [isPage])
 
   let touchStartX = 0
   const onTouchStart = (e: React.TouchEvent) => { touchStartX = e.touches[0].clientX }
@@ -668,13 +682,15 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
   // account. We still send a non-empty value (the buyer's email) so the existing
   // checkout routes' "username required" guard passes; fulfillment ignores it and
   // grants by user_id. Roblox products are unchanged.
-  const isDesktop = product?.type === "desktop_program"
+  const isDesktop = product?.type === "desktop_program" || (isBundle && product.bundle_requires_roblox === false)
   const effectiveUsername = () => (isDesktop ? (session?.user?.email || "desktop") : whitelistUsername.trim())
 
   const handleBuyClick = async () => {
-    if (!session) { setShowLoginModal(true); return }
-    if (!selectedVariant) { alert("Please choose an option"); return }
-    if (!isDesktop && !whitelistUsername.trim()) { alert("Please enter your in-game username"); return }
+    setCheckoutError(null)
+    if (!session) { if (isPage) reportPurchaseError(isTH ? "กรุณาเข้าสู่ระบบหรือเปิดหน้าสมัครสมาชิกใหม่จาก Tikkies" : "Sign in or reopen checkout from Tikkies"); else setShowLoginModal(true); return }
+    if (bundlePaymentUnavailable) return
+    if (!selectedVariant) { reportPurchaseError(isTH ? "กรุณาเลือกแพ็กเกจ" : "Please choose an option"); return }
+    if (!isDesktop && !whitelistUsername.trim()) { reportPurchaseError(isTH ? "กรุณากรอกชื่อผู้ใช้ Roblox" : "Enter your Roblox username"); inputRef.current?.focus(); return }
     setLoading(true)
     try {
       // Each provider has its own endpoint. PayPal (API) converts THB→USD and
@@ -695,7 +711,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
           paymentMethod,
           locale,
           whitelistUsername: effectiveUsername(),
-          isPremium: isPremiumSelected,
+          isPremium: isBundle ? false : isPremiumSelected,
           discountCode: appliedDiscount?.code || undefined,
           // Affiliate referral from the /r/<code> link — sent even when the
           // discount isn't applied, so the affiliate can still earn on their
@@ -711,10 +727,10 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
       } else {
         // Translate discount-related errors that the server tagged with errorCode;
         // fall back to the raw error string for any other failure path.
-        alert(data.errorCode ? translateDiscountError(data.errorCode, data.params) : data.error)
+        reportPurchaseError(data.errorCode ? translateDiscountError(data.errorCode, data.params) : data.error || (isTH ? "เปิดหน้าชำระเงินไม่สำเร็จ กรุณาลองใหม่" : "Could not open payment. Please try again"))
         setLoading(false)
       }
-    } catch { setLoading(false) }
+    } catch { if (isPage) reportPurchaseError(isTH ? "เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่" : "Connection failed. Please try again"); setLoading(false) }
   }
 
   const handleTrialClick = async () => {
@@ -740,12 +756,25 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
     } catch { setLoadingTrial(false) }
   }
 
+  const handleBundlePreview = async () => {
+    if (!session) { setShowLoginModal(true); return }
+    if (!selectedVariant) return
+    if (!isDesktop && !whitelistUsername.trim()) { inputRef.current?.focus(); return }
+    setLoading(true)
+    try {
+      const response = await fetch("/api/local/bundle-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: product.id, variantId: selectedVariant.id, whitelistUsername: effectiveUsername() }) })
+      const result = await response.json()
+      if (response.ok && result.orderId) router.push(`/orders/${result.orderId}`)
+      else { alert(result.error || (isTH ? "ทดลองซื้อไม่สำเร็จ" : "Local preview failed")); setLoading(false) }
+    } catch { alert(isTH ? "ทดลองซื้อไม่สำเร็จ กรุณาลองอีกครั้ง" : "Local preview failed. Please try again."); setLoading(false) }
+  }
+
   const productDesc = isTH ? (product.description_th || product.description_en) : product.description_en
 
   // เรนเดอร์ผ่าน portal ไปที่ body — กัน ancestor ที่มี transform/filter
   // ทำให้ position:fixed กลายเป็นอ้างอิงกล่องนั้นแทน viewport (modal จะหลุดจอ)
-  return createPortal(
-    <HalloweenSurface className="relative">
+  const content = (
+    <HalloweenSurface className={`relative ${isBundle ? bundleStyles.checkout : ""}`}>
       <AnimatePresence>
         {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
         {showUsernameHelp && <UsernameHelpModal onClose={() => { setShowUsernameHelp(false); inputRef.current?.blur() }} images={usernameHelpImages} />}
@@ -760,19 +789,21 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
         )}
       </AnimatePresence>
       <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:p-5"
-        style={{ background: "var(--color-overlay)", backdropFilter: "blur(8px)" }}
-        onClick={onClose}
+        initial={isPage ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className={isPage ? pageStyles.inlineRoot : "fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:p-5"}
+        style={isPage ? undefined : { background: "var(--color-overlay)", backdropFilter: "blur(8px)" }}
+        onClick={isPage ? undefined : onClose}
       >
         <motion.div
-          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-          className="w-full bg-bg-card border border-border-soft rounded-t-2xl sm:rounded-[18px] max-h-[92vh] sm:max-w-[480px] overflow-y-auto custom-scrollbar"
+          initial={isPage ? false : { opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
+          className={isPage ? pageStyles.formSurface : "w-full bg-bg-card border border-border-soft rounded-t-2xl sm:rounded-[18px] max-h-[92vh] sm:max-w-[480px] overflow-y-auto custom-scrollbar"}
+          data-testid={isBundle ? "bundle-checkout" : undefined}
           onClick={(e) => e.stopPropagation()}
         >
+          {!isPage && <>
           {/* หัวเรื่อง + ปุ่มปิด (ตามดีไซน์ modal ยืนยันการสั่งซื้อ) */}
           <div className="flex items-center justify-between px-6 sm:px-7 pt-6">
-            <h2 className="text-lg font-extrabold">{t("confirm_title")}</h2>
+            <h2 className="text-lg font-extrabold">{isMembership ? membershipCopy.checkoutTitle : t("confirm_title")}</h2>
             <button
               onClick={onClose}
               aria-label={t("close")}
@@ -794,7 +825,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
               />
               <div className="min-w-0">
                 <h3 className="text-[0.88rem] font-bold mb-0.5 truncate">
-                  {isTH ? product.name_th : product.name_en}
+                  {isMembership ? membershipCopy.membershipName : isTH ? product.name_th || product.name_en : product.name_en || product.name_th}
                 </h3>
                 <p className="text-xs text-text-dim truncate">
                   {selectedVariant ? variantLabel(selectedVariant, locale) : "—"}
@@ -804,6 +835,19 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                 {isTH ? `฿${totalPrice.toLocaleString()}` : `$${totalPriceUSD || "0.00"}`}
               </div>
             </div>
+            {isBundle && Array.isArray(product.bundle_games) && (
+              <div className={bundleStyles.inclusions} data-testid="bundle-inclusions">
+                <p>{isTH ? `รวม ${product.bundle_games.length} เกม · ทุกเกมใช้ระยะเวลาที่เลือก` : `${product.bundle_games.length} included games · same selected access period`}</p>
+                {product.bundle_includes_tikkies === true && <p className="text-accent-light">{isTH ? "รวมสิทธิ์สมาชิก Tikkies ครบทุกฟังก์ชันตามระยะเวลาของแพ็กเกจ" : "Full Tikkies membership included for the selected access period"}</p>}
+                <ul tabIndex={product.bundle_games.length > 6 ? 0 : undefined}>{product.bundle_games.map((game: { id: string; name_th: string; name_en: string }) => <li key={game.id}>{isTH ? game.name_th || game.name_en : game.name_en || game.name_th}</li>)}</ul>
+                <small>{isTH ? "เกมโปรแกรมผูกกับบัญชีที่ใช้ซื้อ หากมีเกม Roblox ให้ใช้ชื่อผู้เล่นเดียวกันทั้งชุด" : "Desktop games belong to this account. One Roblox username applies to every Roblox game in the set."}</small>
+              </div>
+            )}
+            {isBundle && product.bundle_preview === true && (
+              <button type="button" disabled={loading} onClick={handleBundlePreview} className={bundleStyles.previewButton}>
+                {loading ? (isTH ? "กำลังดำเนินการ…" : "Creating local preview…") : isMembership ? membershipCopy.previewMembership : (isTH ? "ทดลองซื้อบน localhost — ไม่เก็บเงินจริง" : "Test purchase on localhost — no real charge")}
+              </button>
+            )}
             {pointsCfg?.enabled && subtotalAfterDiscount > 0 && (
               <p className="mt-2 px-1 text-[0.72rem] text-gold flex flex-wrap items-center gap-x-1.5">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="shrink-0"><circle cx="12" cy="12" r="10" /></svg>
@@ -813,20 +857,21 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
             )}
           </div>
 
-          <div className="px-6 sm:px-7 py-6 space-y-5">
+          </>}
+          <div className={isPage ? pageStyles.formBody : "px-6 sm:px-7 py-6 space-y-5"}>
             {/* Desktop programs: no in-game name — sign in with the account.
                 Otherwise the IN-GAME USERNAME field (hidden pre-login when trial on). */}
             {isDesktop ? (
               <div className="rounded-xl bg-bg-base/50 border border-accent/10 px-4 py-3">
                 <p className="text-[12px] text-text-muted leading-relaxed">
-                  {t("desktop_signin_note")}
+                  {isBundle ? (isTH ? "ทุกเกมในชุดนี้ผูกกับบัญชีที่ใช้ซื้อ ไม่ต้องระบุชื่อ Roblox หลังชำระเงิน เปิดเกมและดาวน์โหลดได้จากคำสั่งซื้อของคุณ" : "Every game in this set belongs to your purchasing account. No Roblox username is needed. Open your game orders after payment for downloads and access.") : t("desktop_signin_note")}
                 </p>
               </div>
-            ) : (!isTrialEnabled || session) ? (
+            ) : (isPage || !isTrialEnabled || session) ? (
               <div>
-                <label className="text-[0.88rem] font-bold mb-3 block">{t("username_label")}</label>
-                <input ref={inputRef} value={whitelistUsername} onChange={(e) => setWhitelistUsername(e.target.value)}
-                  onFocus={() => { if (!hasShownUsernameHelp.current) { hasShownUsernameHelp.current = true; setShowUsernameHelp(true) } }}
+                <label htmlFor={usernameId} className="text-[0.88rem] font-bold mb-3 block">{t("username_label")}</label>
+                <input id={usernameId} name="robloxUsername" aria-invalid={robloxVerify === "invalid"} ref={inputRef} value={whitelistUsername} onChange={(e) => { setWhitelistUsername(e.target.value); setCheckoutError(null) }}
+                  onFocus={() => { if (!isPage && !hasShownUsernameHelp.current) { hasShownUsernameHelp.current = true; setShowUsernameHelp(true) } }}
                   placeholder={t("ingame_username_placeholder")}
                   className={`w-full px-4 py-3 rounded-[10px] border bg-bg-base text-text-base text-sm outline-none transition placeholder:text-text-dim ${
                     robloxVerify === "valid" ? "border-success/60 focus:border-success"
@@ -883,7 +928,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                 ไม่ได้ hardcode ถ้าแอดมินแก้เป็น 3% ป้ายจะเปลี่ยนตามทันที */}
             <div>
               <label className="text-[0.88rem] font-bold mb-3 block">{t("payment_method")}</label>
-              <div className="flex flex-col sm:flex-row gap-2.5">
+              <div role="group" aria-label={t("payment_method")} className={isPage ? pageStyles.paymentList : "flex flex-col sm:flex-row gap-2.5"}>
                 {(["card", "promptpay", "paypal", "paypal_me"] as const)
                   .filter((m) => paymentConfig[m]?.enabled)
                   .map((m) => {
@@ -901,16 +946,18 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                     return (
                       <button
                         key={m}
+                        data-checkout-method={m}
                         type="button"
                         onClick={() => setPaymentMethod(m)}
                         aria-pressed={on}
                         title={m === "promptpay" ? t("promptpay_warning") : undefined}
-                        className={`flex-1 p-4 rounded-xl border-2 text-center relative transition ${
+                        className={isPage ? pageStyles.paymentMethod : `flex-1 p-4 rounded-xl border-2 text-center relative transition ${
                           on
                             ? "border-accent bg-accent/[0.04] shadow-[0_0_0_1px_rgba(37,99,235,0.15)]"
                             : "border-border-soft bg-bg-base hover:border-border-light hover:bg-white/[0.02]"
                         }`}
                       >
+                        {isPage ? <><span className={pageStyles.paymentIcon}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{icon}</svg></span><span className={pageStyles.paymentText}><strong>{label}</strong><small>{fee > 0 ? t("fee_plus", {pct:fee}) : t("fee_zero")}{m === "promptpay" && <> · {t("promptpay_note")}</>}</small></span><span className={pageStyles.radio}>{on && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m5 12 4 4 10-10"/></svg>}</span></> : <>
                         {on && (
                           <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-accent flex items-center justify-center">
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round">
@@ -935,6 +982,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                             {t("promptpay_note")}
                           </span>
                         )}
+                        </>}
                       </button>
                     )
                   })}
@@ -962,7 +1010,7 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
                       {appliedDiscount.code}
                     </span>
                     <span className="text-[12px] text-text-muted">
-                      {isTH
+                      {isPage ? `−${fmtMoney(appliedDiscount.amountOff)}` : isTH
                         ? `−฿${appliedDiscount.amountOff.toLocaleString()}`
                         : `−$${toUSD(appliedDiscount.amountOff) ?? appliedDiscount.amountOff.toFixed(2)}`}
                     </span>
@@ -1112,13 +1160,16 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
               })()}
             </div>
 
-            <button disabled={loading} onClick={handleBuyClick}
-              className={`pumpkin-button w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2.5 shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 ${
-                loading ? "opacity-60 cursor-not-allowed bg-accent text-white" : "bg-gradient-to-r from-accent to-accent-light text-white"}`}>
+            {isPage && <div className={pageStyles.summary}><dl><div><dt>{isTH ? "ค่าสมาชิก" : "Membership"}</dt><dd>{fmtMoney(currentSubtotal)}</dd></div>{discountAmount > 0 && <div><dt>{isTH ? "ส่วนลด" : "Discount"}</dt><dd>−{fmtMoney(discountAmount)}</dd></div>}<div><dt>{isTH ? "ค่าธรรมเนียมชำระเงิน" : "Payment fee"}{activeFeePct > 0 ? ` (${activeFeePct}%)` : ""}</dt><dd>{fmtMoney(cardFee)}</dd></div><div className={pageStyles.total}><dt>{isTH ? "ยอดชำระทั้งหมด" : "Total"}</dt><dd data-testid="checkout-total">{fmtMoney(totalPrice)}</dd></div></dl></div>}
+            {isPage && !isTH && <p className="text-xs text-text-muted">USD amounts are estimates. Card and PromptPay charge in THB; PayPal confirms its currency before payment.</p>}
+            {isPage && checkoutError && <div className={pageStyles.error} role="alert">{checkoutError}</div>}
+            <button data-testid={isPage ? "checkout-pay" : undefined} disabled={loading || bundlePaymentUnavailable} onClick={handleBuyClick}
+              className={isPage ? pageStyles.pay : `pumpkin-button w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2.5 shadow-[0_4px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_32px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 ${
+                loading || bundlePaymentUnavailable ? "opacity-60 cursor-not-allowed bg-accent text-white" : "bg-gradient-to-r from-accent to-accent-light text-white"}`}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" />
               </svg>
-              {loading ? t("loading") : t("confirm_pay")}
+              {loading ? t("loading") : bundlePaymentUnavailable ? (isTH ? "ยังไม่มีช่องทางชำระเงินที่เปิดใช้งาน" : "No payment methods available") : isMembership ? membershipCopy.confirmMembership : t("confirm_pay")}
             </button>
 
             <p className="text-[11px] text-text-muted text-center leading-relaxed">
@@ -1139,7 +1190,6 @@ export default function ProductModal({ product, onClose, initialVariantId }: any
         </motion.div>
       </motion.div>
     </HalloweenSurface>
-    ,
-    document.body,
   )
+  return isPage ? content : typeof document === "undefined" ? null : createPortal(content, document.body)
 }

@@ -34,9 +34,9 @@ export async function validateProductEditor(productId: string) {
 
     const product = await prisma.products.findUnique({
         where: { id: productId },
-        select: { created_by_id: true }
+        select: { created_by_id: true, type: true }
     })
-    if (!product || product.created_by_id !== admin.session.user.id) {
+    if (!product || product.type === "bundle" || product.created_by_id !== admin.session.user.id) {
         return {
             isValid: false,
             response: NextResponse.json({ error: "Forbidden: You can only edit your own products" }, { status: 403 })

@@ -1,9 +1,12 @@
+import { createHash } from "node:crypto"
 import type { Prisma } from "@prisma/client"
-import { TikkiesError } from "./tikkies"
+import { TikkiesError,parseIdentities,type Identity } from "./tikkies"
+import {resolveTikkiesCustomer} from "./tikkiesCustomer"
 import { getImageUrl } from "../getImageUrl"
 import { readFunctionDefaults } from "./tikkiesFunctionDefaults"
 import { readGameIntegration } from "./gameIntegrationStorage"
 import type { GameIntegration } from "../gameIntegration"
+import { GameDefaultsError, stableDefaultsJson, validateGameDefaults } from "../tikkiesGameDefaults"
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const numericId = /^[1-9]\d{0,19}$/
@@ -12,13 +15,13 @@ type Access = "owned" | "locked" | "pending" | "expired" | "revoked" | "refunded
 const normalized = (value: string | null) => (value || "").trim().toLowerCase()
 const permanent = (value: Date | null) => value === null || value.getUTCFullYear() >= 9000
 
-export function parseLibraryRequest(body: unknown): { email: string | null; productId?: string } {
+export function parseLibraryRequest(body: unknown): { email: string | null; productId?: string;identities?:Identity[] } {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw new TikkiesError("invalid_input", 400)
   const data = body as Record<string, unknown>
-  if (Object.keys(data).some(key => !["email", "productId"].includes(key)) || !("email" in data)) throw new TikkiesError("invalid_input", 400)
+  if (Object.keys(data).some(key => !["email", "productId","identities"].includes(key)) || !("email" in data)) throw new TikkiesError("invalid_input", 400)
   if (data.email !== null && (typeof data.email !== "string" || data.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim()))) throw new TikkiesError("invalid_input", 400)
   if (data.productId !== undefined && (typeof data.productId !== "string" || !uuid.test(data.productId))) throw new TikkiesError("invalid_input", 400)
-  return { email: data.email === null ? null : normalized(data.email as string), ...(data.productId ? { productId: data.productId as string } : {}) }
+  return { email: data.email === null ? null : normalized(data.email as string), ...(data.productId ? { productId: data.productId as string } : {}),...(data.identities===undefined?{}:{identities:parseIdentities({identities:data.identities})}) }
 }
 
 // Preserve legacy bare hostnames used by the product editor; never persist an executable scheme.
@@ -86,15 +89,63 @@ async function readImageAssets(db: Prisma.TransactionClient, productId: string, 
   })
 }
 
-export async function readTikkiesLibrary(db: Prisma.TransactionClient, value: string | null, now: Date, origin: string, productId?: string) {
+const libraryProductSelect = {
+  id: true, slug: true, name_th: true, name_en: true, description_th: true, description_en: true, type: true,
+  info_page_url: true, roblox_place_ids: true,
+  product_images: { orderBy: { sort_order: "asc" }, take: 1, select: { url: true } },
+} as const satisfies Prisma.productsSelect
+
+type LibraryProduct = Prisma.productsGetPayload<{ select: typeof libraryProductSelect }>
+
+function libraryProductDetails(product: LibraryProduct, origin: string) {
+  let imageUrl: string | null = null
+  try {
+    const cover = product.product_images[0]?.url
+    const url = cover && new URL(getImageUrl(cover), origin)
+    if (url && url.protocol === "https:" && !url.username && !url.password) imageUrl = url.href
+  } catch { /* Missing cover uses the UI fallback. */ }
+  return {
+    id: product.id, nameTh: product.name_th, nameEn: product.name_en, imageUrl,
+    descriptionTh: plain(product.description_th), descriptionEn: plain(product.description_en),
+    shopUrl: new URL("/th/products?slug=" + encodeURIComponent(product.slug), origin).href,
+  }
+}
+
+async function readComingSoonGames(db: Prisma.TransactionClient, productId?: string) {
+  const optedIn = [...new Set((process.env.TIKKIES_COMING_SOON_PRODUCT_IDS ?? "")
+    .split(",").map(id => id.trim().toLowerCase()).filter(id => uuid.test(id)))].slice(0, 50)
+  const selected = productId ? optedIn.filter(id => id === productId.toLowerCase()) : optedIn
+  if (!selected.length) return []
+  const products = await db.products.findMany({
+    where: { id: { in: selected }, is_active: false, type: "roblox_whitelist", product_tikkies_defaults: { isNot: null } },
+    orderBy: [{ display_order: { sort: "asc", nulls: "last" } }, { created_at: "desc" }, { id: "asc" }],
+    select: { ...libraryProductSelect, product_tikkies_defaults: { select: { config: true, revision: true } } },
+  })
+  const candidates = await Promise.all(products.map(async product => {
+    if (!product.product_tikkies_defaults) return null
+    try {
+      const document = validateGameDefaults(product.product_tikkies_defaults.config)
+      const revision = createHash("sha256").update(stableDefaultsJson(document)).digest("hex")
+      if (document.platform !== "roblox" || product.product_tikkies_defaults.revision !== revision) return null
+      const connection = await readGameIntegration(db, product.id)
+      return connection.stored && connection.integration.mode === "api" ? { product, integration: connection.integration } : null
+    } catch (error) {
+      if (error instanceof GameDefaultsError) return null
+      throw error
+    }
+  }))
+  return candidates.filter(candidate => candidate !== null)
+}
+
+export async function readTikkiesLibrary(db: Prisma.TransactionClient, value: string | null, now: Date, origin: string, productId?: string, identities?:Identity[]) {
   const email = value === null ? null : normalized(value)
-  const customers = email ? await db.$queryRaw<{ id: string; nativeStatus: string | null }[]>`SELECT id, "nativeStatus" FROM users WHERE lower(btrim(email)) = ${email} LIMIT 2` : []
-  if (customers.length > 1) throw new TikkiesError("identity_conflict", 409)
-  const customer = customers[0]
-  const products = await db.products.findMany({ where: { is_active: true, type: { in: ["roblox_whitelist", "desktop_program"] }, ...(productId ? { id: productId } : {}) },
+  const customer=await resolveTikkiesCustomer(db,email,identities)
+  const drafts = await readComingSoonGames(db, productId)
+  const canPreviewDraft = Boolean(drafts.length && identities?.length && customer?.nativeStatus === "ACTIVE" &&
+    (await db.users.findUnique({ where: { id: customer.id }, select: { role: true } }))?.role === "admin")
+  const products = await db.products.findMany({ where: { is_active: true, type: { in: ["roblox_whitelist", "desktop_program"] }, ...(productId && !canPreviewDraft ? { id: productId } : {}) },
     orderBy: [{ display_order: { sort: "asc", nulls: "last" } }, { created_at: "desc" }], take: 501,
-    select: { id: true, slug: true, name_th: true, name_en: true, description_th: true, description_en: true, type: true, info_page_url: true, roblox_place_ids: true,
-      product_images: { orderBy: { sort_order: "asc" }, take: 1, select: { url: true } } } })
+    select: libraryProductSelect })
   if (products.length > 500) throw new TikkiesError("catalog_capacity_exceeded", 503)
   const ids = products.map(p => p.id)
   const [orders, programs, rewards] = customer && customer.nativeStatus !== "KICKED" ? await Promise.all([
@@ -115,6 +166,7 @@ export async function readTikkiesLibrary(db: Prisma.TransactionClient, value: st
     const end = new Date(r.expires_at), k = key(r.product_id, r.ign)
     if (Number.isFinite(end.getTime()) && (!byReward.has(k) || end > byReward.get(k)!)) byReward.set(k, end)
   }
+  const entitledPreviewAccounts = new Map<string, { name: string; expiresAt: number }>()
   const games = products.map(product => {
     let access: Access = customer?.nativeStatus === "KICKED" ? "revoked" : "locked", expiresAt: string | null = null
     const purchases = orders.filter(o => o.product_id === product.id)
@@ -123,20 +175,26 @@ export async function readTikkiesLibrary(db: Prisma.TransactionClient, value: st
         const program = programs.find(p => p.product_id === product.id)
         if (program) { access = program.status !== "ACTIVE" ? "revoked" : program.expires_at <= now ? "expired" : "owned"; expiresAt = permanent(program.expires_at) ? null : program.expires_at.toISOString() }
       } else {
-        const verdicts = purchases.map(o => orderAccess(o, byGrant.get(key(o.product_id, o.whitelisted_username)), now, byReward.get(key(o.product_id, o.whitelisted_username))))
+        const verdicts = purchases.map(order => {
+          const accountKey = key(order.product_id, order.whitelisted_username)
+          const verdict = orderAccess(order, byGrant.get(accountKey), now, byReward.get(accountKey))
+          const name = order.whitelisted_username?.trim()
+          if (canPreviewDraft && verdict.access === "owned" && name && /^[A-Za-z0-9_]{3,20}$/.test(name)) {
+            const lookup = normalized(name), expiresAt = verdict.expiresAt === null ? Infinity : Date.parse(verdict.expiresAt)
+            if (expiresAt > (entitledPreviewAccounts.get(lookup)?.expiresAt ?? 0)) entitledPreviewAccounts.set(lookup, { name, expiresAt })
+          }
+          return verdict
+        })
         const owned = verdicts.filter(v => v.access === "owned")
         if (owned.length) { access = "owned"; expiresAt = owned.some(v => v.expiresAt === null) ? null : owned.map(v => v.expiresAt!).sort().at(-1)! }
         else if (verdicts.length) access = (["expired", "pending", "refunded", "revoked"] as Access[]).find(status => verdicts.some(v => v.access === status)) || "locked"
       }
     }
-    let imageUrl: string | null = null
-    try { const url = new URL(getImageUrl(product.product_images[0]?.url || ""), origin); if (product.product_images[0]?.url && url.protocol === "https:" && !url.username && !url.password) imageUrl = url.href } catch { /* Missing cover uses the UI fallback. */ }
-    return { id: product.id, nameTh: product.name_th, nameEn: product.name_en, descriptionTh: plain(product.description_th), descriptionEn: plain(product.description_en), imageUrl,
+    return { ...libraryProductDetails(product, origin),
       platform: product.type === "roblox_whitelist" ? "roblox" : "program", access, expiresAt,
-      shopUrl: new URL("/th/products?slug=" + encodeURIComponent(product.slug), origin).href,
       purchasedAccounts: product.type === "roblox_whitelist" ? [...new Set(purchases.map(o => o.whitelisted_username?.trim()).filter((s): s is string => !!s && /^[A-Za-z0-9_]{3,20}$/.test(s)))].slice(0, 50) : [],
       launch: access === "owned" && product.type === "roblox_whitelist" ? robloxLaunch(product.info_page_url, product.roblox_place_ids) : null }
-  })
+  }).filter(game => !canPreviewDraft || !productId || game.id === productId.toLowerCase())
   const endings = games.filter(g => g.access === "owned" && g.expiresAt).map(g => Date.parse(g.expiresAt!))
   const requestedOwned = productId && games.some(game => game.id === productId && game.access === "owned")
   const [defaults, imageAssets] = requestedOwned ? await Promise.all([readFunctionDefaults(db, productId, origin), readImageAssets(db, productId, origin)]) : [null, null]
@@ -153,5 +211,17 @@ export async function readTikkiesLibrary(db: Prisma.TransactionClient, value: st
       : game.launch
     return { ...game, launch, ...(defaults && game.id === productId ? { functionDefaults: defaults, imageAssets } : {}), ...(integration ? { integration } : {}) }
   })
-  return { schemaVersion: 1, customerLinked: !!customer, checkedAt: now.toISOString(), validUntil: new Date(Math.min(now.getTime() + 60000, ...endings)).toISOString(), games: resultGames }
+  const previewAccounts = [...entitledPreviewAccounts.values()].slice(0, 50)
+  const requestedPreview = previewAccounts.length && drafts.find(({ product }) => product.id === productId?.toLowerCase())
+  const previewImages = requestedPreview ? await readImageAssets(db, requestedPreview.product.id, origin) : null
+  const draftGames = drafts.slice(0, 500 - resultGames.length).map(({ product, integration }) => {
+    const details = { ...libraryProductDetails(product, origin), platform: "roblox" as const, access: "locked" as const, comingSoon: true as const, expiresAt: null }
+    if (!previewAccounts.length) return { ...details, purchasedAccounts: [], launch: null }
+    const launch = robloxLaunch(product.info_page_url, product.roblox_place_ids)
+    return {
+      ...details, preview: true as const, integration, ...(previewImages && { imageAssets: previewImages }), purchasedAccounts: previewAccounts.map(account => account.name),
+      launch: launch && integration.placeIds.includes(launch.placeId) ? launch : { placeId: integration.placeIds[0] },
+    }
+  })
+  return { schemaVersion: 1, customerLinked: !!customer, checkedAt: now.toISOString(), validUntil: new Date(Math.min(now.getTime() + 60000, ...endings, ...previewAccounts.map(account => account.expiresAt))).toISOString(), games: [...resultGames, ...draftGames] }
 }

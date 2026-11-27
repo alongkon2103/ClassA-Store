@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 // ตัวแปร --font-display / --font-body ยังคงชื่อเดิมใน globals.css เพราะ
 // component เก่าอ้างถึงอยู่ — แค่ชี้ไปที่ฟอนต์คู่ใหม่แทน
 const inter = Inter({
-  subsets: ["latin"],
+  subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-sans",
 })

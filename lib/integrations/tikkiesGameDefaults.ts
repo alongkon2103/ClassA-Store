@@ -1,3 +1,4 @@
+import type {Identity} from './tikkies'
 // Canonical defaults persistence and entitled integration delivery.
 import { createHash } from "node:crypto"
 import type { Prisma, PrismaClient } from "@prisma/client"
@@ -9,7 +10,7 @@ import { readTikkiesLibrary } from "./tikkiesLibrary"
 import { readLocalTikkiesPreset } from "./tikkiesPreset"
 import { validateTikkiesBindings } from "../tikkiesBindings"
 import { importGameDefaults, type LegacyGameFunction } from "./tikkiesGameDefaultsImport"
-import { publishedGameCommands, validateGameIntegration, validateGameIntegrationResponses } from "../gameIntegration"
+import { publishedGameCommandInputs, publishedGameCommands, validateGameIntegration, validateGameIntegrationResponses } from "../gameIntegration"
 import { gameMapCredential, gameMapCredentialHash, readGameIntegration, writeGameIntegration } from "./gameIntegrationStorage"
 export type DefaultsStorageRow = { config: unknown; revision: string; previous_config?: unknown; previous_revision?: string | null }
 
@@ -127,27 +128,29 @@ export async function importAdminGameDefaults(db: PrismaClient, productId: strin
   const bindings = preset.tikkies_bindings == null ? null : validateTikkiesBindings(preset.tikkies_bindings, file.contentRevision, file.actions, data.functions)
   return { ok: true as const, ...importGameDefaults({ platform: item.platform, preset: file.actions, functions: data.functions, bindings }) }
 }
-export async function readTikkiesGameDefaults(db: PrismaClient, input: { email: string; productId: string }, origin: string) {
+export async function readTikkiesGameDefaults(db: PrismaClient, input: { email: string; productId: string;identities?:Identity[] }, origin: string) {
   checkId(input.productId)
   return db.$transaction(async tx => {
-    const library = await readTikkiesLibrary(tx, input.email, new Date(), origin, input.productId), game = library.games.find(row => row.id === input.productId)
+    const library = await readTikkiesLibrary(tx, input.email, new Date(), origin, input.productId,input.identities), game = library.games.find(row => row.id === input.productId)
     if (!game) throw new TikkiesError("game_not_found", 404)
-    if (game.access !== "owned") throw new TikkiesError(game.access === "expired" ? "game_access_expired" : "game_not_owned", 403)
+    const preview = "preview" in game && game.preview === true
+    if (game.access !== "owned" && !preview) throw new TikkiesError(game.access === "expired" ? "game_access_expired" : "game_not_owned", 403)
     const item = await product(tx, input.productId), saved = await published(tx, input.productId)
     if (!saved) throw new GameDefaultsError("defaults_not_configured", 404)
     const document = validateGameDefaults(saved.config)
     if (document.platform !== item.platform) throw new GameDefaultsError("platform_mismatch", 409)
     if (Date.parse(library.validUntil) <= Date.now()) throw new TikkiesError("game_access_expired", 403)
-    return { schemaVersion: 1, gameId: input.productId, validUntil: library.validUntil, revision: saved.revision, document: { ...document, effects: document.effects.map(effect => ({ ...effect, imageUrl: effect.imageUrl ? new URL(getImageUrl(effect.imageUrl), origin).href : null })) } }
+    return { schemaVersion: 1, gameId: input.productId, validUntil: library.validUntil, ...(preview ? { preview: true as const } : {}), revision: saved.revision, document: { ...document, effects: document.effects.map(effect => ({ ...effect, imageUrl: effect.imageUrl ? new URL(getImageUrl(effect.imageUrl), origin).href : null })) } }
   }, { isolationLevel: "RepeatableRead", timeout: 10000 })
 }
 
-export async function readTikkiesInteractiveConfig(db: PrismaClient, input: { email: string; productId: string }, origin: string, env?: { TIKKIES_GAME_CREDENTIAL_SECRET?: string }) {
+export async function readTikkiesInteractiveConfig(db: PrismaClient, input: { email: string; productId: string;identities?:Identity[] }, origin: string, env?: { TIKKIES_GAME_CREDENTIAL_SECRET?: string }) {
   checkId(input.productId)
   return db.$transaction(async tx => {
-    const library = await readTikkiesLibrary(tx, input.email, new Date(), origin, input.productId), game = library.games.find(row => row.id === input.productId)
+    const library = await readTikkiesLibrary(tx, input.email, new Date(), origin, input.productId,input.identities), game = library.games.find(row => row.id === input.productId)
     if (!game) throw new TikkiesError("game_not_found", 404)
-    if (game.access !== "owned") throw new TikkiesError(game.access === "expired" ? "game_access_expired" : "game_not_owned", 403)
+    const preview = "preview" in game && game.preview === true
+    if (game.access !== "owned" && !preview) throw new TikkiesError(game.access === "expired" ? "game_access_expired" : "game_not_owned", 403)
     const item = await product(tx, input.productId), connection = await readGameIntegration(tx, input.productId)
     if (item.platform !== "roblox" || connection.integration.mode !== "api") throw new GameDefaultsError("interactive_not_supported", 409)
     const saved = await published(tx, input.productId)
@@ -155,8 +158,8 @@ export async function readTikkiesInteractiveConfig(db: PrismaClient, input: { em
     const document = validateGameDefaults(saved.config)
     if (document.platform !== "roblox") throw new GameDefaultsError("platform_mismatch", 409)
     if (Date.parse(library.validUntil) <= Date.now()) throw new TikkiesError("game_access_expired", 403)
-    const commands = publishedGameCommands(document)
-    return { schemaVersion: 1 as const, gameId: input.productId, validUntil: library.validUntil, integration: connection.integration, commands, credentialHash: gameMapCredentialHash(input.productId, env) }
+    const commands = publishedGameCommands(document), commandInputs = publishedGameCommandInputs(document)
+    return { schemaVersion: 1 as const, gameId: input.productId, validUntil: library.validUntil, ...(preview ? { preview: true as const } : {}), integration: connection.integration, commands, credentialHash: gameMapCredentialHash(input.productId, env), ...(Object.keys(commandInputs).length ? { commandInputs } : {}) }
   }, { isolationLevel: "RepeatableRead", timeout: 10000 })
 }
 
@@ -166,6 +169,7 @@ export async function readAdminGameConnection(db: PrismaClient, productId: strin
     if (current.platform !== "roblox" || current.integration.mode !== "api") throw new GameDefaultsError("interactive_not_supported", 409)
     if (!current.published) throw new GameDefaultsError("defaults_not_configured", 409)
     const legacyCredential = gameMapCredentialHash(productId, env) === null
-    return { schemaVersion: 1, gameId: productId, integration: current.integration, commands: publishedGameCommands(current.document), receiverConfig: { BridgeUrl: "https://acmagnet.aclassstore.com", BridgeKey: legacyCredential ? null : gameMapCredential(productId, env), TikkiesGameId: productId }, legacyCredential }
+    const commandInputs = publishedGameCommandInputs(current.document)
+    return { schemaVersion: 1, gameId: productId, integration: current.integration, commands: publishedGameCommands(current.document), receiverConfig: { BridgeUrl: "https://acmagnet.aclassstore.com", BridgeKey: legacyCredential ? null : gameMapCredential(productId, env), TikkiesGameId: productId }, legacyCredential, ...(Object.keys(commandInputs).length ? { commandInputs } : {}) }
   }, { isolationLevel: "RepeatableRead", timeout: 10000 })
 }

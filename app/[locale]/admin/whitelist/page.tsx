@@ -2,6 +2,7 @@ import { requireAdminPage } from "@/lib/adminAuth"
 import { prisma } from "@/lib/prisma"
 import { setRequestLocale } from "next-intl/server"
 import WhitelistClient from "./WhitelistClient"
+import { withPendingWhitelistEmails } from "@/lib/manualWhitelistEmail"
 
 export default async function AdminWhitelistPage({
     params
@@ -66,7 +67,7 @@ export default async function AdminWhitelistPage({
 
     return (
         <WhitelistClient 
-            initialWhitelist={whitelist} 
+            initialWhitelist={await withPendingWhitelistEmails(prisma, whitelist)}
             products={products} 
             users={users}
             config={configMap}

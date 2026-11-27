@@ -1,38 +1,18 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { validateAdmin } from "@/lib/adminAuth"
+import { prisma } from "@/lib/prisma"
+import { createFunctions, parseBulkFunctions, functionError } from "@/lib/productFunctions"
 
+export const runtime = "nodejs"
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-    const session = await getServerSession(authOptions)
-    if (session?.user?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-
-    const { id } = await params  // ← await params
-    const { name, label_th, label_en, image_url, sort_order, default_gift_id, default_trigger_threshold } = await req.json()
-    if (!name) return NextResponse.json({ error: "name required" }, { status: 400 })
-
-    // Validate Like trigger threshold
-    if (default_gift_id && default_trigger_threshold !== undefined && default_trigger_threshold !== null) {
-      const gift = await prisma.gifts.findUnique({ where: { id: default_gift_id } })
-      if (gift?.trigger_type === 'Like') {
-        const allowedLikes = [15, 30, 45, 60, 75, 90, 105]
-        if (!allowedLikes.includes(default_trigger_threshold)) {
-          return NextResponse.json({ error: "Invalid trigger threshold for Like type" }, { status: 400 })
-        }
-      }
-    }
-
-    const fn = await prisma.product_functions.create({
-        data: {
-            product_id: id,
-            name,
-            label_th: label_th ?? null,
-            label_en: label_en ?? null,
-            image_url: image_url ?? null,  // ✅ เพิ่ม
-            sort_order: sort_order ?? 0,
-            default_gift_id: default_gift_id ?? null,
-            default_trigger_threshold: default_trigger_threshold ?? null,
-        },
-    })
-    return NextResponse.json(fn, { status: 201 })
+  const admin = await validateAdmin(["admin"])
+  if (!admin.isValid) return admin.response
+  try {
+    const { id } = await params
+    const [created] = await createFunctions(prisma, id, parseBulkFunctions({ items: [await req.json()] }))
+    return NextResponse.json(created, { status: 201 })
+  } catch (error) {
+    const result = functionError(error)
+    return NextResponse.json(result.body, { status: result.status })
+  }
 }

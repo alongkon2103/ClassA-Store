@@ -37,9 +37,34 @@ export async function matchAndProcessPayment(
   const gross = parsed.grossAmount
   const currency = parsed.currency
 
+  // A matched bundle payment can outlive a failed atomic grant. Preserve the
+  // verified order association and expose failures to the existing review queue.
+  const fulfillMatchedBundle = async (orderId: string): Promise<MatchResult> => {
+    try {
+      await fulfillPaidOrder(orderId)
+      return { outcome: "matched", orderId }
+    } catch {
+      const reason = "Bundle fulfillment failed; review this verified payment and retry the linked order."
+      await prisma.paypal_payments.updateMany({
+        where: { txn_id: txnId, matched_order_id: orderId, match_status: "matched" },
+        data: { match_status: "no_order", review_reason: reason, processed_at: null },
+      })
+      return { outcome: "no_order", orderId, reason }
+    }
+  }
+
   // 1. Idempotency — never process the same transaction twice.
   const existing = await prisma.paypal_payments.findUnique({ where: { txn_id: txnId } })
   if (existing) {
+    if (existing.match_status === "matched" && existing.matched_order_id) {
+      const order = await prisma.orders.findUnique({
+        where: { id: existing.matched_order_id },
+        select: { status: true, bundle_parent_id: true, products: { select: { type: true } } },
+      })
+      if (order?.products.type === "bundle" && !order.bundle_parent_id && order.status === "pending") {
+        return fulfillMatchedBundle(existing.matched_order_id)
+      }
+    }
     return { outcome: "duplicate", orderId: existing.matched_order_id ?? undefined }
   }
 
@@ -103,6 +128,11 @@ export async function matchAndProcessPayment(
     if (!inserted) return { outcome: "duplicate", orderId } // lost the race — someone else fulfilled
     // 4. Unlock: shared helper flips order→paid + upserts user_whitelist_access
     //    + Discord role. Idempotent, so safe even if called twice.
+    const order = await prisma.orders.findUnique({
+      where: { id: orderId },
+      select: { bundle_parent_id: true, products: { select: { type: true } } },
+    })
+    if (order?.products.type === "bundle" && !order.bundle_parent_id) return fulfillMatchedBundle(orderId)
     await fulfillPaidOrder(orderId)
     return { outcome: "matched", orderId }
   }

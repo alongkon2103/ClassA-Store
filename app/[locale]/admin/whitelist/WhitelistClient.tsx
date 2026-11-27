@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter } from "@/i18n/routing"
 import { format } from "date-fns"
 import { useTranslations, useLocale } from "next-intl"
@@ -21,6 +21,7 @@ type WhitelistItem = {
     ign: string
     is_premium: boolean
     expires_at: string | Date
+    pendingEmail?: string | null
     products: { id: string; name_th: string; name_en: string }
 }
 
@@ -47,6 +48,7 @@ export default function WhitelistClient({
     const t = useTranslations("AdminWhitelist")
     const commonT = useTranslations("Admin")
     const locale = useLocale()
+    const isThai = locale === "th"
     const { data: session } = useSession()
     const dateLocale = locale === "th" ? th : enUS
     const router = useRouter()
@@ -55,6 +57,11 @@ export default function WhitelistClient({
     const [search, setSearch] = useState("")
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [recipientMode, setRecipientMode] = useState<"existing" | "email">("existing")
+    const [recipientEmail, setRecipientEmail] = useState("")
+    const [formError, setFormError] = useState("")
+    const [listNotice, setListNotice] = useState("")
+    const modalRef = useRef<HTMLDivElement>(null)
     // null = add mode; a string id = editing that row.
     const [robloxUserId, setRobloxUserId] = useState("")
     const tTikkies = useTranslations("TikkiesAdmin")
@@ -74,18 +81,17 @@ export default function WhitelistClient({
         isPermanent: false,
     })
 
-    // Set default duration and premium from config when the ADD modal opens.
     useEffect(() => {
-        if (isModalOpen && !editingId) {
-            const defDuration = parseInt(config?.free_trial_duration || "30")
-            const defPremium = config?.free_trial_is_premium === "true"
-            setFormData(prev => ({
-                ...prev,
-                durationDays: defDuration,
-                isPremium: defPremium,
-            }))
+        if (!isModalOpen) return
+        const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+        const previousOverflow = document.body.style.overflow
+        document.body.style.overflow = "hidden"
+        modalRef.current?.focus()
+        return () => {
+            document.body.style.overflow = previousOverflow
+            previousFocus?.focus()
         }
-    }, [isModalOpen, editingId, config])
+    }, [isModalOpen])
 
     const filteredUsers = useMemo(() => {
         const q = userSearch.toLowerCase()
@@ -103,7 +109,8 @@ export default function WhitelistClient({
         return whitelist.filter((item) =>
             item.ign.toLowerCase().includes(search.toLowerCase()) ||
             item.products.name_en.toLowerCase().includes(search.toLowerCase()) ||
-            item.products.name_th.toLowerCase().includes(search.toLowerCase())
+            item.products.name_th.toLowerCase().includes(search.toLowerCase()) ||
+            item.pendingEmail?.toLowerCase().includes(search.toLowerCase())
         )
     }, [whitelist, search])
 
@@ -111,11 +118,20 @@ export default function WhitelistClient({
         setRobloxUserId("")
         setFormData({ userId: "", ign: "", productId: "", isPremium: false, durationDays: 30, isPermanent: false })
         setUserSearch("")
+        setRecipientMode("existing")
+        setRecipientEmail("")
+        setFormError("")
+        setIsUserDropdownOpen(false)
         setEditingId(null)
     }
 
     const openAdd = () => {
         resetForm()
+        setFormData(prev => ({
+            ...prev,
+            durationDays: parseInt(config?.free_trial_duration || "30"),
+            isPremium: config?.free_trial_is_premium === "true",
+        }))
         setIsModalOpen(true)
     }
 
@@ -131,6 +147,8 @@ export default function WhitelistClient({
             isPermanent: permanent,
         })
         setUserSearch("")
+        setFormError("")
+        setIsUserDropdownOpen(false)
         setEditingId(item.id)
         setIsModalOpen(true)
     }
@@ -157,34 +175,55 @@ export default function WhitelistClient({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        // Add mode needs a user (it creates a TRIAL order); edit mode does not
-        // because the whitelist row has no user_id.
-        if (!formData.ign || !formData.productId || (!editingId && !formData.userId)) {
-            alert("Please fill all required fields")
+        // Edit mode has no recipient. Add mode sends exactly one destination.
+        if (!formData.ign || !formData.productId || (!editingId && (recipientMode === "email" ? !recipientEmail.trim() : !formData.userId))) {
+            setFormError(isThai ? "กรุณากรอกข้อมูลที่จำเป็นและเลือกผู้รับสิทธิ์" : "Fill in the required fields and choose a recipient.")
             return
         }
 
         setLoading(true)
+        setFormError("")
+        setListNotice("")
+        const refreshNotice = isThai
+            ? "บันทึกสิทธิ์แล้ว แต่โหลดรายการล่าสุดไม่สำเร็จ กรุณารีเฟรชหน้าเพื่อตรวจสอบรายการ"
+            : "Access was saved, but the latest list could not load. Refresh the page to review it."
         try {
             const url = editingId ? `/api/admin/whitelist/${editingId}` : "/api/admin/whitelist"
             const method = editingId ? "PATCH" : "POST"
+            const { userId, ...grant } = formData
+            const payload = !editingId && recipientMode === "email"
+                ? { ...grant, email: recipientEmail.trim() }
+                : { ...grant, userId, ...(editingId && robloxUserId.trim() ? { robloxUserId: robloxUserId.trim() } : {}) }
             const res = await fetch(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...formData, ...(editingId && robloxUserId.trim() ? { robloxUserId: robloxUserId.trim() } : {}) }),
+                body: JSON.stringify(payload),
             })
 
-            if (res.ok) {
-                const updated = await fetch("/api/admin/whitelist").then(r => r.json())
-                setWhitelist(updated)
-                closeModal()
-                router.refresh()
-            } else {
+            if (!res.ok) {
                 const err = await res.json().catch(() => ({}))
-                alert(err.error || t("error_save"))
+                setFormError(typeof err.error === "string" ? err.error : t("error_save"))
+                return
+            }
+
+            // The write committed. A refresh failure must not invite a duplicate grant.
+            closeModal()
+            try {
+                const refreshed = await fetch("/api/admin/whitelist")
+                if (!refreshed.ok) throw new Error("Whitelist refresh failed")
+                const updated = await refreshed.json()
+                if (!Array.isArray(updated)) throw new Error("Invalid whitelist response")
+                setWhitelist(updated)
+            } catch {
+                setListNotice(refreshNotice)
+            }
+            try {
+                router.refresh()
+            } catch {
+                setListNotice(refreshNotice)
             }
         } catch {
-            alert(t("error_save"))
+            setFormError(t("error_save"))
         } finally {
             setLoading(false)
         }
@@ -205,6 +244,8 @@ export default function WhitelistClient({
                     {t("add_whitelist")}
                 </button>
             </div>
+
+            {listNotice && <p role="status" className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-[13px] text-text-muted">{listNotice}</p>}
 
             {/* Filters */}
             <div className="relative">
@@ -250,6 +291,7 @@ export default function WhitelistClient({
                                             <div className="min-w-0">
                                                 <p className="font-semibold text-text-base truncate">{item.ign}</p>
                                                 <p className="text-[11px] text-text-muted truncate">In-Game Name</p>
+                                                {item.pendingEmail && <p className="text-[11px] text-text-muted break-all">{isThai ? "รอเข้าสู่ระบบ" : "Awaiting sign-in"}: {item.pendingEmail}</p>}
                                             </div>
                                         </div>
                                     </td>
@@ -285,7 +327,7 @@ export default function WhitelistClient({
                                     </td>
                                     <td className="px-5 py-4 text-right">
                                         {session?.user?.role === "admin" && (
-                                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={() => openEdit(item)}
                                                     className="p-2 text-accent-light hover:bg-accent/10 rounded-lg transition-colors"
@@ -318,33 +360,82 @@ export default function WhitelistClient({
             {/* Modal */}
             <AnimatePresence>
                 {isModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={closeModal}
+                            onClick={() => { if (!loading) closeModal() }}
                             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         />
                         <motion.div
+                            ref={modalRef}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="whitelist-dialog-title"
+                            aria-describedby="whitelist-dialog-description"
+                            tabIndex={-1}
+                            onKeyDown={(event) => {
+                                if (event.key === "Escape") {
+                                    event.preventDefault()
+                                    if (!loading) closeModal()
+                                }
+                                if (event.key !== "Tab") return
+                                const controls = modalRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex="0"]')
+                                if (!controls?.length) {
+                                    event.preventDefault()
+                                    return
+                                }
+                                const first = controls[0]
+                                const last = controls[controls.length - 1]
+                                if (event.shiftKey && (document.activeElement === first || document.activeElement === modalRef.current)) {
+                                    event.preventDefault()
+                                    last.focus()
+                                } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === modalRef.current)) {
+                                    event.preventDefault()
+                                    first.focus()
+                                }
+                            }}
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="relative w-full max-w-md bg-bg-card border border-accent/20 rounded-3xl p-6 shadow-2xl"
+                            className="relative w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto bg-bg-card border border-accent/20 rounded-3xl p-6 shadow-2xl outline-none"
                         >
-                            <h2 className="text-[20px] font-bold mb-1">
+                            <h2 id="whitelist-dialog-title" className="text-[20px] font-bold mb-1">
                                 {editingId ? t("edit_whitelist") : t("new_whitelist")}
                             </h2>
-                            <p className="text-text-muted text-[13px] mb-6">{t("subtitle")}</p>
+                            <p id="whitelist-dialog-description" className="text-text-muted text-[13px] mb-6">{t("subtitle")}</p>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
+                                <fieldset disabled={loading} className="space-y-4 min-w-0">
+                                {formError && <p role="alert" className="rounded-xl border border-red-400/25 bg-red-500/5 px-3 py-2 text-[13px] text-red-400">{formError}</p>}
+                                {!editingId && <>
+                                    <div role="group" aria-label={isThai ? "ผู้รับสิทธิ์" : "Access recipient"} className="grid grid-cols-2 gap-2">
+                                        <button type="button" aria-pressed={recipientMode === "existing"} onClick={() => { setRecipientMode("existing"); setIsUserDropdownOpen(false); setFormError("") }} className={`rounded-xl border px-3 py-2.5 text-[13px] focus-visible:outline-2 focus-visible:outline-accent ${recipientMode === "existing" ? "border-accent/40 bg-accent/10 text-accent-light" : "border-white/10 text-text-muted"}`}>
+                                            {isThai ? "บัญชีที่มีอยู่" : "Existing account"}
+                                        </button>
+                                        <button type="button" aria-pressed={recipientMode === "email"} onClick={() => { setRecipientMode("email"); setIsUserDropdownOpen(false); setFormError("") }} className={`rounded-xl border px-3 py-2.5 text-[13px] focus-visible:outline-2 focus-visible:outline-accent ${recipientMode === "email" ? "border-accent/40 bg-accent/10 text-accent-light" : "border-white/10 text-text-muted"}`}>
+                                            {isThai ? "อีเมล" : "Email"}
+                                        </button>
+                                    </div>
+                                    {recipientMode === "email" && <div>
+                                        <label htmlFor="whitelist-email" className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{isThai ? "อีเมลผู้รับสิทธิ์" : "Recipient email"}</label>
+                                        <input id="whitelist-email" required type="email" autoComplete="email" maxLength={254} value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} aria-describedby="whitelist-email-help" className="w-full bg-white/[0.03] border border-accent/15 rounded-xl px-4 py-3 text-[13px] outline-none focus:border-accent/40 transition-all" />
+                                        <p id="whitelist-email-help" className="mt-1.5 text-[11px] text-text-muted">{isThai ? "มีบัญชีแล้วจะได้รับสิทธิ์ทันที หากยังไม่มี ให้เข้าสู่ระบบ Tikkies ด้วย Google หรือ Discord ที่ยืนยันอีเมลนี้ ไม่ต้องล็อกอินเว็บร้านก่อน" : "Existing accounts receive access immediately. New users can claim it in Tikkies with Google or Discord using this verified email. No store website login is required."}</p>
+                                    </div>}
+                                    <p className="text-[11px] text-text-muted">{isThai ? "ระยะเวลาสิทธิ์เริ่มทันทีที่แอดมินบันทึก ไม่ได้เริ่มเมื่อผู้รับเข้าสู่ระบบ" : "The access duration starts immediately when the admin saves the grant, before the recipient signs in."}</p>
+                                </>}
                                 {/* Select User — add mode only (whitelist rows have no user_id) */}
-                                {!editingId && (
+                                {!editingId && recipientMode === "existing" && (
                                     <div className="relative">
-                                        <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("select_user")}</label>
-                                        <div
+                                        <label htmlFor="whitelist-user" className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("select_user")}</label>
+                                        <button
+                                            id="whitelist-user"
+                                            type="button"
+                                            aria-expanded={isUserDropdownOpen}
+                                            aria-controls="whitelist-user-options"
                                             onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                                            className="w-full bg-white/[0.03] border border-accent/15 rounded-xl px-4 py-3 text-[13px] cursor-pointer flex items-center justify-between"
+                                            className="w-full bg-white/[0.03] border border-accent/15 rounded-xl px-4 py-3 text-[13px] cursor-pointer flex items-center justify-between text-left focus-visible:outline-2 focus-visible:outline-accent"
                                         >
                                             <span className={selectedUser ? "text-text-base" : "text-text-muted"}>
                                                 {selectedUser ? `${selectedUser.username} (${selectedUser.email || 'No email'})` : t("select_user")}
@@ -352,13 +443,14 @@ export default function WhitelistClient({
                                             <svg className={`transition-transform ${isUserDropdownOpen ? 'rotate-180' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                                 <polyline points="6 9 12 15 18 9" />
                                             </svg>
-                                        </div>
+                                        </button>
 
                                         {isUserDropdownOpen && (
-                                            <div className="absolute z-10 w-full mt-2 bg-bg-card border border-accent/20 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                                            <div id="whitelist-user-options" className="absolute z-10 w-full mt-2 bg-bg-card border border-accent/20 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                                                 <div className="p-2 border-b border-white/5">
                                                     <input
                                                         autoFocus
+                                                        aria-label={isThai ? "ค้นหาบัญชี" : "Search accounts"}
                                                         placeholder="Search user..."
                                                         value={userSearch}
                                                         onChange={(e) => setUserSearch(e.target.value)}
@@ -370,13 +462,14 @@ export default function WhitelistClient({
                                                         <div className="p-4 text-center text-[12px] text-text-muted italic">No users found</div>
                                                     ) : (
                                                         filteredUsers.map(u => (
-                                                            <div
+                                                            <button
                                                                 key={u.id}
+                                                                type="button"
                                                                 onClick={() => {
                                                                     setFormData({ ...formData, userId: u.id })
                                                                     setIsUserDropdownOpen(false)
                                                                 }}
-                                                                className="p-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors"
+                                                                className="w-full p-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors text-left focus-visible:outline-2 focus-visible:outline-accent"
                                                             >
                                                                 <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-[12px] font-bold text-accent-light">
                                                                     {u.username[0].toUpperCase()}
@@ -385,7 +478,7 @@ export default function WhitelistClient({
                                                                     <p className="text-[13px] font-medium text-text-base truncate">{u.username}</p>
                                                                     <p className="text-[11px] text-text-muted truncate">{u.email}</p>
                                                                 </div>
-                                                            </div>
+                                                            </button>
                                                         ))
                                                     )}
                                                 </div>
@@ -396,8 +489,9 @@ export default function WhitelistClient({
 
                                 {/* IGN Input */}
                                 <div>
-                                    <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("ign")}</label>
+                                    <label htmlFor="whitelist-ign" className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("ign")}</label>
                                     <input
+                                        id="whitelist-ign"
                                         required
                                         type="text"
                                         placeholder="e.g. Player123"
@@ -415,8 +509,9 @@ export default function WhitelistClient({
 
                                 {/* Product Selection */}
                                 <div>
-                                    <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("select_product")}</label>
+                                    <label htmlFor="whitelist-product" className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("select_product")}</label>
                                     <select
+                                        id="whitelist-product"
                                         required
                                         value={formData.productId}
                                         onChange={(e) => setFormData({...formData, productId: e.target.value})}
@@ -444,6 +539,7 @@ export default function WhitelistClient({
                                             formData.isPermanent ? "bg-accent" : "bg-white/10"
                                         }`}
                                         aria-label="Toggle permanent"
+                                        aria-pressed={formData.isPermanent}
                                     >
                                         <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
                                             formData.isPermanent ? "translate-x-6" : "translate-x-0"
@@ -454,10 +550,11 @@ export default function WhitelistClient({
                                 {/* Options Row */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">
+                                        <label htmlFor="whitelist-duration" className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">
                                             {t("duration")}
                                         </label>
                                         <input
+                                            id="whitelist-duration"
                                             type="number"
                                             min="1"
                                             required={!formData.isPermanent}
@@ -472,6 +569,8 @@ export default function WhitelistClient({
                                         <label className="block text-[12px] font-medium text-text-muted mb-1.5 ml-1">{t("is_premium")}</label>
                                         <button
                                             type="button"
+                                            aria-pressed={formData.isPremium}
+                                            aria-label={t("is_premium")}
                                             onClick={() => setFormData({...formData, isPremium: !formData.isPremium})}
                                             className={`flex-1 flex items-center justify-center rounded-xl border transition-all text-[12px] font-bold ${
                                                 formData.isPremium
@@ -501,6 +600,7 @@ export default function WhitelistClient({
                                         {loading ? t("saving") : t("save")}
                                     </button>
                                 </div>
+                                </fieldset>
                             </form>
                         </motion.div>
                     </div>

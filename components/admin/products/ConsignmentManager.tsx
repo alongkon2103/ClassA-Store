@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 
 type Consignment = {
   id?: string
@@ -31,8 +31,11 @@ export default function ConsignmentManager({
       : [{ owner_name: "", owner_contact: "", payout_share: "100" }]
   )
 
+  const initialList = useRef(list)
   useEffect(() => {
-    onUpdate(list)
+    // Formatting existing shares for inputs and showing a blank owner are display
+    // operations. Only an actual edit should update the product's saved draft.
+    if (list !== initialList.current) onUpdate(list)
   }, [list])
 
   const addOwner = () => {

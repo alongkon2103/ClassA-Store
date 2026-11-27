@@ -1,0 +1,31 @@
+// AC Magnet's implemented receiver commands. Labels describe existing gameplay.
+// Other API products publish their own command keys through canonical defaults.
+export type MagnetGameEvent = { key: string; name: string; category: "help" | "troll" | "neutral"; legacyDefaultName?: string }
+export const MAGNET_GAME_EVENTS: readonly MagnetGameEvent[] = [
+  { key: "Rose", name: "เพิ่ม 10 บล็อก", category: "troll", legacyDefaultName: "+10 Blocks" },
+  { key: "Roses", name: "เพิ่ม 100 บล็อก", category: "troll", legacyDefaultName: "+100 Blocks" },
+  { key: "Bear", name: "เพิ่ม 1,500 บล็อก", category: "troll", legacyDefaultName: "+1500 Blocks" },
+  { key: "Friendship", name: "แช่แข็ง 5 วินาที", category: "help", legacyDefaultName: "Freeze +5s" },
+  { key: "Donut", name: "ขยายฐาน 10%", category: "troll", legacyDefaultName: "Expand arena +10%" },
+  { key: "HeartMe", name: "สุ่มบวก / ลบ", category: "neutral", legacyDefaultName: "Mixed gacha" },
+  { key: "GoatBusker", name: "สุ่มแกล้ง", category: "troll", legacyDefaultName: "Prank gacha" },
+  { key: "HelpGacha", name: "สุ่มช่วย", category: "help", legacyDefaultName: "Help gacha" },
+  { key: "Follow", name: "รางวัลติดตาม · เพิ่ม 10 บล็อก", category: "neutral", legacyDefaultName: "Follow reward · +10 Blocks" },
+  { key: "Likes", name: "รางวัลไลก์ · เพิ่ม 10 บล็อก", category: "neutral", legacyDefaultName: "Like reward · +10 Blocks" },
+  { key: "Remove", name: "ลด 10 บล็อก", category: "help", legacyDefaultName: "Remove 10 Blocks" },
+  { key: "Speed", name: "วิ่งเร็ว x2 · 5 วินาที", category: "help", legacyDefaultName: "Speed +5s" },
+  { key: "Range", name: "ระยะแม่เหล็ก x3 · 5 วินาที", category: "help", legacyDefaultName: "Magnet range +5s" },
+  { key: "Storm", name: "พายุรวมบล็อก", category: "help", legacyDefaultName: "Gather blocks" },
+  { key: "Shrink", name: "ลดฐาน 10%", category: "help", legacyDefaultName: "Shrink arena −10%" },
+  { key: "WinAdd", name: "เพิ่ม 1 WIN", category: "help", legacyDefaultName: "+1 Win" },
+  { key: "WinRemove", name: "ลด 1 WIN", category: "troll", legacyDefaultName: "−1 Win" },
+  { key: "Add30", name: "เพิ่ม 30 บล็อก", category: "troll" },
+  { key: "Add500", name: "เพิ่ม 500 บล็อก", category: "troll" },
+  { key: "Add1000", name: "เพิ่ม 1,000 บล็อก", category: "troll" },
+  { key: "Add2000", name: "เพิ่ม 2,000 บล็อก", category: "troll" },
+  { key: "Remove30", name: "ลด 30 บล็อก", category: "help" },
+  { key: "Remove100", name: "ลด 100 บล็อก", category: "help" },
+  { key: "Remove500", name: "ลด 500 บล็อก", category: "help" },
+  { key: "Remove1000", name: "ลด 1,000 บล็อก", category: "help" },
+  { key: "Remove2000", name: "ลด 2,000 บล็อก", category: "help" },
+]

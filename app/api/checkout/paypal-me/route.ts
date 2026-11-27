@@ -1,3 +1,4 @@
+import {currentBundleBuyerRole,assertBundleQuote} from "@/lib/bundleBuyer"
 // PayPal.me checkout — creates a "pay by hand" order whose ONLY identifier is a
 // unique USD amount. Mirrors /api/checkout/paypal for the discount, premium and
 // pending-order-reuse logic, but instead of calling the PayPal API it:
@@ -14,6 +15,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { evaluateDiscount, countUserRedemptions, releaseOrderDiscount } from "@/lib/discountCodes"
+import { prepareBundleCheckout, bundleCheckoutError } from "@/lib/bundleCheckout"
 import { resolveReferralCodeId } from "@/lib/affiliateEarnings"
 import { getThbToUsdRate, convertThbToUsd } from "@/lib/paypal"
 import { getPaymentConfig, computeFeeAmount } from "@/lib/paymentConfig"
@@ -33,21 +35,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { productId, variantId, whitelistUsername, isPremium, discountCode, refCode } = await req.json()
+    const { productId, variantId, whitelistUsername: requestedUsername, isPremium, discountCode, refCode } = await req.json()
 
-    if (!whitelistUsername?.trim()) {
-      return NextResponse.json({ error: "In-game username is required" }, { status: 400 })
-    }
+    const whitelistUsername = typeof requestedUsername === "string" ? requestedUsername.trim() : ""
 
     const product = await prisma.products.findUnique({
-      where: { id: productId },
+      where: { id: productId, is_active: true },
       include: { product_variants: true },
     })
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
+    if (!whitelistUsername && product.type !== "bundle") return NextResponse.json({ error: "In-game username is required" }, { status: 400 })
+
     const variant = product.product_variants.find((v) => v.id === variantId)
+    const bundleSnapshot = await prepareBundleCheckout(prisma, product, variant, { username: whitelistUsername, premium: isPremium, buyerRole: product.type === "bundle" ? await currentBundleBuyerRole(prisma,session.user) : session.user.role })
     let basePrice = variant ? Number(variant.price) : Number(product.price)
 
     let hasDiscount = false
@@ -65,6 +68,7 @@ export async function POST(req: Request) {
       const discountPct = Number(variant.discount_pct)
       basePrice = basePrice - basePrice * (discountPct / 100)
     }
+    assertBundleQuote(session.user,product.id,variant?.id || "",variant?.duration_type === "permanent" ? null : variant?.duration_days ?? null,basePrice,product.type)
 
     let premiumPrice = 0
     if (isPremium) {
@@ -126,7 +130,7 @@ export async function POST(req: Request) {
     try {
       order = await prisma.$transaction(
         async (tx) => {
-          const existing = await tx.orders.findFirst({
+          const existing = product.type === "bundle" ? null : await tx.orders.findFirst({
             where: {
               user_id: session.user.id,
               product_id: product.id,
@@ -172,6 +176,7 @@ export async function POST(req: Request) {
             : await pickUniqueExpectedAmount(tx, baseAmount, currency, existing?.id)
 
           const orderData = {
+            ...(bundleSnapshot ? { bundle_snapshot: bundleSnapshot, order_type: "BUNDLE" } : {}),
             amount: totalThb,
             goods_amount: baseAfterDiscount, // ราคาสินค้าหลังส่วนลด ไม่รวมค่าธรรมเนียม (ใช้คิด AC Points)
             payment_method: "paypal_me",
@@ -229,6 +234,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ orderId: order.id })
   } catch (err: unknown) {
+    const bundleError = bundleCheckoutError(err)
+    if (bundleError) return bundleError
     const e = err as Error
     console.error("PayPal.me Checkout Error:", { message: e?.message, stack: e?.stack })
     return NextResponse.json({ error: "Checkout failed", details: e?.message }, { status: 500 })

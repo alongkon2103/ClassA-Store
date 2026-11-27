@@ -19,6 +19,8 @@ export const dynamic = "force-dynamic"
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  // A payment-only identity cannot be upgraded into a long-lived desktop login.
+  if (session.user.provider === 'tikkies-checkout') return NextResponse.json({ error: 'checkout_only' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const state = typeof body.state === "string" ? body.state : ""

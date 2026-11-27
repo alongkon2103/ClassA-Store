@@ -11,6 +11,7 @@ export async function GET() {
   const products = await prisma.products.findMany({
     where: {
       is_active: true,
+      type: { not: "bundle" },
     },
     include: {
       product_images: true,

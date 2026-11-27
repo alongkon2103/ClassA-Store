@@ -1,228 +1,123 @@
 "use client"
 
 import { useState } from "react"
-import { useTranslations } from "next-intl"
+import { useLocale } from "next-intl"
 
 type Props = {
   initialConfigs?: Record<string, string>
 }
 
+const inputClass = "w-full rounded-xl border border-border-soft bg-bg-base px-3 py-2.5 text-sm text-text-base outline-none transition focus:border-accent focus-visible:ring-1 focus-visible:ring-accent"
+const switchClass = "relative h-6 w-12 shrink-0 rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-card disabled:opacity-50"
+
 export default function GlobalSettingsClient({ initialConfigs = {} }: Props) {
-  const t = useTranslations("Admin")
-  const [resetting, setResetting] = useState(false)
-  const [downloadUrl, setDownloadUrl] = useState<string>(initialConfigs.app_download_url ?? "")
-  const [downloadName, setDownloadName] = useState<string>(initialConfigs.app_download_name ?? "")
-  const [trialDuration, setTrialDuration] = useState<string>(initialConfigs.free_trial_duration ?? "1")
-  const [isTrialEnabled, setIsTrialEnabled] = useState<boolean>(initialConfigs.free_trial_enabled !== "false")
-  const [isTrialPremium, setIsTrialPremium] = useState<boolean>(initialConfigs.free_trial_is_premium === "true")
+  const th = useLocale() === "th"
+  const [downloadUrl, setDownloadUrl] = useState(initialConfigs.app_download_url ?? "")
+  const [downloadName, setDownloadName] = useState(initialConfigs.app_download_name ?? "")
+  const [trialDuration, setTrialDuration] = useState(initialConfigs.free_trial_duration ?? "1")
+  const [isTrialEnabled, setIsTrialEnabled] = useState(initialConfigs.free_trial_enabled !== "false")
+  const [isTrialPremium, setIsTrialPremium] = useState(initialConfigs.free_trial_is_premium === "true")
   const [saving, setSaving] = useState(false)
-
-
+  const [result, setResult] = useState<{ error: boolean; message: string } | null>(null)
 
   const handleSaveConfig = async () => {
     setSaving(true)
-    const payload = {
-      "configs": {
-        "free_trial_duration": trialDuration,
-        "free_trial_enabled": String(isTrialEnabled),
-        "free_trial_is_premium": String(isTrialPremium),
-        "app_download_url": downloadUrl,   // ✅ เพิ่มตรงนี้
-        "app_download_name": downloadName,
-      }
-    }
-
-    console.log("Payload to send:", payload)
-
+    setResult(null)
     try {
-      // Save duration, enabled status, and premium status in a single request
       const res = await fetch("/api/admin/settings/configs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          configs: {
+            free_trial_duration: trialDuration,
+            free_trial_enabled: String(isTrialEnabled),
+            free_trial_is_premium: String(isTrialPremium),
+            app_download_url: downloadUrl,
+            app_download_name: downloadName,
+          },
+        }),
       })
-
-      console.log("Save Response Status:", res.status)
-
-      if (res.ok) {
-        alert(t("save_config_success") || "Settings saved successfully")
-      } else {
-        const errorData = await res.json()
-        console.error("Save Error Detail:", errorData)
-        alert(errorData.error || "Failed to save settings")
-      }
-    } catch (error) {
-      console.error("Save error:", error)
-      alert("An error occurred")
+      const data = await res.json().catch(() => ({}))
+      setResult(res.ok
+        ? { error: false, message: th ? "บันทึกการตั้งค่าทั่วไปแล้ว" : "General settings saved." }
+        : { error: true, message: data.error || (th ? "บันทึกไม่สำเร็จ สิ่งที่แก้ไขยังอยู่ในหน้านี้ กรุณาลองอีกครั้ง" : "Save failed. Your edits are still here. Please try again.") })
+    } catch {
+      setResult({ error: true, message: th ? "เชื่อมต่อไม่สำเร็จ สิ่งที่แก้ไขยังอยู่ในหน้านี้ กรุณาลองอีกครั้ง" : "Could not connect. Your edits are still here. Please try again." })
     } finally {
       setSaving(false)
     }
   }
 
-  const handleReset = async () => {
-    if (!confirm("Are you sure you want to CLEAR ALL gift-to-function mappings? This cannot be undone.")) return
-
-    setResetting(true)
-    try {
-      const res = await fetch("/api/admin/settings/reset-mappings", { method: "DELETE" })
-      const data = await res.json()
-      if (res.ok) {
-        alert("All mappings have been cleared successfully.")
-      } else {
-        alert(data.error || "Failed to clear mappings")
-      }
-    } catch {
-      alert("An error occurred while clearing mappings.")
-    } finally {
-      setResetting(false)
-    }
-  }
-
   return (
-    <div className="space-y-10">
-      {/* Trial Settings */}
-      <section>
-        <h2 className="text-[20px] font-bold text-text-base mb-4 flex items-center gap-2">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light">
-            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-          </svg>
-          {t("trial_duration_settings")}
-        </h2>
-
-        <div className="bg-bg-card border border-white/5 rounded-2xl p-6">
-          <div className="flex flex-col gap-6">
-            {/* Toggle Switch */}
-            <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
-              <div>
-                <p className="text-[14px] font-bold text-text-base">Enable Free Trial System</p>
-                <p className="text-[12px] text-text-muted mt-0.5">Allow users to activate a one-time daily free trial</p>
-              </div>
-              <button
-                onClick={() => setIsTrialEnabled(!isTrialEnabled)}
-                className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none ${isTrialEnabled ? 'bg-accent' : 'bg-white/10'}`}
-              >
-                <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${isTrialEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-              </button>
-            </div>
-
-            <div className={`flex flex-col md:flex-row md:items-end justify-between gap-6 transition-opacity duration-200 ${!isTrialEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
-              <div className="flex-1 space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[13px] text-text-muted font-medium">{t("trial_duration_label")}</label>
-                    <span className="text-[11px] text-accent-light bg-accent/5 px-2 py-0.5 rounded-md border border-accent/10">Unit: Days</span>
-                  </div>
-                  <div className="relative max-w-[200px]">
-                    <input
-                      type="number"
-                      value={trialDuration}
-                      onChange={e => setTrialDuration(e.target.value)}
-                      className="w-full bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-accent/40 transition"
-                      placeholder="e.g. 1 for 1 day"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] text-text-muted">{t("days")}</span>
-                  </div>
-                  <p className="text-[11px] text-text-muted mt-1 italic">* Enter the number of days users can test the system.</p>
-                </div>
-
-                {/* Premium Toggle */}
-                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 max-w-md">
-                  <button
-                    onClick={() => setIsTrialPremium(!isTrialPremium)}
-                    className={`relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${isTrialPremium ? 'bg-accent' : 'bg-white/10'}`}
-                  >
-                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${isTrialPremium ? 'translate-x-5' : 'translate-x-0'}`} />
-                  </button>
-                  <div>
-                    <p className="text-[13px] font-bold text-text-base leading-none">{t("trial_premium_label")}</p>
-                    <p className="text-[11px] text-text-muted mt-1">Users will get Premium features during trial</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-[13px] text-text-muted font-medium">Program Name</label>
-                <span className="text-[11px] text-accent-light bg-accent/5 px-2 py-0.5 rounded-md border border-accent/10">Display</span>
-              </div>
-              <input
-                type="text"
-                value={downloadName}
-                onChange={e => setDownloadName(e.target.value)}
-                className="w-full bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-accent/40 transition"
-                placeholder="e.g. AclassStore Live"
-              />
-              <p className="text-[11px] text-text-muted italic">* ชื่อโปรแกรมที่แสดงในการ์ด Download ในหน้า Settings ของ user</p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-[13px] text-text-muted font-medium">Download URL</label>
-                <span className="text-[11px] text-accent-light bg-accent/5 px-2 py-0.5 rounded-md border border-accent/10">.exe / .zip</span>
-              </div>
-              <input
-                type="url"
-                value={downloadUrl}
-                onChange={e => setDownloadUrl(e.target.value)}
-                className="w-full bg-bg-base border border-white/10 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-accent/40 transition"
-                placeholder="https://github.com/.../download/app.exe"
-              />
-              <p className="text-[11px] text-text-muted italic">* ลิงค์ที่ใช้ในปุ่ม Download ในหน้า Settings ของ user</p>
-            </div>
-
-            {/* ย้าย Save ออกมานอก div ที่ pointer-events-none */}
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={handleSaveConfig}
-                disabled={saving}
-                className="px-8 py-2.5 rounded-xl bg-accent hover:opacity-90 text-white font-bold text-[14px] transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {saving ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : t("save")}
-              </button>
-            </div>
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-border-soft bg-bg-card p-4 sm:p-6">
+        <h2 className="text-xl font-bold text-text-base">{th ? "ทดลองใช้ฟรี" : "Free trial"}</h2>
+        <div className="mt-5 flex items-center justify-between gap-4 rounded-xl bg-[var(--color-surface-tint)] p-4">
+          <div>
+            <p id="trial-enabled-label" className="text-sm font-semibold text-text-base">{th ? "เปิดระบบทดลองใช้ฟรี" : "Enable free trials"}</p>
+            <p className="mt-1 text-xs leading-relaxed text-text-muted">{th ? "อนุญาตให้ผู้ใช้เปิดใช้งานสิทธิ์ทดลองใช้ฟรีประจำวัน" : "Allow users to activate a one-time daily free trial."}</p>
           </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isTrialEnabled}
+            aria-labelledby="trial-enabled-label"
+            onClick={() => setIsTrialEnabled(!isTrialEnabled)}
+            className={`${switchClass} ${isTrialEnabled ? "bg-accent" : "bg-[var(--color-surface-tint-strong)]"}`}
+          >
+            <span className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${isTrialEnabled ? "translate-x-6" : "translate-x-0"}`} />
+          </button>
+        </div>
+        <fieldset disabled={!isTrialEnabled} className="mt-5 space-y-5 disabled:opacity-50">
+          <legend className="sr-only">{th ? "รายละเอียดการทดลองใช้ฟรี" : "Free trial details"}</legend>
+          <div className="max-w-sm">
+            <label htmlFor="trial-duration" className="mb-2 block text-sm font-medium text-text-base">{th ? "ระยะเวลาทดลอง (วัน)" : "Trial duration (days)"}</label>
+            <input id="trial-duration" type="number" value={trialDuration} onChange={event => setTrialDuration(event.target.value)} className={inputClass} />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p id="trial-premium-label" className="text-sm font-semibold text-text-base">{th ? "ให้สิทธิ์ Premium ระหว่างทดลอง" : "Premium access during the trial"}</p>
+              <p className="mt-1 text-xs text-text-muted">{th ? "ผู้ใช้จะใช้ฟีเจอร์ Premium ได้ตลอดช่วงทดลองใช้ฟรี" : "Users receive Premium features for the trial period."}</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isTrialPremium}
+              aria-labelledby="trial-premium-label"
+              onClick={() => setIsTrialPremium(!isTrialPremium)}
+              className={`${switchClass} ${isTrialPremium ? "bg-accent" : "bg-[var(--color-surface-tint-strong)]"}`}
+            >
+              <span className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${isTrialPremium ? "translate-x-6" : "translate-x-0"}`} />
+            </button>
+          </div>
+        </fieldset>
+      </section>
+
+      <section className="space-y-5 rounded-2xl border border-border-soft bg-bg-card p-4 sm:p-6">
+        <div>
+          <h2 className="text-xl font-bold text-text-base">{th ? "ดาวน์โหลดโปรแกรม" : "Program download"}</h2>
+          <p className="mt-2 text-sm text-text-muted">{th ? "ข้อมูลที่แสดงในส่วนดาวน์โหลดบนหน้าตั้งค่าของผู้ใช้" : "Details shown in the download area of the user's settings page."}</p>
+        </div>
+        <div>
+          <label htmlFor="download-name" className="mb-2 block text-sm font-medium text-text-base">{th ? "ชื่อโปรแกรม" : "Program name"}</label>
+          <input id="download-name" value={downloadName} onChange={event => setDownloadName(event.target.value)} className={inputClass} placeholder="A Class Store Live" />
+        </div>
+        <div>
+          <label htmlFor="download-url" className="mb-2 block text-sm font-medium text-text-base">{th ? "ลิงก์ดาวน์โหลด" : "Download URL"}</label>
+          <input id="download-url" type="url" value={downloadUrl} onChange={event => setDownloadUrl(event.target.value)} className={inputClass} placeholder="https://example.com/download/app.exe" />
         </div>
       </section>
 
-      <div className="pt-10 border-t border-white/10">
-        <h2 className="text-[20px] font-bold text-red-500 mb-4 flex items-center gap-2">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-            <line x1="12" y1="9" x2="12" y2="13" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-          Danger Zone
-        </h2>
-
-        <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <p className="font-semibold text-text-base">Reset Global Mappings</p>
-              <p className="text-[13px] text-text-muted mt-1 max-w-md">
-                This will permanently delete all custom gift-to-function mappings for ALL users.
-                Users will be reverted to using default mappings.
-              </p>
-            </div>
-            <button
-              onClick={handleReset}
-              disabled={resetting}
-              className="px-6 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-[14px] transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap"
-            >
-              {resetting ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                "Clear All Mappings"
-              )}
-            </button>
-          </div>
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>{result && <p role={result.error ? "alert" : "status"} className={`text-sm ${result.error ? "text-red-500" : "text-text-base"}`}>{result.message}</p>}</div>
+        <button
+          type="button"
+          onClick={handleSaveConfig}
+          disabled={saving}
+          className="min-h-11 shrink-0 rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {saving ? (th ? "กำลังบันทึก..." : "Saving...") : (th ? "บันทึกการตั้งค่าทั่วไป" : "Save general settings")}
+        </button>
       </div>
     </div>
   )

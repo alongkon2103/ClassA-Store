@@ -1,4 +1,4 @@
-import { AC_MAGNET_PRODUCT_ID, GameDefaultsError, defaultsRecord } from "./tikkiesGameDefaults"
+import { AC_MAGNET_PRODUCT_ID, GameDefaultsError, defaultsRecord, isGameCommandInput, type GameCommandInput } from "./tikkiesGameDefaults"
 
 export type GameIntegration = { schemaVersion: 1; mode: "keyboard" | "api"; protocol: null | "roblox-interactive-v1"; placeIds: string[]; universeId: string | null }
 export const GAME_COMMAND_IDENTIFIER = /^[A-Za-z][A-Za-z0-9_.:-]{0,79}$/
@@ -16,6 +16,10 @@ export function defaultGameIntegration(productId: string): GameIntegration {
 }
 export function publishedGameCommands(document: { effects: { responses: Record<string, unknown>[] }[] }): string[] {
   return [...new Set(document.effects.flatMap(effect => effect.responses.filter(response => response.type === "robloxEvent" && typeof response.event === "string" && GAME_COMMAND_IDENTIFIER.test(response.event)).map(response => response.event as string)))]
+}
+// The canonical validator has already checked every occurrence of each command.
+export function publishedGameCommandInputs(document: { effects: { responses: Record<string, unknown>[] }[] }): Record<string, GameCommandInput> {
+  return Object.fromEntries(document.effects.flatMap(effect => effect.responses.filter(response => response.type === "robloxEvent" && typeof response.event === "string" && GAME_COMMAND_IDENTIFIER.test(response.event) && isGameCommandInput(response.input)).map(response => [response.event as string, response.input as GameCommandInput])))
 }
 export function validateGameIntegrationResponses(integration: Pick<GameIntegration, "mode">, document: { platform: string; effects: { responses: Record<string, unknown>[] }[] }): void {
   if (document.platform !== "roblox") return

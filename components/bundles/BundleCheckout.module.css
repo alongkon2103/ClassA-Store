@@ -1,0 +1,11 @@
+/* The existing ProductModal owns the theme; bundle additions inherit it. */
+.checkout { color: var(--color-text-base); }
+.inclusions { margin-top: 15px; padding: 13px 15px; border: 1px solid var(--color-border-soft); border-radius: 10px; background: var(--color-bg-base); }
+.inclusions > p { font-size: 12px; font-weight: 600; margin: 0 0 8px; }
+.inclusions ul { padding: 0; list-style: none; display: grid; gap: 5px; margin: 0; max-height: 150px; overflow: auto; }
+.inclusions li { font-size: 11px; line-height: 1.6; color: var(--color-text-muted); display: flex; gap: 7px; }
+.inclusions li::before { content: "✓"; color: var(--color-accent-light); }
+.inclusions > small { display: block; font-size: 10px; line-height: 1.7; color: var(--color-text-dim); margin-top: 10px; }
+.previewButton { display: block; width: 100%; margin-top: 14px; padding: 11px 13px; background: var(--color-bg-surface); border: 1px dashed var(--color-accent); border-radius: 10px; color: var(--color-accent-light); font-size: 11px; font-weight: 600; line-height: 1.6; cursor: pointer; }
+.previewButton:disabled { opacity: .5; cursor: wait; }
+.inclusions ul:focus-visible { outline: 2px solid var(--color-accent-light); outline-offset: 3px; }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 type Props = {
   initialConfigs?: Record<string, string>
@@ -22,6 +22,7 @@ function parseBool(v: string | undefined, fallback: boolean): boolean {
 
 export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
   const t = useTranslations("Admin")
+  const th = useLocale() === "th"
 
   const [methods, setMethods] = useState<Record<MethodKey, MethodState>>({
     card: {
@@ -103,28 +104,30 @@ export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
         {t("payment_settings_title")}
       </h2>
 
-      <div className="bg-bg-card border border-white/5 rounded-2xl p-6 space-y-4">
+      <div className="bg-bg-card border border-border-soft rounded-2xl p-4 sm:p-6 space-y-4">
         {METHOD_KEYS.map((m) => {
           const s = methods[m]
           return (
             <div
               key={m}
               className={`p-4 rounded-xl border transition ${
-                s.enabled ? "bg-white/5 border-white/10" : "bg-white/[0.02] border-white/5 opacity-70"
+                s.enabled ? "bg-accent/5 border-accent/20" : "bg-bg-base border-border-soft"
               }`}
             >
               <div className="flex items-center justify-between gap-4 mb-3">
                 <div>
-                  <p className="text-[14px] font-bold text-text-base">{labels[m].title}</p>
+                  <p id={`payment-${m}-label`} className="text-[14px] font-bold text-text-base">{labels[m].title}</p>
                   <p className="text-[12px] text-text-muted mt-0.5">{labels[m].hint}</p>
                 </div>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={s.enabled}
+                  aria-labelledby={`payment-${m}-label`}
                   onClick={() => update(m, { enabled: !s.enabled })}
-                  className={`relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${
+                  className={`relative w-12 h-6 rounded-full transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-card shrink-0 ${
                     s.enabled ? "bg-accent" : "bg-white/10"
                   }`}
-                  aria-label={`Toggle ${m}`}
                 >
                   <div
                     className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
@@ -134,29 +137,32 @@ export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
                 </button>
               </div>
 
-              <div className={`flex items-center gap-3 ${!s.enabled ? "opacity-50 pointer-events-none" : ""}`}>
-                <label className="text-[12px] text-text-muted font-medium shrink-0">
+              <fieldset disabled={!s.enabled} className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <legend className="sr-only">{labels[m].title}</legend>
+                <label htmlFor={`payment-${m}-fee`} className="text-[12px] text-text-muted font-medium shrink-0">
                   {t("payment_fee_label")}
                 </label>
                 <div className="relative max-w-[140px]">
                   <input
+                    id={`payment-${m}-fee`}
                     type="number"
                     inputMode="decimal"
                     step="0.1"
                     min="0"
                     value={s.fee_pct}
                     onChange={(e) => update(m, { fee_pct: e.target.value })}
-                    className="w-full bg-bg-base border border-white/10 rounded-xl pl-3 pr-9 py-2 text-[13px] outline-none focus:border-accent/40 transition"
+                    className="w-full bg-bg-base border border-border-soft rounded-xl pl-3 pr-9 py-2 text-[13px] text-text-base outline-none focus:border-accent transition disabled:opacity-60"
                     placeholder="0"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-text-muted">%</span>
                 </div>
-                <p className="text-[11px] text-text-muted italic">{t("payment_fee_hint")}</p>
-              </div>
+                <p className="basis-full text-[11px] text-text-muted sm:basis-auto">{t("payment_fee_hint")}</p>
+              </fieldset>
 
               {/* PayPal.me link + currency — only this method needs them. */}
               {m === "paypal_me" && (
-                <div className={`mt-3 pt-3 border-t border-white/5 ${!s.enabled ? "opacity-50 pointer-events-none" : ""}`}>
+                <fieldset disabled={!s.enabled} className="mt-3 pt-3 border-t border-border-soft">
+                  <legend className="sr-only">PayPal.me</legend>
                   <div className="mb-4">
                     <label className="block text-[12px] text-text-muted font-medium mb-1.5">
                       {t("paypal_me_currency_label")}
@@ -166,8 +172,9 @@ export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
                         <button
                           key={c}
                           type="button"
+                          aria-pressed={paypalMeCurrency === c}
                           onClick={() => setPaypalMeCurrency(c)}
-                          className={`px-5 py-1.5 rounded-lg text-[12px] font-semibold transition ${
+                          className={`px-5 py-1.5 rounded-lg text-[12px] font-semibold transition focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-60 ${
                             paypalMeCurrency === c
                               ? "bg-accent text-white"
                               : "text-text-muted hover:text-text-base"
@@ -179,19 +186,20 @@ export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
                     </div>
                     <p className="text-[11px] text-text-muted italic mt-1">{t("paypal_me_currency_hint")}</p>
                   </div>
-                  <label className="block text-[12px] text-text-muted font-medium mb-1.5">
+                  <label htmlFor="paypal-me-link" className="block text-[12px] text-text-muted font-medium mb-1.5">
                     {t("paypal_me_link_label")}
                   </label>
                   <input
+                    id="paypal-me-link"
                     type="url"
                     inputMode="url"
                     value={paypalMeLink}
                     onChange={(e) => setPaypalMeLink(e.target.value)}
-                    className="w-full bg-bg-base border border-white/10 rounded-xl px-3 py-2 text-[13px] outline-none focus:border-accent/40 transition"
+                    className="w-full bg-bg-base border border-border-soft rounded-xl px-3 py-2 text-[13px] text-text-base outline-none focus:border-accent transition disabled:opacity-60"
                     placeholder="https://www.paypal.com/paypalme/yourname"
                   />
                   <p className="text-[11px] text-text-muted italic mt-1">{t("paypal_me_link_hint")}</p>
-                </div>
+                </fieldset>
               )}
             </div>
           )
@@ -201,12 +209,12 @@ export default function PaymentSettingsClient({ initialConfigs = {} }: Props) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-8 py-2.5 rounded-xl bg-accent hover:opacity-90 text-white font-bold text-[14px] transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="min-h-11 w-full sm:w-auto px-6 py-2.5 rounded-xl bg-accent hover:opacity-90 text-white font-bold text-[14px] transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {saving ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              t("save")
+              th ? "บันทึกการชำระเงิน" : "Save payment settings"
             )}
           </button>
         </div>

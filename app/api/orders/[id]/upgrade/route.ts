@@ -18,7 +18,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     // 1. Find the existing order
     const order = await prisma.orders.findUnique({
-      where: { id },
+      where: { id, products: { is_active: true } },
       include: {
         products: {
           include: {
@@ -36,6 +36,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       )
     }
 
+    if (order.products.type === "bundle" || order.bundle_parent_id) return NextResponse.json({ error: "Bundle upgrades are not supported" }, { status: 400 })
     if (order.is_premium_order) {
       return NextResponse.json(
         { error: "Already premium" },

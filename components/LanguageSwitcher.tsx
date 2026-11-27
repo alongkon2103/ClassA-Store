@@ -1,6 +1,6 @@
 "use client"
 
-// เมนูเลือกภาษาแบบ dropdown ตามดีไซน์ใหม่ (TH/EN/JP/CN)
+// เมนูเลือกภาษาแบบ dropdown (TH/EN/JP/CN/KR/VN)
 // ทุกภาษาแปลครบ — ถ้ามีคีย์ใหม่ที่ยังไม่แปล ระบบ i18n จะ fallback เป็นอังกฤษให้เอง
 import { useEffect, useRef, useState } from "react"
 import { useLocale, useTranslations } from "next-intl"
@@ -12,6 +12,8 @@ const LANGS = [
   { locale: "en", code: "EN", flag: "🇺🇸", name: "English" },
   { locale: "ja", code: "JP", flag: "🇯🇵", name: "日本語" },
   { locale: "zh", code: "CN", flag: "🇨🇳", name: "中文" },
+  { locale: "ko", code: "KR", flag: "🇰🇷", name: "한국어" },
+  { locale: "vi", code: "VN", flag: "🇻🇳", name: "Tiếng Việt" },
 ] as const
 
 export default function LanguageSwitcher() {
@@ -34,9 +36,9 @@ export default function LanguageSwitcher() {
 
   const current = LANGS.find((l) => l.locale === locale) ?? LANGS[1]
 
-  const pick = (next: string) => {
+  const pick = (next: (typeof LANGS)[number]["locale"]) => {
     setOpen(false)
-    if (next !== locale) router.replace(pathname, { locale: next as "th" })
+    if (next !== locale) router.replace(pathname + window.location.search + window.location.hash, { locale: next })
   }
 
   return (

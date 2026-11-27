@@ -8,7 +8,7 @@ const prismaClientSingleton = () => {
     // Bigger pool so checkout transactions don't queue on each other.
     // pg defaults to 10 which is tight when one transaction holds 1 connection
     // for the whole body and concurrent requests show up.
-    max: 20,
+    max: process.env.BUNDLE_LOCAL_PREVIEW === "true" || process.env.BUNDLE_ISOLATED_BUILD === "true" ? 2 : 20,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
   })

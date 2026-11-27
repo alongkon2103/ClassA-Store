@@ -39,6 +39,8 @@ async function main() {
   assert.equal(result.games[1].access, "owned"); assert.equal(result.games[1].launch, null)
   assert.deepEqual(result.games[1].purchasedAccounts, [], "Program order emails are not Roblox account names")
   assert.equal(JSON.stringify(result).includes("buyer@example.com"), false)
+  const durableDb={...db,accounts:{findMany:async()=>[{user_id:'customer'}]},users:{findUnique:async()=>({id:'customer',nativeStatus:'ACTIVE'})}}
+  for(const provider of ['google','discord'])assert.ok((await readTikkiesLibrary(durableDb as never,'historical@example.test',now,'https://aclassstore.com',undefined,[{provider,providerAccountId:'owned-subject'}])).games.every((g:any)=>g.access==='owned'))
   customers = []; result = await read(); assert.equal(result.customerLinked, false); assert.ok(result.games.every((g: { access: string }) => g.access === "locked"))
   customers = [{ id: "customer", nativeStatus: "KICKED" }]; assert.ok((await read()).games.every((g: { access: string }) => g.access === "revoked"))
   customers = [{ id: "customer", nativeStatus: "ACTIVE" }, { id: "duplicate", nativeStatus: "ACTIVE" }]; await assert.rejects(read, /identity_conflict/)

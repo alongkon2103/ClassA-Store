@@ -9,6 +9,7 @@ declare module "next-auth" {
       image?:   string | null
       role:     string
       provider: "discord" | "google" | string
+      checkoutOffer?: {code:string;priceTHB:number;days:number|null}
     }
   }
 }

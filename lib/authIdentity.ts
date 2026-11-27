@@ -7,7 +7,7 @@ export type IdentityDb = {
   accounts: {
     findUnique(args: { where: { provider_provider_account_id: { provider: string; provider_account_id: string } }; select: { user_id: true } }): PromiseLike<{ user_id: string } | null>
   }
-  users: { findFirst(args: { where: { email: string }; select: { id: true } }): PromiseLike<{ id: string } | null> }
+  $queryRaw<T = unknown>(query: TemplateStringsArray, ...values: unknown[]): PromiseLike<T>
 }
 
 /** user ที่ผูกกับบัญชี provider นี้ไว้แล้ว (ตาราง accounts) */
@@ -26,5 +26,10 @@ export async function findExistingUserId(db: IdentityDb, provider: string, provi
   if (linked) return linked
   // 2) ครั้งแรกของ provider นี้ แต่อีเมลตรงกับ user เดิม (เช่น เคยใช้ Google แล้วมาใช้ Discord)
   if (!email) return null
-  return (await db.users.findFirst({ where: { email }, select: { id: true } }))?.id ?? null
+  // Prisma's insensitive equals uses ILIKE without escaping '_'/'%'. Mailbox
+  // ownership must use literal equality, not a wildcard pattern.
+  const matches = await db.$queryRaw<{ id: string }[]>`
+    SELECT id FROM users WHERE lower(btrim(email)) = ${email.trim().toLowerCase()} LIMIT 2`
+  if (matches.length > 1) throw new Error("Ambiguous email identity")
+  return matches[0]?.id ?? null
 }
